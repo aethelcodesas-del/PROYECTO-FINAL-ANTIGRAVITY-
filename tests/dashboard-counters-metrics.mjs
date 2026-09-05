@@ -16,7 +16,7 @@ function computeMetrics(profiles, campaigns) {
   }).length;
   const activeCampaigns = campaigns.filter((item) => {
     const state = String(item.estado || item.status || '').toUpperCase();
-    return state === 'ACTIVA' || state === 'ACTIVE' || state === 'EN_CURSO' || !state;
+    return state === 'ACTIVA' || state === 'ACTIVE' || state === 'EN_CURSO' || state === 'PLANIFICACION' || !state;
   }).length;
 
   return {

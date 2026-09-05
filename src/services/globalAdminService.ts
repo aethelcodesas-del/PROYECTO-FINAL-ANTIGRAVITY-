@@ -235,7 +235,7 @@ export class GlobalAdminService {
     }).length;
     const activeCampaigns = campaigns.filter((item: any) => {
       const state = String(item.estado || item.status || '').toUpperCase();
-      return state === 'ACTIVA' || state === 'ACTIVE' || state === 'EN_CURSO' || !state;
+      return state === 'ACTIVA' || state === 'ACTIVE' || state === 'EN_CURSO' || state === 'PLANIFICACION' || !state;
     }).length;
 
     return {
@@ -538,9 +538,13 @@ export class GlobalAdminService {
       cargo_postulacion: String(data.type || 'Alcaldía'),
       departamento: String(data.department || 'Antioquia'),
       municipio: String(data.city || 'Medellín'),
-      presupuesto_total: Number(data.budgetLimitCop || 0),
-      estado: data.status === 'Activa' ? 'ACTIVA' : data.status === 'En Pausa' ? 'PAUSADA' : data.status === 'Finalizada' ? 'FINALIZADA' : 'PLANIFICACION',
-      is_demo: isDemo,
+      estado: data.status === 'En Pausa' || data.status === 'PAUSADA'
+        ? 'PAUSADA'
+        : data.status === 'Finalizada' || data.status === 'FINALIZADA'
+        ? 'FINALIZADA'
+        : data.status === 'En Configuración' || data.status === 'PLANIFICACION'
+        ? 'PLANIFICACION'
+        : 'ACTIVA',
       demo_expires_at: demoExpiresAt,
       descripcion: JSON.stringify(metaPayload),
       created_at: createdAt,
