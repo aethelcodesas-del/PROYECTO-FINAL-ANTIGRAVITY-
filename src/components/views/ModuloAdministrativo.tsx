@@ -1149,8 +1149,10 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
     };
   };
 
+  const isUUID = (val: any): val is string => typeof val === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+
   const loadRealJurors = async (clientId = jurorClientId) => {
-    if (!clientId) return;
+    if (!isUUID(clientId)) return;
     const { data, error } = await supabase.from('jurors').select('*').eq('client_id', clientId).order('created_at', { ascending: false });
     if (error) throw error;
     setJurados((data || []).map(mapDatabaseJuror));
@@ -1169,16 +1171,21 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
           const { data: refreshed } = await supabase.auth.refreshSession();
           userId = refreshed.session?.user?.id;
         }
+        if (!isUUID(userId)) throw new Error('Debes iniciar sesión para acceder a jurados electorales.');
         const { data: profile, error: profileError } = await supabase.from('profiles').select('client_id,campaign_id').eq('id', userId).maybeSingle();
         if (profileError) throw profileError;
         if (!profile?.client_id && !profile?.campaign_id) throw new Error('Tu usuario no tiene una campaña asignada.');
-        const effectiveClientId = profile.client_id || profile.campaign_id;
-        setJurorClientId(effectiveClientId);
-        const rememberedCampaignId = profile.campaign_id || localStorage.getItem('active_campaign_id');
+        const rawRemembered = profile.campaign_id || localStorage.getItem('active_campaign_id');
+        const rememberedCampaignId = isUUID(rawRemembered) ? rawRemembered : null;
+        const effectiveClientId = isUUID(profile.client_id) ? profile.client_id : null;
+        setJurorClientId(effectiveClientId || rememberedCampaignId || '');
+
         let campaignQuery = supabase.from('campaigns').select('id,departamento,municipio,circunscripcion,client_id');
-        campaignQuery = rememberedCampaignId
-          ? campaignQuery.eq('id', rememberedCampaignId)
-          : campaignQuery.eq('client_id', effectiveClientId);
+        if (rememberedCampaignId) {
+          campaignQuery = campaignQuery.eq('id', rememberedCampaignId);
+        } else if (effectiveClientId) {
+          campaignQuery = campaignQuery.eq('client_id', effectiveClientId);
+        }
         const { data: campaign, error: campaignError } = await campaignQuery.order('created_at', { ascending: false }).limit(1).maybeSingle();
         if (campaignError) throw campaignError;
         const department = String(campaign?.departamento || '');
@@ -1190,13 +1197,16 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
         setJurMunicipioOptions([...new Set(municipalityOptions)]);
         setJurMunicipio('');
         setJurPuestoPreferente('');
-        if (campaign?.id) {
+        if (campaign?.id && isUUID(campaign.id)) {
           const places = await loadCampaignPollingPlaces(String(campaign.id));
           setJurPollingPlaces(places.map(place => ({ nombre: place.nombre, municipio: place.municipio })));
         } else {
           setJurPollingPlaces([]);
         }
-        await loadRealJurors(profile.client_id);
+        const realJurorClientId = isUUID(campaign?.client_id) ? campaign.client_id : effectiveClientId;
+        if (realJurorClientId) {
+          await loadRealJurors(realJurorClientId);
+        }
       } catch (error: any) {
         setJurorError(isExpectedEmptyCampaignState(error) ? '' : (error?.message || 'No fue posible cargar los jurados desde Supabase.'));
       } finally {
@@ -1555,6 +1565,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
         const { data: refreshed } = await supabase.auth.refreshSession();
         userId = refreshed.session?.user?.id;
       }
+      if (!isUUID(userId)) throw new Error('Debes iniciar sesión para acceder a CRM de líderes y votantes.');
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('client_id,campaign_id')
@@ -1562,31 +1573,41 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
         .maybeSingle();
       if (profileError) throw profileError;
       if (!profile?.client_id && !profile?.campaign_id) throw new Error('Tu usuario no tiene una campaña asignada.');
-      const effectiveClientId = profile.client_id || profile.campaign_id;
-      setCrmClientId(effectiveClientId);
-      const rememberedCampaignId = profile.campaign_id || localStorage.getItem('active_campaign_id');
-      let crmCampaignQuery = supabase.from('campaigns').select('id,descripcion,municipio');
-      crmCampaignQuery = rememberedCampaignId
-        ? crmCampaignQuery.eq('id', rememberedCampaignId)
-        : crmCampaignQuery.eq('client_id', effectiveClientId);
+      const rawRemembered = profile.campaign_id || localStorage.getItem('active_campaign_id');
+      const rememberedCampaignId = isUUID(rawRemembered) ? rawRemembered : null;
+      const profileClientId = isUUID(profile.client_id) ? profile.client_id : null;
+      setCrmClientId(profileClientId || rememberedCampaignId || '');
 
-      const [leadersResult, votersResult, campaignResult] = await Promise.all([
-        supabase.from('leaders').select('*').eq('client_id', profile.client_id).order('created_at', { ascending: false }),
-        supabase.from('voters').select('*,leaders(nombre)').eq('client_id', profile.client_id).order('created_at', { ascending: false }),
-        crmCampaignQuery.order('updated_at', { ascending: false }).limit(1)
+      let crmCampaignQuery = supabase.from('campaigns').select('id,client_id,descripcion,municipio');
+      if (rememberedCampaignId) {
+        crmCampaignQuery = crmCampaignQuery.eq('id', rememberedCampaignId);
+      } else if (profileClientId) {
+        crmCampaignQuery = crmCampaignQuery.eq('client_id', profileClientId);
+      }
+
+      const { data: campaignRows, error: campErr } = await crmCampaignQuery.order('updated_at', { ascending: false }).limit(1);
+      if (campErr) throw campErr;
+      const activeCampaign = campaignRows?.[0];
+      const realClientId = isUUID(activeCampaign?.client_id) ? activeCampaign.client_id : profileClientId;
+
+      const [leadersResult, votersResult] = await Promise.all([
+        realClientId
+          ? supabase.from('leaders').select('*').eq('client_id', realClientId).order('created_at', { ascending: false })
+          : Promise.resolve({ data: [], error: null } as any),
+        realClientId
+          ? supabase.from('voters').select('*,leaders(nombre)').eq('client_id', realClientId).order('created_at', { ascending: false })
+          : Promise.resolve({ data: [], error: null } as any)
       ]);
       if (leadersResult.error) throw leadersResult.error;
       if (votersResult.error) throw votersResult.error;
-      if (campaignResult.error) throw campaignResult.error;
 
       try {
-        const savedSchemas = JSON.parse(campaignResult.data?.[0]?.descripcion || '{}')?.formSchemas;
+        const savedSchemas = JSON.parse(activeCampaign?.descripcion || '{}')?.formSchemas;
         if (Array.isArray(savedSchemas?.voters)) setRegistrationFields(savedSchemas.voters);
         if (Array.isArray(savedSchemas?.leaders)) setLeaderRegistrationFields(savedSchemas.leaders);
       } catch {}
-      const activeCampaign = campaignResult.data?.[0];
       setCrmCampaignMunicipality(String(activeCampaign?.municipio || '').replace(/\s*\(Capital\)\s*/gi, '').trim());
-      if (activeCampaign?.id) {
+      if (activeCampaign?.id && isUUID(activeCampaign.id)) {
         const places = await loadCampaignPollingPlaces(String(activeCampaign.id));
         setCrmPollingPlaces(places.map(place => ({
           nombre: place.nombre,
@@ -1935,33 +1956,71 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
         const { data: refreshed } = await supabase.auth.refreshSession();
         userId = refreshed.session?.user?.id;
       }
+      if (!isUUID(userId)) {
+        setDashboardLoading(false);
+        return null;
+      }
       const { data: profile, error: profileError } = await supabase.from('profiles').select('client_id,campaign_id').eq('id', userId).maybeSingle();
       if (profileError) throw profileError;
       if (!profile?.client_id && !profile?.campaign_id) throw new Error('Tu usuario no tiene una organización electoral asignada.');
-      const clientId = profile.client_id || profile.campaign_id;
 
-      const rememberedCampaignId = profile.campaign_id || localStorage.getItem('active_campaign_id');
-      let campaignQuery = supabase.from('campaigns').select('id,presupuesto_total');
-      if (rememberedCampaignId) campaignQuery = campaignQuery.eq('id', rememberedCampaignId);
-      else campaignQuery = campaignQuery.eq('client_id', clientId);
+      const rawRemembered = profile.campaign_id || localStorage.getItem('active_campaign_id');
+      const targetCampaignId = isUUID(rawRemembered) ? rawRemembered : (isUUID(profile.campaign_id) ? profile.campaign_id : null);
+      const profileClientId = isUUID(profile.client_id) ? profile.client_id : null;
 
-      const [usersResult, leadersResult, votersResult, witnessesResult, accreditedResult, jurorsResult, campaignResult] = await Promise.all([
-        supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('client_id', clientId).eq('status', 'ACTIVE').neq('id', userId).neq('role', 'SUPERADMIN'),
-        supabase.from('leaders').select('id', { count: 'exact', head: true }).eq('client_id', clientId).eq('status', 'ACTIVE'),
-        supabase.from('voters').select('id', { count: 'exact', head: true }).eq('client_id', clientId).eq('status', 'ACTIVE'),
-        supabase.from('witnesses').select('id', { count: 'exact', head: true }).eq('client_id', clientId),
-        supabase.from('witnesses').select('id', { count: 'exact', head: true }).eq('client_id', clientId).in('estado', ['ACREDITADO', 'EN_MESA']),
-        supabase.from('jurors').select('id', { count: 'exact', head: true }).eq('client_id', clientId),
-        campaignQuery.limit(1)
+      let campaign: any = null;
+      if (targetCampaignId) {
+        const { data } = await supabase.from('campaigns').select('id,client_id,presupuesto_total').eq('id', targetCampaignId).maybeSingle();
+        if (data) campaign = data;
+      }
+      if (!campaign && profileClientId) {
+        const { data } = await supabase.from('campaigns').select('id,client_id,presupuesto_total').eq('client_id', profileClientId).order('updated_at', { ascending: false }).limit(1).maybeSingle();
+        if (data) campaign = data;
+      }
+
+      const activeCampaignId = isUUID(campaign?.id) ? campaign.id : targetCampaignId;
+      const effectiveClientId = isUUID(campaign?.client_id) ? campaign.client_id : profileClientId;
+
+      const userPromise = activeCampaignId
+        ? supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('campaign_id', activeCampaignId).eq('status', 'ACTIVE').neq('id', userId).neq('role', 'SUPERADMIN')
+        : (effectiveClientId
+            ? supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('client_id', effectiveClientId).eq('status', 'ACTIVE').neq('id', userId).neq('role', 'SUPERADMIN')
+            : Promise.resolve({ count: 0, error: null } as any));
+
+      const leaderPromise = effectiveClientId
+        ? supabase.from('leaders').select('id', { count: 'exact', head: true }).eq('client_id', effectiveClientId).eq('status', 'ACTIVE')
+        : Promise.resolve({ count: 0, error: null } as any);
+
+      const voterPromise = effectiveClientId
+        ? supabase.from('voters').select('id', { count: 'exact', head: true }).eq('client_id', effectiveClientId).eq('status', 'ACTIVE')
+        : Promise.resolve({ count: 0, error: null } as any);
+
+      const witnessPromise = effectiveClientId
+        ? supabase.from('witnesses').select('id', { count: 'exact', head: true }).eq('client_id', effectiveClientId)
+        : Promise.resolve({ count: 0, error: null } as any);
+
+      const accreditedPromise = effectiveClientId
+        ? supabase.from('witnesses').select('id', { count: 'exact', head: true }).eq('client_id', effectiveClientId).in('estado', ['ACREDITADO', 'EN_MESA'])
+        : Promise.resolve({ count: 0, error: null } as any);
+
+      const jurorPromise = effectiveClientId
+        ? supabase.from('jurors').select('id', { count: 'exact', head: true }).eq('client_id', effectiveClientId)
+        : Promise.resolve({ count: 0, error: null } as any);
+
+      const [usersResult, leadersResult, votersResult, witnessesResult, accreditedResult, jurorsResult] = await Promise.all([
+        userPromise, leaderPromise, voterPromise, witnessPromise, accreditedPromise, jurorPromise
       ]);
-      const firstError = [usersResult, leadersResult, votersResult, witnessesResult, accreditedResult, jurorsResult, campaignResult].find(result => result.error)?.error;
-      if (firstError) throw firstError;
-      const campaign = campaignResult.data?.[0];
 
-      const budgetResult = campaign?.id
-        ? await supabase.from('budget_items').select('tipo,monto,estado,observaciones').eq('campaign_id', campaign.id).eq('tipo', 'GASTO').neq('estado', 'ANULADO')
-        : { data: [], error: null } as any;
+      const firstError = [usersResult, leadersResult, votersResult, witnessesResult, accreditedResult, jurorsResult].find(result => result.error)?.error;
+      if (firstError) throw firstError;
+
+      const budgetResult = activeCampaignId
+        ? await supabase.from('budget_items').select('tipo,monto,estado,observaciones').eq('campaign_id', activeCampaignId).eq('tipo', 'GASTO').neq('estado', 'ANULADO')
+        : (effectiveClientId
+            ? await supabase.from('budget_items').select('tipo,monto,estado,observaciones').eq('client_id', effectiveClientId).eq('tipo', 'GASTO').neq('estado', 'ANULADO')
+            : { data: [], error: null } as any);
       if (budgetResult.error) throw budgetResult.error;
+
       const executed = (budgetResult.data || []).reduce((total: number, row: any) => {
         try {
           const metadata = JSON.parse(row.observaciones || '{}')?.budgetMeta;
@@ -1984,7 +2043,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
         accreditedWitnesses: accreditedResult.count || 0,
         jurors: jurorsResult.count || 0
       });
-      return clientId;
+      return effectiveClientId || activeCampaignId;
     } catch (error: any) {
       setDashboardError(isExpectedEmptyCampaignState(error) ? '' : (error?.message || 'No fue posible cargar los indicadores reales.'));
       return null;
@@ -2018,7 +2077,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
     let refreshTimer: ReturnType<typeof setTimeout> | undefined;
     const initializeDashboard = async () => {
       const clientId = await loadRealAdministrativeDashboard();
-      if (!clientId) return;
+      if (!clientId || !isUUID(clientId)) return;
       const refresh = () => {
         if (refreshTimer) clearTimeout(refreshTimer);
         refreshTimer = setTimeout(() => { void loadRealAdministrativeDashboard(); }, 250);
