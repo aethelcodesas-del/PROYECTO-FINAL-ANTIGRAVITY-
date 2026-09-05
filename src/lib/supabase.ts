@@ -72,13 +72,11 @@ export async function registerNewClient(data: {
     const { data: clientData, error: clientError } = await supabase
       .from('clients')
       .insert([{
-        nombre_organizacion: data.campaignName,
-        email_contacto: email,
-        telefono: phone,
-        departamento: department,
+        name: data.campaignName,
+        email: email,
+        phone: phone,
+        department: department,
         status: 'ACTIVE',
-        created_from: 'landing',
-        created_at: new Date().toISOString(),
       }])
       .select()
       .maybeSingle();
