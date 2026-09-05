@@ -113,6 +113,10 @@ export const GlobalAdminUsers: React.FC = () => {
       await GlobalAdminService.updateUser(selectedUser.id, formData);
       setShowEditModal(false);
       setSuccessMsg(`Usuario ${selectedUser.name} actualizado con éxito.`);
+      window.dispatchEvent(new Event('global-admin-users-changed'));
+      window.dispatchEvent(new CustomEvent('platform-data-changed', {
+        detail: { table: 'profiles', eventType: 'UPDATE' }
+      }));
       fetchData();
       setTimeout(() => setSuccessMsg(null), 4000);
     } catch (err: any) {
@@ -124,6 +128,10 @@ export const GlobalAdminUsers: React.FC = () => {
     try {
       await GlobalAdminService.updateUserStatus(user.id, newStatus);
       setSuccessMsg(`Estado de ${user.name} cambiado a ${newStatus}.`);
+      window.dispatchEvent(new Event('global-admin-users-changed'));
+      window.dispatchEvent(new CustomEvent('platform-data-changed', {
+        detail: { table: 'profiles', eventType: 'UPDATE' }
+      }));
       fetchData();
       setTimeout(() => setSuccessMsg(null), 4000);
     } catch (err: any) {

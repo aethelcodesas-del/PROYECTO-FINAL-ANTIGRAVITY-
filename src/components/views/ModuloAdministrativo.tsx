@@ -708,6 +708,10 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
     const { error } = await supabase.from('profiles').update({ status: nextStatus, updated_at: new Date().toISOString() }).eq('id', userId);
     if (error) return setRbacError(`Supabase: ${error.message}`);
     setActionSuccessMessage(`Usuario ${nextStatus === 'ACTIVE' ? 'activado' : 'suspendido'} correctamente.`);
+    window.dispatchEvent(new Event('global-admin-users-changed'));
+    window.dispatchEvent(new CustomEvent('platform-data-changed', {
+      detail: { table: 'profiles', eventType: 'UPDATE' }
+    }));
     await loadRealRbac();
   };
 
@@ -719,6 +723,10 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
     const { error: profileError } = await supabase.from('profiles').delete().eq('id', userId);
     if (profileError) return setRbacError(`Supabase: ${profileError.message}`);
     setActionSuccessMessage(`Acceso de ${name} eliminado correctamente.`);
+    window.dispatchEvent(new Event('global-admin-users-changed'));
+    window.dispatchEvent(new CustomEvent('platform-data-changed', {
+      detail: { table: 'profiles', eventType: 'DELETE' }
+    }));
     await loadRealRbac();
   };
 
@@ -814,6 +822,12 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
       setActionSuccessMessage(hasCampaignScope
         ? 'Usuario real creado en Supabase Auth con sus permisos RBAC.'
         : 'Usuario creado correctamente y pendiente de asignación a una campaña.');
+      window.dispatchEvent(new CustomEvent('global-admin-users-changed', {
+        detail: { email: normalizedEmail, userId: result?.user?.id }
+      }));
+      window.dispatchEvent(new CustomEvent('platform-data-changed', {
+        detail: { table: 'profiles', eventType: 'INSERT' }
+      }));
       await loadRealRbac();
     } catch (error: any) {
       setPasswordError(`Supabase: ${error?.message || 'No fue posible crear el usuario.'}`);

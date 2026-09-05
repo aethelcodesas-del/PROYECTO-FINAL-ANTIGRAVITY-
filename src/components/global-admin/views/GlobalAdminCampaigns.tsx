@@ -263,6 +263,9 @@ export const GlobalAdminCampaigns: React.FC = () => {
       setError(null);
       setSuccessMsg('La campaña y sus accesos fueron eliminados correctamente.');
       window.dispatchEvent(new Event('global-admin-users-changed'));
+      window.dispatchEvent(new CustomEvent('platform-data-changed', {
+        detail: { table: 'campaigns', eventType: 'DELETE' }
+      }));
       await fetchData();
     } catch (err: any) {
       setError(err.message || 'Error al eliminar campaña');
@@ -275,6 +278,10 @@ export const GlobalAdminCampaigns: React.FC = () => {
     try {
       await GlobalAdminService.updateCampaignStatus(campaign.id, newStatus);
       setSuccessMsg(`Estado de "${campaign.name}" actualizado a ${newStatus}.`);
+      window.dispatchEvent(new Event('global-admin-users-changed'));
+      window.dispatchEvent(new CustomEvent('platform-data-changed', {
+        detail: { table: 'campaigns', eventType: 'UPDATE' }
+      }));
       fetchData();
       setTimeout(() => setSuccessMsg(null), 4000);
     } catch (err: any) {

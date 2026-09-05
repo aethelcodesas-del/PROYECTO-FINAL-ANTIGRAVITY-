@@ -63,12 +63,31 @@ export const GlobalAdminDashboard: React.FC<GlobalAdminDashboardProps> = ({ onNa
 
   useEffect(() => {
     fetchMetrics();
+
+    const handleDataChange = () => {
+      fetchMetrics(true);
+    };
+
+    window.addEventListener('global-admin-users-changed', handleDataChange);
+    window.addEventListener('platform-data-changed', handleDataChange);
+    window.addEventListener('campaign-jurisdiction-changed', handleDataChange);
+    window.addEventListener('permissions-updated', handleDataChange);
+    window.addEventListener('focus', handleDataChange);
+
     const interval = setInterval(() => {
       if (document.visibilityState === 'visible') {
         fetchMetrics(true);
       }
-    }, 45000);
-    return () => clearInterval(interval);
+    }, 20000);
+
+    return () => {
+      window.removeEventListener('global-admin-users-changed', handleDataChange);
+      window.removeEventListener('platform-data-changed', handleDataChange);
+      window.removeEventListener('campaign-jurisdiction-changed', handleDataChange);
+      window.removeEventListener('permissions-updated', handleDataChange);
+      window.removeEventListener('focus', handleDataChange);
+      clearInterval(interval);
+    };
   }, []);
 
   if (loading && !metrics) {

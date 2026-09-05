@@ -210,8 +210,8 @@ export class GlobalAdminService {
   // 2. Metrics & Dashboard
   static async getMetrics(): Promise<GlobalAdminMetrics> {
     const [profilesResult, campaignsResult, modulesResult, auditResult] = await Promise.all([
-      supabase.from('profiles').select('role,status', { count: 'exact' }),
-      supabase.from('campaigns').select('*', { count: 'exact' }),
+      supabase.from('profiles').select('id,role,status,campaign_id,client_id', { count: 'exact' }),
+      supabase.from('campaigns').select('id,nombre,estado,status', { count: 'exact' }),
       supabase.from('modules').select('id', { count: 'exact' }),
       supabase.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(8)
     ]);
@@ -221,12 +221,21 @@ export class GlobalAdminService {
 
     const profiles = profilesResult.data || [];
     const campaigns = campaignsResult.data || [];
-    const activeUsers = profiles.filter((item: any) => item.status === 'ACTIVE').length;
-    const inactiveUsers = profiles.filter((item: any) => item.status === 'INACTIVE').length;
-    const blockedUsers = profiles.filter((item: any) => item.status === 'SUSPENDED').length;
+    const activeUsers = profiles.filter((item: any) => {
+      const status = String(item.status || '').toUpperCase();
+      return status === 'ACTIVE' || status === 'ACTIVO';
+    }).length;
+    const inactiveUsers = profiles.filter((item: any) => {
+      const status = String(item.status || '').toUpperCase();
+      return status === 'INACTIVE' || status === 'INACTIVO';
+    }).length;
+    const blockedUsers = profiles.filter((item: any) => {
+      const status = String(item.status || '').toUpperCase();
+      return status === 'SUSPENDED' || status === 'SUSPENDIDO' || status === 'BLOQUEADO' || status === 'BLOCKED';
+    }).length;
     const activeCampaigns = campaigns.filter((item: any) => {
-      const state = item.status || item.estado;
-      return !state || ['ACTIVE', 'ACTIVA', 'EN_CURSO'].includes(state);
+      const state = String(item.estado || item.status || '').toUpperCase();
+      return state === 'ACTIVA' || state === 'ACTIVE' || state === 'EN_CURSO' || !state;
     }).length;
 
     return {
@@ -234,7 +243,10 @@ export class GlobalAdminService {
       activeUsers,
       inactiveUsers,
       blockedUsers,
-      globalAdminsCount: profiles.filter((item: any) => item.role === 'SUPERADMIN').length,
+      globalAdminsCount: profiles.filter((item: any) => {
+        const role = String(item.role || '').toUpperCase();
+        return role === 'SUPERADMIN' || role === 'GLOBAL_ADMIN';
+      }).length,
       totalCampaigns: campaignsResult.count ?? campaigns.length,
       activeCampaigns,
       activeModulesCount: modulesResult.count ?? modulesResult.data?.length ?? 0,
