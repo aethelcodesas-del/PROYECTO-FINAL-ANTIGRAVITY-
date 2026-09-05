@@ -598,14 +598,20 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
     setShowAddUserSection(false);
   };
 
+  const isUUID = (val: any): val is string =>
+    typeof val === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+
   const roleFromProfile = (profile: any): 'admin' | 'estrategico' | 'territorial' => {
     const role = String(profile?.role || '').toUpperCase();
-    const modules = Array.isArray(profile?.allowed_modules) ? profile.allowed_modules : [];
-    if (modules.includes('STRATEGY')) return 'estrategico';
-    if (modules.includes('TERRITORY')) return 'territorial';
-    if (modules.includes('ADMINISTRATIVE')) return 'admin';
-    if (role === 'DIRECTOR') return 'estrategico';
-    if (['COORDINADOR', 'USUARIO_LIMITADO'].includes(role)) return 'territorial';
+    const modules = Array.isArray(profile?.allowed_modules)
+      ? profile.allowed_modules.map((m: any) => String(m).toUpperCase())
+      : [];
+    if (modules.includes('ADMINISTRATIVE') || modules.includes('ADMIN') || modules.includes('MODULO_ADMIN') || modules.includes('GESTION_ADMINISTRATIVA')) return 'admin';
+    if (modules.includes('STRATEGY') || modules.includes('ESTRATEGICO') || modules.includes('GESTION_ESTRATEGICA')) return 'estrategico';
+    if (modules.includes('TERRITORY') || modules.includes('TERRITORIAL') || modules.includes('GESTION_TERRITORIAL')) return 'territorial';
+    if (['ADMIN_CLIENTE', 'ADMINISTRADOR', 'ADMIN', 'GERENTE'].includes(role)) return 'admin';
+    if (['DIRECTOR', 'ANALISTA', 'ESTRATEGICO'].includes(role)) return 'estrategico';
+    if (['COORDINADOR', 'TESTIGO', 'JURADO', 'LIDER', 'DIGITADOR', 'USUARIO_LIMITADO', 'TERRITORIAL'].includes(role)) return 'territorial';
     return 'admin';
   };
 
@@ -622,7 +628,6 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
       let ownerId = sessionData.session?.user?.id;
       if (sessionError || !ownerId) {
-        // Token may have expired — try to refresh before giving up
         const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
         if (refreshError || !refreshed.session?.user?.id) {
           throw new Error('Debes iniciar sesión para administrar los usuarios de campaña.');
@@ -631,22 +636,52 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
       }
       const { data: ownerProfile, error: ownerError } = await supabase
         .from('profiles')
-        .select('client_id,campaign_id')
+        .select('client_id,campaign_id,role')
         .eq('id', ownerId)
         .maybeSingle();
       if (ownerError) throw ownerError;
-      const campaignId = ownerProfile?.campaign_id;
-      const campaignClientId = ownerProfile?.client_id || authUser?.clientId;
+
+      const rawRemembered = ownerProfile?.campaign_id || localStorage.getItem('active_campaign_id') || authUser?.campaignId;
+      const targetCampaignId = isUUID(rawRemembered) ? rawRemembered : (isUUID(ownerProfile?.campaign_id) ? ownerProfile.campaign_id : null);
+      const profileClientId = isUUID(ownerProfile?.client_id) ? ownerProfile.client_id : (isUUID(authUser?.clientId) ? authUser.clientId : null);
+
+      let campaignData: any = null;
+      if (targetCampaignId) {
+        const { data } = await supabase.from('campaigns').select('id,client_id').eq('id', targetCampaignId).maybeSingle();
+        if (data) campaignData = data;
+      }
+      if (!campaignData && profileClientId) {
+        const { data } = await supabase.from('campaigns').select('id,client_id').eq('client_id', profileClientId).order('updated_at', { ascending: false }).limit(1).maybeSingle();
+        if (data) campaignData = data;
+      }
+
+      const activeCampaignId = isUUID(campaignData?.id) ? campaignData.id : targetCampaignId;
+      const effectiveClientId = isUUID(campaignData?.client_id) ? campaignData.client_id : profileClientId;
+
+      const matchIds = new Set<string>();
+      if (activeCampaignId) matchIds.add(activeCampaignId);
+      if (effectiveClientId) matchIds.add(effectiveClientId);
+      if (ownerProfile?.campaign_id && isUUID(ownerProfile.campaign_id)) matchIds.add(ownerProfile.campaign_id);
+      if (ownerProfile?.client_id && isUUID(ownerProfile.client_id)) matchIds.add(ownerProfile.client_id);
+      if (authUser?.clientId && isUUID(authUser.clientId)) matchIds.add(authUser.clientId);
+      if (authUser?.campaignId && isUUID(authUser.campaignId)) matchIds.add(authUser.campaignId);
+
       let profilesQuery = supabase
         .from('profiles')
         .select('id,email,display_name,role,status,allowed_modules,client_id,campaign_id,created_at')
         .neq('id', ownerId)
         .neq('role', 'SUPERADMIN');
-      profilesQuery = campaignId
-        ? profilesQuery.eq('campaign_id', campaignId)
-        : campaignClientId
-          ? profilesQuery.eq('client_id', campaignClientId)
-          : profilesQuery.is('client_id', null).is('campaign_id', null);
+
+      if (matchIds.size > 0) {
+        const orConditions: string[] = [];
+        matchIds.forEach((id) => {
+          orConditions.push(`campaign_id.eq.${id}`);
+          orConditions.push(`client_id.eq.${id}`);
+        });
+        profilesQuery = profilesQuery.or(orConditions.join(','));
+      } else {
+        profilesQuery = profilesQuery.is('client_id', null).is('campaign_id', null);
+      }
       const { data: profiles, error: profilesError } = await profilesQuery.order('created_at', { ascending: true });
       if (profilesError) throw profilesError;
 
@@ -661,7 +696,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
         name: profile.display_name || profile.email,
         email: profile.email,
         role: roleFromProfile(profile),
-        status: ['ACTIVE', 'ACTIVO'].includes(String(profile.status).toUpperCase()) ? 'Activo' : 'Suspendido',
+        status: ['ACTIVE', 'ACTIVO'].includes(String(profile.status || '').toUpperCase()) ? 'Activo' : 'Suspendido',
         clientId: profile.client_id || profile.campaign_id
       }));
 
@@ -1148,8 +1183,6 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
       simpatia: metadata.simpatia || (row.afinidad === 'A_FAVOR' ? 'Simpatizante Afín' : row.afinidad === 'EN_CONTRA' ? 'En Contra' : 'Neutral')
     };
   };
-
-  const isUUID = (val: any): val is string => typeof val === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
 
   const loadRealJurors = async (clientId = jurorClientId) => {
     if (!isUUID(clientId)) return;
@@ -1981,11 +2014,29 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
       const activeCampaignId = isUUID(campaign?.id) ? campaign.id : targetCampaignId;
       const effectiveClientId = isUUID(campaign?.client_id) ? campaign.client_id : profileClientId;
 
-      const userPromise = activeCampaignId
-        ? supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('campaign_id', activeCampaignId).eq('status', 'ACTIVE').neq('id', userId).neq('role', 'SUPERADMIN')
-        : (effectiveClientId
-            ? supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('client_id', effectiveClientId).eq('status', 'ACTIVE').neq('id', userId).neq('role', 'SUPERADMIN')
-            : Promise.resolve({ count: 0, error: null } as any));
+      const userMatchIds = new Set<string>();
+      if (activeCampaignId) userMatchIds.add(activeCampaignId);
+      if (effectiveClientId) userMatchIds.add(effectiveClientId);
+      if (profile.campaign_id && isUUID(profile.campaign_id)) userMatchIds.add(profile.campaign_id);
+      if (profile.client_id && isUUID(profile.client_id)) userMatchIds.add(profile.client_id);
+
+      let userPromise: Promise<any>;
+      if (userMatchIds.size > 0) {
+        const orConditions: string[] = [];
+        userMatchIds.forEach((id) => {
+          orConditions.push(`campaign_id.eq.${id}`);
+          orConditions.push(`client_id.eq.${id}`);
+        });
+        userPromise = supabase
+          .from('profiles')
+          .select('id', { count: 'exact', head: true })
+          .neq('id', userId)
+          .neq('role', 'SUPERADMIN')
+          .in('status', ['ACTIVE', 'ACTIVO'])
+          .or(orConditions.join(','));
+      } else {
+        userPromise = Promise.resolve({ count: 0, error: null } as any);
+      }
 
       const leaderPromise = effectiveClientId
         ? supabase.from('leaders').select('id', { count: 'exact', head: true }).eq('client_id', effectiveClientId).eq('status', 'ACTIVE')
