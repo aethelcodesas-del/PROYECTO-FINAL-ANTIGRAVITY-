@@ -21,9 +21,11 @@ import {
   Eye,
   EyeOff,
   KeyRound,
-  Mail
-  ,Pencil
-  ,Trash2
+  Mail,
+  Pencil,
+  Trash2,
+  LayoutList,
+  LayoutGrid
 } from 'lucide-react';
 
 const NATIONAL_ELECTIONS: GlobalAdminCampaign['type'][] = ['Presidencia', 'Senado', 'Cámara'];
@@ -56,6 +58,7 @@ export const GlobalAdminCampaigns: React.FC = () => {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [showAccessPassword, setShowAccessPassword] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [editingCampaign, setEditingCampaign] = useState<GlobalAdminCampaign | null>(null);
   const [campaignToDelete, setCampaignToDelete] = useState<GlobalAdminCampaign | null>(null);
 
@@ -362,112 +365,285 @@ export const GlobalAdminCampaigns: React.FC = () => {
         </div>
       )}
 
-      {/* Search Filter */}
-      <div className="relative bg-slate-900/60 border border-slate-800/80 rounded-xl p-2.5 backdrop-blur-md">
-        <Search className="w-4 h-4 text-slate-500 absolute left-5 top-1/2 -translate-y-1/2" />
-        <input
-          ref={searchInputRef}
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar campaña por nombre, candidato, departamento o municipio..."
-          className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-10 pr-3 py-2 text-xs font-mono text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
-        />
-        <kbd className="pointer-events-none absolute right-5 top-1/2 hidden -translate-y-1/2 rounded border border-slate-700 bg-slate-900 px-1.5 py-0.5 text-[9px] text-slate-500 sm:block">Ctrl K</kbd>
-      </div>
+      {/* Search Filter and View Mode Toggle */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+        <div className="relative flex-1 bg-slate-900/60 border border-slate-800/80 rounded-xl p-2.5 backdrop-blur-md">
+          <Search className="w-4 h-4 text-slate-500 absolute left-5 top-1/2 -translate-y-1/2" />
+          <input
+            ref={searchInputRef}
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar campaña por nombre, candidato, departamento o municipio..."
+            className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-10 pr-3 py-2 text-xs font-mono text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+          />
+          <kbd className="pointer-events-none absolute right-5 top-1/2 hidden -translate-y-1/2 rounded border border-slate-700 bg-slate-900 px-1.5 py-0.5 text-[9px] text-slate-500 sm:block">Ctrl K</kbd>
+        </div>
 
-      {/* Campaigns Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredCampaigns.map((camp) => (
-          <div
-            key={camp.id}
-            className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 backdrop-blur-md shadow-xl flex flex-col justify-between"
+        <div className="flex items-center gap-1 bg-slate-900/80 border border-slate-800 rounded-xl p-1 shrink-0 self-end sm:self-auto">
+          <button
+            onClick={() => setViewMode('list')}
+            title="Vista en Lista"
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono transition-colors ${
+              viewMode === 'list'
+                ? 'bg-cyan-600 text-white font-bold shadow-sm'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+            }`}
           >
-            <div>
-              <div className="flex items-start justify-between gap-2 mb-3">
-                <div className="flex flex-wrap gap-1.5">
-                  <span className="text-[10px] bg-slate-950 text-cyan-300 font-mono px-2 py-0.5 rounded border border-slate-800">{camp.code}</span>
-                  {camp.isDemo && (
-                    <span className="rounded border border-violet-500/40 bg-violet-950/70 px-2 py-0.5 text-[10px] font-bold text-violet-300">
-                      DEMO · vence {camp.demoExpiresAt ? new Date(camp.demoExpiresAt).toLocaleString('es-CO') : ''}
-                    </span>
-                  )}
-                </div>
-                <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
-                  camp.status === 'Activa'
-                    ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-500/30'
-                    : camp.status === 'En Pausa'
-                    ? 'bg-amber-950/80 text-amber-300 border border-amber-500/30'
-                    : 'bg-slate-800 text-slate-400'
-                }`}>
-                  {camp.status}
-                </span>
-              </div>
-
-              <h3 className="text-base font-bold font-mono text-white mb-1">{camp.name}</h3>
-              <p className="text-xs font-mono text-slate-400 flex items-center gap-1 mb-3">
-                <Vote className="w-3.5 h-3.5 text-cyan-400" />
-                Candidato: <strong className="text-slate-200">{camp.candidateName}</strong> ({camp.type})
-              </p>
-
-              <div className="p-3 bg-slate-950/70 rounded-xl border border-slate-800/80 space-y-2 font-mono text-xs mb-4">
-                <div className="flex items-center justify-between text-slate-400 text-[11px]">
-                  <span className="flex items-center gap-1"><MapPin className="w-3 h-3 text-slate-500" /> Ubicación</span>
-                  <span className="text-slate-200">{camp.city}, {camp.department}</span>
-                </div>
-                <div className="flex items-center justify-between text-slate-400 text-[11px]">
-                  <span className="flex items-center gap-1"><Users className="w-3 h-3 text-slate-500" /> Censo Votantes</span>
-                  <span className="text-cyan-400 font-bold">{camp.registeredVoters?.toLocaleString() || 0}</span>
-                </div>
-                <div className="flex items-center justify-between text-slate-400 text-[11px]">
-                  <span className="flex items-center gap-1"><DollarSign className="w-3 h-3 text-slate-500" /> Límite CNE</span>
-                  <span className="text-slate-200">${(camp.budgetLimitCop / 1000000).toFixed(0)}M COP</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-3 border-t border-slate-800/80 space-y-2 font-mono text-xs">
-              <div className="flex items-center justify-between">
-              <span className="text-[10px] text-slate-500">
-                Creada: {new Date(camp.createdAt).toLocaleDateString()}
-              </span>
-              <div className="flex items-center gap-1.5">
-                {camp.status === 'Activa' ? (
-                  <button
-                    onClick={() => handleToggleStatus(camp, 'En Pausa')}
-                    className="flex items-center gap-1 px-2.5 py-1 rounded bg-amber-950/60 hover:bg-amber-900 text-amber-300 text-[11px] border border-amber-500/30"
-                  >
-                    <PauseCircle className="w-3 h-3" />
-                    <span>Pausar</span>
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => handleToggleStatus(camp, 'Activa')}
-                    className="flex items-center gap-1 px-2.5 py-1 rounded bg-emerald-950/60 hover:bg-emerald-900 text-emerald-300 text-[11px] border border-emerald-500/30"
-                  >
-                    <PlayCircle className="w-3 h-3" />
-                    <span>Activar</span>
-                  </button>
-                )}
-              </div>
-              </div>
-              <div className="flex flex-wrap items-center justify-end gap-1.5">
-                <button onClick={() => openEditCampaign(camp)} className="flex items-center gap-1 rounded border border-cyan-500/30 bg-cyan-950/50 px-2.5 py-1 text-[11px] text-cyan-300 hover:bg-cyan-900/60">
-                  <Pencil className="h-3 w-3" /> Editar
-                </button>
-                {camp.status !== 'Finalizada' && (
-                  <button onClick={() => handleToggleStatus(camp, 'Finalizada')} className="flex items-center gap-1 rounded border border-slate-600 bg-slate-800/70 px-2.5 py-1 text-[11px] text-slate-300 hover:bg-slate-700">
-                    <CheckCircle2 className="h-3 w-3" /> Finalizar
-                  </button>
-                )}
-                <button onClick={() => setCampaignToDelete(camp)} className="flex items-center gap-1 rounded border border-rose-500/30 bg-rose-950/50 px-2.5 py-1 text-[11px] text-rose-300 hover:bg-rose-900/60">
-                  <Trash2 className="h-3 w-3" /> Eliminar
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
+            <LayoutList className="w-3.5 h-3.5" />
+            <span>Lista</span>
+          </button>
+          <button
+            onClick={() => setViewMode('grid')}
+            title="Vista en Tarjetas"
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono transition-colors ${
+              viewMode === 'grid'
+                ? 'bg-cyan-600 text-white font-bold shadow-sm'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+            }`}
+          >
+            <LayoutGrid className="w-3.5 h-3.5" />
+            <span>Tarjetas</span>
+          </button>
+        </div>
       </div>
+
+      {/* Campaigns View (List or Grid) */}
+      {viewMode === 'list' ? (
+        <div className="bg-slate-900/80 border border-slate-800 rounded-2xl overflow-hidden backdrop-blur-md shadow-xl">
+          <div className="overflow-x-auto w-full max-w-full">
+            <table className="w-full text-left text-xs font-mono">
+              <thead>
+                <tr className="text-slate-400 border-b border-slate-800 bg-slate-950/80 uppercase tracking-wider text-[11px] font-bold">
+                  <th className="py-3.5 px-4">CAMPAÑA / CÓDIGO</th>
+                  <th className="py-3.5 px-4">CANDIDATO & CARGO</th>
+                  <th className="py-3.5 px-4">UBICACIÓN</th>
+                  <th className="py-3.5 px-4">CENSO & LÍMITE CNE</th>
+                  <th className="py-3.5 px-4">ESTADO</th>
+                  <th className="py-3.5 px-4">CREADA</th>
+                  <th className="py-3.5 px-4 text-right">ACCIONES</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/50">
+                {filteredCampaigns.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-12 text-center text-slate-500">
+                      No se encontraron campañas que coincidan con la búsqueda.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredCampaigns.map((camp) => (
+                    <tr key={camp.id} className="hover:bg-slate-800/30 transition-colors">
+                      <td className="py-3.5 px-4">
+                        <div className="space-y-1">
+                          <span className="text-white font-bold text-sm block">{camp.name}</span>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className="text-[10px] bg-slate-950 text-cyan-300 font-mono px-2 py-0.5 rounded border border-slate-800">
+                              {camp.code}
+                            </span>
+                            {camp.isDemo && (
+                              <span className="rounded border border-violet-500/40 bg-violet-950/70 px-2 py-0.5 text-[10px] font-bold text-violet-300 whitespace-nowrap">
+                                DEMO · vence {camp.demoExpiresAt ? new Date(camp.demoExpiresAt).toLocaleString('es-CO') : ''}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="py-3.5 px-4">
+                        <div>
+                          <span className="text-slate-200 font-bold block">{camp.candidateName}</span>
+                          <span className="text-slate-400 text-[11px] flex items-center gap-1">
+                            <Vote className="w-3 h-3 text-cyan-400" /> {camp.type}
+                          </span>
+                        </div>
+                      </td>
+
+                      <td className="py-3.5 px-4 text-slate-300">
+                        <div className="flex items-center gap-1.5">
+                          <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                          <span>{camp.city}, {camp.department}</span>
+                        </div>
+                      </td>
+
+                      <td className="py-3.5 px-4">
+                        <div className="space-y-0.5 text-[11px]">
+                          <div className="text-slate-300">
+                            <span className="text-slate-500">Votantes: </span>
+                            <strong className="text-cyan-400">{camp.registeredVoters?.toLocaleString() || 0}</strong>
+                          </div>
+                          <div className="text-slate-300">
+                            <span className="text-slate-500">Límite: </span>
+                            <span>${(camp.budgetLimitCop / 1000000).toFixed(0)}M COP</span>
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="py-3.5 px-4">
+                        <span className={`inline-flex px-2.5 py-1 rounded text-[10px] font-mono font-bold whitespace-nowrap ${
+                          camp.status === 'Activa'
+                            ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-500/30'
+                            : camp.status === 'En Pausa'
+                            ? 'bg-amber-950/80 text-amber-300 border border-amber-500/30'
+                            : 'bg-slate-800 text-slate-400 border border-slate-700'
+                        }`}>
+                          {camp.status}
+                        </span>
+                      </td>
+
+                      <td className="py-3.5 px-4 text-slate-400 text-[11px] whitespace-nowrap">
+                        {new Date(camp.createdAt).toLocaleDateString()}
+                      </td>
+
+                      <td className="py-3.5 px-4 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {camp.status === 'Activa' ? (
+                            <button
+                              onClick={() => handleToggleStatus(camp, 'En Pausa')}
+                              className="flex items-center gap-1 px-2.5 py-1 rounded bg-amber-950/60 hover:bg-amber-900 text-amber-300 text-[11px] border border-amber-500/30 transition-colors"
+                              title="Pausar campaña"
+                            >
+                              <PauseCircle className="w-3 h-3" />
+                              <span>Pausar</span>
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleToggleStatus(camp, 'Activa')}
+                              className="flex items-center gap-1 px-2.5 py-1 rounded bg-emerald-950/60 hover:bg-emerald-900 text-emerald-300 text-[11px] border border-emerald-500/30 transition-colors"
+                              title="Activar campaña"
+                            >
+                              <PlayCircle className="w-3 h-3" />
+                              <span>Activar</span>
+                            </button>
+                          )}
+                          <button
+                            onClick={() => openEditCampaign(camp)}
+                            className="flex items-center gap-1 rounded border border-cyan-500/30 bg-cyan-950/50 px-2.5 py-1 text-[11px] text-cyan-300 hover:bg-cyan-900/60 transition-colors"
+                            title="Modificar datos de la campaña"
+                          >
+                            <Pencil className="h-3 w-3" />
+                            <span>Editar</span>
+                          </button>
+                          {camp.status !== 'Finalizada' && (
+                            <button
+                              onClick={() => handleToggleStatus(camp, 'Finalizada')}
+                              className="flex items-center gap-1 rounded border border-slate-600 bg-slate-800/70 px-2.5 py-1 text-[11px] text-slate-300 hover:bg-slate-700 transition-colors"
+                              title="Finalizar campaña"
+                            >
+                              <CheckCircle2 className="h-3 w-3" />
+                              <span>Finalizar</span>
+                            </button>
+                          )}
+                          <button
+                            onClick={() => setCampaignToDelete(camp)}
+                            className="flex items-center gap-1 rounded border border-rose-500/30 bg-rose-950/50 px-2.5 py-1 text-[11px] text-rose-300 hover:bg-rose-900/60 transition-colors"
+                            title="Eliminar campaña y accesos"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                            <span>Eliminar</span>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredCampaigns.map((camp) => (
+            <div
+              key={camp.id}
+              className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 backdrop-blur-md shadow-xl flex flex-col justify-between"
+            >
+              <div>
+                <div className="flex items-start justify-between gap-2 mb-3">
+                  <div className="flex flex-wrap gap-1.5">
+                    <span className="text-[10px] bg-slate-950 text-cyan-300 font-mono px-2 py-0.5 rounded border border-slate-800">{camp.code}</span>
+                    {camp.isDemo && (
+                      <span className="rounded border border-violet-500/40 bg-violet-950/70 px-2 py-0.5 text-[10px] font-bold text-violet-300">
+                        DEMO · vence {camp.demoExpiresAt ? new Date(camp.demoExpiresAt).toLocaleString('es-CO') : ''}
+                      </span>
+                    )}
+                  </div>
+                  <span className={`px-2.5 py-0.5 rounded text-[10px] font-mono font-bold whitespace-nowrap ${
+                    camp.status === 'Activa'
+                      ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-500/30'
+                      : camp.status === 'En Pausa'
+                      ? 'bg-amber-950/80 text-amber-300 border border-amber-500/30'
+                      : 'bg-slate-800 text-slate-400'
+                  }`}>
+                    {camp.status}
+                  </span>
+                </div>
+
+                <h3 className="text-base font-bold font-mono text-white mb-1">{camp.name}</h3>
+                <p className="text-xs font-mono text-slate-400 flex items-center gap-1 mb-3">
+                  <Vote className="w-3.5 h-3.5 text-cyan-400" />
+                  Candidato: <strong className="text-slate-200">{camp.candidateName}</strong> ({camp.type})
+                </p>
+
+                <div className="p-3 bg-slate-950/70 rounded-xl border border-slate-800/80 space-y-2 font-mono text-xs mb-4">
+                  <div className="flex items-center justify-between text-slate-400 text-[11px]">
+                    <span className="flex items-center gap-1"><MapPin className="w-3 h-3 text-slate-500" /> Ubicación</span>
+                    <span className="text-slate-200">{camp.city}, {camp.department}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-slate-400 text-[11px]">
+                    <span className="flex items-center gap-1"><Users className="w-3 h-3 text-slate-500" /> Censo Votantes</span>
+                    <span className="text-cyan-400 font-bold">{camp.registeredVoters?.toLocaleString() || 0}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-slate-400 text-[11px]">
+                    <span className="flex items-center gap-1"><DollarSign className="w-3 h-3 text-slate-500" /> Límite CNE</span>
+                    <span className="text-slate-200">${(camp.budgetLimitCop / 1000000).toFixed(0)}M COP</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-slate-800/80 space-y-2 font-mono text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-slate-500">
+                    Creada: {new Date(camp.createdAt).toLocaleDateString()}
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    {camp.status === 'Activa' ? (
+                      <button
+                        onClick={() => handleToggleStatus(camp, 'En Pausa')}
+                        className="flex items-center gap-1 px-2.5 py-1 rounded bg-amber-950/60 hover:bg-amber-900 text-amber-300 text-[11px] border border-amber-500/30"
+                      >
+                        <PauseCircle className="w-3 h-3" />
+                        <span>Pausar</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleToggleStatus(camp, 'Activa')}
+                        className="flex items-center gap-1 px-2.5 py-1 rounded bg-emerald-950/60 hover:bg-emerald-900 text-emerald-300 text-[11px] border border-emerald-500/30"
+                      >
+                        <PlayCircle className="w-3 h-3" />
+                        <span>Activar</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center justify-end gap-1.5">
+                  <button onClick={() => openEditCampaign(camp)} className="flex items-center gap-1 rounded border border-cyan-500/30 bg-cyan-950/50 px-2.5 py-1 text-[11px] text-cyan-300 hover:bg-cyan-900/60">
+                    <Pencil className="h-3 w-3" /> Editar
+                  </button>
+                  {camp.status !== 'Finalizada' && (
+                    <button onClick={() => handleToggleStatus(camp, 'Finalizada')} className="flex items-center gap-1 rounded border border-slate-600 bg-slate-800/70 px-2.5 py-1 text-[11px] text-slate-300 hover:bg-slate-700">
+                      <CheckCircle2 className="h-3 w-3" /> Finalizar
+                    </button>
+                  )}
+                  <button onClick={() => setCampaignToDelete(camp)} className="flex items-center gap-1 rounded border border-rose-500/30 bg-rose-950/50 px-2.5 py-1 text-[11px] text-rose-300 hover:bg-rose-900/60">
+                    <Trash2 className="h-3 w-3" /> Eliminar
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* CREATE MODAL */}
       {showCreateModal && (
