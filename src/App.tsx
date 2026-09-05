@@ -23,17 +23,13 @@ import { FooterBar } from './components/FooterBar';
 import { Modals } from './components/common/Modals';
 import { LoginModal } from './components/LoginModal';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
-import { TestigoCampoView } from './components/views/TestigoCampoView';
 
-// Landing Page & Module Selector (from repo1)
-import { RedSunBeeCampaignLanding } from './components/RedSunBeeCampaignLanding';
-import { ModuleSelectPage } from './components/ModuleSelectPage';
-
-// Heavy private modules are downloaded only when the user opens them.
+// Heavy private modules are downloaded only on demand when opened
 const PrimeraInterfaz = lazy(() => import('./components/views/PrimeraInterfaz').then(module => ({ default: module.PrimeraInterfaz })));
 const ModuloAdministrativo = lazy(() => import('./components/views/ModuloAdministrativo').then(module => ({ default: module.ModuloAdministrativo })));
 const GestionEstrategica = lazy(() => import('./components/views/GestionEstrategica').then(module => ({ default: module.GestionEstrategica })));
 const GestionTerritorial = lazy(() => import('./components/views/GestionTerritorial').then(module => ({ default: module.GestionTerritorial })));
+const TestigoCampoView = lazy(() => import('./components/views/TestigoCampoView').then(module => ({ default: module.TestigoCampoView })));
 const EncuestasView = lazy(() => import('./components/views/EncuestasView').then(module => ({ default: module.EncuestasView })));
 const JuradoCampoView = lazy(() => import('./components/views/JuradoCampoView').then(module => ({ default: module.JuradoCampoView })));
 const PresupuestoContabilidad = lazy(() => import('./components/views/PresupuestoContabilidad').then(module => ({ default: module.PresupuestoContabilidad })));
