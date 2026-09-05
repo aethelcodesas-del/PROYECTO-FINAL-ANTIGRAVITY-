@@ -38,6 +38,8 @@ const PruebasElectoralesView = lazy(() => import('./components/views/PruebasElec
 const PanelAdministrativoSaaS = lazy(() => import('./components/views/PanelAdministrativoSaaS').then(module => ({ default: module.PanelAdministrativoSaaS })));
 const GlobalAdminGuard = lazy(() => import('./components/global-admin/GlobalAdminGuard').then(module => ({ default: module.GlobalAdminGuard })));
 const PasswordRecoveryPage = lazy(() => import('./components/PasswordRecoveryPage').then(module => ({ default: module.PasswordRecoveryPage })));
+const RedSunBeeCampaignLanding = lazy(() => import('./components/RedSunBeeCampaignLanding').then(module => ({ default: module.RedSunBeeCampaignLanding })));
+const ModuleSelectPage = lazy(() => import('./components/ModuleSelectPage').then(module => ({ default: module.ModuleSelectPage })));
 import { supabase } from './lib/supabaseClient';
 
 // Initial Mock Datasets
@@ -431,9 +433,11 @@ export default function App() {
   if (currentView === 'landing') {
     return (
       <div className="min-h-screen bg-[#080808] text-white relative">
-        <RedSunBeeCampaignLanding 
-          onLogin={() => setCurrentView('module_select')}
-        />
+        <Suspense fallback={<ModuleFallback />}>
+          <RedSunBeeCampaignLanding 
+            onLogin={() => setCurrentView('module_select')}
+          />
+        </Suspense>
 
         {/* Global Login Modal */}
         <LoginModal 
@@ -450,19 +454,21 @@ export default function App() {
   if (currentView === 'module_select') {
     return (
       <div className="min-h-screen bg-[#020712] text-white">
-        <ModuleSelectPage 
-          onBack={() => setCurrentView('landing')}
-          onSelectModule={(view, moduleTitle) => {
-            setLoginTargetModule(moduleTitle);
-            setLoginTargetView(view);
-            setIsLoginModalOpen(true);
-          }}
-          onOpenLogin={() => {
-            setLoginTargetModule(undefined);
-            setLoginTargetView(undefined);
-            setIsLoginModalOpen(true);
-          }}
-        />
+        <Suspense fallback={<ModuleFallback />}>
+          <ModuleSelectPage 
+            onBack={() => setCurrentView('landing')}
+            onSelectModule={(view, moduleTitle) => {
+              setLoginTargetModule(moduleTitle);
+              setLoginTargetView(view);
+              setIsLoginModalOpen(true);
+            }}
+            onOpenLogin={() => {
+              setLoginTargetModule(undefined);
+              setLoginTargetView(undefined);
+              setIsLoginModalOpen(true);
+            }}
+          />
+        </Suspense>
 
         <LoginModal 
           isOpen={isLoginModalOpen}

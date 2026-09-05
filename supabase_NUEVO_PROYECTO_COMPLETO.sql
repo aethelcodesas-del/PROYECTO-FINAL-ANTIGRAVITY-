@@ -957,7 +957,47 @@ INSERT INTO plans (name, code, description, max_users, max_campaigns, allowed_mo
 ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name, description = EXCLUDED.description;
 
 -- ============================================================
+-- PASO 8: TABLA DE CONFIGURACION COMERCIAL DE LA LANDING
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS public.landing_commercial_config (
+  id TEXT PRIMARY KEY DEFAULT 'main',
+  plans JSONB NOT NULL DEFAULT '[]'::jsonb,
+  contact JSONB NOT NULL DEFAULT '{}'::jsonb,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_by UUID REFERENCES auth.users(id),
+  CHECK (jsonb_typeof(plans) = 'array'),
+  CHECK (jsonb_typeof(contact) = 'object')
+);
+
+ALTER TABLE public.landing_commercial_config ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS landing_commercial_public_read ON public.landing_commercial_config;
+CREATE POLICY landing_commercial_public_read ON public.landing_commercial_config
+FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS landing_commercial_global_admin_write ON public.landing_commercial_config;
+CREATE POLICY landing_commercial_global_admin_write ON public.landing_commercial_config
+FOR ALL TO authenticated
+USING (
+  EXISTS (
+    SELECT 1 FROM public.profiles p
+    WHERE p.id = auth.uid()
+      AND UPPER(p.role) IN ('SUPERADMIN', 'GLOBAL_ADMIN')
+      AND UPPER(p.status) IN ('ACTIVE', 'ACTIVO')
+  )
+)
+WITH CHECK (
+  EXISTS (
+    SELECT 1 FROM public.profiles p
+    WHERE p.id = auth.uid()
+      AND UPPER(p.role) IN ('SUPERADMIN', 'GLOBAL_ADMIN')
+      AND UPPER(p.status) IN ('ACTIVE', 'ACTIVO')
+  )
+);
+
+-- ============================================================
 -- FIN DEL SCRIPT DE MIGRACION
 -- Proyecto: cjvztlvxdsuiluybvtpl
--- Tablas: 35 | Politicas RLS: 38 | Triggers: 15 | Indices: 22
+-- Tablas: 36 | Politicas RLS: 40 | Triggers: 15 | Indices: 22
 -- ============================================================
