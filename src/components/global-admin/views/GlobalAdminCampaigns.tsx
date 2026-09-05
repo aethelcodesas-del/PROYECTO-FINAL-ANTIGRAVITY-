@@ -418,7 +418,7 @@ export const GlobalAdminCampaigns: React.FC = () => {
                   <th className="py-3.5 px-4 whitespace-nowrap">CAMPAÑA / CÓDIGO</th>
                   <th className="py-3.5 px-4 whitespace-nowrap">CANDIDATO & CARGO</th>
                   <th className="py-3.5 px-4 whitespace-nowrap">UBICACIÓN</th>
-                  <th className="py-3.5 px-4 whitespace-nowrap">CENSO & LÍMITE CNE</th>
+                  <th className="py-3.5 px-4 whitespace-nowrap">PRESUPUESTO CNE</th>
                   <th className="py-3.5 px-4 whitespace-nowrap">ESTADO</th>
                   <th className="py-3.5 px-4 whitespace-nowrap">CREADA</th>
                   <th className="py-3.5 px-4 text-right whitespace-nowrap min-w-[340px]">ACCIONES</th>
@@ -468,13 +468,12 @@ export const GlobalAdminCampaigns: React.FC = () => {
 
                       <td className="py-3.5 px-4">
                         <div className="space-y-0.5 text-[11px] whitespace-nowrap">
-                          <div className="text-slate-300">
-                            <span className="text-slate-500">Votantes: </span>
-                            <strong className="text-cyan-400">{camp.registeredVoters?.toLocaleString() || 0}</strong>
-                          </div>
-                          <div className="text-slate-300">
-                            <span className="text-slate-500">Límite: </span>
+                          <div className="text-slate-200 font-semibold flex items-center gap-1">
+                            <DollarSign className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                             <span>${(camp.budgetLimitCop / 1000000).toFixed(0)}M COP</span>
+                          </div>
+                          <div className="text-slate-400 text-[10px]">
+                            <span>Tope Oficial Ley 1475</span>
                           </div>
                         </div>
                       </td>
@@ -591,12 +590,8 @@ export const GlobalAdminCampaigns: React.FC = () => {
                     <span className="text-slate-200 font-medium">{camp.city}, {camp.department}</span>
                   </div>
                   <div className="flex items-center justify-between text-slate-400 text-[11px]">
-                    <span className="flex items-center gap-1"><Users className="w-3 h-3 text-slate-500" /> Censo Votantes</span>
-                    <span className="text-cyan-400 font-bold">{camp.registeredVoters?.toLocaleString() || 0}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-slate-400 text-[11px]">
-                    <span className="flex items-center gap-1"><DollarSign className="w-3 h-3 text-slate-500" /> Límite CNE</span>
-                    <span className="text-slate-200 font-medium">${(camp.budgetLimitCop / 1000000).toFixed(0)}M COP</span>
+                    <span className="flex items-center gap-1"><DollarSign className="w-3.5 h-3.5 text-emerald-400 shrink-0" /> Presupuesto / Tope CNE</span>
+                    <span className="text-slate-200 font-semibold">${(camp.budgetLimitCop / 1000000).toFixed(0)}M COP</span>
                   </div>
                 </div>
               </div>
