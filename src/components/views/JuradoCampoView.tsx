@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useCampaignData } from '../../contexts/CampaignContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { ViewMode, AuthUser } from '../../types';
 import { ElectionLocationCheckIn } from '../common/ElectionLocationCheckIn';

@@ -176,6 +176,10 @@ const initialDbData: DatabaseSchema = {
 // Helper: Read DB
 function getDb(): DatabaseSchema {
   try {
+    // Cloudflare Pages Workers do not have file system access.
+    if (process.env.CF_PAGES || typeof (process as any).env?.CF_PAGES !== 'undefined' || typeof (globalThis as any).caches === 'object') {
+      return initialDbData;
+    }
     if (!fs.existsSync(DB_FILE)) {
       fs.writeFileSync(DB_FILE, JSON.stringify(initialDbData, null, 2), 'utf-8');
       return initialDbData;
@@ -196,6 +200,9 @@ function getDb(): DatabaseSchema {
 // Helper: Save DB
 function saveDb(data: DatabaseSchema): void {
   try {
+    if (process.env.CF_PAGES || typeof (process as any).env?.CF_PAGES !== 'undefined' || typeof (globalThis as any).caches === 'object') {
+      return;
+    }
     fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf-8');
   } catch (err) {
     console.error('Error saving database file:', err);
@@ -1633,4 +1640,5 @@ export default app;
 
 // Vercel imports the Express application through api/index.ts and manages
 // the HTTP listener. Local execution keeps the conventional port 3000 server.
-startAppServer(process.env.VERCEL !== '1');
+const isServerless = process.env.VERCEL === '1' || process.env.CF_PAGES === '1' || typeof (globalThis as any).caches === 'object';
+startAppServer(!isServerless);

@@ -1746,12 +1746,6 @@ router.post('/campaigns', requireGlobalAdminAuth, async (req, res) => {
   const demoDays = Math.min(5, Math.max(1, Number.parseInt(String(req.body.demoDays || 5), 10) || 5));
   const demoExpiresAt = isDemo ? new Date(Date.now() + demoDays * 24 * 60 * 60 * 1000).toISOString() : null;
   const payload = {
-    name,
-    candidate_name: candidateName,
-    election_type: type || 'Alcaldía',
-    vote_goal: 0,
-    cne_spending_limit: Number(budgetLimitCop) || 0,
-    created_by: session.userId,
     nombre: name,
     candidato_nombre: candidateName,
     cargo_postulacion: type || 'Alcaldía',
@@ -1760,8 +1754,9 @@ router.post('/campaigns', requireGlobalAdminAuth, async (req, res) => {
     circunscripcion: ['Presidencia', 'Senado', 'Cámara'].includes(type) ? 'NACIONAL' : ['Gobernación', 'Asamblea'].includes(type) ? 'DEPARTAMENTAL' : 'MUNICIPAL',
     presupuesto_total: Number(budgetLimitCop) || 0,
     estado: statusDb,
-    admin_manager: adminManager || candidateName,
-    descripcion: isDemo ? JSON.stringify({ systemType: 'DEMO', demoExpiresAt, demoDays }) : null,
+    descripcion: isDemo ? JSON.stringify({ systemType: 'DEMO', demoExpiresAt, demoDays, adminManager: adminManager || candidateName }) : null,
+    is_demo: Boolean(isDemo),
+    demo_expires_at: demoExpiresAt,
     updated_at: new Date().toISOString()
   };
   const { data, error } = await supabaseAdmin.from('campaigns').insert(payload).select('*').single();
@@ -1812,12 +1807,12 @@ router.put('/campaigns/:id', requireGlobalAdminAuth, async (req, res) => {
   const { id } = req.params;
   const { name, candidateName, type, department, city, budgetLimitCop, adminManager } = req.body;
   const payload = {
-    name, candidate_name: candidateName, election_type: type,
-    cne_spending_limit: Number(budgetLimitCop) || 0,
-    nombre: name, candidato_nombre: candidateName, cargo_postulacion: type,
-    departamento: department, municipio: city,
+    nombre: name,
+    candidato_nombre: candidateName,
+    cargo_postulacion: type,
+    departamento: department,
+    municipio: city,
     presupuesto_total: Number(budgetLimitCop) || 0,
-    admin_manager: adminManager || candidateName,
     circunscripcion: ['Presidencia', 'Senado', 'Cámara'].includes(type) ? 'NACIONAL' : ['Gobernación', 'Asamblea'].includes(type) ? 'DEPARTAMENTAL' : 'MUNICIPAL',
     updated_at: new Date().toISOString()
   };

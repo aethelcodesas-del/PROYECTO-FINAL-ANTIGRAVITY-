@@ -270,9 +270,12 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
       setWitnessLoading(true);
       setWitnessSyncError('');
       try {
-        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError) throw sessionError;
-        const userId = sessionData.session?.user?.id;
+        const { data: sessionData } = await supabase.auth.getSession();
+        let userId = sessionData.session?.user?.id;
+        if (!userId) {
+          const { data: refreshed } = await supabase.auth.refreshSession();
+          userId = refreshed.session?.user?.id;
+        }
         if (!userId) throw new Error('Debes iniciar sesión para consultar los testigos.');
         const { data: profile, error: profileError } = await supabase.from('profiles').select('client_id').eq('id', userId).maybeSingle();
         if (profileError) throw profileError;
@@ -1777,13 +1780,13 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
               <table className="w-full text-left text-xs text-slate-300">
                 <thead className="bg-[#030d1f] text-cyan-300 uppercase tracking-wider text-[10px] font-black border-b border-slate-800">
                   <tr>
-                    <th className="py-3 px-3">Testigo / Documento</th>
-                    <th className="py-3 px-3">Partido Avalador</th>
-                    <th className="py-3 px-3">Rol & Asignación</th>
-                    <th className="py-3 px-3">Puesto / Mesa</th>
-                    <th className="py-3 px-3">Acreditación E-16</th>
-                    <th className="py-3 px-3">Telemetría GPS</th>
-                    <th className="py-3 px-3 text-right">Acciones</th>
+                    <th className="py-3 px-3 whitespace-nowrap">Testigo / Documento</th>
+                    <th className="py-3 px-3 whitespace-nowrap">Partido Avalador</th>
+                    <th className="py-3 px-3 whitespace-nowrap">Rol & Asignación</th>
+                    <th className="py-3 px-3 whitespace-nowrap">Puesto / Mesa</th>
+                    <th className="py-3 px-3 whitespace-nowrap">Acreditación E-16</th>
+                    <th className="py-3 px-3 whitespace-nowrap">Telemetría GPS</th>
+                    <th className="py-3 px-3 text-right whitespace-nowrap">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60 font-medium">
@@ -2294,12 +2297,12 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
                 <table className="w-full text-left text-[11px] border border-slate-300">
                   <thead className="bg-slate-200 font-bold border-b border-slate-300">
                     <tr>
-                      <th className="p-1.5 border-r border-slate-300">#</th>
-                      <th className="p-1.5 border-r border-slate-300">Cédula</th>
-                      <th className="p-1.5 border-r border-slate-300">Nombre Completo</th>
-                      <th className="p-1.5 border-r border-slate-300">Puesto ({candidateMunicipio})</th>
-                      <th className="p-1.5 border-r border-slate-300">Mesa</th>
-                      <th className="p-1.5">Acreditación</th>
+                      <th className="p-1.5 border-r border-slate-300 whitespace-nowrap">#</th>
+                      <th className="p-1.5 border-r border-slate-300 whitespace-nowrap">Cédula</th>
+                      <th className="p-1.5 border-r border-slate-300 whitespace-nowrap">Nombre Completo</th>
+                      <th className="p-1.5 border-r border-slate-300 whitespace-nowrap">Puesto ({candidateMunicipio})</th>
+                      <th className="p-1.5 border-r border-slate-300 whitespace-nowrap">Mesa</th>
+                      <th className="p-1.5 whitespace-nowrap">Acreditación</th>
                     </tr>
                   </thead>
                   <tbody>

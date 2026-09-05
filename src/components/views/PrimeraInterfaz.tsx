@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useCampaignData } from '../../contexts/CampaignContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { ViewMode, UserRole, AuthUser } from '../../types';
 import { supabase } from '../../lib/supabaseClient';
@@ -14,6 +15,7 @@ const iosSpring = {
 };
 import { CampaignLogoBadge } from '../common/CampaignLogoIcon';
 import { CountdownWidget } from '../common/CountdownWidget';
+import { CampaignLivePanel } from '../common/LiveMetricsBadge';
 import { 
   Shield, 
   LayoutGrid, 
@@ -576,6 +578,18 @@ export const PrimeraInterfaz: React.FC<PrimeraInterfazProps> = ({ onLoginSuccess
           animation: colorCycleBorder 3.5s infinite linear;
         }
       `}</style>
+
+      {/* ── MÉTRICAS EN VIVO ── actualizado automáticamente via Supabase Realtime ── */}
+      <div className="px-1 py-2">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+          </span>
+          <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400/80">Indicadores en Vivo</span>
+        </div>
+        <CampaignLivePanel className="justify-start" />
+      </div>
 
       {/* THE 3 GREAT MODULE CARDS */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

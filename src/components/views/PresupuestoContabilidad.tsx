@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useCampaignData, useCampaignLive } from '../../contexts/CampaignContext';
 import { ViewMode, BankTransaction, BudgetItem } from '../../types';
 import { supabase } from '../../lib/supabase';
 import { isExpectedEmptyCampaignState } from '../../lib/campaignSetupState';
@@ -54,6 +55,9 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
   const [activeSubTab, setActiveSubTab] = useState<'oficial_cne' | 'borrador_estrategico' | 'gestion_items' | 'ocr_scanner'>('oficial_cne');
   const subTabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const tabsContainerRef = useRef<HTMLDivElement | null>(null);
+
+  // ── Contexto global — tope CNE y ejecutado en tiempo real ────────────────────────────
+  const liveMetrics = useCampaignLive();
 
   // Auto-center active sub-tab in horizontal scroll container
   useEffect(() => {
@@ -179,9 +183,12 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
       setBudgetLoading(true);
       setBudgetSyncError('');
       try {
-        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError) throw sessionError;
-        const userId = sessionData.session?.user?.id;
+        const { data: sessionData } = await supabase.auth.getSession();
+        let userId = sessionData.session?.user?.id;
+        if (!userId) {
+          const { data: refreshed } = await supabase.auth.refreshSession();
+          userId = refreshed.session?.user?.id;
+        }
         if (!userId) throw new Error('Debes iniciar sesión para consultar el presupuesto.');
 
         const { data: profile, error: profileError } = await supabase
@@ -247,6 +254,15 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
       .subscribe();
     return () => { void supabase.removeChannel(channel); };
   }, [activeCampaignId]);
+
+  // ── Sincronización adicional con el contexto global (ruta rápida) ────────────────────
+  // Si el CampaignProvider recibe el cambio de presupuesto_total antes que
+  // el canal local, actualiza el límite inmediatamente.
+  useEffect(() => {
+    if (liveMetrics.budgetLimitCop > 0) {
+      setCampaignBudgetLimit(liveMetrics.budgetLimitCop);
+    }
+  }, [liveMetrics.budgetLimitCop]);
 
   const [typeFilter, setTypeFilter] = useState<'Todos' | 'Ingreso' | 'Gasto'>('Todos');
   const [centroCostoFilter, setCentroCostoFilter] = useState<string>('Todos');
@@ -940,13 +956,13 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-slate-900/90 text-slate-300 font-bold border-b border-slate-800">
-                    <th className="p-3">Código CNE</th>
-                    <th className="p-3">Nombre Oficial del Rubro CNE</th>
-                    <th className="p-3">Tipo</th>
-                    <th className="p-3 text-right">Asignado</th>
-                    <th className="p-3 text-right">Ejecutado</th>
-                    <th className="p-3 text-right">Diferencia</th>
-                    <th className="p-3 text-center">Estado Auditoría</th>
+                    <th className="p-3 whitespace-nowrap">Código CNE</th>
+                    <th className="p-3 whitespace-nowrap">Nombre Oficial del Rubro CNE</th>
+                    <th className="p-3 whitespace-nowrap">Tipo</th>
+                    <th className="p-3 text-right whitespace-nowrap">Asignado</th>
+                    <th className="p-3 text-right whitespace-nowrap">Ejecutado</th>
+                    <th className="p-3 text-right whitespace-nowrap">Diferencia</th>
+                    <th className="p-3 text-center whitespace-nowrap">Estado Auditoría</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800 font-medium">
@@ -972,7 +988,7 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
                         <td className="p-3 font-mono font-bold text-amber-400">{rubro.cod}</td>
                         <td className="p-3 font-bold text-white">{rubro.nom}</td>
                         <td className="p-3">
-                          <span className={`px-2 py-0.5 text-[10px] font-bold rounded border ${
+                          <span className={`px-2 py-0.5 text-[10px] font-bold rounded border whitespace-nowrap ${
                             rubro.tipo === 'Ingreso' ? 'bg-emerald-950/60 text-emerald-300 border-emerald-700/50' : 'bg-slate-800 text-slate-300 border-slate-700'
                           }`}>
                             {rubro.tipo}
@@ -981,8 +997,8 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
                         <td className="p-3 text-right font-mono text-slate-300">${asignado.toLocaleString()}</td>
                         <td className="p-3 text-right font-mono font-bold text-white">${ejecutado.toLocaleString()}</td>
                         <td className="p-3 text-right font-mono text-emerald-400 font-bold">${dif.toLocaleString()}</td>
-                        <td className="p-3 text-center">
-                          <span className={`px-2 py-0.5 text-[10px] font-bold rounded border ${
+                        <td className="p-3 text-center min-w-[100px]">
+                          <span className={`px-2 py-0.5 text-[10px] font-bold rounded border whitespace-nowrap ${
                             ejecutado > 0 ? 'bg-emerald-950/60 text-emerald-300 border-emerald-700/50' : 'bg-slate-900 text-slate-400 border-slate-800'
                           }`}>
                             {ejecutado > 0 ? 'Auditado CNE' : 'Sin Ejecución'}
@@ -1177,12 +1193,12 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
                     <tr className="bg-slate-900/90 text-slate-300 font-bold border-b border-slate-800">
-                      <th className="p-3">Rubro CNE</th>
-                      <th className="p-3">Concepto / Ítem Borrador</th>
-                      <th className="p-3">Centro de Costo</th>
-                      <th className="p-3 text-right">Monto Estimado</th>
-                      <th className="p-3 text-center">Estado</th>
-                      <th className="p-3 text-right">Acción</th>
+                      <th className="p-3 whitespace-nowrap">Rubro CNE</th>
+                      <th className="p-3 whitespace-nowrap">Concepto / Ítem Borrador</th>
+                      <th className="p-3 whitespace-nowrap">Centro de Costo</th>
+                      <th className="p-3 text-right whitespace-nowrap">Monto Estimado</th>
+                      <th className="p-3 text-center whitespace-nowrap">Estado</th>
+                      <th className="p-3 text-right whitespace-nowrap">Acción</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800 font-medium">
@@ -1319,14 +1335,14 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="bg-slate-900/90 text-slate-300 font-bold border-b border-slate-800">
-                    <th className="p-3">CNE</th>
-                    <th className="p-3">Concepto / Ítem Presupuestal</th>
-                    <th className="p-3">Tipo & Centro Costo</th>
-                    <th className="p-3">Tercero / Proveedor</th>
-                    <th className="p-3 text-right">Asignado</th>
-                    <th className="p-3 text-right">Ejecutado</th>
-                    <th className="p-3 text-center">Estado (Clic para alternar)</th>
-                    <th className="p-3 text-right">Acciones</th>
+                    <th className="p-3 whitespace-nowrap">CNE</th>
+                    <th className="p-3 whitespace-nowrap">Concepto / Ítem Presupuestal</th>
+                    <th className="p-3 whitespace-nowrap">Tipo & Centro Costo</th>
+                    <th className="p-3 whitespace-nowrap">Tercero / Proveedor</th>
+                    <th className="p-3 text-right whitespace-nowrap">Asignado</th>
+                    <th className="p-3 text-right whitespace-nowrap">Ejecutado</th>
+                    <th className="p-3 text-center whitespace-nowrap">Estado</th>
+                    <th className="p-3 text-right whitespace-nowrap">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800 font-medium">
@@ -1338,7 +1354,7 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
                         <div className="text-[10px] text-slate-400">{item.nombreRubro} • Fac: {item.facturaNumero || 'N/A'}</div>
                       </td>
                       <td className="p-3">
-                        <span className={`px-2 py-0.5 text-[10px] font-bold rounded block w-fit mb-0.5 border ${
+                        <span className={`px-2 py-0.5 text-[10px] font-bold rounded block w-fit mb-0.5 border whitespace-nowrap ${
                           item.tipo === 'Ingreso' ? 'bg-emerald-950/60 text-emerald-300 border-emerald-700/50' : 'bg-slate-800 text-slate-300 border-slate-700'
                         }`}>
                           {item.tipo}

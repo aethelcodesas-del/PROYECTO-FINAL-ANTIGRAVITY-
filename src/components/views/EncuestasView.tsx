@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useCampaignData } from '../../contexts/CampaignContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { ViewMode, AuthUser } from '../../types';
 import { 
@@ -86,7 +87,7 @@ export const EncuestasView: React.FC<EncuestasViewProps> = ({ onSelectView, auth
         resolvedCampaignId = data?.id ? String(data.id) : '';
       }
       if (!resolvedCampaignId) throw new Error('Debe seleccionar una campaña antes de registrar encuestas.');
-      const { data: studies, error: studyError } = await supabase.from('survey_studies').select('id,title,location,questions,status').eq('campaign_id', resolvedCampaignId).eq('status', 'En Campo').order('created_at', { ascending: false }).limit(1);
+      const { data: studies, error: studyError } = await supabase.from('surveys').select('id,title,location,questions,status').eq('campaign_id', resolvedCampaignId).eq('status', 'En Campo').order('created_at', { ascending: false }).limit(1);
       if (studyError) throw studyError;
       const study = studies?.[0];
       if (!study) throw new Error('La campaña no tiene una encuesta activa en campo.');

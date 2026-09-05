@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useCampaignData } from '../contexts/CampaignContext';
 import { motion } from 'motion/react';
 import { ViewMode, AuthUser } from '../types';
 import { CampaignLogoBadge } from './common/CampaignLogoIcon';
@@ -64,54 +65,32 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const userRole = authUser?.role || 'superadmin';
 
+  // ── Datos de campaña desde el contexto global ──────────────────────────────
+  const campaignCtx = useCampaignData();
+
   const [candidatePhoto, setCandidatePhoto] = useState<string | null>(() => {
     return localStorage.getItem('candidate_photo');
   });
 
-  const [candidateName, setCandidateName] = useState<string>(() => {
-    try {
-      const direct = localStorage.getItem('candidate_name');
-      if (direct) return direct;
-      const dossierStr = localStorage.getItem('elecciones_campana_principal_dossier_v2');
-      if (dossierStr) {
-        const parsed = JSON.parse(dossierStr);
-        if (parsed?.nombreCandidato) return parsed.nombreCandidato;
-      }
-    } catch {
-      // ignore
-    }
-    return 'Candidato Principal';
-  });
+  // Prioridad: contexto global > localStorage > fallback
+  const candidateName = campaignCtx.candidateName
+    || localStorage.getItem('candidate_name')
+    || 'Candidato Principal';
+
+  const campaignTerritory = campaignCtx.municipality
+    ? `${campaignCtx.officeType ? campaignCtx.officeType + ' · ' : ''}${campaignCtx.municipality}`
+    : '';
 
   useEffect(() => {
-    const refreshCandidate = () => {
-      try {
-        const photo = localStorage.getItem('candidate_photo');
-        setCandidatePhoto(photo);
-
-        const name = localStorage.getItem('candidate_name');
-        if (name) {
-          setCandidateName(name);
-        } else {
-          const dossierStr = localStorage.getItem('elecciones_campana_principal_dossier_v2');
-          if (dossierStr) {
-            const parsed = JSON.parse(dossierStr);
-            if (parsed?.nombreCandidato) setCandidateName(parsed.nombreCandidato);
-          }
-        }
-      } catch {
-        // ignore
-      }
+    const refreshPhoto = () => {
+      const photo = localStorage.getItem('candidate_photo');
+      setCandidatePhoto(photo);
     };
-
-    window.addEventListener('candidate_photo_updated', refreshCandidate);
-    window.addEventListener('candidate_name_updated', refreshCandidate);
-    window.addEventListener('storage', refreshCandidate);
-
+    window.addEventListener('candidate_photo_updated', refreshPhoto);
+    window.addEventListener('storage', refreshPhoto);
     return () => {
-      window.removeEventListener('candidate_photo_updated', refreshCandidate);
-      window.removeEventListener('candidate_name_updated', refreshCandidate);
-      window.removeEventListener('storage', refreshCandidate);
+      window.removeEventListener('candidate_photo_updated', refreshPhoto);
+      window.removeEventListener('storage', refreshPhoto);
     };
   }, []);
 
@@ -150,7 +129,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'est_dofa', label: 'Matriz DOFA / SWOT AI', tab: 'dofa', icon: <PieChart className="w-4 h-4 text-emerald-400" /> },
     { id: 'est_narrativa', label: 'Narrativa & Discurso', tab: 'discurso', icon: <MessageSquare className="w-4 h-4 text-cyan-400" /> },
     { id: 'est_comunicacion', label: 'Comunicación & Redes', tab: 'comunicacion_redes', icon: <Share2 className="w-4 h-4 text-emerald-400" /> },
-    { id: 'est_analisis_datos', label: 'Análisis de Datos AI', tab: 'analisis_datos', icon: <BarChart3 className="w-4 h-4 text-cyan-400" /> },
+
     { id: 'est_agenda', label: 'Agenda & Calendario Electoral', tab: 'agenda_electoral', icon: <Calendar className="w-4 h-4 text-amber-400" /> },
   ];
 
@@ -436,6 +415,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
               >
                 {userRoleDisplay}
               </div>
+              {campaignTerritory && (
+                <div className="text-[10px] text-cyan-300/70 font-semibold truncate mt-0.5 flex items-center gap-1">
+                  <span>📍</span>
+                  <span className="truncate">{campaignTerritory}</span>
+                </div>
+              )}
             </div>
           </div>
 

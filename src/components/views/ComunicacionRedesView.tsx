@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useCampaignData } from '../../contexts/CampaignContext';
+import { useCampaignGeo } from '../../hooks/useCampaignGeo';
 import { supabase } from '../../lib/supabaseClient';
 import { authenticatedFetch } from '../../lib/authenticatedFetch';
 import { motion, AnimatePresence } from 'motion/react';
@@ -86,11 +88,20 @@ export interface PostContent {
 }
 
 export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ candidateProfile }) => {
-  // Candidate Header Data
-  const candidateName = candidateProfile?.fullName || '';
-  const slogan = candidateProfile?.slogan || '';
-  const territory = candidateProfile?.territory || '';
-  const party = candidateProfile?.partyAlliance || '';
+  // ── Datos de campaña desde el contexto global ─────────────────────────────
+  // Reflejan la circunscripción real configurada en Global Admin.
+  // El prop candidateProfile queda como fallback de compatibilidad.
+  const campaignCtx     = useCampaignData();
+  const geoCtx          = useCampaignGeo();
+  const candidateName   = campaignCtx.candidateName  || candidateProfile?.fullName     || '';
+  const slogan          = campaignCtx.slogan          || candidateProfile?.slogan       || '';
+  const territory       = geoCtx.territory            || candidateProfile?.territory    || '';
+  const party           = campaignCtx.partyAlliance  || candidateProfile?.partyAlliance || '';
+  const officeType      = campaignCtx.officeType      || '';
+  const department      = campaignCtx.department      || '';
+  const circunscripcion = campaignCtx.circunscripcion || 'MUNICIPAL';
+  // ─────────────────────────────────────────────────────────────────────────
+
   const [campaignId, setCampaignId] = useState('');
   const [communicationMessage, setCommunicationMessage] = useState('');
   const [isSavingPost, setIsSavingPost] = useState(false);
@@ -454,7 +465,19 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
       const response = await authenticatedFetch('/api/strategic/content-generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ campaignId, ...aiForm }),
+        body: JSON.stringify({
+          campaignId,
+          ...aiForm,
+          // Contexto geográfico y de campaña para que la IA genere contenido
+          // referido EXCLUSIVAMENTE al territorio real de la campaña
+          campaignContext: geoCtx.aiContextBlock,
+          territory: geoCtx.territory,
+          municipality: geoCtx.municipality,
+          department: geoCtx.department,
+          officeLabel: geoCtx.officeLabel,
+          subdivisionLabel: geoCtx.subdivisionLabel,
+          subdivisions: geoCtx.subdivisions.slice(0, 10),
+        }),
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result?.error || 'No fue posible generar el contenido.');
@@ -1228,57 +1251,117 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
       {activeSubTab === 'pilares' && (
         <div className="space-y-6">
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            
-            <div className="bg-[#05162a] border border-cyan-500/30 p-5 rounded-2xl space-y-3 shadow-xl">
-              <div className="p-2.5 bg-cyan-500/20 text-cyan-300 w-fit rounded-xl font-black text-xs uppercase tracking-wider flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4" /> Pilar 1: Seguridad
-              </div>
-              <h4 className="font-extrabold text-white text-sm">Medellín Segura e Inteligente</h4>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                Narrativa enfocada en paz urbana, combate al microtráfico, cámaras con analítica facial y respuesta policial inmediata.
-              </p>
-              <div className="pt-2 border-t border-cyan-500/20 text-[11px] text-cyan-300 font-bold">
-                Hashtag Clave: #MedellinSegura
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+
+            {/* Pilar 1: Seguridad */}
+            <div className="relative bg-gradient-to-b from-[#071e3d] to-[#04122a] border border-cyan-500/40 p-0 rounded-2xl shadow-2xl overflow-hidden flex flex-col group hover:border-cyan-400/60 transition-all duration-300">
+              <div className="h-1 w-full bg-gradient-to-r from-cyan-400 to-cyan-600" />
+              <div className="p-5 flex flex-col flex-1 space-y-3">
+                <div className="flex items-start gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-cyan-500/20 border border-cyan-400/30 flex items-center justify-center shrink-0">
+                    <ShieldCheck className="w-5 h-5 text-cyan-300" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest block whitespace-nowrap">Pilar 1</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">Seguridad</span>
+                  </div>
+                  <span className="ml-auto text-3xl font-black text-cyan-500/15 select-none leading-none shrink-0">01</span>
+                </div>
+                <h4 className="font-black text-white text-sm leading-snug">
+                  {territory ? `${territory} Segura e Inteligente` : 'Seguridad Ciudadana Inteligente'}
+                </h4>
+                <p className="text-xs text-slate-400 leading-relaxed flex-1">
+                  Narrativa enfocada en paz urbana, combate a la inseguridad, tecnología de vigilancia y respuesta policial inmediata para el territorio de la circunscripción.
+                </p>
+                <div className="pt-3 border-t border-cyan-500/15">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-400/30 text-[11px] font-black text-cyan-300">
+                    #{(territory || 'Territorio').replace(/[\s,]/g, '')}Segura
+                  </span>
+                </div>
               </div>
             </div>
 
-            <div className="bg-[#05162a] border border-emerald-500/30 p-5 rounded-2xl space-y-3 shadow-xl">
-              <div className="p-2.5 bg-emerald-500/20 text-emerald-300 w-fit rounded-xl font-black text-xs uppercase tracking-wider flex items-center gap-2">
-                <TrendingUp className="w-4 h-4" /> Pilar 2: Empleo
-              </div>
-              <h4 className="font-extrabold text-white text-sm">Distrito de Innovación & Empleo</h4>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                Apoyo a microempresarios, atracción de inversión tecnológica, simplificación de trámites e incentivos tributarios.
-              </p>
-              <div className="pt-2 border-t border-emerald-500/20 text-[11px] text-emerald-300 font-bold">
-                Hashtag Clave: #EmpleoYa
+            {/* Pilar 2: Empleo */}
+            <div className="relative bg-gradient-to-b from-[#071e18] to-[#041209] border border-emerald-500/40 p-0 rounded-2xl shadow-2xl overflow-hidden flex flex-col group hover:border-emerald-400/60 transition-all duration-300">
+              <div className="h-1 w-full bg-gradient-to-r from-emerald-400 to-emerald-600" />
+              <div className="p-5 flex flex-col flex-1 space-y-3">
+                <div className="flex items-start gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center shrink-0">
+                    <TrendingUp className="w-5 h-5 text-emerald-300" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest block whitespace-nowrap">Pilar 2</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">Empleo</span>
+                  </div>
+                  <span className="ml-auto text-3xl font-black text-emerald-500/15 select-none leading-none shrink-0">02</span>
+                </div>
+                <h4 className="font-black text-white text-sm leading-snug">
+                  Desarrollo Económico & Empleo Local
+                </h4>
+                <p className="text-xs text-slate-400 leading-relaxed flex-1">
+                  Apoyo a microempresarios, atracción de inversión, simplificación de trámites e incentivos tributarios para la generación de empleo en la circunscripción.
+                </p>
+                <div className="pt-3 border-t border-emerald-500/15">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-400/30 text-[11px] font-black text-emerald-300">
+                    #EmpleoLocal
+                  </span>
+                </div>
               </div>
             </div>
 
-            <div className="bg-[#05162a] border border-amber-500/30 p-5 rounded-2xl space-y-3 shadow-xl">
-              <div className="p-2.5 bg-amber-500/20 text-amber-300 w-fit rounded-xl font-black text-xs uppercase tracking-wider flex items-center gap-2">
-                <Award className="w-4 h-4" /> Pilar 3: Juventud
-              </div>
-              <h4 className="font-extrabold text-white text-sm">Oportunidades para la Juventud</h4>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                Becas universitarias de programación, centros culturales de barrio y deporte competitivo de alto rendimiento.
-              </p>
-              <div className="pt-2 border-t border-amber-500/20 text-[11px] text-amber-300 font-bold">
-                Hashtag Clave: #JuventudAvanza
+            {/* Pilar 3: Juventud */}
+            <div className="relative bg-gradient-to-b from-[#1e1504] to-[#120d02] border border-amber-500/40 p-0 rounded-2xl shadow-2xl overflow-hidden flex flex-col group hover:border-amber-400/60 transition-all duration-300">
+              <div className="h-1 w-full bg-gradient-to-r from-amber-400 to-amber-600" />
+              <div className="p-5 flex flex-col flex-1 space-y-3">
+                <div className="flex items-start gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-400/30 flex items-center justify-center shrink-0">
+                    <Award className="w-5 h-5 text-amber-300" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-[10px] font-black text-amber-400 uppercase tracking-widest block whitespace-nowrap">Pilar 3</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">Juventud</span>
+                  </div>
+                  <span className="ml-auto text-3xl font-black text-amber-500/15 select-none leading-none shrink-0">03</span>
+                </div>
+                <h4 className="font-black text-white text-sm leading-snug">
+                  Oportunidades para la Juventud
+                </h4>
+                <p className="text-xs text-slate-400 leading-relaxed flex-1">
+                  Becas, centros de formación técnica y deporte competitivo para los jóvenes de la circunscripción como motor de transformación social.
+                </p>
+                <div className="pt-3 border-t border-amber-500/15">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-400/30 text-[11px] font-black text-amber-300">
+                    #JuventudAvanza
+                  </span>
+                </div>
               </div>
             </div>
 
-            <div className="bg-[#05162a] border border-purple-500/30 p-5 rounded-2xl space-y-3 shadow-xl">
-              <div className="p-2.5 bg-purple-500/20 text-purple-300 w-fit rounded-xl font-black text-xs uppercase tracking-wider flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4" /> Pilar 4: Transparencia
-              </div>
-              <h4 className="font-extrabold text-white text-sm">Gerencia Pública Abierta</h4>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                Cero tolerancia a la corrupción, veeduría ciudadana en tiempo real y presupuesto participativo 100% digital.
-              </p>
-              <div className="pt-2 border-t border-purple-500/20 text-[11px] text-purple-300 font-bold">
-                Hashtag Clave: #GerenciaHonesta
+            {/* Pilar 4: Transparencia */}
+            <div className="relative bg-gradient-to-b from-[#160d2a] to-[#0d0618] border border-purple-500/40 p-0 rounded-2xl shadow-2xl overflow-hidden flex flex-col group hover:border-purple-400/60 transition-all duration-300">
+              <div className="h-1 w-full bg-gradient-to-r from-purple-400 to-purple-600" />
+              <div className="p-5 flex flex-col flex-1 space-y-3">
+                <div className="flex items-start gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-purple-500/20 border border-purple-400/30 flex items-center justify-center shrink-0">
+                    <CheckCircle2 className="w-5 h-5 text-purple-300" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-[10px] font-black text-purple-400 uppercase tracking-widest block whitespace-nowrap">Pilar 4</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">Transparencia</span>
+                  </div>
+                  <span className="ml-auto text-3xl font-black text-purple-500/15 select-none leading-none shrink-0">04</span>
+                </div>
+                <h4 className="font-black text-white text-sm leading-snug">
+                  Gerencia Pública Abierta
+                </h4>
+                <p className="text-xs text-slate-400 leading-relaxed flex-1">
+                  Cero tolerancia a la corrupción, veeduría ciudadana en tiempo real y presupuesto participativo 100% digital para la circunscripción.
+                </p>
+                <div className="pt-3 border-t border-purple-500/15">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-500/10 border border-purple-400/30 text-[11px] font-black text-purple-300">
+                    #GerenciaHonesta
+                  </span>
+                </div>
               </div>
             </div>
 

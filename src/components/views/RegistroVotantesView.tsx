@@ -107,15 +107,7 @@ export interface CampaignMember {
 }
 
 // Directory of campaign leaders and team members
-export const LISTA_MIEMBROS_CAMPAÑA: CampaignMember[] = [
-  { id: 'usr-1', nombre: 'Carlos Ruiz', cargo: 'Coordinador Comuna 11', comunaZone: 'Comuna 11 - Laureles', telefono: '300 456 7890' },
-  { id: 'usr-2', nombre: 'Ana Patricia Gómez', cargo: 'Coordinadora Comuna 14', comunaZone: 'Comuna 14 - El Poblado', telefono: '312 987 6543' },
-  { id: 'usr-3', nombre: 'Santi Restrepo', cargo: 'Líder Comuna 13', comunaZone: 'Comuna 13 - San Javier', telefono: '315 222 1100' },
-  { id: 'usr-4', nombre: 'Marta Lucía Henao', cargo: 'Coordinadora Comuna 4', comunaZone: 'Comuna 4 - Aranjuez', telefono: '311 333 4455' },
-  { id: 'usr-5', nombre: 'Juan David Morales', cargo: 'Líder de Juventudes', comunaZone: 'Comuna 16 - Belén', telefono: '301 777 8899' },
-  { id: 'usr-6', nombre: 'Elena Restrepo', cargo: 'Brigadista Electoral', comunaZone: 'Comuna 5 - Castilla', telefono: '318 666 5544' },
-  { id: 'usr-7', nombre: 'Sede Central Campaña', cargo: 'Operación General', comunaZone: 'Medellín Centro', telefono: '300 000 0000' }
-];
+export const LISTA_MIEMBROS_CAMPAÑA: CampaignMember[] = [];
 
 export interface RegistroVotantesViewProps {
   onSelectView?: (view: any) => void;
@@ -144,7 +136,7 @@ export const RegistroVotantesView: React.FC<RegistroVotantesViewProps> = ({
     if (authUser?.name) {
       return `${authUser.name} (${authUser.roleName || 'Líder Territorial'})`;
     }
-    return 'Carlos Ramírez (Coordinador Territorial / Testigo)';
+    return 'Sin Asignar';
   });
 
   // Role and Admin privileges (Strict Rule: Only Administrative role can register voters and assign leaders)
@@ -1033,7 +1025,7 @@ _Documento Oficial de Auditoría Electoral - Campaña Ganadora AI_`;
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="fixed top-20 right-6 z-50 bg-gradient-to-r from-teal-700 to-emerald-800 text-white px-5 py-3 rounded-2xl shadow-2xl border border-teal-400/40 text-xs font-extrabold flex items-center gap-2 max-w-md"
+            className="fixed top-24 right-6 z-[100] bg-gradient-to-r from-teal-700 to-emerald-800 text-white px-5 py-3 rounded-2xl shadow-2xl border border-teal-400/40 text-xs font-extrabold flex items-center gap-2 max-w-md"
           >
             <Sparkles className="w-4 h-4 text-teal-200 shrink-0" />
             <span>{toastMessage}</span>
@@ -1082,10 +1074,12 @@ _Documento Oficial de Auditoría Electoral - Campaña Ganadora AI_`;
                     onChange={(e) => setReassignModal({ ...reassignModal, selectedNewLeader: e.target.value })}
                     className="w-full bg-[#020712] border border-slate-700 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-100 outline-none focus:border-teal-400 cursor-pointer"
                   >
-                    {authUser?.name && (
+                    {authUser?.name ? (
                       <option value={`${authUser.name} (${authUser.roleName || 'Usuario Campaña'})`}>
                         📌 Mi Usuario: {authUser.name} ({authUser.roleName || 'Logueado'})
                       </option>
+                    ) : (
+                      <option value="Sin Asignar">Sin Asignar</option>
                     )}
                     {LISTA_MIEMBROS_CAMPAÑA.map(m => (
                       <option key={m.id} value={`${m.nombre} (${m.cargo})`}>
@@ -1600,10 +1594,12 @@ _Documento Oficial de Auditoría Electoral - Campaña Ganadora AI_`;
                                 onChange={(e) => setArchiveForm({ ...archiveForm, liderAsignado: e.target.value })}
                                 className="w-full bg-[#020712] border border-slate-700 rounded-lg p-2 text-xs font-bold text-slate-100 cursor-pointer"
                               >
-                                {authUser?.name && (
+                                {authUser?.name ? (
                                   <option value={`${authUser.name} (${authUser.roleName || 'Usuario Campaña'})`}>
-                                    📌 Mi Usuario: {authUser.name} ({authUser.roleName})
+                                    👤 Mi Usuario: {authUser.name} ({authUser.roleName || 'Logueado'})
                                   </option>
+                                ) : (
+                                  <option value="Sin Asignar">Sin Asignar</option>
                                 )}
                                 {LISTA_MIEMBROS_CAMPAÑA.map(m => (
                                   <option key={m.id} value={`${m.nombre} (${m.cargo})`}>
@@ -1740,10 +1736,12 @@ _Documento Oficial de Auditoría Electoral - Campaña Ganadora AI_`;
                         onChange={(e) => setFormData({ ...formData, liderAsignado: e.target.value })}
                         className="w-full bg-[#020712] border border-slate-700 rounded-xl px-3 py-2 text-xs font-extrabold text-slate-100 outline-none focus:border-teal-400 disabled:opacity-50 cursor-pointer"
                       >
-                        {authUser?.name && (
+                        {authUser?.name ? (
                           <option value={`${authUser.name} (${authUser.roleName || 'Usuario Campaña'})`}>
                             📌 Mi Usuario: {authUser.name} ({authUser.roleName})
                           </option>
+                        ) : (
+                          <option value="Sin Asignar">Sin Asignar</option>
                         )}
                         {LISTA_MIEMBROS_CAMPAÑA.map(m => (
                           <option key={m.id} value={`${m.nombre} (${m.cargo})`}>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useCampaignLive } from '../../contexts/CampaignContext';
 import { ViewMode } from '../../types';
 import { CampanaDossier, CampanaAliada, CandidatoListaAliada, EquipoOficialCampana } from '../../types/campana';
 import { defaultCampanaDossier, campanaPlantillasPresets } from '../../data/campanaPresets';
@@ -99,6 +100,14 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
   const [campaignSyncError, setCampaignSyncError] = useState('');
   const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
 
+  // ── Tope CNE en tiempo real desde el contexto global ──────────────────────────────
+  const liveMetrics = useCampaignLive();
+  useEffect(() => {
+    if (liveMetrics.budgetLimitCop > 0) {
+      setCampaignBudgetLimit(liveMetrics.budgetLimitCop);
+    }
+  }, [liveMetrics.budgetLimitCop]);
+
   // Allied List Creation Modal State
   const [showAddAliadaModal, setShowAddAliadaModal] = useState<boolean>(false);
   const [selectedAliadaId, setSelectedAliadaId] = useState<string | null>(
@@ -143,9 +152,12 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
       setCampaignLoading(true);
       setCampaignSyncError('');
       try {
-        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError) throw sessionError;
-        const userId = sessionData.session?.user?.id;
+        const { data: sessionData } = await supabase.auth.getSession();
+        let userId = sessionData.session?.user?.id;
+        if (!userId) {
+          const { data: refreshed } = await supabase.auth.refreshSession();
+          userId = refreshed.session?.user?.id;
+        }
         if (!userId) throw new Error('Debes iniciar sesión para consultar la campaña asignada.');
 
         const { data: profile, error: profileError } = await supabase
@@ -551,17 +563,17 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
       {/* HEADER BANNER - CANDIDATO PRINCIPAL */}
       {/* ========================================================================= */}
       <div className="bg-[#040e21] rounded-2xl p-5 shadow-xl border border-cyan-500/20 space-y-4">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
             <div className="p-2.5 bg-emerald-500/10 rounded-xl border border-emerald-500/30 text-emerald-400 shrink-0">
               <Building2 className="w-5 h-5" />
             </div>
-            <div>
+            <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-lg sm:text-xl font-black text-white tracking-tight">
                   Gestión & Expediente de Campaña Oficial
                 </h2>
-                <span className="px-2 py-0.5 bg-cyan-500/15 border border-cyan-400/30 rounded-md text-[10px] font-bold text-cyan-300">
+                <span className="px-2 py-0.5 bg-cyan-500/15 border border-cyan-400/30 rounded-md text-[10px] font-bold text-cyan-300 shrink-0">
                   CNE Colombia • Registraduría
                 </span>
               </div>
@@ -645,13 +657,13 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
         )}
 
         {/* Section Navigation Tabs */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-t border-cyan-500/15 pt-3 text-xs scrollbar-none">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-t border-cyan-500/15 pt-3 text-xs" style={{scrollbarWidth:'thin', scrollbarColor:'#164e63 transparent'}}>
           {[
             { id: 'territorio', label: '1. Territorio & Elección', icon: MapPin },
             { id: 'candidato', label: '2. Candidato', icon: User },
             { id: 'aval', label: '3. Aval & Respaldo', icon: Award },
             { id: 'calendario', label: '4. Calendario & Póliza', icon: Calendar },
-            { id: 'equipo', label: '5. Equipo Oficial CNE', icon: Briefcase },
+            { id: 'equipo', label: '5. Equipo CNE', icon: Briefcase },
             { id: 'aliadas', label: `6. Listas Aliadas (${activeDossier.campanasAliadas?.length || 0})`, icon: Users }
           ].map(tab => {
             const Icon = tab.icon;
@@ -661,7 +673,7 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id as TabType)}
-                className={`px-3 py-2 rounded-xl font-bold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
+                className={`px-3 py-2 rounded-xl font-bold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
                   isCurrent
                     ? 'bg-[#092244] text-emerald-300 border border-emerald-400 shadow-sm'
                     : 'bg-[#030d1f] text-slate-400 hover:text-white hover:bg-[#051833] border border-cyan-500/20'

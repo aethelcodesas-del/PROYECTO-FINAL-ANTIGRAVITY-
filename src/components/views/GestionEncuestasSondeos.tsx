@@ -490,20 +490,20 @@ export const GestionEncuestasSondeos: React.FC<GestionEncuestasSondeosProps> = (
 
   const mapStudyRow = (row: any): SurveyStudy => ({
     id: String(row.id),
-    code: row.code,
-    title: row.title,
-    type: row.study_type,
-    methodology: row.methodology,
-    status: row.status,
-    targetSample: Number(row.target_sample || 0),
+    code: row.code || row.id?.slice(0, 8).toUpperCase(),
+    title: row.titulo || row.title || 'Sin título',
+    type: row.study_type || row.descripcion?.split(' | ')[0] || '',
+    methodology: row.methodology || row.descripcion?.split(' | ')[1] || '',
+    status: row.estado || row.status || 'BORRADOR',
+    targetSample: Number(row.muestra_objetivo || row.target_sample || 0),
     completedSample: Number(row.completed_sample || 0),
     marginOfError: Number(row.margin_error || 0),
     confidenceLevel: Number(row.confidence_level || 95),
-    startDate: row.start_date,
-    endDate: row.end_date,
+    startDate: row.fecha_inicio || row.start_date,
+    endDate: row.fecha_fin || row.end_date,
     pollstersCount: Number(row.pollsters_count || 0),
-    location: row.location,
-    questionsCount: Array.isArray(row.questions) ? row.questions.length : 0
+    location: row.descripcion?.split(' | ')[2] || row.location || '',
+    questionsCount: Array.isArray(row.preguntas || row.questions) ? (row.preguntas || row.questions).length : 0
   });
 
   const mapPollsterRow = (row: any, studyById: Map<string, SurveyStudy>): Pollster => ({
@@ -565,7 +565,7 @@ export const GestionEncuestasSondeos: React.FC<GestionEncuestasSondeosProps> = (
         { data: pollsterRows, error: pollstersError },
         { data: responseRows, error: responsesError },
       ] = await Promise.all([
-        supabase.from('survey_studies').select('*').eq('campaign_id', campaignId).order('created_at', { ascending: false }),
+        supabase.from('surveys').select('*').eq('campaign_id', campaignId).order('created_at', { ascending: false }),
         supabase.from('survey_pollsters').select('*').eq('campaign_id', campaignId).order('created_at', { ascending: false }),
         supabase.from('survey_responses').select('id,survey_id,answers,consent_confirmed,latitude,longitude,gps_accuracy_meters,duration_seconds,submitted_at').eq('campaign_id', campaignId).order('submitted_at', { ascending: false }),
       ]);
@@ -725,22 +725,15 @@ export const GestionEncuestasSondeos: React.FC<GestionEncuestasSondeosProps> = (
     setRealDataError('');
     const year = new Date().getFullYear();
     const code = `ENC-${year}-${crypto.randomUUID().slice(0, 6).toUpperCase()}`;
-    const { error } = await supabase.from('survey_studies').insert({
+    const { error } = await supabase.from('surveys').insert({
       campaign_id: activeCampaignId,
-      code,
-      title: newTitle.trim(),
-      study_type: newType,
-      methodology: newMethodology,
-      status: 'Borrador',
-      target_sample: newTargetSample,
-      completed_sample: 0,
-      margin_error: calcMargin,
-      confidence_level: calcConfidence,
-      start_date: new Date().toISOString().split('T')[0],
-      end_date: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
-      location: newLocation.trim(),
-      questions: newQuestions,
-      created_by: authUser?.id || null
+      titulo: newTitle.trim(),
+      descripcion: [newType, newMethodology, newLocation.trim()].filter(Boolean).join(' | ') || null,
+      estado: 'BORRADOR',
+      muestra_objetivo: Number(newTargetSample) || 200,
+      preguntas: newQuestions,
+      fecha_inicio: new Date().toISOString().split('T')[0],
+      fecha_fin: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]
     });
     setSavingRealData(false);
     if (error) return setRealDataError(error.message);
@@ -753,6 +746,16 @@ export const GestionEncuestasSondeos: React.FC<GestionEncuestasSondeosProps> = (
     setActiveSubTab('estudios');
     await loadRealSurveyData();
     alert(`Encuesta ${code} guardada en la base de datos real.`);
+  };
+
+  const handleDeleteSurvey = async (id: string, code: string) => {
+    if (confirm(`¿Está seguro de eliminar la encuesta ${code}? Esta acción eliminará todas las respuestas y no se puede deshacer.`)) {
+      setSavingRealData(true);
+      const { error } = await supabase.from('surveys').delete().eq('id', id).eq('campaign_id', activeCampaignId);
+      setSavingRealData(false);
+      if (error) return setRealDataError(error.message);
+      await loadRealSurveyData();
+    }
   };
 
   const handleRunAiAudit = () => {
@@ -853,6 +856,14 @@ export const GestionEncuestasSondeos: React.FC<GestionEncuestasSondeosProps> = (
             >
               <Plus className="w-4 h-4 text-cyan-400" />
               <span>Nueva Encuesta</span>
+            </button>
+
+            <button
+              onClick={() => void loadRealSurveyData()}
+              className="flex items-center gap-2 px-3.5 py-2.5 bg-[#0a2342] hover:bg-cyan-500/20 border border-cyan-500/40 text-cyan-200 font-bold text-xs rounded-xl transition-all cursor-pointer"
+            >
+              <RefreshCw className={`w-4 h-4 text-cyan-400 ${realDataLoading ? 'animate-spin' : ''}`} />
+              <span>Sincronizar</span>
             </button>
 
             <button
@@ -1150,6 +1161,14 @@ export const GestionEncuestasSondeos: React.FC<GestionEncuestasSondeosProps> = (
                       >
                         <Eye className="w-3.5 h-3.5" />
                         <span>Resultados</span>
+                      </button>
+                      
+                      <button
+                        onClick={() => handleDeleteSurvey(study.id, study.code)}
+                        className="px-3 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ml-1"
+                        title="Eliminar Encuesta"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>

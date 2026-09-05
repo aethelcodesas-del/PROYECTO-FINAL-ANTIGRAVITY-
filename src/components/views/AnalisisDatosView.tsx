@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useCampaignLive } from '../../contexts/CampaignContext';
+import { useCampaignGeo } from '../../hooks/useCampaignGeo';
 import { supabase } from '../../lib/supabaseClient';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -107,12 +109,16 @@ export const AnalisisDatosView: React.FC<{
   onSelectView?: (view: any) => void;
 }> = ({ onSelectView }) => {
   // Active internal tab
-  const [activeTab, setActiveTab] = useState<'overview' | 'growth_polls' | 'electoral_territorial' | 'admin_finance' | 'recommendations'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'growth_polls' | 'electoral_territorial' | 'recommendations'>('overview');
   
   // Filter States
   const [timeframe, setTimeframe] = useState<'7d' | '30d' | 'campaign'>('30d');
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // ── Contexto global en tiempo real ───────────────────────────────────────────────
+  const liveMetrics = useCampaignLive();
+  const geoCtx      = useCampaignGeo();
 
   // 1. DATA: Crecimiento Electoral Histórico vs Metas
   const demoGrowthData = [
@@ -397,6 +403,23 @@ export const AnalisisDatosView: React.FC<{
     void loadRealAnalytics();
   }, []);
 
+  // ── Sincronización en vivo: cada vez que el CampaignProvider recibe un evento
+  //    Realtime (budget_items, campaigns, leaders, voters…), actualiza instantáneamente
+  //    las métricas críticas sin relanzar loadRealAnalytics.
+  useEffect(() => {
+    if (liveMetrics.lastUpdatedAt === 0) return;
+    setMetrics(prev => ({
+      ...prev,
+      // Presupuesto — tope CNE y ejecutado en tiempo real
+      budgetCeiling:    liveMetrics.budgetLimitCop    || prev.budgetCeiling,
+      executedExpenses: liveMetrics.budgetExecutedCop || prev.executedExpenses,
+      // Personas
+      firmVotes:        liveMetrics.voterCount  || prev.firmVotes,
+      totalWitnesses:   liveMetrics.witnessCount || prev.totalWitnesses,
+      accreditedWitnesses: liveMetrics.witnessCount || prev.accreditedWitnesses,
+    }));
+  }, [liveMetrics.lastUpdatedAt]);
+
   const showToast = (msg: string) => {
     if (/invalid input syntax for type uuid/i.test(msg)) return;
     setToastMessage(msg);
@@ -504,7 +527,7 @@ export const AnalisisDatosView: React.FC<{
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="fixed top-20 right-6 z-50 bg-gradient-to-r from-emerald-600 to-teal-700 text-white px-5 py-3 rounded-2xl shadow-2xl border border-emerald-400/40 text-xs font-extrabold flex items-center gap-2"
+            className="fixed top-24 right-6 z-[100] bg-blue-900/90 border border-blue-700 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3"
           >
             <Sparkles className="w-4 h-4 text-emerald-200 animate-spin" />
             <span>{toastMessage}</span>
@@ -517,8 +540,18 @@ export const AnalisisDatosView: React.FC<{
         <div className="absolute -right-12 -bottom-12 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="space-y-2 relative z-10">
           <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-            Análisis de Datos de Campaña & <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-300 to-emerald-400">Recomendaciones IA</span>
+            Análisis de Datos de Campaña &amp; <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-300 to-emerald-400">Recomendaciones IA</span>
           </h1>
+          {geoCtx.territory && (
+            <p className="text-xs text-slate-400 flex items-center gap-1.5">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="font-bold text-slate-300">{geoCtx.territory}</span>
+              {geoCtx.officeLabel && <span className="text-slate-500">• {geoCtx.officeLabel}</span>}
+              {liveMetrics.lastUpdatedAt > 0 && (
+                <span className="ml-1 text-emerald-400 font-bold">• DATOS EN VIVO</span>
+              )}
+            </p>
+          )}
         </div>
 
         <div className="flex flex-wrap items-center gap-2 relative z-10">
@@ -562,8 +595,9 @@ export const AnalisisDatosView: React.FC<{
         <div className="bg-[#05162a] border border-emerald-500/30 rounded-2xl p-4 space-y-2 shadow-lg hover:border-emerald-400/50 transition-all">
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-black uppercase text-slate-400">Votos Firmes</span>
-            <div className="p-1.5 bg-emerald-500/20 text-emerald-300 rounded-lg">
-              <Target className="w-4 h-4" />
+            <div className="flex items-center gap-1.5">
+              {liveMetrics.lastUpdatedAt > 0 && <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" title="Dato en vivo" />}
+              <div className="p-1.5 bg-emerald-500/20 text-emerald-300 rounded-lg"><Target className="w-4 h-4" /></div>
             </div>
           </div>
           <div className="flex items-baseline justify-between">
@@ -571,7 +605,7 @@ export const AnalisisDatosView: React.FC<{
             <span className="text-[10px] font-bold text-slate-300 font-mono">{firmVotePercent.toFixed(1)}%</span>
           </div>
           <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden">
-            <div className="h-full bg-emerald-400 rounded-full" style={{ width: `${firmVotePercent}%` }} />
+            <div className="h-full bg-emerald-400 rounded-full transition-all duration-700" style={{ width: `${firmVotePercent}%` }} />
           </div>
           <p className="text-[10px] text-slate-400">Meta: {metrics.voteGoal.toLocaleString('es-CO')} votos</p>
         </div>
@@ -580,8 +614,9 @@ export const AnalisisDatosView: React.FC<{
         <div className="bg-[#05162a] border border-cyan-500/30 rounded-2xl p-4 space-y-2 shadow-lg hover:border-cyan-400/50 transition-all">
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-black uppercase text-slate-400">Testigos Día E</span>
-            <div className="p-1.5 bg-cyan-500/20 text-cyan-300 rounded-lg">
-              <ShieldCheck className="w-4 h-4" />
+            <div className="flex items-center gap-1.5">
+              {liveMetrics.lastUpdatedAt > 0 && <span className="inline-block w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" title="Dato en vivo" />}
+              <div className="p-1.5 bg-cyan-500/20 text-cyan-300 rounded-lg"><ShieldCheck className="w-4 h-4" /></div>
             </div>
           </div>
           <div className="flex items-baseline justify-between">
@@ -589,57 +624,13 @@ export const AnalisisDatosView: React.FC<{
             <span className="text-[10px] font-bold text-cyan-400 font-mono">{witnessPercent.toFixed(1)}%</span>
           </div>
           <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden">
-            <div className="h-full bg-cyan-400 rounded-full" style={{ width: `${witnessPercent}%` }} />
+            <div className="h-full bg-cyan-400 rounded-full transition-all duration-700" style={{ width: `${witnessPercent}%` }} />
           </div>
           <p className="text-[10px] text-slate-400">{Math.max(0, metrics.totalWitnesses - metrics.accreditedWitnesses)} registros pendientes de acreditación</p>
         </div>
 
-        {/* KPI 4: Presupuesto CNE */}
-        <div className="bg-[#05162a] border border-purple-500/30 rounded-2xl p-4 space-y-2 shadow-lg hover:border-purple-400/50 transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-black uppercase text-slate-400">Ejecutado CNE</span>
-            <div className="p-1.5 bg-purple-500/20 text-purple-300 rounded-lg">
-              <DollarSign className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-black text-purple-300 font-mono">${(metrics.executedExpenses / 1000000).toFixed(1)}M</span>
-            <span className="text-[10px] font-bold text-purple-400 font-mono">{executedPercent.toFixed(1)}%</span>
-          </div>
-          <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden">
-            <div className="h-full bg-purple-400 rounded-full" style={{ width: `${executedPercent}%` }} />
-          </div>
-          <p className="text-[10px] text-slate-400">Presupuesto: ${(metrics.budgetCeiling / 1000000).toFixed(1)}M COP</p>
-        </div>
 
-        {/* KPI 5: Resonancia de Propuesta */}
-        <div className="bg-[#05162a] border border-teal-500/30 rounded-2xl p-4 space-y-2 shadow-lg hover:border-teal-400/50 transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-black uppercase text-slate-400">Resonancia Propuesta</span>
-            <div className="p-1.5 bg-teal-500/20 text-teal-300 rounded-lg">
-              <Award className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="flex items-baseline justify-between">
-            <span className="text-lg font-black text-teal-300 font-mono">Sin datos</span>
-          </div>
-          <p className="text-[10px] text-slate-400">{metrics.surveyResponses} respuestas registradas</p>
-        </div>
 
-        {/* KPI 6: Soportes CNE Legalizados */}
-        <div className="bg-[#05162a] border border-indigo-500/30 rounded-2xl p-4 space-y-2 shadow-lg hover:border-indigo-400/50 transition-all">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-black uppercase text-slate-400">Facturación CNE</span>
-            <div className="p-1.5 bg-indigo-500/20 text-indigo-300 rounded-lg">
-              <FileCheck2 className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="flex items-baseline justify-between">
-            <span className="text-2xl font-black text-indigo-300 font-mono">${(metrics.verifiedExpenses / 1000000).toFixed(1)}M</span>
-            <span className="text-[10px] font-bold text-emerald-400 font-mono">{verifiedPercent.toFixed(1)}%</span>
-          </div>
-          <p className="text-[10px] text-slate-400">Gastos con estado verificado</p>
-        </div>
 
       </div>
 
@@ -656,7 +647,7 @@ export const AnalisisDatosView: React.FC<{
             }`}
           >
             <Activity className="w-4 h-4 text-cyan-300" />
-            <span>1. Dashboard 360°</span>
+            <span>Dashboard 360°</span>
           </button>
 
           <button
@@ -668,7 +659,7 @@ export const AnalisisDatosView: React.FC<{
             }`}
           >
             <TrendingUp className="w-4 h-4 text-amber-300" />
-            <span>2. Crecimiento Electoral & Encuestas</span>
+            <span>Crecimiento Electoral &amp; Encuestas</span>
           </button>
 
           <button
@@ -680,19 +671,7 @@ export const AnalisisDatosView: React.FC<{
             }`}
           >
             <Vote className="w-4 h-4 text-emerald-300" />
-            <span>3. Datos Electorales & Testigos</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('admin_finance')}
-            className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
-              activeTab === 'admin_finance'
-                ? 'bg-gradient-to-r from-cyan-600 to-teal-700 text-white shadow-lg border border-cyan-400/50'
-                : 'bg-[#051325] text-slate-400 hover:text-white hover:bg-slate-800'
-            }`}
-          >
-            <DollarSign className="w-4 h-4 text-purple-300" />
-            <span>4. Finanzas CNE & Administración</span>
+            <span>Datos Electorales &amp; Testigos</span>
           </button>
 
           <button
@@ -704,11 +683,12 @@ export const AnalisisDatosView: React.FC<{
             }`}
           >
             <Sparkles className="w-4 h-4 text-indigo-300 animate-pulse" />
-            <span>5. Recomendaciones IA</span>
+            <span>Recomendaciones IA</span>
             <span className="bg-amber-500 text-slate-950 font-black text-[10px] px-2 py-0.5 rounded-full">
               {pendingCount} Pendientes
             </span>
           </button>
+
 
         </div>
 
@@ -983,56 +963,6 @@ export const AnalisisDatosView: React.FC<{
         </div>
       )}
 
-      {/* TAB CONTENT 4: FINANZAS CNE & ASPECTOS ADMINISTRATIVOS */}
-      {activeTab === 'admin_finance' && (
-        <div className="space-y-6">
-          <div className="bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 space-y-6 shadow-xl">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-cyan-500/20 pb-4">
-              <div>
-                <h3 className="font-extrabold text-white text-lg flex items-center gap-2">
-                  <DollarSign className="w-5 h-5 text-purple-400" />
-                  Aspectos Administrativos: Ejecución Presupuestal CNE por Rubro
-                </h3>
-              </div>
-            </div>
-
-            <div className="h-80 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={financialAdminData} margin={{ top: 10, right: 10, left: 0, bottom: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                  <XAxis dataKey="rubro" stroke="#94a3b8" tick={{ fill: '#94a3b8', fontSize: 11 }} />
-                  <YAxis stroke="#94a3b8" tick={{ fill: '#94a3b8', fontSize: 11 }} />
-                  <Tooltip content={<CustomChartTooltip unit="M COP" />} />
-                  <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
-                  <Bar dataKey="asignado" name="Presupuesto Asignado" fill="#64748b" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="ejecutado" name="Ejecutado Real" fill="#c084fc" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="facturadoCNE" name="Legalizado Factura CNE" fill="#34d399" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-
-            <div className="p-4 bg-[#030e1c] rounded-2xl border border-purple-500/30 text-xs text-slate-300 space-y-2">
-              <strong className="text-purple-300 block font-extrabold">📋 Estado de Cumplimiento Administrativo & CNE:</strong>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-[11px]">
-                <div className="p-2.5 bg-slate-900/60 rounded-xl border border-slate-800">
-                  <span className="text-slate-400 block font-bold">Techo Máximo CNE:</span>
-                  <span className="text-white font-mono font-extrabold text-sm">{formatCop(metrics.budgetCeiling)}</span>
-                </div>
-                <div className="p-2.5 bg-slate-900/60 rounded-xl border border-slate-800">
-                  <span className="text-slate-400 block font-bold">Total Ejecutado:</span>
-                  <span className="text-purple-300 font-mono font-extrabold text-sm">
-                    {formatCop(metrics.executedExpenses)} ({executedPercent.toFixed(1)}%)
-                  </span>
-                </div>
-                <div className="p-2.5 bg-slate-900/60 rounded-xl border border-slate-800">
-                  <span className="text-slate-400 block font-bold">Pendiente Legalizar CNE:</span>
-                  <span className="text-amber-400 font-mono font-extrabold text-sm">{formatCop(pendingLegalization)}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* TAB CONTENT 5: AI RECOMMENDATIONS CENTER */}
       {activeTab === 'recommendations' && (

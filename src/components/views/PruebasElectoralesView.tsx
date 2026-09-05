@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useCampaignData } from '../../contexts/CampaignContext';
 import { ViewMode, AuthUser } from '../../types';
 import { 
   ShieldCheck, 

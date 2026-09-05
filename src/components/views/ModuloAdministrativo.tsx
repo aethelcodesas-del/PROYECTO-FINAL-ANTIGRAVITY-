@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useCampaignData, useCampaignLive } from '../../contexts/CampaignContext';
+import { useCampaignGeo } from '../../hooks/useCampaignGeo';
+import { GeoSubdivisionSelect } from '../common/GeoSubdivisionSelect';
 import { ViewMode, CalendarEvent, AuthUser } from '../../types';
 import { supabase } from '../../lib/supabaseClient';
 import { insforge } from '../../lib/insforgeClient';
@@ -112,6 +115,11 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
   onTabChange,
   authUser
 }) => {
+  // ── Datos de campaña desde contexto global (circunscripción real) ────────────
+  const campaignCtx = useCampaignData();
+  const liveMetrics  = useCampaignLive();
+  const geoCtx      = useCampaignGeo();
+  // ───────────────────────────────────────────────────────────────────────────
   const [internalTab, setInternalTab] = useState<AdminTabType>('inicio');
   const activeTab = (controlledActiveTab as AdminTabType) || internalTab;
 
@@ -612,9 +620,15 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
     setRbacError('');
     try {
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError) throw sessionError;
-      const ownerId = sessionData.session?.user?.id;
-      if (!ownerId) throw new Error('Debes iniciar sesión para administrar los usuarios de campaña.');
+      let ownerId = sessionData.session?.user?.id;
+      if (sessionError || !ownerId) {
+        // Token may have expired — try to refresh before giving up
+        const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError || !refreshed.session?.user?.id) {
+          throw new Error('Debes iniciar sesión para administrar los usuarios de campaña.');
+        }
+        ownerId = refreshed.session.user.id;
+      }
       const { data: ownerProfile, error: ownerError } = await supabase
         .from('profiles')
         .select('client_id,campaign_id')
@@ -1135,9 +1149,12 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
       setJurorLoading(true);
       setJurorError('');
       try {
-        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError) throw sessionError;
-        const userId = sessionData.session?.user?.id;
+        const { data: sessionData } = await supabase.auth.getSession();
+        let userId = sessionData.session?.user?.id;
+        if (!userId) {
+          const { data: refreshed } = await supabase.auth.refreshSession();
+          userId = refreshed.session?.user?.id;
+        }
         if (!userId) throw new Error('Debes iniciar sesión para consultar los jurados.');
         const { data: profile, error: profileError } = await supabase.from('profiles').select('client_id').eq('id', userId).maybeSingle();
         if (profileError) throw profileError;
@@ -1518,9 +1535,12 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
     setCrmLoading(true);
     setCrmError('');
     try {
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError) throw sessionError;
-      const userId = sessionData.session?.user?.id;
+      const { data: sessionData } = await supabase.auth.getSession();
+      let userId = sessionData.session?.user?.id;
+      if (!userId) {
+        const { data: refreshed } = await supabase.auth.refreshSession();
+        userId = refreshed.session?.user?.id;
+      }
       if (!userId) throw new Error('Debes iniciar sesión para consultar el CRM electoral.');
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
@@ -1895,9 +1915,12 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
     setDashboardLoading(true);
     setDashboardError('');
     try {
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError) throw sessionError;
-      const userId = sessionData.session?.user?.id;
+      const { data: sessionData } = await supabase.auth.getSession();
+      let userId = sessionData.session?.user?.id;
+      if (!userId) {
+        const { data: refreshed } = await supabase.auth.refreshSession();
+        userId = refreshed.session?.user?.id;
+      }
       if (!userId) throw new Error('Debes iniciar sesión para consultar los indicadores.');
       const { data: profile, error: profileError } = await supabase.from('profiles').select('client_id').eq('id', userId).maybeSingle();
       if (profileError) throw profileError;
@@ -1957,6 +1980,25 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
     }
   };
 
+  // ── Sincronización LIVE: cuando el contexto global actualiza por Realtime,
+  //    el dashboardStats de presupuesto/líderes/votantes/testigos se actualiza
+  //    automáticamente sin recargar la página ni abrir nuevos canales.
+  useEffect(() => {
+    if (liveMetrics.lastUpdatedAt === 0) return; // aún no ha cargado
+    setDashboardStats(prev => ({
+      ...prev,
+      // Presupuesto — datos del canal ctx-budget del CampaignProvider
+      budgetExecuted: liveMetrics.budgetExecutedCop   || prev.budgetExecuted,
+      budgetLimit:    liveMetrics.budgetLimitCop       || prev.budgetLimit,
+      budgetPercent:  liveMetrics.budgetExecutionPct   || prev.budgetPercent,
+      // Personas — datos de los canales ctx-leaders/voters/witnesses/jurors
+      leaders:             liveMetrics.leaderCount   || prev.leaders,
+      voters:              liveMetrics.voterCount     || prev.voters,
+      witnesses:           liveMetrics.witnessCount   || prev.witnesses,
+      jurors:              liveMetrics.jurorCount     || prev.jurors,
+    }));
+  }, [liveMetrics.lastUpdatedAt]); // dispara solo cuando hay un nuevo snapshot
+
   useEffect(() => {
     if (activeTab !== 'inicio') return;
     let channel: any;
@@ -1968,8 +2010,9 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
         if (refreshTimer) clearTimeout(refreshTimer);
         refreshTimer = setTimeout(() => { void loadRealAdministrativeDashboard(); }, 250);
       };
+      // Solo suscribimos profiles y accreditedWitnesses (no cubiertos por el contexto global)
       channel = supabase.channel(`administrative-dashboard-${clientId}`);
-      ['profiles', 'leaders', 'voters', 'budget_items', 'campaigns', 'witnesses', 'jurors'].forEach(table => {
+      ['profiles', 'witnesses'].forEach(table => {
         channel.on('postgres_changes', { event: '*', schema: 'public', table, filter: `client_id=eq.${clientId}` }, refresh);
       });
       channel.subscribe();
@@ -2018,7 +2061,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                 <span>{dashboardLoading ? 'Actualizando indicadores reales de la campaña...' : `Error de indicadores: ${dashboardError}`}</span>
               </div>
             )}
-            {/* Global KPI Cards */}
+            {/* Global KPI Cards — datos del contexto en tiempo real */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="bg-[#041733]/90 rounded-2xl p-4 border border-cyan-500/30 shadow-lg flex items-center justify-between">
                 <div>
@@ -2033,12 +2076,16 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                 </div>
               </div>
 
+              {/* Líderes + Votantes — en vivo desde contexto global */}
               <div className="bg-[#041733]/90 rounded-2xl p-4 border border-cyan-500/30 shadow-lg flex items-center justify-between">
                 <div>
                   <p className="text-xs text-cyan-200/80 font-semibold">CRM Líderes & Votantes:</p>
-                  <p className="text-2xl font-black text-white mt-1">{(dashboardStats.leaders + dashboardStats.voters).toLocaleString('es-CO')}</p>
+                  <p className="text-2xl font-black text-white mt-1">
+                    {((liveMetrics.leaderCount || dashboardStats.leaders) + (liveMetrics.voterCount || dashboardStats.voters)).toLocaleString('es-CO')}
+                  </p>
                   <span className="text-[10px] text-cyan-400 font-bold flex items-center gap-1 mt-1">
-                    <Users className="w-3 h-3" /> {dashboardStats.leaders} líderes · {dashboardStats.voters} votantes
+                    <span className="relative flex h-1.5 w-1.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" /><span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-cyan-500" /></span>
+                    <Users className="w-3 h-3" /> {liveMetrics.leaderCount || dashboardStats.leaders} líderes · {liveMetrics.voterCount || dashboardStats.voters} votantes
                   </span>
                 </div>
                 <div className="w-10 h-10 rounded-2xl bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 flex items-center justify-center">
@@ -2046,12 +2093,16 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                 </div>
               </div>
 
+              {/* Presupuesto — en vivo desde contexto global */}
               <div className="bg-[#041733]/90 rounded-2xl p-4 border border-cyan-500/30 shadow-lg flex items-center justify-between">
                 <div>
                   <p className="text-xs text-cyan-200/80 font-semibold">Presupuesto Ejecutado CNE:</p>
-                  <p className="text-2xl font-black text-white mt-1">{dashboardStats.budgetPercent.toFixed(1)}%</p>
+                  <p className="text-2xl font-black text-white mt-1">
+                    {(liveMetrics.budgetExecutionPct || dashboardStats.budgetPercent).toFixed(1)}%
+                  </p>
                   <span className="text-[10px] text-amber-400 font-bold flex items-center gap-1 mt-1">
-                    <DollarSign className="w-3 h-3" /> ${dashboardStats.budgetExecuted.toLocaleString('es-CO')} ejecutados
+                    <span className="relative flex h-1.5 w-1.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" /><span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500" /></span>
+                    <DollarSign className="w-3 h-3" /> ${(liveMetrics.budgetExecutedCop || dashboardStats.budgetExecuted).toLocaleString('es-CO')} ejecutados
                   </span>
                 </div>
                 <div className="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center justify-center">
@@ -2059,11 +2110,15 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                 </div>
               </div>
 
+              {/* Testigos + Jurados — en vivo desde contexto global */}
               <div className="bg-[#041733]/90 rounded-2xl p-4 border border-cyan-500/30 shadow-lg flex items-center justify-between">
                 <div>
                   <p className="text-xs text-cyan-200/80 font-semibold">Testigos & Jurados Día E:</p>
-                  <p className="text-2xl font-black text-white mt-1">{dashboardStats.witnesses.toLocaleString('es-CO')} / {dashboardStats.jurors.toLocaleString('es-CO')}</p>
+                  <p className="text-2xl font-black text-white mt-1">
+                    {(liveMetrics.witnessCount || dashboardStats.witnesses).toLocaleString('es-CO')} / {(liveMetrics.jurorCount || dashboardStats.jurors).toLocaleString('es-CO')}
+                  </p>
                   <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1 mt-1">
+                    <span className="relative flex h-1.5 w-1.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" /><span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" /></span>
                     <Award className="w-3 h-3" /> {dashboardStats.accreditedWitnesses} testigos acreditados
                   </span>
                 </div>
@@ -2825,8 +2880,11 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                         </select>
                       </div>
 
+                      {/* ── ZONA / CORREGIMIENTO / BARRIO (datos reales de la circunscripción) */}
                       <div>
-                        <label className="block text-[10px] font-bold text-cyan-200/90 mb-1">Comuna / Sector *</label>
+                        <label className="block text-[10px] font-bold text-cyan-200/90 mb-1">
+                          {geoCtx.subdivisionLabel} *
+                        </label>
                         <select
                           required
                           value={newComuna}
@@ -2837,9 +2895,17 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                           }}
                           className="w-full bg-[#020712] border border-cyan-500/30 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
                         >
-                          <option value="">Seleccione la comuna / sector</option>
-                          {voterComunaOptions.map(comuna => <option key={comuna} value={comuna}>{comuna}</option>)}
+                          <option value="">Seleccione {geoCtx.subdivisionLabel.toLowerCase()}…</option>
+                          {geoCtx.subdivisions.map(sub => <option key={sub} value={sub}>{sub}</option>)}
+                          {voterComunaOptions.filter(c => !geoCtx.subdivisions.includes(c)).map(c => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
                         </select>
+                        {geoCtx.municipality && (
+                          <p className="text-[10px] text-slate-500 mt-0.5">
+                            {geoCtx.subdivisions.length} {geoCtx.subdivisionLabelPlural.toLowerCase()} en {geoCtx.municipality}
+                          </p>
+                        )}
                       </div>
 
                       <div>
@@ -3252,18 +3318,28 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                         </select>
                       </div>
 
-                      {/* Zona / Comuna Asignada */}
+                      {/* Zona / Corregimiento / Barrio Asignado — datos reales de la circunscripción */}
                       <div>
-                        <label className="block text-[10px] font-bold text-purple-200/90 mb-1">Zona / Comuna Asignada *</label>
+                        <label className="block text-[10px] font-bold text-purple-200/90 mb-1">
+                          {geoCtx.subdivisionLabel} Asignado(a) *
+                        </label>
                         <select
                           required
                           value={newLeaderZona}
                           onChange={(e) => setNewLeaderZona(e.target.value)}
                           className="w-full bg-[#020712] border border-purple-500/30 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-purple-400"
                         >
-                          <option value="">Seleccione la zona / comuna / sector</option>
-                          {leaderZoneOptions.map(zone => <option key={zone} value={zone}>{zone}</option>)}
+                          <option value="">Seleccione {geoCtx.subdivisionLabel.toLowerCase()}…</option>
+                          {geoCtx.subdivisions.map(sub => <option key={sub} value={sub}>{sub}</option>)}
+                          {leaderZoneOptions.filter(z => !geoCtx.subdivisions.includes(z)).map(z => (
+                            <option key={z} value={z}>{z}</option>
+                          ))}
                         </select>
+                        {geoCtx.municipality && (
+                          <p className="text-[10px] text-slate-500 mt-0.5">
+                            {geoCtx.subdivisions.length} {geoCtx.subdivisionLabelPlural.toLowerCase()} en {geoCtx.municipality}
+                          </p>
+                        )}
                       </div>
 
                       {/* Teléfono Móvil / WhatsApp */}
@@ -3809,9 +3885,9 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
 
               {/* Header Bottom Row: Action Buttons for Export, Annex Resolution, and Confrontation */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-[#030d1f] p-3 rounded-2xl border border-cyan-500/30">
-                <div className="text-xs font-bold text-cyan-300 flex items-center gap-2 px-1">
-                  <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
-                  <span>Acciones de Resolución y Exportación Oficial:</span>
+                <div className="text-xs font-bold text-cyan-300 flex items-center gap-2 px-1 shrink-0">
+                  <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shrink-0"></span>
+                  <span className="whitespace-nowrap">Acciones de Resolución y Exportación:</span>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2.5">
@@ -4207,7 +4283,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                   <select
                     value={juradoPartidoFilter}
                     onChange={(e) => setJuradoPartidoFilter(e.target.value)}
-                    className="p-2 bg-[#030d1f] border border-cyan-500/30 rounded-xl text-xs font-bold text-cyan-200 focus:outline-none focus:border-cyan-400"
+                    className="p-2 min-w-[160px] bg-[#030d1f] border border-cyan-500/30 rounded-xl text-xs font-bold text-cyan-200 focus:outline-none focus:border-cyan-400"
                   >
                     <option value="Todos">Todos los Partidos</option>
                     {partidosPoliticosOpt.map((p, idx) => (
@@ -4219,7 +4295,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                   <select
                     value={juradoSorteoFilter}
                     onChange={(e) => setJuradoSorteoFilter(e.target.value)}
-                    className="p-2 bg-[#030d1f] border border-cyan-500/30 rounded-xl text-xs font-bold text-cyan-200 focus:outline-none focus:border-cyan-400"
+                    className="p-2 min-w-[200px] bg-[#030d1f] border border-cyan-500/30 rounded-xl text-xs font-bold text-cyan-200 focus:outline-none focus:border-cyan-400"
                   >
                     <option value="Todos">Todos los Estados de Sorteo</option>
                     <option value="Seleccionado en Resolución">Seleccionados en Resolución ✅</option>
@@ -4248,13 +4324,13 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
                     <tr className="bg-[#030d1f] text-cyan-300 font-bold border-b border-cyan-500/30">
-                      <th className="p-3">Candidato a Jurado</th>
-                      <th className="p-3">Partido Político</th>
-                      <th className="p-3">Ocupación / Profesión</th>
-                      <th className="p-3">Puesto Preferente</th>
-                      <th className="p-3">Resultado Sorteo Registraduría</th>
-                      <th className="p-3">Asignación Oficial Órgano Electoral</th>
-                      <th className="p-3 text-right">Acciones</th>
+                      <th className="p-3 whitespace-nowrap">Candidato a Jurado</th>
+                      <th className="p-3 whitespace-nowrap">Partido Político</th>
+                      <th className="p-3 whitespace-nowrap">Ocupación / Profesión</th>
+                      <th className="p-3 whitespace-nowrap">Puesto Preferente</th>
+                      <th className="p-3 whitespace-nowrap">Resultado Sorteo</th>
+                      <th className="p-3 whitespace-nowrap">Asignación Órgano Electoral</th>
+                      <th className="p-3 text-right whitespace-nowrap">Acciones</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-cyan-500/15 font-medium bg-[#041733]">

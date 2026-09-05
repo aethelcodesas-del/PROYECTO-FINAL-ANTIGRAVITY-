@@ -14,6 +14,7 @@ import {
 import { getHashForRoute, parseRouteFromHash } from './utils/urlRouter';
 import { useAutoLogout } from './hooks/useAutoLogout';
 import { usePlatformRealtime } from './hooks/usePlatformRealtime';
+import { CampaignProvider } from './contexts/CampaignContext';
 
 // Global Navigation Components
 import { Header } from './components/Header';
@@ -99,7 +100,7 @@ const FUNCTION_DESTINATIONS: Record<string, {
   est_dofa: { view: 'gestion_estrategica', strategicTab: 'dofa' },
   est_narrativa: { view: 'gestion_estrategica', strategicTab: 'discurso' },
   est_comunicacion: { view: 'gestion_estrategica', strategicTab: 'comunicacion_redes' },
-  est_analisis_datos: { view: 'gestion_estrategica', strategicTab: 'analisis_datos' },
+
   est_agenda: { view: 'gestion_estrategica', strategicTab: 'agenda_electoral' },
   terr_voters_reg: { view: 'gestion_territorial', territorialSubTab: 'registro' },
   terr_territorial_mgmt: { view: 'gestion_territorial', territorialSubTab: 'mapa' },
@@ -527,6 +528,7 @@ export default function App() {
 
   // Render Main Dashboard Layout Shell
   return (
+    <CampaignProvider>
     <div className="app-shell h-[100dvh] min-h-0 w-full min-w-0 overflow-hidden flex flex-col bg-[#030712] text-slate-100 selection:bg-cyan-500 selection:text-black">
       {/* Main Workspace: Sidebar + Dynamic View Content */}
       <div className="flex-1 flex h-full overflow-hidden relative">
@@ -700,5 +702,6 @@ export default function App() {
         onLoginSuccess={handleLoginSuccess}
       />
     </div>
+    </CampaignProvider>
   );
 }

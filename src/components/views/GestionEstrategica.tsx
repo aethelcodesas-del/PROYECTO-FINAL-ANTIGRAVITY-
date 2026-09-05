@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useCampaignData } from '../../contexts/CampaignContext';
+import { useCampaignGeo } from '../../hooks/useCampaignGeo';
 import { ViewMode } from '../../types';
 import type { AuthUser } from '../../types';
 import { supabase } from '../../lib/supabaseClient';
 import { authenticatedFetch } from '../../lib/authenticatedFetch';
 import { ProgramaGobiernoView } from './ProgramaGobiernoView';
 import { ComunicacionRedesView } from './ComunicacionRedesView';
-import { AnalisisDatosView } from './AnalisisDatosView';
+
 import { AgendaCalendarioView } from './AgendaCalendarioView';
 import { 
   Sparkles, 
@@ -127,6 +129,11 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
   onSelectTab,
   authUser,
 }) => {
+  // ── Datos de campaña desde contexto global (circunscripción real) ──────────
+  const campaignCtx = useCampaignData();
+  const geoCtx      = useCampaignGeo();
+  // ──────────────────────────────────────────────────────────────────────────
+
   // Navigation Tabs within Strategic Management Session
   const [internalTab, setInternalTab] = useState<'diagnostico' | 'diagnostico_territorial' | 'programa_gobierno' | 'perfil' | 'hoja_vida' | 'dofa' | 'discurso' | 'comunicacion_redes' | 'analisis_datos' | 'agenda_electoral' | 'ai_command' | 'presupuesto'>('diagnostico');
   const activeTab = propActiveTab || internalTab;
@@ -139,6 +146,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
   const [diagnosticSubTab, setDiagnosticSubTab] = useState<'overview' | 'territorial' | 'audit' | 'report'>('overview');
   const [isDiagnosticScanning, setIsDiagnosticScanning] = useState(false);
   const [lastDiagnosticDate, setLastDiagnosticDate] = useState('');
+
   const [diagnosticCampaign, setDiagnosticCampaign] = useState<any | null>(null);
   const [diagnosticCampaignLoading, setDiagnosticCampaignLoading] = useState(true);
 
@@ -171,6 +179,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
   const diagnosticYear = diagnosticCampaign?.election_date
     ? new Date(diagnosticCampaign.election_date).getFullYear()
     : new Date().getFullYear();
+
 
   // Territorial Diagnostic State (Programmatic Input)
   interface TerritorialNeed {
@@ -1041,9 +1050,12 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
     let mounted = true;
     const loadCandidateProfile = async () => {
       try {
-        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError) throw sessionError;
-        const userId = sessionData.session?.user?.id;
+        const { data: sessionData } = await supabase.auth.getSession();
+        let userId = sessionData.session?.user?.id;
+        if (!userId) {
+          const { data: refreshed } = await supabase.auth.refreshSession();
+          userId = refreshed.session?.user?.id;
+        }
         if (!userId) throw new Error('Debes iniciar sesión para consultar el perfil del candidato.');
         const { data: profile, error: profileError } = await supabase.from('profiles').select('client_id').eq('id', userId).maybeSingle();
         if (profileError) throw profileError;
@@ -1057,12 +1069,12 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
         if (!campaign) throw new Error('No existe una campaña activa para configurar el candidato.');
         let savedProfile: any = {};
         try { savedProfile = JSON.parse(campaign.descripcion || '{}')?.candidateProfile || {}; } catch { savedProfile = {}; }
-        const scope = String(campaign.circunscripcion || '').toUpperCase();
+        const scope = String(campaign.circunscripcion || campaignCtx.circunscripcion || '').toUpperCase();
         const territory = scope === 'NACIONAL'
           ? 'Colombia'
           : scope === 'DEPARTAMENTAL'
-            ? String(campaign.departamento || '')
-            : [campaign.municipio, campaign.departamento].filter(Boolean).join(', ');
+            ? String(campaign.departamento || campaignCtx.department || '')
+            : [campaign.municipio || campaignCtx.municipality, campaign.departamento || campaignCtx.department].filter(Boolean).join(', ');
         if (!mounted) return;
         setCandidateCampaignId(String(campaign.id));
         setCandidateProfile({
@@ -1439,7 +1451,13 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
       const response = await authenticatedFetch('/api/strategic/cv-analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ campaignId: candidateCampaignId, storagePath: cvStoragePath }),
+        body: JSON.stringify({
+          campaignId: candidateCampaignId,
+          storagePath: cvStoragePath,
+          campaignContext: geoCtx.aiContextBlock,
+          territory: geoCtx.territory,
+          officeLabel: geoCtx.officeLabel,
+        }),
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result?.error || 'No fue posible analizar la hoja de vida.');
@@ -3022,7 +3040,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           
           {/* Avatar & Key Badge Card */}
-          <div className="lg:col-span-3 bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 space-y-5 text-center flex flex-col items-center shadow-xl self-start h-fit">
+          <div className="lg:col-span-4 bg-[#05162a] border border-cyan-500/30 rounded-3xl p-5 space-y-4 text-center flex flex-col items-center shadow-xl self-start h-fit min-w-[200px]">
             <div className="w-full flex flex-col items-center">
               <div className="relative group">
                 {candidateProfile.avatarUrl ? (
@@ -3065,8 +3083,8 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                 </label>
               </div>
 
-              <h3 className="text-xl font-black text-white mt-4">{candidateProfile.fullName}</h3>
-              <p className="text-xs font-bold text-emerald-400">{candidateProfile.politicalName}</p>
+              <h3 className="text-base font-black text-white mt-3 break-words w-full text-center leading-tight">{candidateProfile.fullName}</h3>
+              <p className="text-xs font-bold text-emerald-400 break-words text-center">{candidateProfile.politicalName}</p>
 
               <div className="mt-3 px-3 py-1 rounded-full bg-teal-950 border border-teal-500/40 text-teal-300 font-semibold text-xs inline-flex items-center gap-1.5">
                 <Award className="w-3.5 h-3.5 text-emerald-400" />
@@ -3076,18 +3094,18 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
               <div className="w-full border-t border-cyan-500/20 my-4" />
 
               <div className="w-full text-left space-y-2 text-xs text-slate-300">
-                <div className="flex justify-between">
+                <div className="flex flex-col gap-0.5">
                   <span className="text-slate-400">Territorio:</span>
-                  <span className="font-bold text-white">{candidateProfile.territory}</span>
+                  <span className="font-bold text-white break-words">{candidateProfile.territory}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex flex-col gap-0.5">
                   <span className="text-slate-400">Cédula de Ciudadanía:</span>
-                  <span className="font-mono text-cyan-300 font-bold">{candidateProfile.cedula}</span>
+                  <span className="font-mono text-cyan-300 font-bold break-all">{candidateProfile.cedula}</span>
                 </div>
-                <div className="flex justify-between">
+                <div className="flex flex-col gap-0.5">
                   <span className="text-slate-400">Sello Inhabilidades:</span>
                   <span className="text-amber-300 font-bold flex items-center gap-1">
-                    <ShieldCheck className="w-3.5 h-3.5" /> Pendiente de verificación oficial
+                    <ShieldCheck className="w-3.5 h-3.5 shrink-0" /> <span className="break-words">Pendiente de verificación oficial</span>
                   </span>
                 </div>
               </div>
@@ -3118,7 +3136,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                 <span className="text-[10px] text-amber-400 uppercase font-black tracking-wider flex items-center gap-1">
                   <PieChart className="w-3 h-3 text-emerald-400" /> Matriz DOFA Resumida:
                 </span>
-                <div className="grid grid-cols-2 gap-1.5 text-[10px]">
+                <div className="grid grid-cols-1 gap-1.5 text-[10px]">
                   <div className="bg-emerald-950/60 border border-emerald-500/30 p-1.5 rounded-lg">
                     <span className="font-bold text-emerald-300 block mb-0.5">Fortalezas:</span>
                     <p className="text-slate-300 line-clamp-2 leading-tight">{candidateProfile.dofaStrengths}</p>
@@ -3141,7 +3159,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
           </div>
 
           {/* Detailed Editable Profile Form */}
-          <div className="lg:col-span-9 bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 space-y-5 shadow-xl min-w-0">
+          <div className="lg:col-span-8 bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 space-y-5 shadow-xl min-w-0">
             <h3 className="text-lg font-bold text-white flex items-center gap-2 border-b border-cyan-500/20 pb-3">
               <UserCheck className="w-5 h-5 text-emerald-400" />
               Configuración Completa del Candidato
@@ -4107,10 +4125,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
         <ComunicacionRedesView candidateProfile={candidateProfile} />
       )}
 
-      {/* TAB ANÁLISIS DE DATOS DE CAMPAÑA & RECOMENDACIONES IA */}
-      {activeTab === 'analisis_datos' && (
-        <AnalisisDatosView onSelectView={onSelectView} />
-      )}
+
 
       {/* TAB AGENDA Y CALENDARIO ELECTORAL */}
       {activeTab === 'agenda_electoral' && (

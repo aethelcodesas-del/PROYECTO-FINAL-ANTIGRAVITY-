@@ -268,7 +268,7 @@ export class GlobalAdminService {
   static async getUsers(): Promise<GlobalAdminUser[]> {
     const [{ data, error }, { data: campaigns, error: campaignsError }] = await Promise.all([
       supabase.from('profiles').select('*').order('created_at', { ascending: false }),
-      supabase.from('campaigns').select('id,client_id,nombre,name')
+      supabase.from('campaigns').select('id,client_id,nombre')
     ]);
     if (error) throw new Error(`Supabase: ${error.message}`);
     if (campaignsError) throw new Error(`Supabase: ${campaignsError.message}`);
@@ -348,8 +348,7 @@ export class GlobalAdminService {
   }
 
   static async resetPassword(id: string, newPassword?: string): Promise<{ temporaryPassword?: string; message: string }> {
-    const token = this.getToken();
-    if (!token) throw new Error('La sesión administrativa expiró. Inicia sesión nuevamente.');
+    const token = await this.getValidSupabaseToken();
     const response = await fetch(`/api/supabase-admin/campaign-user/${encodeURIComponent(id)}/reset-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -430,8 +429,7 @@ export class GlobalAdminService {
   }
 
   static async createCampaignUser(data: { campaignId: string; displayName: string; email: string; password: string }): Promise<void> {
-    const token = this.getToken();
-    if (!token) throw new Error('La sesión administrativa expiró. Inicia sesión nuevamente.');
+    const token = await this.getValidSupabaseToken();
     const response = await fetch('/api/supabase-admin/campaign-user', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },

@@ -1,4 +1,5 @@
 import React, { lazy, Suspense, useState } from 'react';
+import { useCampaignData } from '../../contexts/CampaignContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { CircleMarker, MapContainer, Popup, TileLayer, useMap } from 'react-leaflet';
 import { ViewMode, TerritorialZone, AuthUser } from '../../types';
@@ -57,6 +58,9 @@ export const GestionTerritorial: React.FC<GestionTerritorialProps> = ({
   onSubTabChange,
   authUser
 }) => {
+  // ── Datos de campaña desde contexto global (circunscripción real) ────────────
+  const campaignCtx = useCampaignData();
+  // ───────────────────────────────────────────────────────────────────────────
   const [sectorList, setSectorList] = useState<TerritorialZone[]>([]);
 
   const [selectedZone, setSelectedZone] = useState<TerritorialZone | null>(sectorList[1] || sectorList[0] || null);

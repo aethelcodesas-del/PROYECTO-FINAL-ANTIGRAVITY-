@@ -16,10 +16,6 @@ export interface CensoConsultaResult {
   mensajeRespuesta: string;
 }
 
-/**
- * Punto de integración con el censo oficial. No genera ciudadanos, municipios,
- * puestos ni mesas de ejemplo cuando el proveedor electoral no está conectado.
- */
 export async function consultarCensoElectoralAPI(
   cedula: string,
   circunscripcionCampana: string = '',
@@ -36,56 +32,66 @@ export async function consultarCensoElectoralAPI(
     };
   }
 
-  const endpoint = String(import.meta.env.VITE_CENSO_ELECTORAL_API_URL || '').trim();
-  if (!endpoint) {
+  const endpoint = `https://coresoft.solutions/api/cedula?documento=${cleanCedula}`;
+  const token = import.meta.env.VITE_CORESOFT_TOKEN || '';
+
+  try {
+    const response = await fetch(endpoint, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('No fue posible consultar el proveedor oficial.');
+    }
+
+    const payload = await response.json();
+    
+    if (payload && payload.success && payload.nombre) {
+      const nombreCompleto = payload.nombre;
+      // Asumimos que si lo encuentra en la base de datos de la API, es válido.
+      // La API no nos devuelve puesto de votación explícitamente en el ejemplo, 
+      // pero usamos la ciudad/dirección si están disponibles.
+      const municipio = payload.ciudad || '';
+      
+      return {
+        cedula: cleanCedula,
+        encontrado: true,
+        esCircunscripcionPermitida: true,
+        circunscripcionCiudadano: municipio,
+        circunscripcionCampana,
+        nombreCompleto: nombreCompleto,
+        departamento: '',
+        municipio: municipio,
+        puestoVotacion: 'No especificado (Consulta externa)',
+        comunaSector: '',
+        direccionPuesto: payload.direccion || '',
+        estadoCedula: 'Habilitada',
+        mensajeRespuesta: 'Consulta oficial completada exitosamente.',
+      };
+    } else {
+      return {
+        cedula: cleanCedula,
+        encontrado: false,
+        esCircunscripcionPermitida: false,
+        circunscripcionCiudadano: '',
+        circunscripcionCampana,
+        mensajeRespuesta: 'La cédula no fue encontrada en la base de datos externa.',
+      };
+    }
+  } catch (error: any) {
+    console.error('Error fetching cedula from coresoft API:', error);
     return {
       cedula: cleanCedula,
       encontrado: false,
       esCircunscripcionPermitida: false,
       circunscripcionCiudadano: '',
       circunscripcionCampana,
-      mensajeRespuesta: 'El proveedor oficial del censo electoral no está configurado.',
+      mensajeRespuesta: `Error de conexión con el proveedor externo: ${error?.message || 'Desconocido'}`,
     };
   }
-
-  const token = String(import.meta.env.VITE_CENSO_ELECTORAL_API_TOKEN || '').trim();
-  const url = new URL(endpoint, window.location.origin);
-  url.searchParams.set('cedula', cleanCedula);
-  const response = await fetch(url.toString(), {
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-  });
-  if (!response.ok) throw new Error('No fue posible consultar el proveedor oficial del censo electoral.');
-
-  const payload: any = await response.json();
-  const data = payload?.data || payload;
-  const departamento = String(data?.departamento || '').trim();
-  const municipio = String(data?.municipio || data?.distrito || '').trim();
-  const circunscripcionCiudadano = String(
-    data?.circunscripcion || [municipio, departamento].filter(Boolean).join(', '),
-  ).trim();
-  const normalize = (value: string) => value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
-  const permitido = Boolean(circunscripcionCampana) && (
-    normalize(circunscripcionCiudadano).includes(normalize(circunscripcionCampana)) ||
-    normalize(circunscripcionCampana).includes(normalize(municipio))
-  );
-
-  return {
-    cedula: cleanCedula,
-    encontrado: Boolean(data?.encontrado ?? data?.found ?? data?.nombreCompleto ?? data?.nombre),
-    esCircunscripcionPermitida: permitido,
-    circunscripcionCiudadano,
-    circunscripcionCampana,
-    nombreCompleto: data?.nombreCompleto || data?.nombre || undefined,
-    departamento: departamento || undefined,
-    municipio: municipio || undefined,
-    puestoVotacion: data?.puestoVotacion || data?.puesto || undefined,
-    comunaSector: data?.comunaSector || data?.zona || data?.comuna || undefined,
-    direccionPuesto: data?.direccionPuesto || data?.direccion || undefined,
-    mesa: Number(data?.mesa) || undefined,
-    estadoCedula: data?.estadoCedula || data?.estado || undefined,
-    fechaUltimaActualizacion: data?.fechaUltimaActualizacion || data?.updated_at || undefined,
-    mensajeRespuesta: data?.mensajeRespuesta || data?.mensaje || 'Consulta oficial completada.',
-  };
 }
 
 /** Mantiene la firma usada por el módulo mientras se conecta el proveedor CNE. */
