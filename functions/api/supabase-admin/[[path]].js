@@ -173,7 +173,23 @@ async function restRequest(configuration, table, options = {}) {
   });
 }
 
-async function readProfile(configuration, userId, select = 'id,role,status,client_id,campaign_id,allowed_modules') {
+async function readProfile(configuration, userId, select = 'id,role,status,client_id,campaign_id,allowed_modules', token = '') {
+  if (token) {
+    const url = new URL(`${configuration.url}/rest/v1/profiles`);
+    url.searchParams.set('id', `eq.${userId}`);
+    url.searchParams.set('select', select);
+    url.searchParams.set('limit', '1');
+    const result = await fetchJson(url, {
+      headers: {
+        apikey: configuration.publicKey,
+        authorization: `Bearer ${token}`,
+        accept: 'application/json'
+      }
+    });
+    if (!result.ok) return { error: result };
+    const rows = Array.isArray(result.data) ? result.data : [];
+    return { profile: rows[0] || null };
+  }
   const result = await restRequest(configuration, 'profiles', {
     query: { id: `eq.${userId}`, select, limit: 1 }
   });
@@ -193,7 +209,7 @@ async function verifyRequester(request, configuration, allowedRoles) {
     return { error: json({ error: 'La sesión administrativa expiró. Inicia sesión nuevamente.' }, 401) };
   }
 
-  const profileResult = await readProfile(configuration, user.id);
+  const profileResult = await readProfile(configuration, user.id, undefined, token);
   if (profileResult.error) {
     return { error: json({ error: 'No fue posible validar el perfil administrativo.' }, 502) };
   }
