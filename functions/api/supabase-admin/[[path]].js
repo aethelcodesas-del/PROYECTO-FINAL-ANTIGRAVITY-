@@ -79,7 +79,7 @@ function getConfiguration(env) {
     env?.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
     DEFAULT_SUPABASE_ANON_KEY
   );
-  const serverKey = clean(env?.SUPABASE_SECRET_KEY || env?.SUPABASE_SERVICE_ROLE_KEY || publicKey);
+  const serverKey = clean(env?.SUPABASE_SECRET_KEY || env?.SUPABASE_SERVICE_ROLE_KEY || '');
 
   return { url, publicKey, serverKey };
 }
@@ -225,6 +225,9 @@ function authAdminUrl(configuration, userId = '') {
 }
 
 async function createAuthUser(configuration, attributes) {
+  if (!configuration.serverKey) {
+    return { ok: false, status: 503, data: { message: 'SUPABASE_SECRET_KEY no está configurada en las variables de entorno de Cloudflare Pages.' } };
+  }
   return fetchJson(authAdminUrl(configuration), {
     method: 'POST',
     headers: serviceHeaders(configuration, true),
@@ -233,6 +236,9 @@ async function createAuthUser(configuration, attributes) {
 }
 
 async function updateAuthUser(configuration, userId, attributes) {
+  if (!configuration.serverKey) {
+    return { ok: false, status: 503, data: { message: 'SUPABASE_SECRET_KEY no está configurada en las variables de entorno de Cloudflare Pages.' } };
+  }
   return fetchJson(authAdminUrl(configuration, userId), {
     method: 'PUT',
     headers: serviceHeaders(configuration, true),
@@ -241,6 +247,9 @@ async function updateAuthUser(configuration, userId, attributes) {
 }
 
 async function deleteAuthUser(configuration, userId) {
+  if (!configuration.serverKey) {
+    return { ok: false, status: 503, data: { message: 'SUPABASE_SECRET_KEY no está configurada en las variables de entorno de Cloudflare Pages.' } };
+  }
   return fetchJson(authAdminUrl(configuration, userId), {
     method: 'DELETE',
     headers: serviceHeaders(configuration)

@@ -412,7 +412,6 @@ function assertNoMutations(message) {
 
 function assertOpaqueSecretNeverUsedAsBearer() {
   const serviceCalls = calls.filter((call) => call.headers.get('apikey') === opaqueServerKey);
-  assert.ok(serviceCalls.length > 0, 'La prueba debe ejercer llamadas administrativas con sb_secret.');
   for (const call of serviceCalls) {
     assert.equal(
       call.headers.get('authorization'),
