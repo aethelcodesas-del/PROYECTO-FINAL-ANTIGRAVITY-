@@ -211,7 +211,7 @@ export class GlobalAdminService {
   static async getMetrics(): Promise<GlobalAdminMetrics> {
     const [profilesResult, campaignsResult, modulesResult, auditResult] = await Promise.all([
       supabase.from('profiles').select('id,role,status,campaign_id,client_id', { count: 'exact' }),
-      supabase.from('campaigns').select('id,nombre,estado,status', { count: 'exact' }),
+      supabase.from('campaigns').select('id,nombre,estado', { count: 'exact' }),
       supabase.from('modules').select('id', { count: 'exact' }),
       supabase.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(8)
     ]);
