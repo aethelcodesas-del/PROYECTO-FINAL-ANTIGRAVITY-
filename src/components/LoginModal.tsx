@@ -234,8 +234,10 @@ const [isLoading, setIsLoading] = useState(false);
       }
 
       const roleMap: Record<string, { role: UserRole; label: string }> = {
+        GLOBAL_ADMIN: { role: 'superadmin', label: 'Administrador Global' },
         SUPERADMIN: { role: 'superadmin', label: 'Superadministrador' },
         ADMIN_CLIENTE: { role: 'administrador', label: 'Administrador de campaña' },
+        ADMINISTRADOR: { role: 'administrador', label: 'Administrador General' },
         DIRECTOR: { role: 'candidato', label: 'Director estratégico' },
         COORDINADOR: { role: 'coordinador_general_zona', label: 'Coordinador territorial' },
         USUARIO: { role: 'territorial', label: 'Usuario territorial' },

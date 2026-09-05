@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js';
-import bcrypt from 'bcryptjs';
 
 const DEFAULT_SUPABASE_URL = 'https://cjvztlvxdsuiluybvtpl.supabase.co';
 const DEFAULT_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNqdnp0bHZ4ZHN1aWx1eWJ2dHBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg0NjU3MDAsImV4cCI6MjEwNDA0MTcwMH0.E-aIfV1P8XUDRW-lGC7lC6x6eOpwIdJeCpFDnxOI-uY';
@@ -53,7 +52,7 @@ export async function testSupabaseConnection(): Promise<{ success: boolean; mess
 
 /**
  * Register a New Candidate/Client with instant Panel Admin access.
- * Creates a record in `clients` and a superadmin user in `users_list`.
+ * Creates an auth user in Supabase Auth, links it to `clients` and `profiles`.
  */
 export async function registerNewClient(data: {
   fullName: string;
@@ -64,72 +63,78 @@ export async function registerNewClient(data: {
   department?: string;
 }): Promise<{ success: boolean; error?: string; panelUrl?: string }> {
   try {
-    // 1. Check if email already exists
-    const { data: existingUser } = await supabase
-      .from('users_list')
-      .select('email')
-      .eq('email', data.email)
-      .single();
+    const email = data.email.trim().toLowerCase();
+    const fullName = data.fullName.trim();
+    const phone = (data.phone || '').trim();
+    const department = (data.department || 'Colombia').trim();
 
-    if (existingUser) {
-      return { success: false, error: 'Este correo electrónico ya está registrado. Usa otro o accede al Panel.' };
-    }
-
-    // 2. Create the client organization record
+    // 1. Create client organization record
     const { data: clientData, error: clientError } = await supabase
       .from('clients')
       .insert([{
         nombre_organizacion: data.campaignName,
-        email_contacto: data.email,
-        telefono: data.phone || '',
-        departamento: data.department || 'Colombia',
-        estado: 'Activo',
+        email_contacto: email,
+        telefono: phone,
+        departamento: department,
+        status: 'ACTIVE',
         created_from: 'landing',
         created_at: new Date().toISOString(),
       }])
       .select()
-      .single();
+      .maybeSingle();
 
     if (clientError) {
-      console.error('Error creating client:', clientError);
-      return { success: false, error: 'No se pudo registrar la organización. Intenta nuevamente.' };
+      console.warn('Notice creating client organization:', clientError.message);
     }
 
-    // 3. Hash the password
-    const hashedPassword = await bcrypt.hash(data.password, 12);
+    // 2. Register user with official Supabase Auth
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email,
+      password: data.password,
+      options: {
+        data: {
+          display_name: fullName,
+          full_name: fullName,
+          phone,
+          department,
+          role: 'ADMIN_CLIENTE',
+          client_id: clientData?.id || null
+        }
+      }
+    });
 
-    // 4. Create the superadmin user linked to the new client
-    const { error: userError } = await supabase
-      .from('users_list')
-      .insert([{
-        name: data.fullName,
-        email: data.email,
-        password_hash: hashedPassword,
-        role: 'superadmin',
-        cargo: 'Candidato / Propietario',
-        estado: 'Activo',
-        client_id: clientData.id,
-        created_at: new Date().toISOString(),
-        ip: '0.0.0.0',
-      }]);
-
-    if (userError) {
-      console.error('Error creating user:', userError);
-      // Rollback: delete the client record we just created
-      await supabase.from('clients').delete().eq('id', clientData.id);
-      return { success: false, error: 'Error al crear tu cuenta de acceso. Contacta a soporte.' };
+    if (authError) {
+      if (authError.message?.toLowerCase().includes('already registered')) {
+        return { success: false, error: 'Este correo electrónico ya está registrado. Usa otro o accede al Panel.' };
+      }
+      return { success: false, error: authError.message || 'Error al crear tu cuenta de acceso.' };
     }
 
-    // 5. Also save as demo lead for CRM tracking
+    if (authData.user) {
+      // 3. Ensure profile is upserted with ADMIN_CLIENTE role
+      await supabase.from('profiles').upsert({
+        id: authData.user.id,
+        email,
+        display_name: fullName,
+        phone,
+        role: 'ADMIN_CLIENTE',
+        status: 'ACTIVE',
+        client_id: clientData?.id || null,
+        allowed_modules: ['ADMINISTRATIVE', 'TERRITORY', 'STRATEGY', 'CRM'],
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'id' }).catch(() => {});
+    }
+
+    // 4. Save as demo lead for tracking
     await supabase.from('demo_leads').insert([{
-      full_name: data.fullName,
-      email: data.email,
-      phone: data.phone || '',
+      full_name: fullName,
+      email,
+      phone,
       campaign_type: data.campaignName,
-      department: data.department || 'Colombia',
+      department,
       notes: 'Registro automático desde landing',
       created_at: new Date().toISOString(),
-    }]);
+    }]).catch(() => {});
 
     return {
       success: true,

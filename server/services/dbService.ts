@@ -80,12 +80,22 @@ export const dbService = {
   },
 
   async insert(table: string, records: any[], clientId?: string | null) {
-    const processedRecords = records.map(r => ({
-      ...r,
-      id: r.id || crypto.randomUUID(),
-      client_id: r.client_id || clientId || 'client-101',
-      created_at: r.created_at || new Date().toISOString()
-    }));
+    const isUuid = (val: any) =>
+      typeof val === 'string' &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(val.trim());
+
+    const processedRecords = records.map(r => {
+      const resolvedClientId = isUuid(r.client_id) ? r.client_id : isUuid(clientId) ? clientId : null;
+      const record: Record<string, any> = {
+        ...r,
+        id: r.id || crypto.randomUUID(),
+        created_at: r.created_at || new Date().toISOString()
+      };
+      if (resolvedClientId) {
+        record.client_id = resolvedClientId;
+      }
+      return record;
+    });
 
     // Invalidate reads cache for table
     invalidateCache(table, clientId);
