@@ -166,32 +166,27 @@ async function restRequest(configuration, table, options = {}) {
 
   const method = options.method || 'GET';
   const withBody = options.body !== undefined;
+  const headers = options.token
+    ? {
+        apikey: configuration.publicKey,
+        authorization: `Bearer ${options.token}`,
+        accept: 'application/json',
+        ...(withBody ? { 'content-type': 'application/json' } : {}),
+        ...(options.prefer ? { prefer: options.prefer } : {})
+      }
+    : serviceHeaders(configuration, withBody, options.prefer || '');
+
   return fetchJson(url, {
     method,
-    headers: serviceHeaders(configuration, withBody, options.prefer || ''),
+    headers,
     body: withBody ? JSON.stringify(options.body) : undefined
   });
 }
 
 async function readProfile(configuration, userId, select = 'id,role,status,client_id,campaign_id,allowed_modules', token = '') {
-  if (token) {
-    const url = new URL(`${configuration.url}/rest/v1/profiles`);
-    url.searchParams.set('id', `eq.${userId}`);
-    url.searchParams.set('select', select);
-    url.searchParams.set('limit', '1');
-    const result = await fetchJson(url, {
-      headers: {
-        apikey: configuration.publicKey,
-        authorization: `Bearer ${token}`,
-        accept: 'application/json'
-      }
-    });
-    if (!result.ok) return { error: result };
-    const rows = Array.isArray(result.data) ? result.data : [];
-    return { profile: rows[0] || null };
-  }
   const result = await restRequest(configuration, 'profiles', {
-    query: { id: `eq.${userId}`, select, limit: 1 }
+    query: { id: `eq.${userId}`, select, limit: 1 },
+    token
   });
   if (!result.ok) return { error: result };
   const rows = Array.isArray(result.data) ? result.data : [];
@@ -256,12 +251,13 @@ function authUserFrom(payload) {
   return payload?.user || payload?.data?.user || (payload?.id ? payload : null);
 }
 
-async function upsertProfile(configuration, profile) {
+async function upsertProfile(configuration, profile, token = '') {
   return restRequest(configuration, 'profiles', {
     method: 'POST',
     query: { on_conflict: 'id' },
     body: profile,
-    prefer: 'resolution=merge-duplicates,return=minimal'
+    prefer: 'resolution=merge-duplicates,return=minimal',
+    token
   });
 }
 
@@ -283,7 +279,8 @@ async function createCampaignUser(request, configuration) {
   }
 
   const campaignResult = await restRequest(configuration, 'campaigns', {
-    query: { id: `eq.${campaignId}`, select: 'id,client_id', limit: 1 }
+    query: { id: `eq.${campaignId}`, select: 'id,client_id', limit: 1 },
+    token: requester.token
   });
   const campaign = Array.isArray(campaignResult.data) ? campaignResult.data[0] : null;
   if (!campaignResult.ok || !campaign) {
@@ -315,7 +312,7 @@ async function createCampaignUser(request, configuration) {
     campaign_id: campaign.id,
     allowed_modules: ['ADMINISTRATIVE', 'TERRITORY', 'STRATEGY', 'CRM', 'DAY_D'],
     updated_at: new Date().toISOString()
-  });
+  }, requester.token);
 
   if (!profileResult.ok) {
     await deleteAuthUser(configuration, createdUser.id).catch(() => undefined);
