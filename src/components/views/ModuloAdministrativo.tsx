@@ -1169,16 +1169,16 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
           const { data: refreshed } = await supabase.auth.refreshSession();
           userId = refreshed.session?.user?.id;
         }
-        if (!userId) throw new Error('Debes iniciar sesión para consultar los jurados.');
-        const { data: profile, error: profileError } = await supabase.from('profiles').select('client_id').eq('id', userId).maybeSingle();
+        const { data: profile, error: profileError } = await supabase.from('profiles').select('client_id,campaign_id').eq('id', userId).maybeSingle();
         if (profileError) throw profileError;
-        if (!profile?.client_id) throw new Error('Tu usuario no tiene una campaña asignada.');
-        setJurorClientId(profile.client_id);
-        const rememberedCampaignId = localStorage.getItem('active_campaign_id');
+        if (!profile?.client_id && !profile?.campaign_id) throw new Error('Tu usuario no tiene una campaña asignada.');
+        const effectiveClientId = profile.client_id || profile.campaign_id;
+        setJurorClientId(effectiveClientId);
+        const rememberedCampaignId = profile.campaign_id || localStorage.getItem('active_campaign_id');
         let campaignQuery = supabase.from('campaigns').select('id,departamento,municipio,circunscripcion,client_id');
         campaignQuery = rememberedCampaignId
           ? campaignQuery.eq('id', rememberedCampaignId)
-          : campaignQuery.eq('client_id', profile.client_id);
+          : campaignQuery.eq('client_id', effectiveClientId);
         const { data: campaign, error: campaignError } = await campaignQuery.order('created_at', { ascending: false }).limit(1).maybeSingle();
         if (campaignError) throw campaignError;
         const department = String(campaign?.departamento || '');
@@ -1555,20 +1555,20 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
         const { data: refreshed } = await supabase.auth.refreshSession();
         userId = refreshed.session?.user?.id;
       }
-      if (!userId) throw new Error('Debes iniciar sesión para consultar el CRM electoral.');
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('client_id')
+        .select('client_id,campaign_id')
         .eq('id', userId)
         .maybeSingle();
       if (profileError) throw profileError;
-      if (!profile?.client_id) throw new Error('Tu usuario no tiene una campaña asignada.');
-      setCrmClientId(profile.client_id);
-      const rememberedCampaignId = localStorage.getItem('active_campaign_id');
+      if (!profile?.client_id && !profile?.campaign_id) throw new Error('Tu usuario no tiene una campaña asignada.');
+      const effectiveClientId = profile.client_id || profile.campaign_id;
+      setCrmClientId(effectiveClientId);
+      const rememberedCampaignId = profile.campaign_id || localStorage.getItem('active_campaign_id');
       let crmCampaignQuery = supabase.from('campaigns').select('id,descripcion,municipio');
       crmCampaignQuery = rememberedCampaignId
         ? crmCampaignQuery.eq('id', rememberedCampaignId)
-        : crmCampaignQuery.eq('client_id', profile.client_id);
+        : crmCampaignQuery.eq('client_id', effectiveClientId);
 
       const [leadersResult, votersResult, campaignResult] = await Promise.all([
         supabase.from('leaders').select('*').eq('client_id', profile.client_id).order('created_at', { ascending: false }),
@@ -1935,13 +1935,12 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
         const { data: refreshed } = await supabase.auth.refreshSession();
         userId = refreshed.session?.user?.id;
       }
-      if (!userId) throw new Error('Debes iniciar sesión para consultar los indicadores.');
-      const { data: profile, error: profileError } = await supabase.from('profiles').select('client_id').eq('id', userId).maybeSingle();
+      const { data: profile, error: profileError } = await supabase.from('profiles').select('client_id,campaign_id').eq('id', userId).maybeSingle();
       if (profileError) throw profileError;
-      if (!profile?.client_id) throw new Error('Tu usuario no tiene una organización electoral asignada.');
-      const clientId = profile.client_id;
+      if (!profile?.client_id && !profile?.campaign_id) throw new Error('Tu usuario no tiene una organización electoral asignada.');
+      const clientId = profile.client_id || profile.campaign_id;
 
-      const rememberedCampaignId = localStorage.getItem('active_campaign_id');
+      const rememberedCampaignId = profile.campaign_id || localStorage.getItem('active_campaign_id');
       let campaignQuery = supabase.from('campaigns').select('id,presupuesto_total');
       if (rememberedCampaignId) campaignQuery = campaignQuery.eq('id', rememberedCampaignId);
       else campaignQuery = campaignQuery.eq('client_id', clientId);

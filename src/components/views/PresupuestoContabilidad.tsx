@@ -193,19 +193,19 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
 
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
-          .select('client_id')
+          .select('client_id,campaign_id')
           .eq('id', userId)
           .maybeSingle();
         if (profileError) throw profileError;
-        if (!profile?.client_id) throw new Error('El usuario no tiene una organización electoral asignada.');
+        if (!profile?.client_id && !profile?.campaign_id) throw new Error('El usuario no tiene una organización electoral asignada.');
 
-        const rememberedId = localStorage.getItem('active_campaign_id');
+        const rememberedId = profile?.campaign_id || localStorage.getItem('active_campaign_id');
         let query = supabase.from('campaigns').select('id,client_id,cargo_postulacion,presupuesto_total');
         if (rememberedId) query = query.eq('id', rememberedId);
-        else query = query.eq('client_id', profile.client_id).order('updated_at', { ascending: false });
+        else if (profile?.client_id) query = query.eq('client_id', profile.client_id).order('updated_at', { ascending: false });
         let { data: campaigns, error: campaignError } = await query.limit(1);
         if (campaignError) throw campaignError;
-        if (!campaigns?.length && rememberedId) {
+        if (!campaigns?.length && profile?.client_id) {
           const fallback = await supabase
             .from('campaigns')
             .select('id,client_id,cargo_postulacion,presupuesto_total')
@@ -219,7 +219,7 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
         if (!campaign) throw new Error('No existe una campaña activa accesible para este usuario.');
 
         if (!mounted) return;
-        setActiveClientId(campaign.client_id || profile.client_id);
+        setActiveClientId(campaign.client_id || profile?.client_id || profile?.campaign_id || null);
         setActiveCampaignId(campaign.id);
         setCampaignBudgetLimit(Number(campaign.presupuesto_total ?? 0));
         localStorage.setItem('active_campaign_id', campaign.id);

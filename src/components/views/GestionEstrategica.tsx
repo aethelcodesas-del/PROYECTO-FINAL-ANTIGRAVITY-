@@ -1057,10 +1057,10 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
           userId = refreshed.session?.user?.id;
         }
         if (!userId) throw new Error('Debes iniciar sesión para consultar el perfil del candidato.');
-        const { data: profile, error: profileError } = await supabase.from('profiles').select('client_id').eq('id', userId).maybeSingle();
+        const { data: profile, error: profileError } = await supabase.from('profiles').select('client_id,campaign_id').eq('id', userId).maybeSingle();
         if (profileError) throw profileError;
-        if (!profile?.client_id) throw new Error('Tu usuario no tiene una campaña asignada.');
-        const rememberedCampaignId = localStorage.getItem('active_campaign_id');
+        if (!profile?.client_id && !profile?.campaign_id) throw new Error('Tu usuario no tiene una campaña asignada.');
+        const rememberedCampaignId = profile?.campaign_id || localStorage.getItem('active_campaign_id');
         let query = supabase.from('campaigns').select('id,descripcion,candidato_nombre,cargo_postulacion,departamento,municipio,circunscripcion');
         query = rememberedCampaignId ? query.eq('id', rememberedCampaignId) : query.eq('client_id', profile.client_id);
         const { data: campaigns, error } = await query.order('updated_at', { ascending: false }).limit(1);

@@ -162,12 +162,12 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
 
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
-          .select('client_id')
+          .select('client_id,campaign_id')
           .eq('id', userId)
           .maybeSingle();
         if (profileError) throw profileError;
 
-        const rememberedId = localStorage.getItem('active_campaign_id');
+        const rememberedId = profile?.campaign_id || localStorage.getItem('active_campaign_id');
         let campaignQuery = supabase.from('campaigns').select('*');
         if (rememberedId) campaignQuery = campaignQuery.eq('id', rememberedId);
         else if (profile?.client_id) campaignQuery = campaignQuery.eq('client_id', profile.client_id);

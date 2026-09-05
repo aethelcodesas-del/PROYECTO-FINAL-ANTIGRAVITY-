@@ -277,14 +277,15 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
           userId = refreshed.session?.user?.id;
         }
         if (!userId) throw new Error('Debes iniciar sesión para consultar los testigos.');
-        const { data: profile, error: profileError } = await supabase.from('profiles').select('client_id').eq('id', userId).maybeSingle();
+        const { data: profile, error: profileError } = await supabase.from('profiles').select('client_id,campaign_id').eq('id', userId).maybeSingle();
         if (profileError) throw profileError;
-        if (!profile?.client_id) throw new Error('El usuario no tiene una campaña asignada.');
+        if (!profile?.client_id && !profile?.campaign_id) throw new Error('El usuario no tiene una campaña asignada.');
 
-        const rememberedCampaignId = localStorage.getItem('active_campaign_id');
+        const rememberedCampaignId = profile?.campaign_id || localStorage.getItem('active_campaign_id');
         let campaignQuery = supabase.from('campaigns').select('*');
         if (rememberedCampaignId) campaignQuery = campaignQuery.eq('id', rememberedCampaignId);
-        else campaignQuery = campaignQuery.eq('client_id', profile.client_id);
+        else if (profile?.client_id) campaignQuery = campaignQuery.eq('client_id', profile.client_id);
+        else throw new Error('Tu usuario no tiene una campaña asignada.');
         const { data: campaigns, error: campaignError } = await campaignQuery.limit(1);
         if (campaignError) throw campaignError;
         const campaign = campaigns?.[0];
