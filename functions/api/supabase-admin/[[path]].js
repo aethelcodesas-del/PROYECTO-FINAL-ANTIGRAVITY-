@@ -66,16 +66,20 @@ async function verifyPendingDeletion(configuration, campaignId, userIds, token) 
   return difference === 0;
 }
 
+const DEFAULT_SUPABASE_URL = 'https://cjvztlvxdsuiluybvtpl.supabase.co';
+const DEFAULT_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNqdnp0bHZ4ZHN1aWx1eWJ2dHBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg0NjU3MDAsImV4cCI6MjEwNDA0MTcwMH0.E-aIfV1P8XUDRW-lGC7lC6x6eOpwIdJeCpFDnxOI-uY';
+
 function getConfiguration(env) {
-  const url = clean(env.VITE_SUPABASE_URL || env.NEXT_PUBLIC_SUPABASE_URL)
+  const url = clean(env?.VITE_SUPABASE_URL || env?.NEXT_PUBLIC_SUPABASE_URL || DEFAULT_SUPABASE_URL)
     .replace(/\/rest\/v1\/?$/, '')
     .replace(/\/$/, '');
   const publicKey = clean(
-    env.VITE_SUPABASE_ANON_KEY ||
-    env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-    env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+    env?.VITE_SUPABASE_ANON_KEY ||
+    env?.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    env?.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+    DEFAULT_SUPABASE_ANON_KEY
   );
-  const serverKey = clean(env.SUPABASE_SECRET_KEY || env.SUPABASE_SERVICE_ROLE_KEY);
+  const serverKey = clean(env?.SUPABASE_SECRET_KEY || env?.SUPABASE_SERVICE_ROLE_KEY || publicKey);
 
   return { url, publicKey, serverKey };
 }
