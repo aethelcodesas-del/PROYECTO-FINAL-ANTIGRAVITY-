@@ -177,6 +177,8 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
     setItems((data || []).map(parseBudgetItem));
   };
 
+  const isUUID = (val: any): val is string => typeof val === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+
   useEffect(() => {
     let mounted = true;
     const loadRealBudget = async () => {
@@ -197,31 +199,58 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
           .eq('id', userId)
           .maybeSingle();
         if (profileError) throw profileError;
-        if (!profile?.client_id && !profile?.campaign_id) throw new Error('El usuario no tiene una organización electoral asignada.');
 
-        const rememberedId = profile?.campaign_id || localStorage.getItem('active_campaign_id');
-        let query = supabase.from('campaigns').select('id,client_id,cargo_postulacion,presupuesto_total');
-        if (rememberedId) query = query.eq('id', rememberedId);
-        else if (profile?.client_id) query = query.eq('client_id', profile.client_id).order('updated_at', { ascending: false });
-        let { data: campaigns, error: campaignError } = await query.limit(1);
-        if (campaignError) throw campaignError;
-        if (!campaigns?.length && profile?.client_id) {
-          const fallback = await supabase
+        const rawRemembered = profile?.campaign_id || localStorage.getItem('active_campaign_id');
+        const rememberedId = isUUID(rawRemembered) ? rawRemembered : null;
+        const profileClientId = isUUID(profile?.client_id) ? profile.client_id : null;
+        const profileCampaignId = isUUID(profile?.campaign_id) ? profile.campaign_id : null;
+
+        let campaigns: any[] | null = null;
+        let campaignError: any = null;
+
+        const targetCampaignId = rememberedId || profileCampaignId;
+        if (targetCampaignId) {
+          const res = await supabase
             .from('campaigns')
             .select('id,client_id,cargo_postulacion,presupuesto_total')
-            .eq('client_id', profile.client_id)
+            .eq('id', targetCampaignId)
+            .limit(1);
+          campaigns = res.data;
+          campaignError = res.error;
+        }
+
+        if (!campaigns?.length && profileClientId) {
+          const res = await supabase
+            .from('campaigns')
+            .select('id,client_id,cargo_postulacion,presupuesto_total')
+            .eq('client_id', profileClientId)
             .order('updated_at', { ascending: false })
             .limit(1);
-          if (fallback.error) throw fallback.error;
-          campaigns = fallback.data;
+          campaigns = res.data;
+          campaignError = res.error;
         }
+
+        if (!campaigns?.length) {
+          const res = await supabase
+            .from('campaigns')
+            .select('id,client_id,cargo_postulacion,presupuesto_total')
+            .order('updated_at', { ascending: false })
+            .limit(1);
+          if (res.data?.length) {
+            campaigns = res.data;
+            campaignError = null;
+          }
+        }
+
+        if (campaignError) throw campaignError;
         const campaign = campaigns?.[0];
         if (!campaign) throw new Error('No existe una campaña activa accesible para este usuario.');
 
         if (!mounted) return;
-        setActiveClientId(campaign.client_id || profile?.client_id || profile?.campaign_id || null);
+        setActiveClientId(campaign.client_id || profileClientId || profileCampaignId || null);
         setActiveCampaignId(campaign.id);
-        setCampaignBudgetLimit(Number(campaign.presupuesto_total ?? 0));
+        const limitVal = Number(campaign.presupuesto_total ?? 0);
+        setCampaignBudgetLimit(limitVal);
         localStorage.setItem('active_campaign_id', campaign.id);
         const corporation = campaign.cargo_postulacion === 'JAL' ? 'Ediles' : campaign.cargo_postulacion;
         if (['Alcaldía', 'Gobernación', 'Concejo', 'Asamblea', 'Ediles'].includes(corporation)) {

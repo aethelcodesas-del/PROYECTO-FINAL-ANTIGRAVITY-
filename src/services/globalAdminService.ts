@@ -532,12 +532,20 @@ export class GlobalAdminService {
       demoExpiresAt: demoExpiresAt
     };
 
+    const type = data.type || 'Alcaldía';
+    const isNational = ['Presidencia', 'Senado', 'Cámara'].includes(type);
+    const isDept = ['Gobernación', 'Asamblea'].includes(type);
+    const circ = isNational ? 'NACIONAL' : isDept ? 'DEPARTAMENTAL' : 'MUNICIPAL';
+
     const newRow: any = {
       nombre: String(data.name || '').trim(),
       candidato_nombre: String(data.candidateName || '').trim(),
-      cargo_postulacion: String(data.type || 'Alcaldía'),
+      cargo_postulacion: String(type),
+      circunscripcion: circ,
       departamento: String(data.department || 'Antioquia'),
       municipio: String(data.city || 'Medellín'),
+      presupuesto_total: Number(data.budgetLimitCop || 0),
+      meta_votos: Number(data.registeredVoters || 0),
       estado: data.status === 'En Pausa' || data.status === 'PAUSADA'
         ? 'PAUSADA'
         : data.status === 'Finalizada' || data.status === 'FINALIZADA'

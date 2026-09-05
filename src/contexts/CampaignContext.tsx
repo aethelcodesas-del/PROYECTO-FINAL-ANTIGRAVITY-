@@ -150,21 +150,29 @@ export const CampaignProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const reload = useCallback(() => setRevision(r => r + 1), []);
 
   // ── Carga métricas en vivo ─────────────────────────────────────────────────
+  const isUUID = (val: any): val is string => typeof val === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+
   const loadLiveMetrics = useCallback(async (campaignId: string, clientId: string) => {
-    if (!campaignId || !clientId) return;
+    if (!campaignId || !isUUID(campaignId)) return;
     setIsLiveLoading(true);
     try {
       // Presupuesto: suma de budget_items agrupado por tipo
       const { data: budgetRows } = await supabase
         .from('budget_items')
-        .select('tipo, monto_ejecutado, monto_asignado')
+        .select('tipo, monto, observaciones, estado')
         .eq('campaign_id', campaignId);
 
       let executed = 0;
       let income = 0;
       (budgetRows || []).forEach((row: any) => {
-        if (row.tipo === 'Gasto') executed += Number(row.monto_ejecutado ?? row.monto_asignado ?? 0);
-        if (row.tipo === 'Ingreso') income += Number(row.monto_ejecutado ?? row.monto_asignado ?? 0);
+        if (row.estado === 'ANULADO') return;
+        let amount = Number(row.monto ?? 0);
+        try {
+          const meta = JSON.parse(row.observaciones || '{}')?.budgetMeta;
+          if (meta?.montoEjecutado !== undefined) amount = Number(meta.montoEjecutado);
+        } catch {}
+        if (String(row.tipo).toUpperCase() === 'GASTO') executed += amount;
+        if (String(row.tipo).toUpperCase() === 'INGRESO') income += amount;
       });
 
       // Tope CNE desde la campaña
@@ -176,12 +184,13 @@ export const CampaignProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const limit = Number(campRow?.presupuesto_total ?? 0);
 
       // Conteos de personas por client_id
-      const [leaders, voters, witnesses, jurors] = await Promise.all([
-        countTable('leaders',   'client_id', clientId),
-        countTable('voters',    'client_id', clientId),
-        countTable('witnesses', 'client_id', clientId),
-        countTable('jurors',    'client_id', clientId),
-      ]);
+      const validClientId = isUUID(clientId) ? clientId : null;
+      const [leaders, voters, witnesses, jurors] = validClientId ? await Promise.all([
+        countTable('leaders',   'client_id', validClientId),
+        countTable('voters',    'client_id', validClientId),
+        countTable('witnesses', 'client_id', validClientId),
+        countTable('jurors',    'client_id', validClientId),
+      ]) : [0, 0, 0, 0];
 
       setLive({
         budgetLimitCop:     limit,
@@ -288,41 +297,29 @@ export const CampaignProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           .eq('id', userId)
           .maybeSingle();
 
-        const rememberedId = localStorage.getItem('active_campaign_id');
+        const rawRemembered = profile?.campaign_id || localStorage.getItem('active_campaign_id');
+        const rememberedId = isUUID(rawRemembered) ? rawRemembered : null;
+        const profileClientId = isUUID(profile?.client_id) ? profile.client_id : null;
+        const profileCampaignId = isUUID(profile?.campaign_id) ? profile.campaign_id : null;
 
-        let query = supabase.from('campaigns').select(
-          'id, nombre_campana, nombre_candidato, tipo_cargo, departamento, municipio, circunscripcion, slogan, partido_coalicion, color_primario, client_id, descripcion, presupuesto_total'
-        );
-
-        // ── Estrategia de búsqueda con validación de pertenencia ───────────────────────
-        // 1. Si hay ID recordado, verificar que pertenece al cliente del usuario
         let rows: any[] | null = null;
         let dbError: any = null;
 
-        if (rememberedId && profile?.client_id) {
-          // Buscar por ID recordado pero validando client_id
+        // 1. Si hay ID de campaña, buscar directamente
+        const targetId = rememberedId || profileCampaignId;
+        if (targetId) {
           const result = await supabase.from('campaigns').select(
-            'id, nombre_campana, nombre_candidato, tipo_cargo, departamento, municipio, circunscripcion, slogan, partido_coalicion, color_primario, client_id, descripcion, presupuesto_total'
-          ).eq('id', rememberedId).eq('client_id', profile.client_id).limit(1);
-          rows = result.data;
-          dbError = result.error;
-          // Si el ID recordado no pertenece a este cliente, ignorarlo
-          if (!rows?.length) {
-            localStorage.removeItem('active_campaign_id');
-          }
-        }
-
-        // 2. Si no hay resultado, buscar por client_id (más actualizada)
-        if (!rows?.length && profile?.client_id) {
-          const result = await query.eq('client_id', profile.client_id)
-            .order('updated_at', { ascending: false }).limit(1);
+            'id, nombre, candidato_nombre, cargo_postulacion, departamento, municipio, circunscripcion, client_id, descripcion, presupuesto_total, estado'
+          ).eq('id', targetId).limit(1);
           rows = result.data;
           dbError = result.error;
         }
 
-        // 3. Fallback por campaign_id del perfil
-        if (!rows?.length && profile?.campaign_id) {
-          const result = await query.eq('id', profile.campaign_id).limit(1);
+        // 2. Si no hay resultado y hay client_id, buscar por client_id
+        if (!rows?.length && profileClientId) {
+          const result = await supabase.from('campaigns').select(
+            'id, nombre, candidato_nombre, cargo_postulacion, departamento, municipio, circunscripcion, client_id, descripcion, presupuesto_total, estado'
+          ).eq('client_id', profileClientId).order('updated_at', { ascending: false }).limit(1);
           rows = result.data;
           dbError = result.error;
         }
@@ -330,7 +327,7 @@ export const CampaignProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (dbError) throw dbError;
 
         if (!rows?.length) { if (!cancelled) setCampaign(null); return; }
-        const row = rows[0]; // campaña más reciente del cliente validada
+        const row = rows[0];
 
         let desc: Record<string, any> = {};
         try { desc = typeof row.descripcion === 'string' ? JSON.parse(row.descripcion) : (row.descripcion || {}); } catch { desc = {}; }
@@ -344,22 +341,22 @@ export const CampaignProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             ? dep
             : [mun, dep].filter(Boolean).join(', ') || 'Circunscripción';
 
-        const clientId = String(row.client_id || profile?.client_id || '');
+        const clientId = String(row.client_id || profile?.client_id || profile?.campaign_id || '');
         const campaignId = String(row.id || '');
 
         const data: CampaignData = {
           campaignId,
           clientId,
-          campaignName:  String(row.nombre_campana  || desc.campaignName  || ''),
-          candidateName: String(row.nombre_candidato || desc.candidateName || desc.fullName || ''),
-          officeType:    String(row.tipo_cargo       || desc.candidateOffice || ''),
+          campaignName:  String(row.nombre            || desc.campaignName  || ''),
+          candidateName: String(row.candidato_nombre  || desc.candidateName || desc.fullName || ''),
+          officeType:    String(row.cargo_postulacion || desc.candidateOffice || ''),
           department:    dep,
           municipality:  mun,
           circunscripcion: circScope,
           territory,
-          slogan:        String(row.slogan           || desc.slogan        || ''),
-          partyAlliance: String(row.partido_coalicion || desc.partyAlliance || ''),
-          primaryColor:  String(row.color_primario   || desc.primaryColor  || '#06b6d4'),
+          slogan:        String(desc.slogan           || ''),
+          partyAlliance: String(desc.partyAlliance    || ''),
+          primaryColor:  String(desc.primaryColor     || '#06b6d4'),
         };
 
         if (!cancelled) {
