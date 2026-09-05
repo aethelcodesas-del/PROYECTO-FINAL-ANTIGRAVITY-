@@ -115,10 +115,9 @@ function bearerToken(request) {
 }
 
 function databaseHeaders(config, userToken, extra = {}) {
-  const key = config.serverKey || config.publicKey;
   return {
-    apikey: key,
-    authorization: `Bearer ${config.serverKey || userToken || key}`,
+    apikey: config.publicKey,
+    authorization: `Bearer ${userToken || config.publicKey}`,
     accept: 'application/json',
     ...extra
   };

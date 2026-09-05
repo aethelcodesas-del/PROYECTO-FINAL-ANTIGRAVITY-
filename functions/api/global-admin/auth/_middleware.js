@@ -75,11 +75,10 @@ async function readGlobalAdminProfile(configuration, token, userId) {
   profileUrl.searchParams.set('select', 'id,email,display_name,role,status,allowed_modules');
   profileUrl.searchParams.set('limit', '1');
 
-  const key = configuration.serverKey || configuration.publicKey;
   const response = await fetch(profileUrl, {
     headers: {
-      apikey: key,
-      authorization: `Bearer ${configuration.serverKey || token}`,
+      apikey: configuration.publicKey,
+      authorization: `Bearer ${token}`,
       accept: 'application/json'
     }
   });
