@@ -114,12 +114,14 @@ export const GlobalAdminModules: React.FC = () => {
         </div>
       )}
 
-      {/* Modules List Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 font-sans">
-        {modules.map((mod) => (
+      {/* Modules List Grid (Only the 3 official system modules) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 font-sans">
+        {modules
+          .filter((mod) => ['modulo_admin', 'gestion_estrategica', 'gestion_territorial'].includes(mod.code))
+          .map((mod) => (
           <div
             key={mod.id}
-            className={`border rounded-2xl p-5 sm:p-6 backdrop-blur-md transition-all duration-300 shadow-xl ${
+            className={`border rounded-2xl p-5 sm:p-6 backdrop-blur-md transition-all duration-300 shadow-xl flex flex-col justify-between ${
               mod.maintenanceMode
                 ? 'bg-amber-950/20 border-amber-500/40 shadow-amber-950/20'
                 : mod.isEnabled
