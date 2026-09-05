@@ -505,11 +505,19 @@ export class GlobalAdminService {
   }
 
   static async createCampaign(data: Partial<GlobalAdminCampaign>): Promise<GlobalAdminCampaign> {
+    const isDemo = Boolean(data.isDemo);
+    const demoDays = Math.min(5, Math.max(1, Number(data.demoDays || 5)));
+    const now = new Date();
+    const createdAt = now.toISOString();
+    const demoExpiresAt = isDemo
+      ? (data.demoExpiresAt ? new Date(data.demoExpiresAt).toISOString() : new Date(now.getTime() + demoDays * 24 * 60 * 60 * 1000).toISOString())
+      : null;
+
     const metaPayload: Record<string, any> = {
       adminManager: data.adminManager || '',
-      systemType: data.isDemo ? 'DEMO' : 'STANDARD',
-      demoDays: data.demoDays || 5,
-      demoExpiresAt: data.demoExpiresAt || null
+      systemType: isDemo ? 'DEMO' : 'STANDARD',
+      demoDays: isDemo ? demoDays : undefined,
+      demoExpiresAt: demoExpiresAt
     };
 
     const newRow: any = {
@@ -520,11 +528,11 @@ export class GlobalAdminService {
       municipio: String(data.city || 'Medellín'),
       presupuesto_total: Number(data.budgetLimitCop || 0),
       estado: data.status === 'Activa' ? 'ACTIVA' : data.status === 'En Pausa' ? 'PAUSADA' : data.status === 'Finalizada' ? 'FINALIZADA' : 'PLANIFICACION',
-      is_demo: Boolean(data.isDemo),
-      demo_expires_at: data.isDemo && data.demoExpiresAt ? data.demoExpiresAt : null,
+      is_demo: isDemo,
+      demo_expires_at: demoExpiresAt,
       descripcion: JSON.stringify(metaPayload),
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      created_at: createdAt,
+      updated_at: createdAt
     };
 
     const { data: inserted, error } = await supabase
@@ -536,7 +544,7 @@ export class GlobalAdminService {
     if (error) {
       try {
         const result = await this.request<{ success: boolean; campaign: GlobalAdminCampaign }>('/campaigns', {
-          method: 'POST', body: JSON.stringify(data)
+          method: 'POST', body: JSON.stringify({ ...data, isDemo, demoDays, demoExpiresAt })
         });
         return result.campaign;
       } catch {
@@ -562,8 +570,8 @@ export class GlobalAdminService {
       createdAt: inserted.created_at,
       lastActivityAt: inserted.updated_at,
       isDemo: Boolean(inserted.is_demo),
-      demoExpiresAt: inserted.demo_expires_at,
-      demoDays: data.demoDays || 5
+      demoExpiresAt: inserted.demo_expires_at || demoExpiresAt,
+      demoDays: demoDays
     };
   }
 
@@ -603,6 +611,15 @@ export class GlobalAdminService {
     if (typeof data.budgetLimitCop === 'number') updatePayload.presupuesto_total = data.budgetLimitCop;
     if (data.status) {
       updatePayload.estado = data.status === 'Activa' ? 'ACTIVA' : data.status === 'En Pausa' ? 'PAUSADA' : data.status === 'Finalizada' ? 'FINALIZADA' : 'PLANIFICACION';
+    }
+    if (data.isDemo !== undefined) {
+      const isDemo = Boolean(data.isDemo);
+      updatePayload.is_demo = isDemo;
+      if (!isDemo) {
+        updatePayload.demo_expires_at = null;
+      } else if (data.demoExpiresAt) {
+        updatePayload.demo_expires_at = new Date(data.demoExpiresAt).toISOString();
+      }
     }
 
     const { data: updated, error } = await supabase

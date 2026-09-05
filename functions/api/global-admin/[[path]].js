@@ -335,10 +335,13 @@ function campaignValues(body, currentRow = null, adminUserId = '') {
   };
   patch.admin_manager = metadata.adminManager;
   patch.descripcion = JSON.stringify(metadata);
+  patch.is_demo = isDemo;
+  patch.demo_expires_at = isDemo ? demoExpiresAt : null;
   patch.updated_at = new Date().toISOString();
   if (!currentRow) {
     patch.created_by = adminUserId || null;
     patch.vote_goal = 0;
+    patch.created_at = new Date().toISOString();
   }
   return patch;
 }
