@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import crypto from "crypto";
+import crypto from "node:crypto";
 
 const normalizeSupabaseUrl = (url: string | undefined): string => {
   if (!url) return '';

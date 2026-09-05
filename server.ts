@@ -1,9 +1,9 @@
 import 'dotenv/config';
 import express from 'express';
-import path from 'path';
-import fs from 'fs';
-import { tmpdir } from 'os';
-import { randomBytes } from 'crypto';
+import path from 'node:path';
+import fs from 'node:fs';
+import { tmpdir } from 'node:os';
+import { randomBytes } from 'node:crypto';
 import { GoogleGenAI } from '@google/genai';
 import globalAdminRouter from './server/routes/globalAdmin.ts';
 import { supabaseAdmin } from './server/services/dbService.ts';

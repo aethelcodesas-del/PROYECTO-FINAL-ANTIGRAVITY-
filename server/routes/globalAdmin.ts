@@ -1,10 +1,10 @@
 import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
-import { randomUUID } from 'crypto';
+import { randomUUID } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
-import fs from 'fs';
-import path from 'path';
-import { tmpdir } from 'os';
+import fs from 'node:fs';
+import path from 'node:path';
+import { tmpdir } from 'node:os';
 import type { GlobalAdminAuditLog } from '../../src/types/globalAdmin.ts';
 import { supabaseAdmin } from '../services/dbService.ts';
 
