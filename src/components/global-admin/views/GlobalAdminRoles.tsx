@@ -252,17 +252,17 @@ export const GlobalAdminRoles: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => openEditModal(selectedRole)}
-                    className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-mono border border-slate-700"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 hover:text-cyan-200 text-xs font-sans font-medium border border-cyan-500/30 transition-all active:scale-95 shadow-sm shadow-cyan-950/30 cursor-pointer whitespace-nowrap"
                   >
-                    <Edit2 className="w-3 h-3 text-cyan-400" />
+                    <Edit2 className="w-3.5 h-3.5 shrink-0 text-cyan-400" />
                     <span>Editar Matriz</span>
                   </button>
                   {!selectedRole.isSystem && (
                     <button
                       onClick={() => handleDeleteRole(selectedRole)}
-                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-rose-950/60 hover:bg-rose-900 text-rose-300 text-xs font-mono border border-rose-500/30"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 hover:text-rose-200 text-xs font-sans font-medium border border-rose-500/30 transition-all active:scale-95 shadow-sm shadow-rose-950/30 cursor-pointer whitespace-nowrap"
                     >
-                      <Trash2 className="w-3 h-3" />
+                      <Trash2 className="w-3.5 h-3.5 shrink-0 text-rose-400" />
                       <span>Eliminar</span>
                     </button>
                   )}
