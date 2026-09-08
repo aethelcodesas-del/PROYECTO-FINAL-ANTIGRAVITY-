@@ -138,6 +138,11 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
   const [editListModalidad, setEditListModalidad] = useState<'Lista Abierta' | 'Lista Cerrada'>('Lista Abierta');
   const [editListMetaVotos, setEditListMetaVotos] = useState<number>(15000);
 
+  // Section 2 validation & photo drag state
+  const [section2Errors, setSection2Errors] = useState<Record<string, string>>({});
+  const [section2Alert, setSection2Alert] = useState<string | null>(null);
+  const [isDraggingPhoto, setIsDraggingPhoto] = useState<boolean>(false);
+
   // Synchronize localStorage whenever campaign dossier changes
   useEffect(() => {
     try {
@@ -581,6 +586,89 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
       return camp;
     });
     updateDossier({ campanasAliadas: updatedAliadas });
+  };
+
+  // Section 2 Candidate Photo & Form Validation Handlers
+  const handlePhotoFile = (file: File) => {
+    if (!file || !file.type.startsWith('image/')) {
+      alert('Por favor suba un archivo de imagen válido (JPG, PNG o WEBP).');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64Url = event.target?.result as string;
+      if (base64Url) {
+        updateDossier({ fotoUrl: base64Url });
+        setSection2Errors(prev => {
+          if (!prev.fotoUrl) return prev;
+          const next = { ...prev };
+          delete next.fotoUrl;
+          return next;
+        });
+        if (section2Alert) setSection2Alert(null);
+        try {
+          localStorage.setItem('candidate_photo', base64Url);
+          window.dispatchEvent(new Event('candidate_photo_updated'));
+        } catch {
+          // ignore
+        }
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemovePhoto = () => {
+    updateDossier({ fotoUrl: '' });
+    try {
+      localStorage.removeItem('candidate_photo');
+      window.dispatchEvent(new Event('candidate_photo_updated'));
+    } catch {
+      // ignore
+    }
+  };
+
+  const validateSection2 = (): boolean => {
+    const errors: Record<string, string> = {};
+
+    if (!activeDossier.nombreCandidato || !activeDossier.nombreCandidato.trim()) {
+      errors.nombreCandidato = 'El nombre completo del candidato es obligatorio.';
+    }
+    if (!activeDossier.cedulaCandidato || !activeDossier.cedulaCandidato.trim()) {
+      errors.cedulaCandidato = 'La cédula de ciudadanía es obligatoria.';
+    }
+    if (!activeDossier.profesionCandidato || !activeDossier.profesionCandidato.trim()) {
+      errors.profesionCandidato = 'La profesión / formación académica es obligatoria.';
+    }
+    if (!activeDossier.telefonoCandidato || !activeDossier.telefonoCandidato.trim()) {
+      errors.telefonoCandidato = 'El teléfono directo / WhatsApp es obligatorio.';
+    }
+    if (!activeDossier.emailCandidato || !activeDossier.emailCandidato.trim()) {
+      errors.emailCandidato = 'El correo electrónico es obligatorio.';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(activeDossier.emailCandidato.trim())) {
+      errors.emailCandidato = 'Ingrese un correo electrónico válido.';
+    }
+    if (!activeDossier.fotoUrl || !activeDossier.fotoUrl.trim()) {
+      errors.fotoUrl = 'La fotografía oficial del candidato es obligatoria.';
+    }
+
+    setSection2Errors(errors);
+
+    if (Object.keys(errors).length > 0) {
+      setSection2Alert('Complete los campos obligatorios antes de guardar la información.');
+      return false;
+    }
+
+    setSection2Alert(null);
+    return true;
+  };
+
+  const handleSaveSection2 = async () => {
+    const isValid = validateSection2();
+    if (!isValid) {
+      return;
+    }
+    setSection2Alert(null);
+    await saveCampaignDossier('Sección 2: Expediente del Candidato');
   };
 
   const entidadTerritorialTexto = activeDossier.circunscripcionTerritorial === 'Departamento' 
@@ -1028,7 +1116,7 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
 
               <button
                 type="button"
-                onClick={() => void saveCampaignDossier('Sección 2: Expediente del Candidato')}
+                onClick={() => void handleSaveSection2()}
                 className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold rounded-xl shadow-lg transition-all flex items-center gap-2 cursor-pointer shrink-0 self-start sm:self-auto"
               >
                 <Save className="w-3.5 h-3.5" />
@@ -1036,67 +1124,150 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
               </button>
             </div>
 
+            {/* Validation Alert */}
+            {section2Alert && (
+              <div className="p-3.5 bg-rose-950/60 border border-rose-500/60 rounded-xl text-rose-200 text-xs font-semibold flex items-center gap-2.5 animate-fadeIn shadow-lg">
+                <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                <span>{section2Alert}</span>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               
               {/* Photo Card */}
-              <div className="bg-[#030d1f] p-4 rounded-2xl border border-cyan-500/20 flex flex-col items-center justify-center space-y-3">
-                <div className="relative group">
-                  <img
-                    src={activeDossier.fotoUrl || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=300&q=80'}
-                    alt={activeDossier.nombreCandidato}
-                    className="w-32 h-32 rounded-2xl object-cover border-2 border-cyan-400/40 shadow-md"
-                  />
-                  <div className="absolute inset-0 bg-slate-950/60 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer">
-                    <Upload className="w-6 h-6 text-cyan-300 pointer-events-none" />
-                  </div>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    id="tarjeton-photo-upload"
-                    onChange={(e) => {
-                      if (e.target.files && e.target.files[0]) {
-                        const file = e.target.files[0];
-                        const reader = new FileReader();
-                        reader.onload = (event) => {
-                          const base64Url = event.target?.result as string;
-                          if (base64Url) {
-                            updateDossier({ fotoUrl: base64Url });
-                            try {
-                              localStorage.setItem('candidate_photo', base64Url);
-                              window.dispatchEvent(new Event('candidate_photo_updated'));
-                            } catch {
-                              // ignore
-                            }
-                          }
-                        };
-                        reader.readAsDataURL(file);
-                      }
-                    }}
-                  />
-                </div>
-                <div className="text-center">
-                  <label htmlFor="tarjeton-photo-upload" className="text-xs font-bold text-slate-200 block cursor-pointer hover:text-cyan-300 transition-colors">
-                    Fotografía Oficial para Tarjetón
-                  </label>
-                  <span className="text-[10px] text-slate-400">Clic en la foto para subir archivo o ingresa URL</span>
-                </div>
+              <div className={`bg-[#030d1f] p-4 rounded-2xl border ${section2Errors.fotoUrl ? 'border-rose-500/60 bg-rose-950/10' : 'border-cyan-500/20'} flex flex-col items-center justify-center space-y-3 transition-all`}>
                 <input
-                  type="text"
-                  value={activeDossier.fotoUrl}
+                  type="file"
+                  accept="image/png,image/jpeg,image/jpg,image/webp"
+                  className="hidden"
+                  id="tarjeton-photo-upload"
                   onChange={(e) => {
-                    const url = e.target.value;
-                    updateDossier({ fotoUrl: url });
-                    try {
-                      localStorage.setItem('candidate_photo', url);
-                      window.dispatchEvent(new Event('candidate_photo_updated'));
-                    } catch {
-                      // ignore
+                    if (e.target.files && e.target.files[0]) {
+                      handlePhotoFile(e.target.files[0]);
                     }
                   }}
-                  placeholder="URL de la fotografía del candidato..."
-                  className="w-full bg-[#051833] border border-cyan-500/30 rounded-xl px-3 py-1.5 text-[11px] text-cyan-200 font-mono focus:outline-none focus:border-emerald-400"
                 />
+
+                {activeDossier.fotoUrl ? (
+                  /* Preview State when valid photo exists */
+                  <div className="flex flex-col items-center space-y-3 w-full">
+                    <div className="relative group">
+                      <img
+                        src={activeDossier.fotoUrl}
+                        alt={activeDossier.nombreCandidato || 'Fotografía del Candidato'}
+                        className="w-32 h-32 rounded-2xl object-cover border-2 border-cyan-400/40 shadow-lg"
+                      />
+                      <label
+                        htmlFor="tarjeton-photo-upload"
+                        className="absolute inset-0 bg-slate-950/70 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer text-cyan-300 gap-1"
+                        title="Cambiar fotografía"
+                      >
+                        <Upload className="w-5 h-5" />
+                        <span className="text-[10px] font-bold">Cambiar Foto</span>
+                      </label>
+                    </div>
+
+                    <div className="text-center w-full">
+                      <h5 className="text-xs font-bold text-slate-200">Fotografía Oficial del Candidato</h5>
+                      <p className="text-[10px] text-emerald-400 font-semibold mt-0.5 flex items-center justify-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" /> Foto Cargada Exitosamente
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 w-full pt-1">
+                      <label
+                        htmlFor="tarjeton-photo-upload"
+                        className="flex-1 py-1.5 px-2 bg-[#051833] hover:bg-[#09254d] text-cyan-300 text-[11px] font-bold rounded-xl border border-cyan-500/30 flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                      >
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Reemplazar</span>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={handleRemovePhoto}
+                        className="py-1.5 px-2.5 bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 text-[11px] font-bold rounded-xl border border-rose-500/30 flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                        title="Eliminar fotografía"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-rose-400" />
+                        <span>Eliminar</span>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  /* Initial Empty Professional State with Drag & Drop */
+                  <div
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      setIsDraggingPhoto(true);
+                    }}
+                    onDragLeave={() => setIsDraggingPhoto(false)}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setIsDraggingPhoto(false);
+                      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                        handlePhotoFile(e.dataTransfer.files[0]);
+                      }
+                    }}
+                    className={`w-full p-4 rounded-xl border-2 border-dashed ${
+                      isDraggingPhoto
+                        ? 'border-emerald-400 bg-emerald-950/20'
+                        : section2Errors.fotoUrl
+                        ? 'border-rose-500/80 bg-rose-950/20'
+                        : 'border-cyan-500/30 bg-[#020b18]'
+                    } flex flex-col items-center justify-center text-center transition-all`}
+                  >
+                    <div className="w-16 h-16 rounded-2xl bg-[#051833] border border-cyan-500/30 flex items-center justify-center text-slate-400 mb-2">
+                      <User className="w-8 h-8 text-slate-400" />
+                    </div>
+
+                    <h5 className="text-xs font-bold text-slate-200">Fotografía oficial del candidato</h5>
+                    <p className="text-[10px] text-slate-400 mt-1 max-w-[200px] leading-snug">
+                      Suba una imagen JPG o PNG o ingrese una URL
+                    </p>
+
+                    <label
+                      htmlFor="tarjeton-photo-upload"
+                      className="mt-3 px-3 py-1.5 bg-[#051833] hover:bg-[#09254d] text-cyan-300 text-[11px] font-bold rounded-xl border border-cyan-500/40 flex items-center gap-1.5 cursor-pointer transition-colors shadow-sm"
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>Seleccionar Imagen</span>
+                    </label>
+                  </div>
+                )}
+
+                {/* Optional URL Input */}
+                <div className="w-full space-y-1">
+                  <label className="block text-[10px] font-bold text-slate-400">O ingrese URL de la fotografía</label>
+                  <input
+                    type="text"
+                    value={activeDossier.fotoUrl || ''}
+                    onChange={(e) => {
+                      const url = e.target.value;
+                      updateDossier({ fotoUrl: url });
+                      if (section2Errors.fotoUrl && url.trim()) {
+                        setSection2Errors(prev => {
+                          const next = { ...prev };
+                          delete next.fotoUrl;
+                          return next;
+                        });
+                      }
+                      if (section2Alert) setSection2Alert(null);
+                      try {
+                        localStorage.setItem('candidate_photo', url);
+                        window.dispatchEvent(new Event('candidate_photo_updated'));
+                      } catch {
+                        // ignore
+                      }
+                    }}
+                    placeholder="https://ejemplo.com/foto-candidato.jpg"
+                    className={`w-full bg-[#051833] border ${
+                      section2Errors.fotoUrl ? 'border-rose-500 ring-1 ring-rose-500/50' : 'border-cyan-500/30'
+                    } rounded-xl px-3 py-1.5 text-[11px] text-cyan-200 font-mono focus:outline-none focus:border-emerald-400`}
+                  />
+                  {section2Errors.fotoUrl && (
+                    <p className="text-[10px] text-rose-400 font-medium">{section2Errors.fotoUrl}</p>
+                  )}
+                </div>
               </div>
 
               {/* Basic Fields */}
@@ -1107,11 +1278,18 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
                     <User className="w-4 h-4 text-cyan-400 absolute left-3 top-2.5" />
                     <input
                       type="text"
-                      required
-                      value={activeDossier.nombreCandidato}
+                      value={activeDossier.nombreCandidato || ''}
                       onChange={(e) => {
                         const val = e.target.value;
                         updateDossier({ nombreCandidato: val });
+                        if (section2Errors.nombreCandidato && val.trim()) {
+                          setSection2Errors(prev => {
+                            const next = { ...prev };
+                            delete next.nombreCandidato;
+                            return next;
+                          });
+                        }
+                        if (section2Alert) setSection2Alert(null);
                         try {
                           localStorage.setItem('candidate_name', val);
                           window.dispatchEvent(new Event('candidate_name_updated'));
@@ -1119,9 +1297,15 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
                           // ignore
                         }
                       }}
-                      className="w-full bg-[#030d1f] border border-cyan-500/30 rounded-xl pl-9 pr-3 py-2 text-white font-bold focus:bg-[#051833] focus:outline-none focus:border-emerald-400"
+                      placeholder="Ej. Juan Pérez Gómez"
+                      className={`w-full bg-[#030d1f] border ${
+                        section2Errors.nombreCandidato ? 'border-rose-500 ring-1 ring-rose-500/50' : 'border-cyan-500/30'
+                      } rounded-xl pl-9 pr-3 py-2 text-white font-bold focus:bg-[#051833] focus:outline-none focus:border-emerald-400`}
                     />
                   </div>
+                  {section2Errors.nombreCandidato && (
+                    <p className="text-[10px] text-rose-400 font-medium mt-1">{section2Errors.nombreCandidato}</p>
+                  )}
                 </div>
 
                 <div>
@@ -1130,69 +1314,138 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
                     <IdCard className="w-4 h-4 text-cyan-400 absolute left-3 top-2.5" />
                     <input
                       type="text"
-                      required
-                      value={activeDossier.cedulaCandidato}
-                      onChange={(e) => updateDossier({ cedulaCandidato: e.target.value })}
-                      className="w-full bg-[#030d1f] border border-cyan-500/30 rounded-xl pl-9 pr-3 py-2 text-white font-bold font-mono focus:bg-[#051833] focus:outline-none focus:border-emerald-400"
+                      value={activeDossier.cedulaCandidato || ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        updateDossier({ cedulaCandidato: val });
+                        if (section2Errors.cedulaCandidato && val.trim()) {
+                          setSection2Errors(prev => {
+                            const next = { ...prev };
+                            delete next.cedulaCandidato;
+                            return next;
+                          });
+                        }
+                        if (section2Alert) setSection2Alert(null);
+                      }}
+                      placeholder="Ej. 1.023.456.789"
+                      className={`w-full bg-[#030d1f] border ${
+                        section2Errors.cedulaCandidato ? 'border-rose-500 ring-1 ring-rose-500/50' : 'border-cyan-500/30'
+                      } rounded-xl pl-9 pr-3 py-2 text-white font-bold font-mono focus:bg-[#051833] focus:outline-none focus:border-emerald-400`}
                     />
                   </div>
+                  {section2Errors.cedulaCandidato && (
+                    <p className="text-[10px] text-rose-400 font-medium mt-1">{section2Errors.cedulaCandidato}</p>
+                  )}
                 </div>
 
                 <div>
                   <label className="block font-bold text-cyan-200 mb-1">Nombre Político / Seudónimo en Tarjetón</label>
                   <input
                     type="text"
-                    value={activeDossier.seudonimoPolitico}
+                    value={activeDossier.seudonimoPolitico || ''}
                     onChange={(e) => updateDossier({ seudonimoPolitico: e.target.value })}
+                    placeholder="Ej. El Profe Juan"
                     className="w-full bg-[#030d1f] border border-cyan-500/30 rounded-xl px-3 py-2 text-white font-bold focus:bg-[#051833] focus:outline-none focus:border-emerald-400"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-bold text-cyan-200 mb-1">Profesión / Formación Académica</label>
+                  <label className="block font-bold text-cyan-200 mb-1">Profesión / Formación Académica *</label>
                   <div className="relative">
                     <Briefcase className="w-4 h-4 text-cyan-400 absolute left-3 top-2.5" />
                     <input
                       type="text"
-                      value={activeDossier.profesionCandidato}
-                      onChange={(e) => updateDossier({ profesionCandidato: e.target.value })}
-                      className="w-full bg-[#030d1f] border border-cyan-500/30 rounded-xl pl-9 pr-3 py-2 text-white font-bold focus:bg-[#051833] focus:outline-none focus:border-emerald-400"
+                      value={activeDossier.profesionCandidato || ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        updateDossier({ profesionCandidato: val });
+                        if (section2Errors.profesionCandidato && val.trim()) {
+                          setSection2Errors(prev => {
+                            const next = { ...prev };
+                            delete next.profesionCandidato;
+                            return next;
+                          });
+                        }
+                        if (section2Alert) setSection2Alert(null);
+                      }}
+                      placeholder="Ej. Abogado y Magíster en Derecho Público"
+                      className={`w-full bg-[#030d1f] border ${
+                        section2Errors.profesionCandidato ? 'border-rose-500 ring-1 ring-rose-500/50' : 'border-cyan-500/30'
+                      } rounded-xl pl-9 pr-3 py-2 text-white font-bold focus:bg-[#051833] focus:outline-none focus:border-emerald-400`}
                     />
                   </div>
+                  {section2Errors.profesionCandidato && (
+                    <p className="text-[10px] text-rose-400 font-medium mt-1">{section2Errors.profesionCandidato}</p>
+                  )}
                 </div>
 
                 <div>
-                  <label className="block font-bold text-cyan-200 mb-1">Teléfono Directo / WhatsApp</label>
+                  <label className="block font-bold text-cyan-200 mb-1">Teléfono Directo / WhatsApp *</label>
                   <div className="relative">
                     <Phone className="w-4 h-4 text-cyan-400 absolute left-3 top-2.5" />
                     <input
                       type="text"
-                      value={activeDossier.telefonoCandidato}
-                      onChange={(e) => updateDossier({ telefonoCandidato: e.target.value })}
-                      className="w-full bg-[#030d1f] border border-cyan-500/30 rounded-xl pl-9 pr-3 py-2 text-white font-bold font-mono focus:bg-[#051833] focus:outline-none focus:border-emerald-400"
+                      value={activeDossier.telefonoCandidato || ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        updateDossier({ telefonoCandidato: val });
+                        if (section2Errors.telefonoCandidato && val.trim()) {
+                          setSection2Errors(prev => {
+                            const next = { ...prev };
+                            delete next.telefonoCandidato;
+                            return next;
+                          });
+                        }
+                        if (section2Alert) setSection2Alert(null);
+                      }}
+                      placeholder="Ej. +57 300 123 4567"
+                      className={`w-full bg-[#030d1f] border ${
+                        section2Errors.telefonoCandidato ? 'border-rose-500 ring-1 ring-rose-500/50' : 'border-cyan-500/30'
+                      } rounded-xl pl-9 pr-3 py-2 text-white font-bold font-mono focus:bg-[#051833] focus:outline-none focus:border-emerald-400`}
                     />
                   </div>
+                  {section2Errors.telefonoCandidato && (
+                    <p className="text-[10px] text-rose-400 font-medium mt-1">{section2Errors.telefonoCandidato}</p>
+                  )}
                 </div>
 
                 <div>
-                  <label className="block font-bold text-cyan-200 mb-1">Correo Electrónico de Contacto</label>
+                  <label className="block font-bold text-cyan-200 mb-1">Correo Electrónico de Contacto *</label>
                   <div className="relative">
                     <Mail className="w-4 h-4 text-cyan-400 absolute left-3 top-2.5" />
                     <input
                       type="email"
-                      value={activeDossier.emailCandidato}
-                      onChange={(e) => updateDossier({ emailCandidato: e.target.value })}
-                      className="w-full bg-[#030d1f] border border-cyan-500/30 rounded-xl pl-9 pr-3 py-2 text-white font-bold focus:bg-[#051833] focus:outline-none focus:border-emerald-400"
+                      value={activeDossier.emailCandidato || ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        updateDossier({ emailCandidato: val });
+                        if (section2Errors.emailCandidato && val.trim()) {
+                          setSection2Errors(prev => {
+                            const next = { ...prev };
+                            delete next.emailCandidato;
+                            return next;
+                          });
+                        }
+                        if (section2Alert) setSection2Alert(null);
+                      }}
+                      placeholder="candidato@campana.com"
+                      className={`w-full bg-[#030d1f] border ${
+                        section2Errors.emailCandidato ? 'border-rose-500 ring-1 ring-rose-500/50' : 'border-cyan-500/30'
+                      } rounded-xl pl-9 pr-3 py-2 text-white font-bold focus:bg-[#051833] focus:outline-none focus:border-emerald-400`}
                     />
                   </div>
+                  {section2Errors.emailCandidato && (
+                    <p className="text-[10px] text-rose-400 font-medium mt-1">{section2Errors.emailCandidato}</p>
+                  )}
                 </div>
 
                 <div className="col-span-1 md:col-span-2">
                   <label className="block font-bold text-cyan-200 mb-1">Resumen de Hoja de Vida & Perfil Político</label>
                   <textarea
                     rows={2}
-                    value={activeDossier.resumenVida}
+                    value={activeDossier.resumenVida || ''}
                     onChange={(e) => updateDossier({ resumenVida: e.target.value })}
+                    placeholder="Breve reseña del perfil público, experiencia comunitaria o trayectoria política..."
                     className="w-full bg-[#030d1f] border border-cyan-500/30 rounded-xl p-3 text-white text-xs focus:bg-[#051833] focus:outline-none focus:border-emerald-400"
                   ></textarea>
                 </div>
