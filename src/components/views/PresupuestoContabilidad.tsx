@@ -1707,37 +1707,50 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
       {/* MODAL: CREAR / EDITAR ÍTEM DE PRESUPUESTO */}
       {/* ---------------------------------------------------------------------- */}
       {showItemModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
-          <div className="bg-[#030d1d] rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl border border-slate-800">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-2">
-                <div className="p-2 bg-emerald-950/80 text-emerald-400 border border-emerald-700/50 rounded-xl">
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-fadeIn">
+          <div className="bg-gradient-to-b from-[#061329] to-[#020712] rounded-3xl max-w-lg w-full p-6 space-y-5 shadow-2xl border border-slate-700/70 ring-1 ring-emerald-500/20">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-inner">
                   <DollarSign className="w-5 h-5" />
                 </div>
                 <div>
-                  <h4 className="font-extrabold text-white text-sm">
-                    {editingItem ? 'Editar Ítem de Presupuesto' : 'Crear Nuevo Ítem de Presupuesto'}
-                  </h4>
-                  <p className="text-[10px] text-slate-400">Asignación codificada según normatividad CNE</p>
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-extrabold text-white text-base tracking-tight">
+                      {editingItem ? 'Editar Ítem de Presupuesto' : 'Crear Nuevo Ítem de Presupuesto'}
+                    </h4>
+                    <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                      formTipo === 'Ingreso'
+                        ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
+                        : 'bg-rose-500/10 text-rose-300 border-rose-500/30'
+                    }`}>
+                      {formTipo}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 font-medium">Asignación codificada según normatividad CNE y Cuentas Claras</p>
                 </div>
               </div>
               <button
                 onClick={() => setShowItemModal(false)}
-                className="text-slate-400 hover:text-white text-lg font-bold cursor-pointer"
+                className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-800/60 hover:bg-slate-700 text-slate-400 hover:text-white transition-all cursor-pointer border border-slate-700/50"
               >
                 ✕
               </button>
             </div>
 
-            <form onSubmit={handleSaveItem} className="space-y-3.5 text-xs">
+            <form onSubmit={handleSaveItem} className="space-y-4 text-xs">
               
-              <div className="grid grid-cols-2 gap-3">
+              {/* Tipo y Rubro */}
+              <div className="grid grid-cols-2 gap-3.5">
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-300 mb-1">Tipo de Registro *</label>
+                  <label className="block text-[11px] font-bold text-slate-300 mb-1.5">
+                    Tipo de Registro <span className="text-emerald-400">*</span>
+                  </label>
                   <select
                     value={formTipo}
                     onChange={(e) => setFormTipo(e.target.value as any)}
-                    className="w-full bg-[#020712] border border-slate-700 rounded-xl px-3 py-1.5 font-bold text-white focus:outline-none focus:border-emerald-400"
+                    className="w-full bg-[#020712] border border-slate-700/80 hover:border-slate-600 rounded-xl px-3.5 py-2.5 font-bold text-white focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/20 transition-all cursor-pointer"
                   >
                     <option value="Gasto">Gasto / Egreso</option>
                     <option value="Ingreso">Ingreso / Aporte</option>
@@ -1745,11 +1758,13 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-300 mb-1">Código Rubro CNE *</label>
+                  <label className="block text-[11px] font-bold text-slate-300 mb-1.5">
+                    Código Rubro CNE <span className="text-emerald-400">*</span>
+                  </label>
                   <select
                     value={formCodigoRubro}
                     onChange={(e) => setFormCodigoRubro(e.target.value)}
-                    className="w-full bg-[#020712] border border-slate-700 rounded-xl px-3 py-1.5 font-mono font-bold text-white focus:outline-none focus:border-emerald-400"
+                    className="w-full bg-[#020712] border border-slate-700/80 hover:border-slate-600 rounded-xl px-3.5 py-2.5 font-mono font-bold text-white focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/20 transition-all cursor-pointer"
                   >
                     <option value="101">101 - Aportes Propios Candidato</option>
                     <option value="102">102 - Créditos Bancarios</option>
@@ -1765,25 +1780,31 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
                 </div>
               </div>
 
+              {/* Concepto */}
               <div>
-                <label className="block text-[10px] font-bold text-slate-300 mb-1">Concepto / Nombre del Ítem *</label>
+                <label className="block text-[11px] font-bold text-slate-300 mb-1.5">
+                  Concepto / Nombre del Ítem <span className="text-emerald-400">*</span>
+                </label>
                 <input
                   type="text"
                   required
                   value={formNombre}
                   onChange={(e) => setFormNombre(e.target.value)}
                   placeholder="Ej: Impresión de 50.000 Volantes Comunas Norte"
-                  className="w-full bg-[#020712] border border-slate-700 rounded-xl px-3 py-1.5 font-medium text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400"
+                  className="w-full bg-[#020712] border border-slate-700/80 hover:border-slate-600 rounded-xl px-3.5 py-2.5 font-medium text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              {/* Centro de Costo y Estado */}
+              <div className="grid grid-cols-2 gap-3.5">
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-300 mb-1">Centro de Costo *</label>
+                  <label className="block text-[11px] font-bold text-slate-300 mb-1.5">
+                    Centro de Costo <span className="text-emerald-400">*</span>
+                  </label>
                   <select
                     value={formCentroCosto}
                     onChange={(e) => setFormCentroCosto(e.target.value as any)}
-                    className="w-full bg-[#020712] border border-slate-700 rounded-xl px-3 py-1.5 font-bold text-white focus:outline-none focus:border-emerald-400"
+                    className="w-full bg-[#020712] border border-slate-700/80 hover:border-slate-600 rounded-xl px-3.5 py-2.5 font-bold text-white focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/20 transition-all cursor-pointer"
                   >
                     <option value="Comunicaciones & Pauta">Comunicaciones & Pauta</option>
                     <option value="Operación Territorial">Operación Territorial</option>
@@ -1795,11 +1816,13 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-300 mb-1">Estado de Auditoría *</label>
+                  <label className="block text-[11px] font-bold text-slate-300 mb-1.5">
+                    Estado de Auditoría <span className="text-emerald-400">*</span>
+                  </label>
                   <select
                     value={formEstado}
                     onChange={(e) => setFormEstado(e.target.value as any)}
-                    className="w-full bg-[#020712] border border-slate-700 rounded-xl px-3 py-1.5 font-bold text-white focus:outline-none focus:border-emerald-400"
+                    className="w-full bg-[#020712] border border-slate-700/80 hover:border-slate-600 rounded-xl px-3.5 py-2.5 font-bold text-white focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/20 transition-all cursor-pointer"
                   >
                     <option value="Borrador">Borrador</option>
                     <option value="Pendiente Aprobación">Pendiente Aprobación</option>
@@ -1810,77 +1833,114 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              {/* Montos Formateados en Moneda Colombiana con Separador de Miles (.) */}
+              <div className="grid grid-cols-2 gap-3.5 bg-slate-900/40 p-3.5 rounded-2xl border border-slate-800/80">
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-300 mb-1">Monto Asignado (COP) *</label>
-                  <input
-                    type="number"
-                    required
-                    value={formMontoAsignado}
-                    onChange={(e) => setFormMontoAsignado(Number(e.target.value))}
-                    className="w-full bg-[#020712] border border-slate-700 rounded-xl px-3 py-1.5 font-mono font-bold text-white focus:outline-none focus:border-emerald-400"
-                  />
+                  <label className="block text-[11px] font-bold text-slate-300 mb-1.5">
+                    Monto Asignado (COP) <span className="text-emerald-400">*</span>
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-emerald-400 text-sm select-none pointer-events-none">
+                      $
+                    </span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      required
+                      value={formMontoAsignado ? new Intl.NumberFormat('es-CO').format(formMontoAsignado) : ''}
+                      onChange={(e) => {
+                        const num = Number(e.target.value.replace(/\D/g, ''));
+                        setFormMontoAsignado(num);
+                      }}
+                      placeholder="0"
+                      className="w-full bg-[#020712] border border-slate-700/80 hover:border-slate-600 rounded-xl pl-8 pr-3.5 py-2 font-mono font-bold text-white text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                    />
+                  </div>
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-300 mb-1">Monto Ejecutado Real (COP)</label>
-                  <input
-                    type="number"
-                    value={formMontoEjecutado}
-                    onChange={(e) => setFormMontoEjecutado(Number(e.target.value))}
-                    className="w-full bg-[#020712] border border-slate-700 rounded-xl px-3 py-1.5 font-mono font-bold text-white focus:outline-none focus:border-emerald-400"
-                  />
+                  <label className="block text-[11px] font-bold text-slate-300 mb-1.5">
+                    Monto Ejecutado Real (COP)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-emerald-400 text-sm select-none pointer-events-none">
+                      $
+                    </span>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={formMontoEjecutado ? new Intl.NumberFormat('es-CO').format(formMontoEjecutado) : ''}
+                      onChange={(e) => {
+                        const num = Number(e.target.value.replace(/\D/g, ''));
+                        setFormMontoEjecutado(num);
+                      }}
+                      placeholder="0"
+                      className="w-full bg-[#020712] border border-slate-700/80 hover:border-slate-600 rounded-xl pl-8 pr-3.5 py-2 font-mono font-bold text-white text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 border-t border-slate-800 pt-2">
+              {/* Proveedor y Factura */}
+              <div className="space-y-3 pt-1">
+                <div className="grid grid-cols-2 gap-3.5">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1.5">Razón Social Tercero / Proveedor</label>
+                    <input
+                      type="text"
+                      value={formTerceroNombre}
+                      onChange={(e) => setFormTerceroNombre(e.target.value)}
+                      placeholder="Ej: Imprenta Regional S.A.S."
+                      className="w-full bg-[#020712] border border-slate-700/80 hover:border-slate-600 rounded-xl px-3.5 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1.5">NIT / Cédula del Tercero</label>
+                    <input
+                      type="text"
+                      value={formTerceroNit}
+                      onChange={(e) => setFormTerceroNit(e.target.value)}
+                      placeholder="Ej: NIT 900.123.456-7"
+                      className="w-full bg-[#020712] border border-slate-700/80 hover:border-slate-600 rounded-xl px-3.5 py-2 text-white placeholder-slate-500 font-mono focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                    />
+                  </div>
+                </div>
+
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-300 mb-1">Razón Social Tercero / Proveedor</label>
+                  <label className="block text-[11px] font-bold text-slate-300 mb-1.5">Número Factura / Comprobante</label>
                   <input
                     type="text"
-                    value={formTerceroNombre}
-                    onChange={(e) => setFormTerceroNombre(e.target.value)}
-                    placeholder="Ej: Imprenta Regional S.A.S."
-                    className="w-full bg-[#020712] border border-slate-700 rounded-xl px-3 py-1.5 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-bold text-slate-300 mb-1">NIT / Cédula del Tercero</label>
-                  <input
-                    type="text"
-                    value={formTerceroNit}
-                    onChange={(e) => setFormTerceroNit(e.target.value)}
-                    placeholder="Ej: NIT 900.123.456-7"
-                    className="w-full bg-[#020712] border border-slate-700 rounded-xl px-3 py-1.5 text-white placeholder-slate-500 font-mono focus:outline-none focus:border-emerald-400"
+                    value={formFacturaNumero}
+                    onChange={(e) => setFormFacturaNumero(e.target.value)}
+                    placeholder="Ej: FE-98124"
+                    className="w-full bg-[#020712] border border-slate-700/80 hover:border-slate-600 rounded-xl px-3.5 py-2 text-white placeholder-slate-500 font-mono focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/20 transition-all"
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-[10px] font-bold text-slate-300 mb-1">Número Factura / Comprobante</label>
-                <input
-                  type="text"
-                  value={formFacturaNumero}
-                  onChange={(e) => setFormFacturaNumero(e.target.value)}
-                  placeholder="Ej: FE-98124"
-                  className="w-full bg-[#020712] border border-slate-700 rounded-xl px-3 py-1.5 text-white placeholder-slate-500 font-mono focus:outline-none focus:border-emerald-400"
-                />
-              </div>
-
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
+              {/* Botones de Acción */}
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800/80">
                 <button
                   type="button"
                   onClick={() => setShowItemModal(false)}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl cursor-pointer border border-slate-700"
+                  className="px-5 py-2.5 bg-slate-800/80 hover:bg-slate-700 text-slate-300 font-bold rounded-xl cursor-pointer border border-slate-700/60 transition-all"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow cursor-pointer"
+                  disabled={budgetSaving}
+                  className="px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-900/30 cursor-pointer transition-all disabled:opacity-50 flex items-center gap-2"
                 >
-                  Guardar Ítem
+                  {budgetSaving ? (
+                    <>
+                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Guardando...
+                    </>
+                  ) : (
+                    'Guardar Ítem'
+                  )}
                 </button>
               </div>
 
