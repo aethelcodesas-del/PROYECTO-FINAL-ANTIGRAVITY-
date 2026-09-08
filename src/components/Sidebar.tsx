@@ -72,12 +72,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
     return localStorage.getItem('candidate_photo');
   });
 
-  // Prioridad: contexto global > localStorage > fallback
-  const candidateName = campaignCtx.candidateName
-    || localStorage.getItem('candidate_name')
-    || 'Candidato Principal';
+  const isGlobalSuperAdmin = userRole === 'GLOBAL_ADMIN' || userRole === 'superadmin' || authUser?.role === 'SUPERADMIN' || authUser?.role === 'GLOBAL_ADMIN';
 
-  const campaignTerritory = campaignCtx.municipality
+  // Prioridad: contexto global > localStorage > fallback
+  const candidateName = !isGlobalSuperAdmin ? (campaignCtx.candidateName || localStorage.getItem('candidate_name') || 'Candidato Principal') : '';
+
+  const campaignTerritory = !isGlobalSuperAdmin && campaignCtx.municipality
     ? `${campaignCtx.officeType ? campaignCtx.officeType + ' · ' : ''}${campaignCtx.municipality}`
     : '';
 
@@ -104,8 +104,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
     return (parts[0] || name).slice(0, 2).toUpperCase();
   };
 
-  const userDisplayName = authUser?.name || candidateName || 'Usuario Activo';
-  const userRoleDisplay = authUser?.roleName || authUser?.moduleName || 'Candidato Oficial';
+  const userDisplayName = isGlobalSuperAdmin
+    ? (authUser?.name || 'Propietario del Sistema')
+    : (authUser?.name || candidateName || 'Usuario Activo');
+  const userRoleDisplay = isGlobalSuperAdmin
+    ? (authUser?.roleName || 'Superadministrador')
+    : (authUser?.roleName || authUser?.moduleName || 'Candidato Oficial');
 
   const hasPermission = (permId: string) => {
     const permissions = authUser?.permissions;

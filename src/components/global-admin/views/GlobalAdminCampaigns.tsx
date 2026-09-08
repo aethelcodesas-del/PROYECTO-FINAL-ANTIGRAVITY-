@@ -169,44 +169,6 @@ export const GlobalAdminCampaigns: React.FC = () => {
       window.dispatchEvent(new CustomEvent('global-admin-users-changed', {
         detail: { campaignId: createdCampaign.id, email: formData.accessEmail }
       }));
-      const activeJurisdiction = {
-        campaignId: createdCampaign.id,
-        campaignName: createdCampaign.name,
-        candidateName: createdCampaign.candidateName,
-        electionType: createdCampaign.type,
-        level: jurisdictionLevel(createdCampaign.type),
-        country: 'Colombia',
-        department: createdCampaign.department,
-        municipality: createdCampaign.city,
-        updatedAt: new Date().toISOString()
-      };
-      localStorage.setItem('active_campaign_jurisdiction_v1', JSON.stringify(activeJurisdiction));
-      localStorage.setItem('active_campaign_id', createdCampaign.id);
-      localStorage.setItem('candidate_name', createdCampaign.candidateName);
-      try {
-        const dossierKey = 'elecciones_campana_principal_dossier_v2';
-        const currentDossier = JSON.parse(localStorage.getItem(dossierKey) || '{}');
-        localStorage.setItem(dossierKey, JSON.stringify({
-          ...currentDossier,
-          id: createdCampaign.id,
-          updatedAt: new Date().toISOString(),
-          corporacion: createdCampaign.type,
-          circunscripcionTerritorial: jurisdictionLevel(createdCampaign.type) === 'NACIONAL'
-            ? 'Nacional'
-            : jurisdictionLevel(createdCampaign.type) === 'DEPARTAMENTAL'
-              ? 'Departamento'
-              : 'Municipio',
-          pais: 'Colombia',
-          departamento: createdCampaign.department,
-          municipio: createdCampaign.city,
-          nombreCandidato: createdCampaign.candidateName
-        }));
-      } catch {
-        // La jurisdicción maestra ya quedó guardada aunque no exista un dossier previo.
-      }
-      window.dispatchEvent(new CustomEvent('campaign-jurisdiction-changed', { detail: activeJurisdiction }));
-      window.dispatchEvent(new Event('candidate_name_updated'));
-      window.dispatchEvent(new Event('storage'));
       setShowCreateModal(false);
       setEditingCampaign(null);
       setShowAccessPassword(false);
