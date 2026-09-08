@@ -211,11 +211,11 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
     return clone;
   });
 
-  const [assignedUsers, setAssignedUsers] = useState({
-    admin: ['Santiago Pérez', 'Ober Osorio'],
-    estrategico: ['Carlos Ruiz', 'Diana Gómez'],
-    territorial: ['Felipe Restrepo', 'Juan Valdés', 'Camila Londoño']
-  });
+  const assignedUsers = useMemo(() => ({
+    admin: usersList.filter(u => u.role === 'admin' && u.status === 'Activo'),
+    estrategico: usersList.filter(u => u.role === 'estrategico' && u.status === 'Activo'),
+    territorial: usersList.filter(u => u.role === 'territorial' && u.status === 'Activo')
+  }), [usersList]);
 
   const togglePermission = (role: 'admin' | 'estrategico' | 'territorial', permId: string) => {
     setRolePermissions(prev => ({
@@ -690,10 +690,10 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
         const [{ data: ownerProfile, error: ownerError }, { data: campaigns, error: campaignsError }] = await Promise.all([
           supabase
             .from('profiles')
-            .select('client_id,campaign_id,role')
+            .select('client_id,campaign_id,role,display_name,email')
             .eq('id', ownerId)
             .maybeSingle(),
-          supabase.from('campaigns').select('id,client_id,nombre')
+          supabase.from('campaigns').select('id,client_id,nombre,candidato_nombre')
         ]);
         if (ownerError) throw ownerError;
         if (campaignsError) throw campaignsError;
@@ -722,10 +722,16 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
         if (authUser?.clientId && isUUID(authUser.clientId)) matchIds.add(authUser.clientId);
         if (authUser?.campaignId && isUUID(authUser.campaignId)) matchIds.add(authUser.campaignId);
 
+        const candName = String(matchingCampaign?.candidato_nombre || activeCampaign?.candidateName || '').trim().toLowerCase();
+        const candClientId = matchingCampaign?.client_id;
+        const ownerName = String(ownerProfile?.display_name || authUser?.name || '').trim().toLowerCase();
+        const ownerIsCandidate = (candName && ownerName && (ownerName === candName || ownerName.includes(candName) || candName.includes(ownerName))) ||
+          (candClientId && ownerId === candClientId) ||
+          String(ownerProfile?.role || '').toUpperCase() === 'CANDIDATO';
+
         const { data: rawProfiles, error: profilesError } = await supabase
           .from('profiles')
           .select('id,email,display_name,role,status,allowed_modules,client_id,campaign_id,created_at')
-          .neq('id', ownerId)
           .order('created_at', { ascending: true });
 
         if (profilesError) throw profilesError;
@@ -733,7 +739,18 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
         const profiles = (rawProfiles || []).filter((profile: any) => {
           const r = String(profile.role || '').toUpperCase();
           if (['SUPERADMIN', 'GLOBAL_ADMIN'].includes(r)) return false;
-          if (profile.id === ownerId) return false;
+
+          const pName = String(profile.display_name || '').trim().toLowerCase();
+          const pIsCandidate = (candName && pName && (pName === candName || pName.includes(candName) || candName.includes(pName))) ||
+            (candClientId && profile.id === candClientId) ||
+            r === 'CANDIDATO';
+
+          if (ownerIsCandidate) {
+            if (profile.id === ownerId) return true;
+          } else {
+            if (pIsCandidate) return false;
+            if (profile.id === ownerId) return false;
+          }
 
           if (profile.campaign_id && matchIds.has(profile.campaign_id)) return true;
           if (profile.client_id && matchIds.has(profile.client_id)) return true;

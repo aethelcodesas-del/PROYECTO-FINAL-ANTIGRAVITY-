@@ -511,7 +511,13 @@ async function startAppServer(shouldListen = true) {
         email: normalizedEmail,
         password: String(password),
         email_confirm: true,
-        user_metadata: { display_name: displayName, role: normalizedRole, client_id: clientId, campaign_id: campaignId }
+        user_metadata: {
+          display_name: displayName,
+          role: normalizedRole,
+          client_id: clientId,
+          campaign_id: campaignId,
+          created_by_user_id: requesterUser.id
+        }
       });
 
       if (created?.user) {
@@ -532,7 +538,13 @@ async function startAppServer(shouldListen = true) {
         const { error: repairAuthError } = await supabaseAdmin.auth.admin.updateUserById(targetUser.id, {
           password: String(password),
           email_confirm: true,
-          user_metadata: { display_name: displayName, role: normalizedRole, client_id: clientId, campaign_id: campaignId }
+          user_metadata: {
+            display_name: displayName,
+            role: normalizedRole,
+            client_id: clientId,
+            campaign_id: campaignId,
+            created_by_user_id: requesterUser.id
+          }
         });
         if (repairAuthError) return res.status(400).json({ error: repairAuthError.message });
       } else {
@@ -581,6 +593,33 @@ async function startAppServer(shouldListen = true) {
     }
   });
 
+  function isCandidateOwnerServer(profile: any, userMeta: any, activeCampaign: any, allCampaigns: any[]) {
+    if (!profile && !userMeta) return false;
+    const pId = profile?.id || userMeta?.id || '';
+    const pName = String(profile?.display_name || userMeta?.display_name || '').trim().toLowerCase();
+    const pEmail = String(profile?.email || userMeta?.email || '').trim().toLowerCase();
+    const pRole = String(profile?.role || userMeta?.role || '').trim().toUpperCase();
+
+    if (pRole === 'CANDIDATO') return true;
+
+    const relevant = activeCampaign ? [activeCampaign] : (allCampaigns || []);
+    for (const camp of relevant) {
+      if (!camp) continue;
+      if (camp.client_id && pId === camp.client_id) return true;
+      const candName = String(camp.candidato_nombre || '').trim().toLowerCase();
+      if (candName && pName && (candName === pName || pName.includes(candName) || candName.includes(pName))) {
+        return true;
+      }
+      try {
+        const meta = typeof camp.descripcion === 'string' ? JSON.parse(camp.descripcion) : camp.descripcion;
+        if (meta?.candidateEmail && pEmail === String(meta.candidateEmail).trim().toLowerCase()) return true;
+        if (meta?.owner_user_id && pId === meta.owner_user_id) return true;
+        if (meta?.adminManager && String(meta.adminManager).trim().toLowerCase() === pName) return true;
+      } catch {}
+    }
+    return false;
+  }
+
   app.get('/api/supabase-admin/managed-user', async (req, res) => {
     try {
       if (!supabaseAdmin) return res.status(503).json({ error: 'Falta configurar SUPABASE_SECRET_KEY en el servidor.' });
@@ -595,7 +634,7 @@ async function startAppServer(shouldListen = true) {
       const requesterUser = requesterData.user;
       if (!requesterUser) return res.status(401).json({ error: 'Sesión expirada.' });
 
-      const { data: requesterProfile } = await supabaseAdmin.from('profiles').select('id,role,status,client_id,campaign_id').eq('id', requesterUser.id).maybeSingle();
+      const { data: requesterProfile } = await supabaseAdmin.from('profiles').select('id,role,status,client_id,campaign_id,display_name,email').eq('id', requesterUser.id).maybeSingle();
       let clientId = requesterProfile?.client_id || requesterUser.user_metadata?.client_id || null;
       let campaignId = requesterProfile?.campaign_id || requesterUser.user_metadata?.campaign_id || null;
 
@@ -615,9 +654,59 @@ async function startAppServer(shouldListen = true) {
       if (campaignId) matchIds.add(campaignId);
       if (clientId) matchIds.add(clientId);
 
+      // Map auth user metadata
+      const authUsersMap = new Map<string, any>();
+      try {
+        const { data: listData } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 100 });
+        if (Array.isArray(listData?.users)) {
+          for (const u of listData.users) {
+            authUsersMap.set(u.id, u);
+          }
+        }
+      } catch {}
+
+      const requesterRole = String(requesterProfile?.role || '').toUpperCase();
+      const requesterIsGlobalOwner = ['SUPERADMIN', 'GLOBAL_ADMIN'].includes(requesterRole);
+      const requesterIsCandidate = isCandidateOwnerServer(requesterProfile, requesterUser.user_metadata, activeCampaign, camps);
+
       const subusers = (rawProfiles || []).filter((p: any) => {
         const r = String(p.role || '').toUpperCase();
         if (['SUPERADMIN', 'GLOBAL_ADMIN'].includes(r)) return false;
+
+        const pAuth = authUsersMap.get(p.id);
+        const pIsCandidate = isCandidateOwnerServer(p, pAuth?.user_metadata, activeCampaign, camps);
+
+        // Scenario 1: Candidate Owner
+        if (requesterIsCandidate) {
+          if (p.id === requesterUser.id) return true;
+          if (p.campaign_id && matchIds.has(p.campaign_id)) return true;
+          if (p.client_id && matchIds.has(p.client_id)) return true;
+          if (!p.campaign_id && !p.client_id) return true;
+          if (camps.length <= 1) return true;
+          return false;
+        }
+
+        // Scenario 2: Secondary Campaign Administrator
+        if (!requesterIsGlobalOwner) {
+          // ❌ Candidate owner account is NEVER visible to secondary administrators
+          if (pIsCandidate) return false;
+          // ❌ Secondary administrator does not manage own account as subordinate
+          if (p.id === requesterUser.id) return false;
+
+          const matchesCampaign = (p.campaign_id && matchIds.has(p.campaign_id)) ||
+            (p.client_id && matchIds.has(p.client_id)) ||
+            (!p.campaign_id && !p.client_id) ||
+            (camps.length <= 1);
+          if (!matchesCampaign) return false;
+
+          const createdBy = pAuth?.user_metadata?.created_by_user_id;
+          if (createdBy) {
+            return createdBy === requesterUser.id;
+          }
+          return true;
+        }
+
+        // Scenario 3: Global Owner
         if (p.id === requesterUser.id) return false;
         if (p.campaign_id && matchIds.has(p.campaign_id)) return true;
         if (p.client_id && matchIds.has(p.client_id)) return true;
@@ -643,6 +732,28 @@ async function startAppServer(shouldListen = true) {
     try {
       if (!supabaseAdmin) return res.status(503).json({ error: 'Falta configurar SUPABASE_SECRET_KEY en el servidor.' });
       const { userId } = req.params;
+
+      const bearer = req.headers.authorization || '';
+      const accessToken = bearer.startsWith('Bearer ') ? bearer.slice(7) : '';
+      if (accessToken) {
+        const publicKey = String(process.env.VITE_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '').trim();
+        const supabaseUrl = String(process.env.VITE_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim();
+        const authVerifier = createClient(supabaseUrl, publicKey, { auth: { persistSession: false, autoRefreshToken: false } });
+        const { data: requesterData } = await authVerifier.auth.getUser(accessToken);
+        const requesterUser = requesterData?.user;
+        if (requesterUser) {
+          const { data: requesterProfile } = await supabaseAdmin.from('profiles').select('id,role,display_name,email').eq('id', requesterUser.id).maybeSingle();
+          const { data: allCampaigns } = await supabaseAdmin.from('campaigns').select('id,client_id,nombre,candidato_nombre,descripcion');
+          const { data: targetProfile } = await supabaseAdmin.from('profiles').select('id,role,display_name,email').eq('id', userId).maybeSingle();
+          const targetIsCandidate = isCandidateOwnerServer(targetProfile, null, null, allCampaigns || []);
+          const requesterIsGlobal = ['SUPERADMIN', 'GLOBAL_ADMIN'].includes(String(requesterProfile?.role || '').toUpperCase());
+          const requesterIsCandidate = isCandidateOwnerServer(requesterProfile, requesterUser.user_metadata, null, allCampaigns || []);
+          if (targetIsCandidate && !requesterIsGlobal && !requesterIsCandidate) {
+            return res.status(403).json({ error: 'No tienes permisos para modificar la cuenta del candidato propietario.' });
+          }
+        }
+      }
+
       const { status, role, allowedModules, displayName } = req.body || {};
       const updates: any = { updated_at: new Date().toISOString() };
       if (status) updates.status = ['ACTIVE', 'ACTIVO'].includes(String(status).toUpperCase()) ? 'ACTIVE' : 'SUSPENDED';
@@ -683,6 +794,27 @@ async function startAppServer(shouldListen = true) {
     try {
       if (!supabaseAdmin) return res.status(503).json({ error: 'Falta configurar SUPABASE_SECRET_KEY en el servidor.' });
       const { userId } = req.params;
+
+      const bearer = req.headers.authorization || '';
+      const accessToken = bearer.startsWith('Bearer ') ? bearer.slice(7) : '';
+      if (accessToken) {
+        const publicKey = String(process.env.VITE_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '').trim();
+        const supabaseUrl = String(process.env.VITE_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim();
+        const authVerifier = createClient(supabaseUrl, publicKey, { auth: { persistSession: false, autoRefreshToken: false } });
+        const { data: requesterData } = await authVerifier.auth.getUser(accessToken);
+        const requesterUser = requesterData?.user;
+        if (requesterUser) {
+          const { data: requesterProfile } = await supabaseAdmin.from('profiles').select('id,role,display_name,email').eq('id', requesterUser.id).maybeSingle();
+          const { data: allCampaigns } = await supabaseAdmin.from('campaigns').select('id,client_id,nombre,candidato_nombre,descripcion');
+          const { data: targetProfile } = await supabaseAdmin.from('profiles').select('id,role,display_name,email').eq('id', userId).maybeSingle();
+          const targetIsCandidate = isCandidateOwnerServer(targetProfile, null, null, allCampaigns || []);
+          const requesterIsGlobal = ['SUPERADMIN', 'GLOBAL_ADMIN'].includes(String(requesterProfile?.role || '').toUpperCase());
+          if (targetIsCandidate && !requesterIsGlobal) {
+            return res.status(403).json({ error: 'No tienes permisos para eliminar la cuenta del candidato propietario.' });
+          }
+        }
+      }
+
       await supabaseAdmin.from('user_permissions').delete().eq('user_id', userId);
       await supabaseAdmin.from('profiles').delete().eq('id', userId);
       await supabaseAdmin.auth.admin.deleteUser(userId).catch(() => undefined);

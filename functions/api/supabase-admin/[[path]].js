@@ -453,7 +453,8 @@ async function createManagedUser(request, configuration) {
     display_name: displayName,
     role,
     client_id: clientId,
-    campaign_id: campaignId
+    campaign_id: campaignId,
+    created_by_user_id: requester.user.id
   };
 
   let targetUser = null;
@@ -549,6 +550,52 @@ async function createManagedUser(request, configuration) {
   }, createdNow ? 201 : 200);
 }
 
+async function getAuthUsersMap(configuration) {
+  const map = new Map();
+  if (!configuration.serverKey) return map;
+  try {
+    for (let page = 1; page <= 5; page += 1) {
+      const url = new URL(authAdminUrl(configuration));
+      url.searchParams.set('page', String(page));
+      url.searchParams.set('per_page', '100');
+      const result = await fetchJson(url, { headers: serviceHeaders(configuration) });
+      if (!result.ok || !Array.isArray(result.data?.users)) break;
+      for (const u of result.data.users) {
+        map.set(u.id, u);
+      }
+      if (result.data.users.length < 100) break;
+    }
+  } catch {}
+  return map;
+}
+
+function isCandidateOwnerAccount(profile, userMetadata, activeCampaign, allCampaigns) {
+  if (!profile && !userMetadata) return false;
+  const pId = profile?.id || userMetadata?.id || '';
+  const pName = clean(profile?.display_name || userMetadata?.display_name || '').toLowerCase();
+  const pEmail = clean(profile?.email || userMetadata?.email || '').toLowerCase();
+  const pRole = clean(profile?.role || userMetadata?.role || '').toUpperCase();
+
+  if (pRole === 'CANDIDATO') return true;
+
+  const relevantCampaigns = activeCampaign ? [activeCampaign] : (allCampaigns || []);
+  for (const camp of relevantCampaigns) {
+    if (!camp) continue;
+    if (camp.client_id && pId === camp.client_id) return true;
+    const candName = clean(camp.candidato_nombre || '').toLowerCase();
+    if (candName && pName && (candName === pName || pName.includes(candName) || candName.includes(pName))) {
+      return true;
+    }
+    try {
+      const meta = typeof camp.descripcion === 'string' ? JSON.parse(camp.descripcion) : camp.descripcion;
+      if (meta?.candidateEmail && pEmail === clean(meta.candidateEmail).toLowerCase()) return true;
+      if (meta?.owner_user_id && pId === meta.owner_user_id) return true;
+      if (meta?.adminManager && clean(meta.adminManager).toLowerCase() === pName) return true;
+    } catch {}
+  }
+  return false;
+}
+
 async function listManagedUsers(request, configuration) {
   const requester = await verifyRequester(request, configuration, MANAGER_ROLES);
   if (requester.error) return requester.error;
@@ -601,11 +648,54 @@ async function listManagedUsers(request, configuration) {
   if (campaignId) matchIds.add(campaignId);
   if (clientId) matchIds.add(clientId);
 
+  const authUsersMap = await getAuthUsersMap(configuration);
+  const requesterIsGlobalOwner = GLOBAL_OWNER_ROLES.includes(requester.role);
+  const requesterIsCandidate = isCandidateOwnerAccount(
+    requester.profile,
+    requester.user?.user_metadata,
+    activeCampaign,
+    allCampaigns
+  );
+
   const subusers = allProfiles.filter((p) => {
     const r = String(p.role || '').toUpperCase();
     if (GLOBAL_OWNER_ROLES.includes(r)) return false;
-    if (p.id === requester.user.id) return false;
 
+    const pAuth = authUsersMap.get(p.id);
+    const pIsCandidate = isCandidateOwnerAccount(p, pAuth?.user_metadata, activeCampaign, allCampaigns);
+
+    // Scenario 1: Requester is the Candidate Owner
+    if (requesterIsCandidate) {
+      if (p.id === requester.user.id) return true;
+      if (p.campaign_id && matchIds.has(p.campaign_id)) return true;
+      if (p.client_id && matchIds.has(p.client_id)) return true;
+      if (!p.campaign_id && !p.client_id) return true;
+      if (allCampaigns.length <= 1) return true;
+      return false;
+    }
+
+    // Scenario 2: Requester is a Secondary Campaign Administrator
+    if (!requesterIsGlobalOwner) {
+      // ❌ Candidate owner account is NEVER visible to secondary administrators
+      if (pIsCandidate) return false;
+      // ❌ Secondary administrator does not manage own account as subordinate
+      if (p.id === requester.user.id) return false;
+
+      const matchesCampaign = (p.campaign_id && matchIds.has(p.campaign_id)) ||
+        (p.client_id && matchIds.has(p.client_id)) ||
+        (!p.campaign_id && !p.client_id) ||
+        (allCampaigns.length <= 1);
+      if (!matchesCampaign) return false;
+
+      const createdBy = pAuth?.user_metadata?.created_by_user_id;
+      if (createdBy) {
+        return createdBy === requester.user.id;
+      }
+      return true;
+    }
+
+    // Scenario 3: Global Owner (SUPERADMIN/GLOBAL_ADMIN)
+    if (p.id === requester.user.id) return false;
     if (p.campaign_id && matchIds.has(p.campaign_id)) return true;
     if (p.client_id && matchIds.has(p.client_id)) return true;
     if (!p.campaign_id && !p.client_id) return true;
@@ -637,6 +727,20 @@ async function updateManagedUser(request, configuration, userId) {
   const requester = await verifyRequester(request, configuration, MANAGER_ROLES);
   if (requester.error) return requester.error;
   if (!userId) return json({ error: 'El usuario es obligatorio.' }, 400);
+
+  const campResult = await restRequest(configuration, 'campaigns', {
+    query: { select: 'id,client_id,nombre,candidato_nombre,cargo_postulacion,departamento,municipio,circunscripcion,presupuesto_total,descripcion,estado' }
+  });
+  const allCampaigns = Array.isArray(campResult.data) ? campResult.data : [];
+  const targetProfileRes = await readProfile(configuration, userId);
+  const targetProfile = targetProfileRes?.profile;
+  const targetIsCandidate = isCandidateOwnerAccount(targetProfile, null, null, allCampaigns);
+  const requesterIsGlobal = GLOBAL_OWNER_ROLES.includes(requester.role);
+  const requesterIsCandidate = isCandidateOwnerAccount(requester.profile, requester.user?.user_metadata, null, allCampaigns);
+
+  if (targetIsCandidate && !requesterIsGlobal && !requesterIsCandidate) {
+    return json({ error: 'No tienes permisos para modificar la cuenta del candidato propietario.' }, 403);
+  }
 
   const parsed = await parseRequestBody(request);
   if (parsed.error) return parsed.error;
@@ -700,6 +804,19 @@ async function deleteManagedUser(request, configuration, userId) {
   if (requester.error) return requester.error;
   if (!userId) return json({ error: 'El usuario es obligatorio.' }, 400);
   if (userId === requester.user.id) return json({ error: 'No puedes eliminar tu propia cuenta.' }, 400);
+
+  const campResult = await restRequest(configuration, 'campaigns', {
+    query: { select: 'id,client_id,nombre,candidato_nombre,cargo_postulacion,departamento,municipio,circunscripcion,presupuesto_total,descripcion,estado' }
+  });
+  const allCampaigns = Array.isArray(campResult.data) ? campResult.data : [];
+  const targetProfileRes = await readProfile(configuration, userId);
+  const targetProfile = targetProfileRes?.profile;
+  const targetIsCandidate = isCandidateOwnerAccount(targetProfile, null, null, allCampaigns);
+  const requesterIsGlobal = GLOBAL_OWNER_ROLES.includes(requester.role);
+
+  if (targetIsCandidate && !requesterIsGlobal) {
+    return json({ error: 'No tienes permisos para eliminar la cuenta del candidato propietario.' }, 403);
+  }
 
   await restRequest(configuration, 'user_permissions', {
     method: 'DELETE',
