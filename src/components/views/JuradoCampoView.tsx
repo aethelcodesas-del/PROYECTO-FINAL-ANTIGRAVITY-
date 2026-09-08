@@ -276,7 +276,6 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
 
   return (
     <div className="responsive-view min-h-[calc(100dvh-60px)] w-full min-w-0 bg-[#030712] text-slate-100 p-3 sm:p-4 md:p-8 space-y-4 sm:space-y-6 max-w-7xl mx-auto overflow-x-hidden">
-      {assignmentLoading && <div className="rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-4 py-3 text-sm text-cyan-200">Cargando asignación real del jurado…</div>}
       {assignmentError && <div className="rounded-xl border border-amber-500/40 bg-amber-950/30 px-4 py-3 text-sm text-amber-200">{assignmentError}</div>}
 
       {/* Banner Principal del Jurado de Mesa */}

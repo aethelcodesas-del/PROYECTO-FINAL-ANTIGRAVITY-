@@ -180,7 +180,6 @@ export const EncuestasView: React.FC<EncuestasViewProps> = ({ onSelectView, auth
 
   return (
     <div className="responsive-view min-h-[calc(100dvh-60px)] w-full min-w-0 bg-[#030712] text-slate-100 p-3 sm:p-4 md:p-8 space-y-4 sm:space-y-6 max-w-7xl mx-auto overflow-x-hidden">
-      {loading && <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 px-4 py-3 text-sm text-blue-200">Cargando encuesta y respuestas reales…</div>}
       {dataError && <div className="rounded-xl border border-amber-500/40 bg-amber-950/30 px-4 py-3 text-sm text-amber-200 flex justify-between gap-3"><span>{dataError}</span><button type="button" onClick={() => void loadRealSurveys()} className="font-bold text-cyan-300">Reintentar</button></div>}
       
       {/* Header Banner */}

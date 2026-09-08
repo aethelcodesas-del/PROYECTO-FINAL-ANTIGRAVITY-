@@ -2378,10 +2378,10 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
         {/* ---------------------------------------------------------------------- */}
         {activeTab === 'inicio' && (
           <div className="space-y-6 animate-fadeIn">
-            {(dashboardLoading || dashboardError) && (
-              <div className={`rounded-xl border p-3 text-xs font-bold flex items-center gap-2 ${dashboardError ? 'bg-rose-950/70 border-rose-500/50 text-rose-200' : 'bg-cyan-950/60 border-cyan-500/40 text-cyan-200'}`}>
-                <RefreshCw className={`w-4 h-4 ${dashboardLoading ? 'animate-spin' : ''}`} />
-                <span>{dashboardLoading ? 'Actualizando indicadores reales de la campaña...' : `Error de indicadores: ${dashboardError}`}</span>
+            {dashboardError && (
+              <div className="rounded-xl border p-3 text-xs font-bold flex items-center gap-2 bg-rose-950/70 border-rose-500/50 text-rose-200">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>Error de indicadores: {dashboardError}</span>
               </div>
             )}
             {/* Global KPI Cards — datos del contexto en tiempo real */}
@@ -3016,10 +3016,10 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
         {activeTab === 'lideres_votantes' && (
           <div className="space-y-6 animate-fadeIn">
 
-            {(crmLoading || crmError) && (
-              <div className={`rounded-xl border p-3 text-xs font-bold flex items-center gap-2 ${crmError ? 'bg-rose-950/70 border-rose-500/50 text-rose-200' : 'bg-cyan-950/60 border-cyan-500/40 text-cyan-200'}`}>
-                <Database className={`w-4 h-4 ${crmLoading ? 'animate-pulse' : ''}`} />
-                <span>{crmLoading ? 'Sincronizando líderes y votantes con Supabase...' : `Error de sincronización: ${crmError}`}</span>
+            {crmError && (
+              <div className="rounded-xl border p-3 text-xs font-bold flex items-center gap-2 bg-rose-950/70 border-rose-500/50 text-rose-200">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>Error de sincronización: {crmError}</span>
               </div>
             )}
 
@@ -4156,10 +4156,10 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
         {/* ---------------------------------------------------------------------- */}
         {activeTab === 'jurados_electorales' && (
           <div className="space-y-6 animate-fadeIn">
-            {(jurorLoading || jurorError) && (
-              <div className={`rounded-xl border p-3 text-xs font-bold flex items-center gap-2 ${jurorError ? 'bg-rose-950/70 border-rose-500/50 text-rose-200' : 'bg-cyan-950/60 border-cyan-500/40 text-cyan-200'}`}>
-                <Database className={`w-4 h-4 ${jurorLoading ? 'animate-pulse' : ''}`} />
-                <span>{jurorLoading ? 'Sincronizando jurados con Supabase...' : `Error de sincronización: ${jurorError}`}</span>
+            {jurorError && (
+              <div className="rounded-xl border p-3 text-xs font-bold flex items-center gap-2 bg-rose-950/70 border-rose-500/50 text-rose-200">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>Error de sincronización: {jurorError}</span>
               </div>
             )}
             {/* Input Oculto para Anexar Archivos de Resolución */}

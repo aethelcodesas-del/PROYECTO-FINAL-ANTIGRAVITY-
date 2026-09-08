@@ -825,12 +825,10 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
         </div>
       )}
 
-      {(witnessLoading || witnessSaving || witnessSyncError) && (
-        <div className={`rounded-xl border px-4 py-3 text-xs font-bold flex items-center gap-2 ${
-          witnessSyncError ? 'bg-rose-950/70 border-rose-500/50 text-rose-200' : 'bg-cyan-950/60 border-cyan-500/40 text-cyan-200'
-        }`}>
-          <RefreshCw className={`w-4 h-4 ${witnessLoading || witnessSaving ? 'animate-spin' : ''}`} />
-          <span>{witnessLoading ? 'Cargando testigos reales desde Supabase...' : witnessSaving ? 'Sincronizando cambios con Supabase...' : `Error de sincronización: ${witnessSyncError}`}</span>
+      {witnessSyncError && (
+        <div className="rounded-xl border px-4 py-3 text-xs font-bold flex items-center gap-2 bg-rose-950/70 border-rose-500/50 text-rose-200">
+          <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+          <span>Error de sincronización: {witnessSyncError}</span>
         </div>
       )}
 

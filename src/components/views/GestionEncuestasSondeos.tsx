@@ -826,11 +826,6 @@ export const GestionEncuestasSondeos: React.FC<GestionEncuestasSondeosProps> = (
 
   return (
     <div className="space-y-6">
-      {realDataLoading && (
-        <div className="rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-4 py-3 text-sm text-cyan-200 flex items-center gap-2">
-          <RefreshCw className="w-4 h-4 animate-spin" /> Sincronizando encuestas reales…
-        </div>
-      )}
       {realDataError && (
         <div className="rounded-xl border border-rose-500/40 bg-rose-950/30 px-4 py-3 text-sm text-rose-200 flex items-center justify-between gap-3">
           <span>{realDataError}</span>

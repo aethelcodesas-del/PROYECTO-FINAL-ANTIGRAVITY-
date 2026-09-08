@@ -687,24 +687,10 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
         </div>
       </div>
 
-      {(campaignLoading || campaignSyncError || lastSyncedAt) && (
-        <div className={`rounded-xl border px-4 py-3 text-xs font-semibold flex flex-wrap items-center justify-between gap-2 ${
-          campaignSyncError
-            ? 'bg-rose-950/60 border-rose-500/50 text-rose-200'
-            : 'bg-cyan-950/40 border-cyan-500/30 text-cyan-200'
-        }`}>
-          <span>
-            {campaignLoading
-              ? 'Cargando expediente real desde Supabase...'
-              : campaignSyncError
-                ? `Sincronización pendiente: ${campaignSyncError}`
-                : 'Expediente conectado a la campaña activa en Supabase.'}
-          </span>
-          {!campaignLoading && !campaignSyncError && lastSyncedAt && (
-            <span className="text-cyan-400 font-mono">
-              Última sincronización: {new Date(lastSyncedAt).toLocaleString('es-CO')}
-            </span>
-          )}
+      {campaignSyncError && (
+        <div className="rounded-xl border px-4 py-3 text-xs font-semibold flex items-center gap-2 bg-rose-950/60 border-rose-500/50 text-rose-200">
+          <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+          <span>Sincronización pendiente: {campaignSyncError}</span>
         </div>
       )}
 
