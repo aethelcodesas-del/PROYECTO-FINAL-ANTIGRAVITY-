@@ -776,6 +776,17 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
 
   const handleUserRoleChangeReal = async (userId: string, newRole: 'admin' | 'estrategico' | 'territorial') => {
     setRbacError('');
+    // Optimistic UI update so users never disappear from list
+    setUsersList(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
+    setUserPermissions(prev => {
+      const currentPerms = prev[userId] || [];
+      const basePerms = MODULE_FUNCTIONS[newRole].map(p => {
+        const existing = currentPerms.find(cp => cp.id === p.id);
+        return { ...p, enabled: existing ? existing.enabled : true };
+      });
+      return { ...prev, [userId]: basePerms };
+    });
+
     const { data: sessionData } = await supabase.auth.getSession();
     const token = sessionData.session?.access_token;
     
@@ -818,6 +829,10 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
       return setRbacError('No puedes suspender tu propia cuenta.');
     }
     const nextStatus = targetUser.status === 'Activo' ? 'SUSPENDED' : 'ACTIVE';
+    const nextUiStatus = targetUser.status === 'Activo' ? 'Suspendido' : 'Activo';
+    // Optimistic update
+    setUsersList(prev => prev.map(u => u.id === userId ? { ...u, status: nextUiStatus } : u));
+
     const { data: sessionData } = await supabase.auth.getSession();
     const token = sessionData.session?.access_token;
 
@@ -856,6 +871,9 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
   const handleDeleteUserReal = async (userId: string, email: string, name: string) => {
     if (authUser && email.toLowerCase() === authUser.email.toLowerCase()) return setRbacError('No puedes eliminar tu propia cuenta.');
     if (!window.confirm(`¿Eliminar el acceso de ${name} (${email})? Esta acción retirará su perfil y todos sus permisos.`)) return;
+
+    // Optimistic update
+    setUsersList(prev => prev.filter(u => u.id !== userId));
 
     const { data: sessionData } = await supabase.auth.getSession();
     const token = sessionData.session?.access_token;

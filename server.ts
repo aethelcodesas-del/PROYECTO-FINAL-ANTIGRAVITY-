@@ -468,7 +468,7 @@ async function startAppServer(shouldListen = true) {
       const requesterStatus = String(requesterProfile?.status || '').trim().toUpperCase();
       if (
         requesterProfileError || !requesterProfile ||
-        !['SUPERADMIN', 'GLOBAL_ADMIN', 'ADMIN_CLIENTE', 'ADMINISTRADOR'].includes(requesterRole) ||
+        !['SUPERADMIN', 'GLOBAL_ADMIN', 'ADMIN_CLIENTE', 'ADMINISTRADOR', 'DIRECTOR', 'COORDINADOR', 'ESTRATEGICO', 'TERRITORIAL', 'GERENTE', 'ANALISTA', 'USUARIO'].includes(requesterRole) ||
         !['ACTIVE', 'ACTIVO'].includes(requesterStatus)
       ) {
         return res.status(403).json({ error: 'Tu cuenta no tiene permisos para crear usuarios.' });
