@@ -3432,7 +3432,38 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                   )}
                 </div>
 
-                {/* Field Configurator */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-bold text-white text-sm flex items-center gap-2"><Users className="w-4 h-4 text-cyan-400" /> Votantes reales registrados</h4>
+                    <span className="text-xs text-slate-400">Total: <strong className="text-cyan-300">{voters.length}</strong></span>
+                  </div>
+                  <div className="overflow-x-auto border border-cyan-500/20 rounded-xl bg-[#030d1d]">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-cyan-950/70 text-cyan-200 border-b border-cyan-800/40">
+                        <tr><th className="p-3">Cédula</th><th className="p-3">Nombre</th><th className="p-3">Líder</th><th className="p-3">Puesto / Mesa</th><th className="p-3">Estado</th><th className="p-3 text-center">Acciones</th></tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800">
+                        {voters.length === 0 ? (
+                          <tr><td colSpan={6} className="p-6 text-center text-slate-500">No hay votantes registrados en esta campaña.</td></tr>
+                        ) : voters.map(voter => (
+                          <tr key={voter.id} className="hover:bg-cyan-950/20">
+                            <td className="p-3 font-mono text-cyan-300">{voter.cc}</td>
+                            <td className="p-3"><button onClick={() => setSelectedVoterDetail(voter)} className="font-bold text-white hover:text-cyan-300 cursor-pointer">{voter.nombre}</button><div className="text-[10px] text-slate-500">{voter.telefono}</div></td>
+                            <td className="p-3 text-slate-300">{voter.lider}</td>
+                            <td className="p-3 text-slate-300">{voter.puesto} · {voter.mesa}</td>
+                            <td className="p-3"><span className={`px-2 py-1 rounded border text-[10px] font-bold ${voter.estado === 'Suspendido' ? 'bg-amber-950 text-amber-300 border-amber-700' : 'bg-emerald-950 text-emerald-300 border-emerald-700'}`}>{voter.estado}</span></td>
+                            <td className="p-3"><div className="flex justify-center gap-1.5">
+                              <button onClick={() => void togglePoliticalCrmStatus('voters', voter.id, voter.estado)} className="px-2 py-1 bg-amber-950/60 text-amber-300 border border-amber-700/50 rounded cursor-pointer">{voter.estado === 'Suspendido' ? 'Activar' : 'Suspender'}</button>
+                              <button onClick={() => void deletePoliticalCrmRecord('voters', voter.id, voter.nombre)} className="p-1.5 bg-rose-950/60 text-rose-300 border border-rose-700/50 rounded cursor-pointer" title="Eliminar votante"><Trash2 className="w-3.5 h-3.5" /></button>
+                            </div></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Field Configurator for Voters (Positioned at the end of the section) */}
                 <div className="overflow-hidden rounded-xl border border-cyan-500/30 bg-[#030d1f]">
                   <button
                     type="button"
@@ -3516,37 +3547,6 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                       </div>
                     </div>
                   )}
-                </div>
-
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-bold text-white text-sm flex items-center gap-2"><Users className="w-4 h-4 text-cyan-400" /> Votantes reales registrados</h4>
-                    <span className="text-xs text-slate-400">Total: <strong className="text-cyan-300">{voters.length}</strong></span>
-                  </div>
-                  <div className="overflow-x-auto border border-cyan-500/20 rounded-xl bg-[#030d1d]">
-                    <table className="w-full text-left text-xs">
-                      <thead className="bg-cyan-950/70 text-cyan-200 border-b border-cyan-800/40">
-                        <tr><th className="p-3">Cédula</th><th className="p-3">Nombre</th><th className="p-3">Líder</th><th className="p-3">Puesto / Mesa</th><th className="p-3">Estado</th><th className="p-3 text-center">Acciones</th></tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-800">
-                        {voters.length === 0 ? (
-                          <tr><td colSpan={6} className="p-6 text-center text-slate-500">No hay votantes registrados en esta campaña.</td></tr>
-                        ) : voters.map(voter => (
-                          <tr key={voter.id} className="hover:bg-cyan-950/20">
-                            <td className="p-3 font-mono text-cyan-300">{voter.cc}</td>
-                            <td className="p-3"><button onClick={() => setSelectedVoterDetail(voter)} className="font-bold text-white hover:text-cyan-300 cursor-pointer">{voter.nombre}</button><div className="text-[10px] text-slate-500">{voter.telefono}</div></td>
-                            <td className="p-3 text-slate-300">{voter.lider}</td>
-                            <td className="p-3 text-slate-300">{voter.puesto} · {voter.mesa}</td>
-                            <td className="p-3"><span className={`px-2 py-1 rounded border text-[10px] font-bold ${voter.estado === 'Suspendido' ? 'bg-amber-950 text-amber-300 border-amber-700' : 'bg-emerald-950 text-emerald-300 border-emerald-700'}`}>{voter.estado}</span></td>
-                            <td className="p-3"><div className="flex justify-center gap-1.5">
-                              <button onClick={() => void togglePoliticalCrmStatus('voters', voter.id, voter.estado)} className="px-2 py-1 bg-amber-950/60 text-amber-300 border border-amber-700/50 rounded cursor-pointer">{voter.estado === 'Suspendido' ? 'Activar' : 'Suspender'}</button>
-                              <button onClick={() => void deletePoliticalCrmRecord('voters', voter.id, voter.nombre)} className="p-1.5 bg-rose-950/60 text-rose-300 border border-rose-700/50 rounded cursor-pointer" title="Eliminar votante"><Trash2 className="w-3.5 h-3.5" /></button>
-                            </div></td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
                 </div>
               </div>
             )}
