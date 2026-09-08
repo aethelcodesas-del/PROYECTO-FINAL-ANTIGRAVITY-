@@ -909,20 +909,52 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
   };
 
   const saveUserPermissionsReal = async (user: any) => {
+    setRbacError('');
     const selected = (userPermissions[user.id] || []).filter((permission) => permission.enabled);
-    const { error: deleteError } = await supabase.from('user_permissions').delete().eq('user_id', user.id);
-    if (deleteError) return setRbacError(`Supabase: ${deleteError.message}`);
-    if (selected.length) {
-      const { error: insertError } = await supabase.from('user_permissions').insert(selected.map((permission) => ({
-        user_id: user.id,
-        module_code: user.role === 'admin' ? 'ADMINISTRATIVE' : user.role === 'estrategico' ? 'STRATEGY' : 'TERRITORY',
-        function_code: permission.id,
-        actions: ['ACCESS']
-      })));
-      if (insertError) return setRbacError(`Supabase: ${insertError.message}`);
+    const moduleCode = user.role === 'admin' ? 'ADMINISTRATIVE' : user.role === 'estrategico' ? 'STRATEGY' : 'TERRITORY';
+    const permissionPayload = selected.map(p => ({
+      moduleCode,
+      functionCode: p.id
+    }));
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
+
+    let apiSaved = false;
+    if (token) {
+      try {
+        const res = await fetch(`/api/supabase-admin/managed-user/${encodeURIComponent(user.id)}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            permissions: permissionPayload
+          })
+        });
+        if (res.ok) {
+          apiSaved = true;
+        }
+      } catch {}
     }
+
+    if (!apiSaved) {
+      const { error: deleteError } = await supabase.from('user_permissions').delete().eq('user_id', user.id);
+      if (deleteError) return setRbacError(`Supabase: ${deleteError.message}`);
+      if (selected.length) {
+        const { error: insertError } = await supabase.from('user_permissions').insert(selected.map((permission) => ({
+          user_id: user.id,
+          module_code: moduleCode,
+          function_code: permission.id,
+          actions: ['ACCESS']
+        })));
+        if (insertError) return setRbacError(`Supabase: ${insertError.message}`);
+      }
+    }
+
     window.dispatchEvent(new CustomEvent('permissions-updated', { detail: { userId: user.id, email: user.email, permissions: userPermissions[user.id] } }));
-    setActionSuccessMessage(`Permisos de ${user.name} sincronizados en Supabase.`);
+    setActionSuccessMessage(`Funciones de ${user.name} actualizadas correctamente.`);
     setExpandedUserId(null);
   };
 

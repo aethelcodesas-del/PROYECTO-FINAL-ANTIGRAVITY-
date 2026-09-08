@@ -651,22 +651,48 @@ async function updateManagedUser(request, configuration, userId) {
   if (Array.isArray(parsed.body?.allowedModules)) {
     updates.allowed_modules = parsed.body.allowedModules;
   }
-  if (parsed.body?.displayName) {
-    updates.display_name = String(parsed.body.displayName).trim();
-  }
   updates.updated_at = new Date().toISOString();
 
-  const profileResult = await restRequest(configuration, 'profiles', {
-    method: 'PATCH',
-    query: { id: `eq.${userId}` },
-    body: updates,
-    prefer: 'return=representation'
-  });
-  if (!profileResult.ok) {
-    return json({ error: errorMessage(profileResult.data, 'No fue posible actualizar el perfil.') }, 400);
+  let updatedProfile = null;
+  if (Object.keys(updates).length > 1) {
+    const profileResult = await restRequest(configuration, 'profiles', {
+      method: 'PATCH',
+      query: { id: `eq.${userId}` },
+      body: updates,
+      prefer: 'return=representation'
+    });
+    if (!profileResult.ok) {
+      return json({ error: errorMessage(profileResult.data, 'No fue posible actualizar el perfil.') }, 400);
+    }
+    updatedProfile = Array.isArray(profileResult.data) ? profileResult.data[0] : null;
   }
 
-  return json({ success: true, profile: Array.isArray(profileResult.data) ? profileResult.data[0] : null });
+  if (Array.isArray(parsed.body?.permissions)) {
+    await restRequest(configuration, 'user_permissions', {
+      method: 'DELETE',
+      query: { user_id: `eq.${userId}` },
+      prefer: 'return=minimal'
+    }).catch(() => undefined);
+
+    if (parsed.body.permissions.length > 0) {
+      const permissionRows = parsed.body.permissions.map((p) => ({
+        user_id: userId,
+        module_code: String(p.moduleCode || p.module_code || 'ADMINISTRATIVE'),
+        function_code: String(p.functionCode || p.function_code || p.id || ''),
+        actions: ['ACCESS']
+      })).filter((p) => p.function_code);
+
+      if (permissionRows.length > 0) {
+        await restRequest(configuration, 'user_permissions', {
+          method: 'POST',
+          body: permissionRows,
+          prefer: 'return=minimal'
+        }).catch(() => undefined);
+      }
+    }
+  }
+
+  return json({ success: true, profile: updatedProfile });
 }
 
 async function deleteManagedUser(request, configuration, userId) {

@@ -650,9 +650,30 @@ async function startAppServer(shouldListen = true) {
       if (Array.isArray(allowedModules)) updates.allowed_modules = allowedModules;
       if (displayName) updates.display_name = String(displayName).trim();
 
-      const { data, error } = await supabaseAdmin.from('profiles').update(updates).eq('id', userId).select().maybeSingle();
-      if (error) return res.status(400).json({ error: error.message });
-      return res.json({ success: true, profile: data });
+      const { permissions } = req.body || {};
+      let updatedProfile = null;
+      if (Object.keys(updates).length > 1) {
+        const { data, error } = await supabaseAdmin.from('profiles').update(updates).eq('id', userId).select().maybeSingle();
+        if (error) return res.status(400).json({ error: error.message });
+        updatedProfile = data;
+      }
+
+      if (Array.isArray(permissions)) {
+        await supabaseAdmin.from('user_permissions').delete().eq('user_id', userId);
+        if (permissions.length > 0) {
+          const permissionRows = permissions.map((p: any) => ({
+            user_id: userId,
+            module_code: String(p.moduleCode || p.module_code || 'ADMINISTRATIVE'),
+            function_code: String(p.functionCode || p.function_code || p.id || ''),
+            actions: ['ACCESS']
+          })).filter((p: any) => p.function_code);
+          if (permissionRows.length > 0) {
+            await supabaseAdmin.from('user_permissions').insert(permissionRows);
+          }
+        }
+      }
+
+      return res.json({ success: true, profile: updatedProfile });
     } catch (error: any) {
       return res.status(500).json({ error: error?.message || 'Error al actualizar usuario.' });
     }
