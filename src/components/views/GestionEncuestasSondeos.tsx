@@ -547,6 +547,21 @@ export const GestionEncuestasSondeos: React.FC<GestionEncuestasSondeosProps> = (
     return data?.id ? String(data.id) : null;
   };
 
+  const isTableMissingError = (error: any): boolean => {
+    if (!error) return false;
+    const message = error.message || String(error);
+    const code = error.code || '';
+    return (
+      code === 'PGRST204' ||
+      code === 'PGRST205' ||
+      code === '42P01' ||
+      /schema cache/i.test(message) ||
+      /does not exist/i.test(message) ||
+      /could not find the table/i.test(message) ||
+      /relation.*does not exist/i.test(message)
+    );
+  };
+
   const loadRealSurveyData = async () => {
     setRealDataLoading(true);
     setRealDataError('');
@@ -569,9 +584,9 @@ export const GestionEncuestasSondeos: React.FC<GestionEncuestasSondeosProps> = (
         supabase.from('survey_pollsters').select('*').eq('campaign_id', campaignId).order('created_at', { ascending: false }),
         supabase.from('survey_responses').select('id,survey_id,answers,consent_confirmed,latitude,longitude,gps_accuracy_meters,duration_seconds,submitted_at').eq('campaign_id', campaignId).order('submitted_at', { ascending: false }),
       ]);
-      if (studiesError) throw studiesError;
-      if (pollstersError) throw pollstersError;
-      if (responsesError) throw responsesError;
+      if (studiesError && !isTableMissingError(studiesError)) throw studiesError;
+      if (pollstersError && !isTableMissingError(pollstersError)) throw pollstersError;
+      if (responsesError && !isTableMissingError(responsesError)) throw responsesError;
 
       const realStudies = (studyRows || []).map(mapStudyRow);
       const studyById = new Map(realStudies.map(study => [study.id, study]));
@@ -589,7 +604,9 @@ export const GestionEncuestasSondeos: React.FC<GestionEncuestasSondeosProps> = (
       setStudies([]);
       setPollsters([]);
       setSurveyResponses([]);
-      setRealDataError(error?.message || 'No fue posible sincronizar las encuestas reales.');
+      if (!isTableMissingError(error)) {
+        setRealDataError(error?.message || 'No fue posible sincronizar las encuestas reales.');
+      }
     } finally {
       setRealDataLoading(false);
     }
