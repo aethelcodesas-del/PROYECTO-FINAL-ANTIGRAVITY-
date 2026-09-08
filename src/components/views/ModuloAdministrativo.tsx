@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useCampaignData, useCampaignLive } from '../../contexts/CampaignContext';
 import { useCampaignGeo } from '../../hooks/useCampaignGeo';
 import { GeoSubdivisionSelect } from '../common/GeoSubdivisionSelect';
