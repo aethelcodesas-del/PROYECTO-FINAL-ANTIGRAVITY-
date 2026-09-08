@@ -158,12 +158,12 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
   const [crmLoading, setCrmLoading] = useState(false);
   const [crmError, setCrmError] = useState('');
 
-  // Auto-dismiss floating action messages quickly (2.5 seconds)
+  // Auto-dismiss floating action messages quickly (2.0 seconds)
   useEffect(() => {
     if (!actionSuccessMessage) return;
     const timer = setTimeout(() => {
       setActionSuccessMessage('');
-    }, 2500);
+    }, 2000);
     return () => clearTimeout(timer);
   }, [actionSuccessMessage]);
 
@@ -460,7 +460,6 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                   setConfirmPassword('');
                   setPasswordError('');
                   setActionSuccessMessage(`¡Usuario ${newUserName} registrado y habilitado exitosamente en la base de datos de la campaña!`);
-                  setTimeout(() => setActionSuccessMessage(''), 5000);
 
                   // Send email confirmation of their account creation (fallback path)
                   insforge.emails.send({
@@ -550,7 +549,6 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                 setConfirmPassword('');
                 setPasswordError('');
                 setActionSuccessMessage(`¡Usuario ${newUserName} registrado y habilitado exitosamente en la base de datos de la campaña!`);
-                setTimeout(() => setActionSuccessMessage(''), 5000);
 
                 // Send email confirmation of their account creation (normal path)
                 insforge.emails.send({
@@ -2614,11 +2612,6 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
             {rbacError && (
               <div className="p-3.5 rounded-xl bg-rose-950/50 border border-rose-500/40 text-rose-300 text-xs flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 shrink-0" /> {rbacError}
-              </div>
-            )}
-            {actionSuccessMessage && (
-              <div className="p-3.5 rounded-xl bg-emerald-950/50 border border-emerald-500/40 text-emerald-300 text-xs flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 shrink-0" /> {actionSuccessMessage}
               </div>
             )}
             <div className="bg-[#041733]/90 rounded-2xl p-6 border border-cyan-500/30 shadow-xl space-y-5">
