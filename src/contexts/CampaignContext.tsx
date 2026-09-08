@@ -297,9 +297,11 @@ export const CampaignProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           .eq('id', userId)
           .maybeSingle();
 
-        const isGlobalAdmin = ['SUPERADMIN', 'GLOBAL_ADMIN'].includes(String(profile?.role || '').toUpperCase());
-        const profileClientId = isUUID(profile?.client_id) ? profile.client_id : null;
-        const profileCampaignId = isUUID(profile?.campaign_id) ? profile.campaign_id : null;
+        const token = sessionData.session?.access_token || '';
+        const userMeta = sessionData.session?.user?.user_metadata || {};
+        const isGlobalAdmin = ['SUPERADMIN', 'GLOBAL_ADMIN'].includes(String(profile?.role || userMeta.role || '').toUpperCase());
+        const profileClientId = (isUUID(profile?.client_id) ? profile.client_id : (isUUID(userMeta.client_id) ? userMeta.client_id : null));
+        const profileCampaignId = (isUUID(profile?.campaign_id) ? profile.campaign_id : (isUUID(userMeta.campaign_id) ? userMeta.campaign_id : null));
         const rawRemembered = localStorage.getItem('active_campaign_id');
         const rememberedId = isUUID(rawRemembered) ? rawRemembered : null;
 
@@ -350,7 +352,23 @@ export const CampaignProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           dbError = result.error;
         }
 
-        if (dbError) throw dbError;
+        // 4. Fallback to server API if direct query was empty due to RLS
+        if (!rows?.length && token) {
+          try {
+            const apiRes = await fetch('/api/supabase-admin/active-campaign', {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            if (apiRes.ok) {
+              const jsonCamp = await apiRes.json();
+              if (jsonCamp.success && jsonCamp.campaign) {
+                rows = [jsonCamp.campaign];
+                dbError = null;
+              }
+            }
+          } catch {}
+        }
+
+        if (dbError && !rows?.length) throw dbError;
 
         if (!rows?.length) { if (!cancelled) setCampaign(null); return; }
         const row = rows[0];

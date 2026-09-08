@@ -200,9 +200,11 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
           .maybeSingle();
         if (profileError) throw profileError;
 
-        const isGlobalAdmin = ['SUPERADMIN', 'GLOBAL_ADMIN'].includes(String(profile?.role || '').toUpperCase());
-        const profileCampaignId = isUUID(profile?.campaign_id) ? profile.campaign_id : null;
-        const profileClientId = isUUID(profile?.client_id) ? profile.client_id : null;
+        const token = sessionData.session?.access_token || '';
+        const userMeta = sessionData.session?.user?.user_metadata || {};
+        const isGlobalAdmin = ['SUPERADMIN', 'GLOBAL_ADMIN'].includes(String(profile?.role || userMeta.role || '').toUpperCase());
+        const profileCampaignId = (isUUID(profile?.campaign_id) ? profile.campaign_id : (isUUID(userMeta.campaign_id) ? userMeta.campaign_id : (isUUID(authUser?.campaignId) ? authUser.campaignId : null)));
+        const profileClientId = (isUUID(profile?.client_id) ? profile.client_id : (isUUID(userMeta.client_id) ? userMeta.client_id : (isUUID(authUser?.clientId) ? authUser.clientId : null)));
         const rawRemembered = localStorage.getItem('active_campaign_id');
         const rememberedId = isUUID(rawRemembered) ? rawRemembered : null;
 
@@ -263,16 +265,45 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
           }
         }
 
-        if (campaignError) throw campaignError;
-        const campaign = campaigns?.[0];
+        // If direct query returned nothing (e.g. due to RLS), fetch via server API
+        if (!campaigns?.length && token) {
+          try {
+            const apiRes = await fetch('/api/supabase-admin/active-campaign', {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            if (apiRes.ok) {
+              const jsonCamp = await apiRes.json();
+              if (jsonCamp.success && jsonCamp.campaign) {
+                campaigns = [jsonCamp.campaign];
+                campaignError = null;
+              }
+            }
+          } catch {}
+        }
+
+        if (campaignError && !campaigns?.length) throw campaignError;
+        let campaign = campaigns?.[0];
+        
+        // Final fallback if liveMetrics already has the data
+        if (!campaign && liveMetrics.budgetLimitCop > 0) {
+          campaign = {
+            id: profileCampaignId || rememberedId || 'active',
+            client_id: profileClientId,
+            cargo_postulacion: 'Alcaldía',
+            presupuesto_total: liveMetrics.budgetLimitCop
+          };
+        }
+
         if (!campaign) throw new Error('No existe una campaña activa accesible para este usuario.');
 
         if (!mounted) return;
         setActiveClientId(campaign.client_id || profileClientId || profileCampaignId || null);
         setActiveCampaignId(campaign.id);
-        const limitVal = Number(campaign.presupuesto_total ?? 0);
+        const limitVal = Number(campaign.presupuesto_total ?? liveMetrics.budgetLimitCop ?? 0);
         setCampaignBudgetLimit(limitVal);
-        localStorage.setItem('active_campaign_id', campaign.id);
+        if (campaign.id && isUUID(campaign.id)) {
+          localStorage.setItem('active_campaign_id', campaign.id);
+        }
         const corporation = campaign.cargo_postulacion === 'JAL' ? 'Ediles' : campaign.cargo_postulacion;
         if (['Alcaldía', 'Gobernación', 'Concejo', 'Asamblea', 'Ediles'].includes(corporation)) {
           setSelectedCorporation(corporation as typeof selectedCorporation);

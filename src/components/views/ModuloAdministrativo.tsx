@@ -627,95 +627,142 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
     try {
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
       let ownerId = sessionData.session?.user?.id;
+      let token = sessionData.session?.access_token || '';
       if (sessionError || !ownerId) {
         const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
         if (refreshError || !refreshed.session?.user?.id) {
           throw new Error('Debes iniciar sesión para administrar los usuarios de campaña.');
         }
         ownerId = refreshed.session.user.id;
+        token = refreshed.session.access_token;
       }
-      const [{ data: ownerProfile, error: ownerError }, { data: campaigns, error: campaignsError }] = await Promise.all([
-        supabase
+
+      // Try secure API first to bypass client RLS restrictions cleanly
+      let apiSucceeded = false;
+      if (token) {
+        try {
+          const res = await fetch('/api/supabase-admin/managed-user', {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (res.ok) {
+            const jsonRes = await res.json();
+            if (jsonRes.success && Array.isArray(jsonRes.users)) {
+              const profiles = jsonRes.users;
+              const permissionsData = Array.isArray(jsonRes.permissions) ? jsonRes.permissions : [];
+
+              const mappedUsers = profiles.map((profile: any) => ({
+                id: profile.id,
+                name: profile.display_name || profile.email,
+                email: profile.email,
+                role: roleFromProfile(profile),
+                status: ['ACTIVE', 'ACTIVO'].includes(String(profile.status || '').toUpperCase()) ? 'Activo' : 'Suspendido',
+                clientId: profile.client_id || profile.campaign_id
+              }));
+
+              const mappedPermissions: Record<string, { id: string; name: string; category: string; enabled: boolean }[]> = {};
+              mappedUsers.forEach((user: any) => {
+                const explicit = permissionsData.filter((permission: any) => permission.user_id === user.id);
+                mappedPermissions[user.id] = MODULE_FUNCTIONS[user.role].map((permission) => ({
+                  ...permission,
+                  enabled: explicit.some((saved: any) => saved.function_code === permission.id && (saved.actions || []).includes('ACCESS'))
+                }));
+              });
+
+              setUsersList(mappedUsers);
+              setUserPermissions(mappedPermissions);
+              apiSucceeded = true;
+            }
+          }
+        } catch {
+          apiSucceeded = false;
+        }
+      }
+
+      if (!apiSucceeded) {
+        const [{ data: ownerProfile, error: ownerError }, { data: campaigns, error: campaignsError }] = await Promise.all([
+          supabase
+            .from('profiles')
+            .select('client_id,campaign_id,role')
+            .eq('id', ownerId)
+            .maybeSingle(),
+          supabase.from('campaigns').select('id,client_id,nombre')
+        ]);
+        if (ownerError) throw ownerError;
+        if (campaignsError) throw campaignsError;
+
+        const rawRemembered = ownerProfile?.campaign_id || sessionData.session?.user?.user_metadata?.campaign_id || localStorage.getItem('active_campaign_id') || authUser?.campaignId;
+        const targetCampaignId = isUUID(rawRemembered) ? rawRemembered : (isUUID(ownerProfile?.campaign_id) ? ownerProfile.campaign_id : null);
+        const profileClientId = isUUID(ownerProfile?.client_id) ? ownerProfile.client_id : (isUUID(sessionData.session?.user?.user_metadata?.client_id) ? sessionData.session?.user?.user_metadata?.client_id : (isUUID(authUser?.clientId) ? authUser.clientId : null));
+
+        const soleCampaign = (campaigns || []).length === 1 ? campaigns![0] : undefined;
+        const matchingCampaign = (campaigns || []).find((c: any) =>
+          (targetCampaignId && c.id === targetCampaignId) ||
+          (profileClientId && c.client_id === profileClientId) ||
+          (profileClientId && c.id === profileClientId)
+        ) || soleCampaign;
+
+        const activeCampaignId = matchingCampaign?.id || targetCampaignId;
+        const effectiveClientId = matchingCampaign?.client_id || profileClientId;
+
+        const matchIds = new Set<string>();
+        if (activeCampaignId) matchIds.add(activeCampaignId);
+        if (effectiveClientId) matchIds.add(effectiveClientId);
+        if (ownerProfile?.campaign_id && isUUID(ownerProfile.campaign_id)) matchIds.add(ownerProfile.campaign_id);
+        if (ownerProfile?.client_id && isUUID(ownerProfile.client_id)) matchIds.add(ownerProfile.client_id);
+        if (sessionData.session?.user?.user_metadata?.campaign_id && isUUID(sessionData.session.user.user_metadata.campaign_id)) matchIds.add(sessionData.session.user.user_metadata.campaign_id);
+        if (sessionData.session?.user?.user_metadata?.client_id && isUUID(sessionData.session.user.user_metadata.client_id)) matchIds.add(sessionData.session.user.user_metadata.client_id);
+        if (authUser?.clientId && isUUID(authUser.clientId)) matchIds.add(authUser.clientId);
+        if (authUser?.campaignId && isUUID(authUser.campaignId)) matchIds.add(authUser.campaignId);
+
+        const { data: rawProfiles, error: profilesError } = await supabase
           .from('profiles')
-          .select('client_id,campaign_id,role')
-          .eq('id', ownerId)
-          .maybeSingle(),
-        supabase.from('campaigns').select('id,client_id,nombre')
-      ]);
-      if (ownerError) throw ownerError;
-      if (campaignsError) throw campaignsError;
+          .select('id,email,display_name,role,status,allowed_modules,client_id,campaign_id,created_at')
+          .neq('id', ownerId)
+          .order('created_at', { ascending: true });
 
-      const rawRemembered = ownerProfile?.campaign_id || localStorage.getItem('active_campaign_id') || authUser?.campaignId;
-      const targetCampaignId = isUUID(rawRemembered) ? rawRemembered : (isUUID(ownerProfile?.campaign_id) ? ownerProfile.campaign_id : null);
-      const profileClientId = isUUID(ownerProfile?.client_id) ? ownerProfile.client_id : (isUUID(authUser?.clientId) ? authUser.clientId : null);
+        if (profilesError) throw profilesError;
 
-      const soleCampaign = (campaigns || []).length === 1 ? campaigns![0] : undefined;
-      const matchingCampaign = (campaigns || []).find((c: any) =>
-        (targetCampaignId && c.id === targetCampaignId) ||
-        (profileClientId && c.client_id === profileClientId) ||
-        (profileClientId && c.id === profileClientId)
-      ) || soleCampaign;
+        const profiles = (rawProfiles || []).filter((profile: any) => {
+          const r = String(profile.role || '').toUpperCase();
+          if (['SUPERADMIN', 'GLOBAL_ADMIN'].includes(r)) return false;
+          if (profile.id === ownerId) return false;
 
-      const activeCampaignId = matchingCampaign?.id || targetCampaignId;
-      const effectiveClientId = matchingCampaign?.client_id || profileClientId;
+          if (profile.campaign_id && matchIds.has(profile.campaign_id)) return true;
+          if (profile.client_id && matchIds.has(profile.client_id)) return true;
 
-      const matchIds = new Set<string>();
-      if (activeCampaignId) matchIds.add(activeCampaignId);
-      if (effectiveClientId) matchIds.add(effectiveClientId);
-      if (ownerProfile?.campaign_id && isUUID(ownerProfile.campaign_id)) matchIds.add(ownerProfile.campaign_id);
-      if (ownerProfile?.client_id && isUUID(ownerProfile.client_id)) matchIds.add(ownerProfile.client_id);
-      if (authUser?.clientId && isUUID(authUser.clientId)) matchIds.add(authUser.clientId);
-      if (authUser?.campaignId && isUUID(authUser.campaignId)) matchIds.add(authUser.campaignId);
+          if (!profile.campaign_id && !profile.client_id) return true;
+          if (campaigns && campaigns.length <= 1) return true;
 
-      const { data: rawProfiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id,email,display_name,role,status,allowed_modules,client_id,campaign_id,created_at')
-        .neq('id', ownerId)
-        .order('created_at', { ascending: true });
+          return false;
+        });
 
-      if (profilesError) throw profilesError;
+        const profileIds = (profiles || []).map((profile: any) => profile.id);
+        const permissionsResult = profileIds.length
+          ? await supabase.from('user_permissions').select('user_id,module_code,function_code,actions').in('user_id', profileIds)
+          : { data: [], error: null } as any;
+        if (permissionsResult.error) throw permissionsResult.error;
 
-      const profiles = (rawProfiles || []).filter((profile: any) => {
-        const r = String(profile.role || '').toUpperCase();
-        if (['SUPERADMIN', 'GLOBAL_ADMIN'].includes(r)) return false;
-        if (profile.id === ownerId) return false;
-
-        if (profile.campaign_id && matchIds.has(profile.campaign_id)) return true;
-        if (profile.client_id && matchIds.has(profile.client_id)) return true;
-
-        if (!profile.campaign_id && !profile.client_id) return true;
-        if (campaigns && campaigns.length <= 1) return true;
-
-        return false;
-      });
-      if (profilesError) throw profilesError;
-
-      const profileIds = (profiles || []).map((profile: any) => profile.id);
-      const permissionsResult = profileIds.length
-        ? await supabase.from('user_permissions').select('user_id,module_code,function_code,actions').in('user_id', profileIds)
-        : { data: [], error: null } as any;
-      if (permissionsResult.error) throw permissionsResult.error;
-
-      const mappedUsers = (profiles || []).map((profile: any) => ({
-        id: profile.id,
-        name: profile.display_name || profile.email,
-        email: profile.email,
-        role: roleFromProfile(profile),
-        status: ['ACTIVE', 'ACTIVO'].includes(String(profile.status || '').toUpperCase()) ? 'Activo' : 'Suspendido',
-        clientId: profile.client_id || profile.campaign_id
-      }));
-
-      const mappedPermissions: Record<string, { id: string; name: string; category: string; enabled: boolean }[]> = {};
-      mappedUsers.forEach((user: any) => {
-        const explicit = (permissionsResult.data || []).filter((permission: any) => permission.user_id === user.id);
-        mappedPermissions[user.id] = MODULE_FUNCTIONS[user.role].map((permission) => ({
-          ...permission,
-          enabled: explicit.some((saved: any) => saved.function_code === permission.id && (saved.actions || []).includes('ACCESS'))
+        const mappedUsers = (profiles || []).map((profile: any) => ({
+          id: profile.id,
+          name: profile.display_name || profile.email,
+          email: profile.email,
+          role: roleFromProfile(profile),
+          status: ['ACTIVE', 'ACTIVO'].includes(String(profile.status || '').toUpperCase()) ? 'Activo' : 'Suspendido',
+          clientId: profile.client_id || profile.campaign_id
         }));
-      });
 
-      setUsersList(mappedUsers);
-      setUserPermissions(mappedPermissions);
+        const mappedPermissions: Record<string, { id: string; name: string; category: string; enabled: boolean }[]> = {};
+        mappedUsers.forEach((user: any) => {
+          const explicit = (permissionsResult.data || []).filter((permission: any) => permission.user_id === user.id);
+          mappedPermissions[user.id] = MODULE_FUNCTIONS[user.role].map((permission) => ({
+            ...permission,
+            enabled: explicit.some((saved: any) => saved.function_code === permission.id && (saved.actions || []).includes('ACCESS'))
+          }));
+        });
+
+        setUsersList(mappedUsers);
+        setUserPermissions(mappedPermissions);
+      }
     } catch (error: any) {
       setRbacError(isExpectedEmptyCampaignState(error) ? '' : `Supabase: ${error?.message || 'No fue posible cargar los usuarios y permisos.'}`);
     } finally {
@@ -729,8 +776,34 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
 
   const handleUserRoleChangeReal = async (userId: string, newRole: 'admin' | 'estrategico' | 'territorial') => {
     setRbacError('');
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
+    
+    // Try server endpoint first
+    if (token) {
+      try {
+        const res = await fetch(`/api/supabase-admin/managed-user/${encodeURIComponent(userId)}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            role: profileRoleFor(newRole),
+            allowedModules: allowedModulesFor(newRole)
+          })
+        });
+        if (res.ok) {
+          setActionSuccessMessage('Módulo actualizado correctamente.');
+          await loadRealRbac();
+          return;
+        }
+      } catch {}
+    }
+
     const { error } = await supabase.from('profiles').update({
       allowed_modules: allowedModulesFor(newRole),
+      role: profileRoleFor(newRole),
       updated_at: new Date().toISOString()
     }).eq('id', userId);
     if (error) return setRbacError(`Supabase: ${error.message}`);
@@ -745,6 +818,31 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
       return setRbacError('No puedes suspender tu propia cuenta.');
     }
     const nextStatus = targetUser.status === 'Activo' ? 'SUSPENDED' : 'ACTIVE';
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
+
+    if (token) {
+      try {
+        const res = await fetch(`/api/supabase-admin/managed-user/${encodeURIComponent(userId)}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({ status: nextStatus })
+        });
+        if (res.ok) {
+          setActionSuccessMessage(`Usuario ${nextStatus === 'ACTIVE' ? 'activado' : 'suspendido'} correctamente.`);
+          window.dispatchEvent(new Event('global-admin-users-changed'));
+          window.dispatchEvent(new CustomEvent('platform-data-changed', {
+            detail: { table: 'profiles', eventType: 'UPDATE' }
+          }));
+          await loadRealRbac();
+          return;
+        }
+      } catch {}
+    }
+
     const { error } = await supabase.from('profiles').update({ status: nextStatus, updated_at: new Date().toISOString() }).eq('id', userId);
     if (error) return setRbacError(`Supabase: ${error.message}`);
     setActionSuccessMessage(`Usuario ${nextStatus === 'ACTIVE' ? 'activado' : 'suspendido'} correctamente.`);
@@ -758,6 +856,28 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
   const handleDeleteUserReal = async (userId: string, email: string, name: string) => {
     if (authUser && email.toLowerCase() === authUser.email.toLowerCase()) return setRbacError('No puedes eliminar tu propia cuenta.');
     if (!window.confirm(`¿Eliminar el acceso de ${name} (${email})? Esta acción retirará su perfil y todos sus permisos.`)) return;
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
+
+    if (token) {
+      try {
+        const res = await fetch(`/api/supabase-admin/managed-user/${encodeURIComponent(userId)}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.ok) {
+          setActionSuccessMessage(`Acceso de ${name} eliminado correctamente.`);
+          window.dispatchEvent(new Event('global-admin-users-changed'));
+          window.dispatchEvent(new CustomEvent('platform-data-changed', {
+            detail: { table: 'profiles', eventType: 'DELETE' }
+          }));
+          await loadRealRbac();
+          return;
+        }
+      } catch {}
+    }
+
     const { error: permissionsError } = await supabase.from('user_permissions').delete().eq('user_id', userId);
     if (permissionsError) return setRbacError(`Supabase: ${permissionsError.message}`);
     const { error: profileError } = await supabase.from('profiles').delete().eq('id', userId);

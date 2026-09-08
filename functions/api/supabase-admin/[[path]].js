@@ -370,6 +370,15 @@ async function resolveCampaignScope(configuration, profile) {
       }
     }
   }
+  if (!campaignId && !clientId) {
+    const allCampaignsResult = await restRequest(configuration, 'campaigns', {
+      query: { select: 'id,client_id', limit: 2 }
+    });
+    if (allCampaignsResult.ok && Array.isArray(allCampaignsResult.data) && allCampaignsResult.data.length === 1) {
+      campaignId = allCampaignsResult.data[0].id;
+      clientId = allCampaignsResult.data[0].client_id || null;
+    }
+  }
   return { clientId, campaignId };
 }
 
@@ -526,6 +535,172 @@ async function createManagedUser(request, configuration) {
     repaired: !createdNow,
     user: { id: targetUser.id, email, clientId, campaignId }
   }, createdNow ? 201 : 200);
+}
+
+async function listManagedUsers(request, configuration) {
+  const requester = await verifyRequester(request, configuration, MANAGER_ROLES);
+  if (requester.error) return requester.error;
+
+  let { clientId, campaignId } = await resolveCampaignScope(configuration, requester.profile);
+  if (!campaignId && !clientId && requester.user?.user_metadata) {
+    campaignId = requester.user.user_metadata.campaign_id || null;
+    clientId = requester.user.user_metadata.client_id || null;
+  }
+
+  if ((campaignId && !requester.profile.campaign_id) || (clientId && !requester.profile.client_id)) {
+    await restRequest(configuration, 'profiles', {
+      method: 'PATCH',
+      query: { id: `eq.${requester.user.id}` },
+      body: {
+        campaign_id: campaignId || requester.profile.campaign_id,
+        client_id: clientId || requester.profile.client_id,
+        updated_at: new Date().toISOString()
+      },
+      prefer: 'return=minimal'
+    }).catch(() => undefined);
+  }
+
+  const campResult = await restRequest(configuration, 'campaigns', {
+    query: { select: 'id,client_id,nombre,candidato_nombre,cargo_postulacion,departamento,municipio,circunscripcion,presupuesto_total,descripcion,estado' }
+  });
+  const allCampaigns = Array.isArray(campResult.data) ? campResult.data : [];
+  let activeCampaign = null;
+  if (campaignId) {
+    activeCampaign = allCampaigns.find((c) => c.id === campaignId) || null;
+  }
+  if (!activeCampaign && clientId) {
+    activeCampaign = allCampaigns.find((c) => c.client_id === clientId || c.id === clientId) || null;
+  }
+  if (!activeCampaign && allCampaigns.length === 1) {
+    activeCampaign = allCampaigns[0];
+    campaignId = activeCampaign.id;
+    clientId = activeCampaign.client_id || null;
+  }
+
+  const profResult = await restRequest(configuration, 'profiles', {
+    query: {
+      select: 'id,email,display_name,role,status,allowed_modules,client_id,campaign_id,created_at',
+      order: 'created_at.asc'
+    }
+  });
+  const allProfiles = Array.isArray(profResult.data) ? profResult.data : [];
+
+  const matchIds = new Set();
+  if (campaignId) matchIds.add(campaignId);
+  if (clientId) matchIds.add(clientId);
+
+  const subusers = allProfiles.filter((p) => {
+    const r = String(p.role || '').toUpperCase();
+    if (GLOBAL_OWNER_ROLES.includes(r)) return false;
+    if (p.id === requester.user.id) return false;
+
+    if (p.campaign_id && matchIds.has(p.campaign_id)) return true;
+    if (p.client_id && matchIds.has(p.client_id)) return true;
+    if (!p.campaign_id && !p.client_id) return true;
+    if (allCampaigns.length <= 1) return true;
+    return false;
+  });
+
+  const subuserIds = subusers.map((u) => u.id);
+  let permissions = [];
+  if (subuserIds.length > 0) {
+    const permResult = await restRequest(configuration, 'user_permissions', {
+      query: {
+        select: 'user_id,module_code,function_code,actions',
+        user_id: `in.(${subuserIds.join(',')})`
+      }
+    });
+    permissions = Array.isArray(permResult.data) ? permResult.data : [];
+  }
+
+  return json({
+    success: true,
+    users: subusers,
+    permissions,
+    campaign: activeCampaign
+  });
+}
+
+async function updateManagedUser(request, configuration, userId) {
+  const requester = await verifyRequester(request, configuration, MANAGER_ROLES);
+  if (requester.error) return requester.error;
+  if (!userId) return json({ error: 'El usuario es obligatorio.' }, 400);
+
+  const parsed = await parseRequestBody(request);
+  if (parsed.error) return parsed.error;
+
+  const updates = {};
+  if (parsed.body?.status) {
+    updates.status = ['ACTIVE', 'ACTIVO'].includes(String(parsed.body.status).toUpperCase()) ? 'ACTIVE' : 'SUSPENDED';
+  }
+  if (parsed.body?.role) {
+    updates.role = String(parsed.body.role).toUpperCase();
+  }
+  if (Array.isArray(parsed.body?.allowedModules)) {
+    updates.allowed_modules = parsed.body.allowedModules;
+  }
+  if (parsed.body?.displayName) {
+    updates.display_name = String(parsed.body.displayName).trim();
+  }
+  updates.updated_at = new Date().toISOString();
+
+  const profileResult = await restRequest(configuration, 'profiles', {
+    method: 'PATCH',
+    query: { id: `eq.${userId}` },
+    body: updates,
+    prefer: 'return=representation'
+  });
+  if (!profileResult.ok) {
+    return json({ error: errorMessage(profileResult.data, 'No fue posible actualizar el perfil.') }, 400);
+  }
+
+  return json({ success: true, profile: Array.isArray(profileResult.data) ? profileResult.data[0] : null });
+}
+
+async function deleteManagedUser(request, configuration, userId) {
+  const requester = await verifyRequester(request, configuration, MANAGER_ROLES);
+  if (requester.error) return requester.error;
+  if (!userId) return json({ error: 'El usuario es obligatorio.' }, 400);
+  if (userId === requester.user.id) return json({ error: 'No puedes eliminar tu propia cuenta.' }, 400);
+
+  await restRequest(configuration, 'user_permissions', {
+    method: 'DELETE',
+    query: { user_id: `eq.${userId}` },
+    prefer: 'return=minimal'
+  }).catch(() => undefined);
+
+  await deleteProfile(configuration, userId).catch(() => undefined);
+  await deleteAuthUser(configuration, userId).catch(() => undefined);
+
+  return json({ success: true, message: 'Usuario eliminado correctamente.' });
+}
+
+async function getActiveCampaign(request, configuration) {
+  const requester = await verifyRequester(request, configuration, MANAGER_ROLES);
+  if (requester.error) return requester.error;
+
+  let { clientId, campaignId } = await resolveCampaignScope(configuration, requester.profile);
+  if (!campaignId && !clientId && requester.user?.user_metadata) {
+    campaignId = requester.user.user_metadata.campaign_id || null;
+    clientId = requester.user.user_metadata.client_id || null;
+  }
+
+  const campResult = await restRequest(configuration, 'campaigns', {
+    query: { select: 'id,client_id,nombre,candidato_nombre,cargo_postulacion,departamento,municipio,circunscripcion,presupuesto_total,descripcion,estado' }
+  });
+  const allCampaigns = Array.isArray(campResult.data) ? campResult.data : [];
+  let activeCampaign = null;
+  if (campaignId) {
+    activeCampaign = allCampaigns.find((c) => c.id === campaignId) || null;
+  }
+  if (!activeCampaign && clientId) {
+    activeCampaign = allCampaigns.find((c) => c.client_id === clientId || c.id === clientId) || null;
+  }
+  if (!activeCampaign && allCampaigns.length === 1) {
+    activeCampaign = allCampaigns[0];
+  }
+
+  return json({ success: true, campaign: activeCampaign });
 }
 
 function randomTemporaryPassword() {
@@ -1102,11 +1277,13 @@ export async function onRequest(context) {
   const segments = routeSegments(request.url);
   const isCampaignUser = segments.length === 1 && segments[0] === 'campaign-user';
   const isManagedUser = segments.length === 1 && segments[0] === 'managed-user';
+  const isManagedUserId = segments.length === 2 && segments[0] === 'managed-user';
+  const isActiveCampaign = segments.length === 1 && segments[0] === 'active-campaign';
   const isPasswordReset = segments.length === 3 &&
     segments[0] === 'campaign-user' && segments[2] === 'reset-password';
   const isCampaignDelete = segments.length === 2 && segments[0] === 'campaigns';
   const isE14Ocr = segments.length === 1 && segments[0] === 'e14-ocr';
-  const knownRoute = isCampaignUser || isManagedUser || isPasswordReset || isCampaignDelete || isE14Ocr;
+  const knownRoute = isCampaignUser || isManagedUser || isManagedUserId || isActiveCampaign || isPasswordReset || isCampaignDelete || isE14Ocr;
 
   if (!knownRoute) return json({ error: 'Ruta administrativa no disponible.' }, 404);
 
@@ -1119,7 +1296,11 @@ export async function onRequest(context) {
 
   try {
     if (isCampaignUser && method === 'POST') return createCampaignUser(request, configuration);
+    if (isManagedUser && method === 'GET') return listManagedUsers(request, configuration);
     if (isManagedUser && method === 'POST') return createManagedUser(request, configuration);
+    if (isManagedUserId && (method === 'PATCH' || method === 'PUT')) return updateManagedUser(request, configuration, segments[1]);
+    if (isManagedUserId && method === 'DELETE') return deleteManagedUser(request, configuration, segments[1]);
+    if (isActiveCampaign && method === 'GET') return getActiveCampaign(request, configuration);
     if (isPasswordReset && method === 'POST') {
       return resetCampaignUserPassword(request, configuration, segments[1]);
     }
@@ -1128,7 +1309,7 @@ export async function onRequest(context) {
     }
     if (isE14Ocr && method === 'POST') return analyzeE14Image(request, configuration, env);
 
-    const allow = isCampaignDelete ? 'DELETE' : 'POST';
+    const allow = isCampaignDelete || isManagedUserId ? 'GET, POST, PATCH, DELETE' : 'GET, POST';
     return json({ error: 'Método HTTP no permitido para esta ruta.' }, 405, { allow });
   } catch (error) {
     console.error(JSON.stringify({

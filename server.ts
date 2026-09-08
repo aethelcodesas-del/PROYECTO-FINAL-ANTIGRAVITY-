@@ -581,6 +581,127 @@ async function startAppServer(shouldListen = true) {
     }
   });
 
+  app.get('/api/supabase-admin/managed-user', async (req, res) => {
+    try {
+      if (!supabaseAdmin) return res.status(503).json({ error: 'Falta configurar SUPABASE_SECRET_KEY en el servidor.' });
+      const bearer = req.headers.authorization || '';
+      const accessToken = bearer.startsWith('Bearer ') ? bearer.slice(7) : '';
+      if (!accessToken) return res.status(401).json({ error: 'Sesión administrativa requerida.' });
+
+      const publicKey = String(process.env.VITE_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '').trim();
+      const supabaseUrl = String(process.env.VITE_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim();
+      const authVerifier = createClient(supabaseUrl, publicKey, { auth: { persistSession: false, autoRefreshToken: false } });
+      const { data: requesterData } = await authVerifier.auth.getUser(accessToken);
+      const requesterUser = requesterData.user;
+      if (!requesterUser) return res.status(401).json({ error: 'Sesión expirada.' });
+
+      const { data: requesterProfile } = await supabaseAdmin.from('profiles').select('id,role,status,client_id,campaign_id').eq('id', requesterUser.id).maybeSingle();
+      let clientId = requesterProfile?.client_id || requesterUser.user_metadata?.client_id || null;
+      let campaignId = requesterProfile?.campaign_id || requesterUser.user_metadata?.campaign_id || null;
+
+      const { data: allCampaigns } = await supabaseAdmin.from('campaigns').select('id,client_id,nombre,candidato_nombre,cargo_postulacion,departamento,municipio,circunscripcion,presupuesto_total,descripcion,estado');
+      const camps = allCampaigns || [];
+      let activeCampaign = null;
+      if (campaignId) activeCampaign = camps.find((c: any) => c.id === campaignId) || null;
+      if (!activeCampaign && clientId) activeCampaign = camps.find((c: any) => c.client_id === clientId || c.id === clientId) || null;
+      if (!activeCampaign && camps.length === 1) {
+        activeCampaign = camps[0];
+        campaignId = activeCampaign.id;
+        clientId = activeCampaign.client_id || null;
+      }
+
+      const { data: rawProfiles } = await supabaseAdmin.from('profiles').select('id,email,display_name,role,status,allowed_modules,client_id,campaign_id,created_at').order('created_at', { ascending: true });
+      const matchIds = new Set<string>();
+      if (campaignId) matchIds.add(campaignId);
+      if (clientId) matchIds.add(clientId);
+
+      const subusers = (rawProfiles || []).filter((p: any) => {
+        const r = String(p.role || '').toUpperCase();
+        if (['SUPERADMIN', 'GLOBAL_ADMIN'].includes(r)) return false;
+        if (p.id === requesterUser.id) return false;
+        if (p.campaign_id && matchIds.has(p.campaign_id)) return true;
+        if (p.client_id && matchIds.has(p.client_id)) return true;
+        if (!p.campaign_id && !p.client_id) return true;
+        if (camps.length <= 1) return true;
+        return false;
+      });
+
+      const subuserIds = subusers.map((u: any) => u.id);
+      let permissions: any[] = [];
+      if (subuserIds.length > 0) {
+        const { data: perms } = await supabaseAdmin.from('user_permissions').select('user_id,module_code,function_code,actions').in('user_id', subuserIds);
+        permissions = perms || [];
+      }
+
+      return res.json({ success: true, users: subusers, permissions, campaign: activeCampaign });
+    } catch (error: any) {
+      return res.status(500).json({ error: error?.message || 'Error al listar usuarios.' });
+    }
+  });
+
+  app.patch('/api/supabase-admin/managed-user/:userId', async (req, res) => {
+    try {
+      if (!supabaseAdmin) return res.status(503).json({ error: 'Falta configurar SUPABASE_SECRET_KEY en el servidor.' });
+      const { userId } = req.params;
+      const { status, role, allowedModules, displayName } = req.body || {};
+      const updates: any = { updated_at: new Date().toISOString() };
+      if (status) updates.status = ['ACTIVE', 'ACTIVO'].includes(String(status).toUpperCase()) ? 'ACTIVE' : 'SUSPENDED';
+      if (role) updates.role = String(role).toUpperCase();
+      if (Array.isArray(allowedModules)) updates.allowed_modules = allowedModules;
+      if (displayName) updates.display_name = String(displayName).trim();
+
+      const { data, error } = await supabaseAdmin.from('profiles').update(updates).eq('id', userId).select().maybeSingle();
+      if (error) return res.status(400).json({ error: error.message });
+      return res.json({ success: true, profile: data });
+    } catch (error: any) {
+      return res.status(500).json({ error: error?.message || 'Error al actualizar usuario.' });
+    }
+  });
+
+  app.delete('/api/supabase-admin/managed-user/:userId', async (req, res) => {
+    try {
+      if (!supabaseAdmin) return res.status(503).json({ error: 'Falta configurar SUPABASE_SECRET_KEY en el servidor.' });
+      const { userId } = req.params;
+      await supabaseAdmin.from('user_permissions').delete().eq('user_id', userId);
+      await supabaseAdmin.from('profiles').delete().eq('id', userId);
+      await supabaseAdmin.auth.admin.deleteUser(userId).catch(() => undefined);
+      return res.json({ success: true, message: 'Usuario eliminado correctamente.' });
+    } catch (error: any) {
+      return res.status(500).json({ error: error?.message || 'Error al eliminar usuario.' });
+    }
+  });
+
+  app.get('/api/supabase-admin/active-campaign', async (req, res) => {
+    try {
+      if (!supabaseAdmin) return res.status(503).json({ error: 'Falta configurar SUPABASE_SECRET_KEY en el servidor.' });
+      const bearer = req.headers.authorization || '';
+      const accessToken = bearer.startsWith('Bearer ') ? bearer.slice(7) : '';
+      if (!accessToken) return res.status(401).json({ error: 'Sesión requerida.' });
+
+      const publicKey = String(process.env.VITE_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '').trim();
+      const supabaseUrl = String(process.env.VITE_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim();
+      const authVerifier = createClient(supabaseUrl, publicKey, { auth: { persistSession: false, autoRefreshToken: false } });
+      const { data: requesterData } = await authVerifier.auth.getUser(accessToken);
+      const requesterUser = requesterData.user;
+      if (!requesterUser) return res.status(401).json({ error: 'Sesión expirada.' });
+
+      const { data: requesterProfile } = await supabaseAdmin.from('profiles').select('id,role,status,client_id,campaign_id').eq('id', requesterUser.id).maybeSingle();
+      const clientId = requesterProfile?.client_id || requesterUser.user_metadata?.client_id || null;
+      const campaignId = requesterProfile?.campaign_id || requesterUser.user_metadata?.campaign_id || null;
+
+      const { data: allCampaigns } = await supabaseAdmin.from('campaigns').select('id,client_id,nombre,candidato_nombre,cargo_postulacion,departamento,municipio,circunscripcion,presupuesto_total,descripcion,estado');
+      const camps = allCampaigns || [];
+      let activeCampaign = null;
+      if (campaignId) activeCampaign = camps.find((c: any) => c.id === campaignId) || null;
+      if (!activeCampaign && clientId) activeCampaign = camps.find((c: any) => c.client_id === clientId || c.id === clientId) || null;
+      if (!activeCampaign && camps.length === 1) activeCampaign = camps[0];
+
+      return res.json({ success: true, campaign: activeCampaign });
+    } catch (error: any) {
+      return res.status(500).json({ error: error?.message || 'Error al obtener campaña.' });
+    }
+  });
+
   app.post('/api/supabase-admin/campaign-user/:userId/reset-password', async (req, res) => {
     try {
       if (!supabaseAdmin) {
