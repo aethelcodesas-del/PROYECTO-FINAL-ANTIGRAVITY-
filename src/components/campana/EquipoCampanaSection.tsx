@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { EquipoOficialCampana } from '../../types/campana';
 import { 
   Briefcase, 
@@ -12,7 +12,8 @@ import {
   Building2,
   Calendar,
   Save,
-  CheckCircle2
+  CheckCircle2,
+  AlertCircle
 } from 'lucide-react';
 
 interface EquipoCampanaSectionProps {
@@ -26,11 +27,79 @@ export const EquipoCampanaSection: React.FC<EquipoCampanaSectionProps> = ({
   onChangeEquipo,
   onSaveSection
 }) => {
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [alertMessage, setAlertMessage] = useState<string | null>(null);
+
   const updateField = (field: keyof EquipoOficialCampana, value: any) => {
     onChangeEquipo({
       ...equipo,
       [field]: value
     });
+
+    if (errors[field]) {
+      setErrors(prev => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
+    if (alertMessage) {
+      setAlertMessage(null);
+    }
+  };
+
+  const validateSection5 = (): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    // 1. Gerente de Campaña
+    if (!equipo.gerenteNombre || !equipo.gerenteNombre.trim()) {
+      newErrors.gerenteNombre = 'El nombre completo del gerente es obligatorio.';
+    }
+    if (!equipo.gerenteCedula || !equipo.gerenteCedula.trim()) {
+      newErrors.gerenteCedula = 'La cédula de ciudadanía del gerente es obligatoria.';
+    }
+
+    // 2. Contador Público Oficial
+    if (!equipo.contadorNombre || !equipo.contadorNombre.trim()) {
+      newErrors.contadorNombre = 'El nombre completo del contador es obligatorio.';
+    }
+    if (!equipo.contadorCedula || !equipo.contadorCedula.trim()) {
+      newErrors.contadorCedula = 'La cédula de ciudadanía del contador es obligatoria.';
+    }
+    if (!equipo.contadorTarjetaProfesional || !equipo.contadorTarjetaProfesional.trim()) {
+      newErrors.contadorTarjetaProfesional = 'La tarjeta profesional (JCC) es obligatoria.';
+    }
+
+    // 3. Cuenta Bancaria Única de Campaña
+    if (!equipo.bancoNombre || !equipo.bancoNombre.trim()) {
+      newErrors.bancoNombre = 'La entidad bancaria es obligatoria.';
+    }
+    if (!equipo.bancoTipoCuenta || !equipo.bancoTipoCuenta.trim()) {
+      newErrors.bancoTipoCuenta = 'El tipo de cuenta es obligatorio.';
+    }
+    if (!equipo.bancoNumeroCuenta || !equipo.bancoNumeroCuenta.trim()) {
+      newErrors.bancoNumeroCuenta = 'El número de cuenta bancaria es obligatorio.';
+    }
+    if (!equipo.bancoTitular || !equipo.bancoTitular.trim()) {
+      newErrors.bancoTitular = 'El titular oficial registrado es obligatorio.';
+    }
+
+    setErrors(newErrors);
+
+    if (Object.keys(newErrors).length > 0) {
+      setAlertMessage('Complete todos los campos obligatorios (*) antes de guardar la información.');
+      return false;
+    }
+
+    setAlertMessage(null);
+    return true;
+  };
+
+  const handleSave = () => {
+    if (!validateSection5()) {
+      return;
+    }
+    onSaveSection();
   };
 
   return (
@@ -49,13 +118,21 @@ export const EquipoCampanaSection: React.FC<EquipoCampanaSectionProps> = ({
 
         <button
           type="button"
-          onClick={onSaveSection}
+          onClick={handleSave}
           className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all flex items-center gap-2 cursor-pointer self-start sm:self-auto"
         >
           <Save className="w-3.5 h-3.5" />
           <span>Guardar Sección 5</span>
         </button>
       </div>
+
+      {/* Validation Alert */}
+      {alertMessage && (
+        <div className="p-3.5 bg-rose-950/60 border border-rose-500/60 rounded-xl text-rose-200 text-xs font-semibold flex items-center gap-2.5 animate-fadeIn shadow-lg">
+          <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+          <span>{alertMessage}</span>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 text-xs">
         
@@ -81,8 +158,13 @@ export const EquipoCampanaSection: React.FC<EquipoCampanaSectionProps> = ({
                 value={equipo.gerenteNombre}
                 onChange={(e) => updateField('gerenteNombre', e.target.value)}
                 placeholder="Ej. Ing. Rodrigo Echeverri Villa"
-                className="w-full bg-[#051833] border border-cyan-500/30 rounded-xl px-3 py-2 text-white font-bold focus:outline-none focus:border-emerald-400"
+                className={`w-full bg-[#051833] border ${
+                  errors.gerenteNombre ? 'border-rose-500 ring-1 ring-rose-500/50 bg-rose-950/20' : 'border-cyan-500/30'
+                } rounded-xl px-3 py-2 text-white font-bold focus:outline-none focus:border-emerald-400`}
               />
+              {errors.gerenteNombre && (
+                <p className="text-[10px] text-rose-400 font-medium mt-1">{errors.gerenteNombre}</p>
+              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -95,9 +177,14 @@ export const EquipoCampanaSection: React.FC<EquipoCampanaSectionProps> = ({
                     value={equipo.gerenteCedula}
                     onChange={(e) => updateField('gerenteCedula', e.target.value)}
                     placeholder="Ej. 70.892.110"
-                    className="w-full bg-[#051833] border border-cyan-500/30 rounded-xl pl-9 pr-3 py-2 text-white font-bold font-mono focus:outline-none focus:border-emerald-400"
+                    className={`w-full bg-[#051833] border ${
+                      errors.gerenteCedula ? 'border-rose-500 ring-1 ring-rose-500/50 bg-rose-950/20' : 'border-cyan-500/30'
+                    } rounded-xl pl-9 pr-3 py-2 text-white font-bold font-mono focus:outline-none focus:border-emerald-400`}
                   />
                 </div>
+                {errors.gerenteCedula && (
+                  <p className="text-[10px] text-rose-400 font-medium mt-1">{errors.gerenteCedula}</p>
+                )}
               </div>
 
               <div>
@@ -166,8 +253,13 @@ export const EquipoCampanaSection: React.FC<EquipoCampanaSectionProps> = ({
                 value={equipo.contadorNombre}
                 onChange={(e) => updateField('contadorNombre', e.target.value)}
                 placeholder="Ej. Dra. Martha Lucía Botero"
-                className="w-full bg-[#051833] border border-cyan-500/30 rounded-xl px-3 py-2 text-white font-bold focus:outline-none focus:border-emerald-400"
+                className={`w-full bg-[#051833] border ${
+                  errors.contadorNombre ? 'border-rose-500 ring-1 ring-rose-500/50 bg-rose-950/20' : 'border-cyan-500/30'
+                } rounded-xl px-3 py-2 text-white font-bold focus:outline-none focus:border-emerald-400`}
               />
+              {errors.contadorNombre && (
+                <p className="text-[10px] text-rose-400 font-medium mt-1">{errors.contadorNombre}</p>
+              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -180,9 +272,14 @@ export const EquipoCampanaSection: React.FC<EquipoCampanaSectionProps> = ({
                     value={equipo.contadorCedula}
                     onChange={(e) => updateField('contadorCedula', e.target.value)}
                     placeholder="Ej. 43.789.201"
-                    className="w-full bg-[#051833] border border-cyan-500/30 rounded-xl pl-9 pr-3 py-2 text-white font-bold font-mono focus:outline-none focus:border-emerald-400"
+                    className={`w-full bg-[#051833] border ${
+                      errors.contadorCedula ? 'border-rose-500 ring-1 ring-rose-500/50 bg-rose-950/20' : 'border-cyan-500/30'
+                    } rounded-xl pl-9 pr-3 py-2 text-white font-bold font-mono focus:outline-none focus:border-emerald-400`}
                   />
                 </div>
+                {errors.contadorCedula && (
+                  <p className="text-[10px] text-rose-400 font-medium mt-1">{errors.contadorCedula}</p>
+                )}
               </div>
 
               <div>
@@ -192,8 +289,13 @@ export const EquipoCampanaSection: React.FC<EquipoCampanaSectionProps> = ({
                   value={equipo.contadorTarjetaProfesional}
                   onChange={(e) => updateField('contadorTarjetaProfesional', e.target.value)}
                   placeholder="Ej. TP-189204-T"
-                  className="w-full bg-[#051833] border border-cyan-500/30 rounded-xl px-3 py-2 text-white font-bold font-mono focus:outline-none focus:border-emerald-400"
+                  className={`w-full bg-[#051833] border ${
+                    errors.contadorTarjetaProfesional ? 'border-rose-500 ring-1 ring-rose-500/50 bg-rose-950/20' : 'border-cyan-500/30'
+                  } rounded-xl px-3 py-2 text-white font-bold font-mono focus:outline-none focus:border-emerald-400`}
                 />
+                {errors.contadorTarjetaProfesional && (
+                  <p className="text-[10px] text-rose-400 font-medium mt-1">{errors.contadorTarjetaProfesional}</p>
+                )}
               </div>
             </div>
 
@@ -252,8 +354,13 @@ export const EquipoCampanaSection: React.FC<EquipoCampanaSectionProps> = ({
                   value={equipo.bancoNombre}
                   onChange={(e) => updateField('bancoNombre', e.target.value)}
                   placeholder="Ej. Bancolombia S.A. / Banco de Bogotá"
-                  className="w-full bg-[#051833] border border-cyan-500/30 rounded-xl px-3 py-2 text-white font-bold focus:outline-none focus:border-emerald-400"
+                  className={`w-full bg-[#051833] border ${
+                    errors.bancoNombre ? 'border-rose-500 ring-1 ring-rose-500/50 bg-rose-950/20' : 'border-cyan-500/30'
+                  } rounded-xl px-3 py-2 text-white font-bold focus:outline-none focus:border-emerald-400`}
                 />
+                {errors.bancoNombre && (
+                  <p className="text-[10px] text-rose-400 font-medium mt-1">{errors.bancoNombre}</p>
+                )}
               </div>
 
               <div>
@@ -261,11 +368,16 @@ export const EquipoCampanaSection: React.FC<EquipoCampanaSectionProps> = ({
                 <select
                   value={equipo.bancoTipoCuenta}
                   onChange={(e) => updateField('bancoTipoCuenta', e.target.value as any)}
-                  className="w-full bg-[#051833] border border-cyan-500/30 rounded-xl px-3 py-2 text-white font-bold focus:outline-none focus:border-emerald-400"
+                  className={`w-full bg-[#051833] border ${
+                    errors.bancoTipoCuenta ? 'border-rose-500 ring-1 ring-rose-500/50 bg-rose-950/20' : 'border-cyan-500/30'
+                  } rounded-xl px-3 py-2 text-white font-bold focus:outline-none focus:border-emerald-400`}
                 >
                   <option value="Corriente">Cuenta Corriente</option>
                   <option value="Ahorros">Cuenta de Ahorros</option>
                 </select>
+                {errors.bancoTipoCuenta && (
+                  <p className="text-[10px] text-rose-400 font-medium mt-1">{errors.bancoTipoCuenta}</p>
+                )}
               </div>
             </div>
 
@@ -279,9 +391,14 @@ export const EquipoCampanaSection: React.FC<EquipoCampanaSectionProps> = ({
                     value={equipo.bancoNumeroCuenta}
                     onChange={(e) => updateField('bancoNumeroCuenta', e.target.value)}
                     placeholder="Ej. 304-889102-14"
-                    className="w-full bg-[#051833] border border-cyan-500/30 rounded-xl pl-9 pr-3 py-2 text-white font-bold font-mono focus:outline-none focus:border-emerald-400"
+                    className={`w-full bg-[#051833] border ${
+                      errors.bancoNumeroCuenta ? 'border-rose-500 ring-1 ring-rose-500/50 bg-rose-950/20' : 'border-cyan-500/30'
+                    } rounded-xl pl-9 pr-3 py-2 text-white font-bold font-mono focus:outline-none focus:border-emerald-400`}
                   />
                 </div>
+                {errors.bancoNumeroCuenta && (
+                  <p className="text-[10px] text-rose-400 font-medium mt-1">{errors.bancoNumeroCuenta}</p>
+                )}
               </div>
 
               <div>
@@ -305,8 +422,13 @@ export const EquipoCampanaSection: React.FC<EquipoCampanaSectionProps> = ({
                 value={equipo.bancoTitular}
                 onChange={(e) => updateField('bancoTitular', e.target.value)}
                 placeholder="Ej. Campaña Javier Méndez Alcaldía 2027"
-                className="w-full bg-[#051833] border border-cyan-500/30 rounded-xl px-3 py-2 text-white font-bold focus:outline-none focus:border-emerald-400"
+                className={`w-full bg-[#051833] border ${
+                  errors.bancoTitular ? 'border-rose-500 ring-1 ring-rose-500/50 bg-rose-950/20' : 'border-cyan-500/30'
+                } rounded-xl px-3 py-2 text-white font-bold focus:outline-none focus:border-emerald-400`}
               />
+              {errors.bancoTitular && (
+                <p className="text-[10px] text-rose-400 font-medium mt-1">{errors.bancoTitular}</p>
+              )}
             </div>
           </div>
         </div>
@@ -379,7 +501,7 @@ export const EquipoCampanaSection: React.FC<EquipoCampanaSectionProps> = ({
       <div className="flex items-center justify-end pt-3 border-t border-cyan-500/20">
         <button
           type="button"
-          onClick={onSaveSection}
+          onClick={handleSave}
           className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all flex items-center gap-2 cursor-pointer"
         >
           <Save className="w-4 h-4" />

@@ -138,9 +138,15 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
   const [editListModalidad, setEditListModalidad] = useState<'Lista Abierta' | 'Lista Cerrada'>('Lista Abierta');
   const [editListMetaVotos, setEditListMetaVotos] = useState<number>(15000);
 
-  // Section 2 validation & photo drag state
+  // Section validation states
+  const [section1Errors, setSection1Errors] = useState<Record<string, string>>({});
+  const [section1Alert, setSection1Alert] = useState<string | null>(null);
   const [section2Errors, setSection2Errors] = useState<Record<string, string>>({});
   const [section2Alert, setSection2Alert] = useState<string | null>(null);
+  const [section3Errors, setSection3Errors] = useState<Record<string, string>>({});
+  const [section3Alert, setSection3Alert] = useState<string | null>(null);
+  const [section4Errors, setSection4Errors] = useState<Record<string, string>>({});
+  const [section4Alert, setSection4Alert] = useState<string | null>(null);
   const [isDraggingPhoto, setIsDraggingPhoto] = useState<boolean>(false);
 
   // Synchronize localStorage whenever campaign dossier changes
@@ -630,6 +636,37 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
     }
   };
 
+  // Section 1 Validation & Save
+  const validateSection1 = (): boolean => {
+    const errors: Record<string, string> = {};
+    if (!activeDossier.fechaEleccion || !activeDossier.fechaEleccion.trim()) {
+      errors.fechaEleccion = 'La fecha de las elecciones (Día E) es obligatoria.';
+    }
+    if (!activeDossier.corporacion) {
+      errors.corporacion = 'La corporación / cargo es obligatoria.';
+    }
+    if (!activeDossier.departamento || !activeDossier.departamento.trim()) {
+      errors.departamento = 'El departamento es obligatorio.';
+    }
+    if (activeDossier.circunscripcionTerritorial === 'Municipio' && (!activeDossier.municipio || !activeDossier.municipio.trim())) {
+      errors.municipio = 'El municipio / distrito es obligatorio.';
+    }
+    setSection1Errors(errors);
+    if (Object.keys(errors).length > 0) {
+      setSection1Alert('Complete todos los campos obligatorios (*) antes de guardar la Sección 1.');
+      return false;
+    }
+    setSection1Alert(null);
+    return true;
+  };
+
+  const handleSaveSection1 = async () => {
+    if (!validateSection1()) return;
+    setSection1Alert(null);
+    await saveCampaignDossier('Sección 1: Parámetros de Elección y Territorio');
+  };
+
+  // Section 2 Validation & Save
   const validateSection2 = (): boolean => {
     const errors: Record<string, string> = {};
 
@@ -657,7 +694,7 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
     setSection2Errors(errors);
 
     if (Object.keys(errors).length > 0) {
-      setSection2Alert('Complete los campos obligatorios antes de guardar la información.');
+      setSection2Alert('Complete todos los campos obligatorios (*) antes de guardar la Sección 2.');
       return false;
     }
 
@@ -672,6 +709,90 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
     }
     setSection2Alert(null);
     await saveCampaignDossier('Sección 2: Expediente del Candidato');
+  };
+
+  // Section 3 Validation & Save
+  const validateSection3 = (): boolean => {
+    const errors: Record<string, string> = {};
+    if (activeDossier.modalidadAval === 'Partido') {
+      if (!activeDossier.partidoUnico || !activeDossier.partidoUnico.trim()) {
+        errors.partidoUnico = 'El partido político avalista es obligatorio.';
+      }
+      if (!activeDossier.numeroAvalCNE || !activeDossier.numeroAvalCNE.trim()) {
+        errors.numeroAvalCNE = 'El número de radicado / aval CNE es obligatorio.';
+      }
+    } else if (activeDossier.modalidadAval === 'Firmas') {
+      if (!activeDossier.nombreGrupoFirmas || !activeDossier.nombreGrupoFirmas.trim()) {
+        errors.nombreGrupoFirmas = 'El nombre oficial del movimiento por firmas es obligatorio.';
+      }
+      if (!activeDossier.radicadoRegistraduria || !activeDossier.radicadoRegistraduria.trim()) {
+        errors.radicadoRegistraduria = 'El número de radicado ante Registraduría es obligatorio.';
+      }
+    } else if (activeDossier.modalidadAval === 'Coalición') {
+      if (!activeDossier.nombreCoalicion || !activeDossier.nombreCoalicion.trim()) {
+        errors.nombreCoalicion = 'El nombre oficial de la coalición es obligatorio.';
+      }
+      if (!activeDossier.partidosCoalicion || activeDossier.partidosCoalicion.length === 0) {
+        errors.partidosCoalicion = 'Debe seleccionar al menos 1 partido político de la coalición.';
+      }
+      if (!activeDossier.partidoResponsableCNE || !activeDossier.partidoResponsableCNE.trim()) {
+        errors.partidoResponsableCNE = 'El partido responsable principal ante CNE es obligatorio.';
+      }
+    }
+    setSection3Errors(errors);
+    if (Object.keys(errors).length > 0) {
+      setSection3Alert('Complete todos los campos obligatorios (*) antes de guardar la Sección 3.');
+      return false;
+    }
+    setSection3Alert(null);
+    return true;
+  };
+
+  const handleSaveSection3 = async () => {
+    if (!validateSection3()) return;
+    setSection3Alert(null);
+    await saveCampaignDossier('Sección 3: Respaldo Político y Aval Oficial');
+  };
+
+  // Section 4 Validation & Save
+  const validateSection4 = (): boolean => {
+    const errors: Record<string, string> = {};
+    if (!activeDossier.horaApertura || !activeDossier.horaApertura.trim()) {
+      errors.horaApertura = 'La hora de apertura de urnas es obligatoria.';
+    }
+    if (!activeDossier.horaCierre || !activeDossier.horaCierre.trim()) {
+      errors.horaCierre = 'La hora de cierre de urnas es obligatoria.';
+    }
+    setSection4Errors(errors);
+    if (Object.keys(errors).length > 0) {
+      setSection4Alert('Complete todos los campos obligatorios (*) antes de guardar la Sección 4.');
+      return false;
+    }
+    setSection4Alert(null);
+    return true;
+  };
+
+  const handleSaveSection4 = async () => {
+    if (!validateSection4()) return;
+    setSection4Alert(null);
+    await saveCampaignDossier('Sección 4: Horarios y Póliza');
+  };
+
+  // Master Full Dossier Validation & Save
+  const handleSaveFullDossier = async () => {
+    if (!validateSection1()) {
+      setActiveTab('territorio');
+      return;
+    }
+    if (!validateSection2()) {
+      setActiveTab('candidato');
+      return;
+    }
+    if (!validateSection3()) {
+      setActiveTab('aval');
+      return;
+    }
+    await saveCampaignDossier('Toda la Configuración Completa de Campaña');
   };
 
   const entidadTerritorialTexto = activeDossier.circunscripcionTerritorial === 'Departamento' 
@@ -738,7 +859,7 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
 
             <button
               type="button"
-              onClick={() => void saveCampaignDossier('Toda la Configuración Completa de Campaña')}
+              onClick={() => void handleSaveFullDossier()}
               disabled={campaignLoading || campaignSaving || !activeCampaignId}
               className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0"
             >
@@ -854,13 +975,21 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
 
               <button
                 type="button"
-                onClick={() => void saveCampaignDossier('Sección 1: Parámetros de Elección y Territorio')}
+                onClick={() => void handleSaveSection1()}
                 className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold rounded-xl shadow-lg transition-all flex items-center gap-2 cursor-pointer shrink-0 self-start sm:self-auto"
               >
                 <Save className="w-3.5 h-3.5" />
                 <span>Guardar Sección 1</span>
               </button>
             </div>
+
+            {/* Validation Alert Section 1 */}
+            {section1Alert && (
+              <div className="p-3.5 bg-rose-950/60 border border-rose-500/60 rounded-xl text-rose-200 text-xs font-semibold flex items-center gap-2.5 animate-fadeIn shadow-lg">
+                <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                <span>{section1Alert}</span>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
               
@@ -1474,13 +1603,21 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
 
               <button
                 type="button"
-                onClick={() => void saveCampaignDossier('Sección 3: Respaldo Político y Aval Oficial')}
+                onClick={() => void handleSaveSection3()}
                 className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold rounded-xl shadow-lg transition-all flex items-center gap-2 cursor-pointer shrink-0 self-start sm:self-auto"
               >
                 <Save className="w-3.5 h-3.5" />
                 <span>Guardar Sección 3</span>
               </button>
             </div>
+
+            {/* Validation Alert Section 3 */}
+            {section3Alert && (
+              <div className="p-3.5 bg-rose-950/60 border border-rose-500/60 rounded-xl text-rose-200 text-xs font-semibold flex items-center gap-2.5 animate-fadeIn shadow-lg">
+                <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                <span>{section3Alert}</span>
+              </div>
+            )}
 
             {/* Selector of Endorsement Type */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -1668,13 +1805,21 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
 
               <button
                 type="button"
-                onClick={() => void saveCampaignDossier('Sección 4: Horarios y Póliza')}
+                onClick={() => void handleSaveSection4()}
                 className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold rounded-xl shadow-lg transition-all flex items-center gap-2 cursor-pointer shrink-0 self-start sm:self-auto"
               >
                 <Save className="w-3.5 h-3.5" />
                 <span>Guardar Sección 4</span>
               </button>
             </div>
+
+            {/* Validation Alert Section 4 */}
+            {section4Alert && (
+              <div className="p-3.5 bg-rose-950/60 border border-rose-500/60 rounded-xl text-rose-200 text-xs font-semibold flex items-center gap-2.5 animate-fadeIn shadow-lg">
+                <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                <span>{section4Alert}</span>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
               <div>
