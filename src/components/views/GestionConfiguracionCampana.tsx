@@ -197,10 +197,13 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
           }
         }
 
+        const limitVal = Number(campaign.presupuesto_total ?? 0);
         const hydrated: CampanaDossier = {
           ...defaultCampanaDossier,
           ...storedDossier,
           id: campaign.id,
+          topeLegalCNE: limitVal > 0 ? limitVal : (storedDossier.topeLegalCNE || undefined),
+          presupuesto_total: limitVal > 0 ? limitVal : (storedDossier.presupuesto_total || undefined),
           nombreCandidato: storedDossier.nombreCandidato || campaign.candidato_nombre || '',
           corporacion: (storedDossier.corporacion || campaign.cargo_postulacion || defaultCampanaDossier.corporacion) as CampanaDossier['corporacion'],
           departamento: storedDossier.departamento || campaign.departamento || defaultCampanaDossier.departamento,
@@ -212,7 +215,7 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
 
         if (!mounted) return;
         setActiveCampaignId(campaign.id);
-        setCampaignBudgetLimit(Number(campaign.presupuesto_total ?? 0));
+        setCampaignBudgetLimit(limitVal > 0 ? limitVal : null);
         localStorage.setItem('active_campaign_id', campaign.id);
         setDossier(hydrated);
         setLastSyncedAt(campaign.updated_at || new Date().toISOString());
@@ -767,11 +770,11 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
             </span>
           </div>
           <div className="space-y-0.5">
-            <span className="text-slate-500 block text-[10px] font-bold uppercase tracking-wider">Tope Legal CNE</span>
+            <span className="text-slate-500 block text-[10px] font-bold uppercase tracking-wider">Tope Legal CNE (Campaña Actual)</span>
             <span className="font-extrabold text-cyan-300 block font-mono">
               {campaignBudgetLimit && campaignBudgetLimit > 0
                 ? `$${campaignBudgetLimit.toLocaleString('es-CO')} COP`
-                : 'Sin definir'}
+                : 'Pendiente de configuración'}
             </span>
           </div>
         </div>
@@ -2255,7 +2258,10 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
       {/* PRINTABLE DOSSIER REPORT MODAL */}
       {/* ========================================================================= */}
       <ExpedienteImprimibleModal
-        dossier={activeDossier}
+        dossier={{
+          ...activeDossier,
+          topeLegalCNE: campaignBudgetLimit ?? activeDossier.topeLegalCNE
+        }}
         isOpen={showPrintModal}
         onClose={() => setShowPrintModal(false)}
       />

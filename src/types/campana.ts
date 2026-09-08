@@ -56,6 +56,11 @@ export interface CampanaDossier {
   createdAt: string;
   updatedAt: string;
   
+  // Parámetros Financieros & Tope CNE
+  topeLegalCNE?: number;
+  presupuesto_total?: number;
+  legalSpendingLimit?: number;
+
   // Section 1: Election & Jurisdiction
   tipoProcesoEleccion: 'Ordinaria' | 'Atípica';
   fechaEleccion: string;

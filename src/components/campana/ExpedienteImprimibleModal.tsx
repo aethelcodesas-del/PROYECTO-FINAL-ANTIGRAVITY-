@@ -58,14 +58,12 @@ export const ExpedienteImprimibleModal: React.FC<ExpedienteImprimibleModalProps>
     window.print();
   };
 
-  const cneLimitMap: Record<string, number> = {
-    Alcaldía: 1250000000,
-    Gobernación: 3500000000,
-    Concejo: 450000000,
-    Asamblea: 950000000,
-    JAL: 120000000
-  };
-  const estimatedLimit = cneLimitMap[dossier.corporacion] || 0;
+  // Dynamic legal spending limit from campaign configuration (eliminating any demo or hardcoded values)
+  const rawLimit = dossier.topeLegalCNE ?? dossier.presupuesto_total ?? dossier.legalSpendingLimit ?? null;
+  const hasValidLimit = typeof rawLimit === 'number' && rawLimit > 0 && !isNaN(rawLimit);
+  const formattedLimit = hasValidLimit
+    ? `$${rawLimit.toLocaleString('es-CO')} COP`
+    : 'Pendiente de configuración';
 
   const candidateFullName = formatData(dossier.nombreCandidato, 'Información pendiente');
   const candidateStatus = dossier.nombreCandidato?.trim() && dossier.cedulaCandidato?.trim() 
@@ -265,9 +263,9 @@ export const ExpedienteImprimibleModal: React.FC<ExpedienteImprimibleModalProps>
                     <strong className="font-mono text-amber-300 print-text-dark">{formatData(dossier.fechaEleccion)}</strong>
                   </div>
                   <div>
-                    <span className="text-slate-500 print-text-muted block text-[10px]">Tope Legal CNE:</span>
-                    <strong className="text-emerald-400 print-text-dark font-mono">
-                      {estimatedLimit > 0 ? `$${estimatedLimit.toLocaleString('es-CO')} COP` : 'Información pendiente'}
+                    <span className="text-slate-500 print-text-muted block text-[10px]">Tope Legal CNE (Campaña Actual):</span>
+                    <strong className={`font-mono ${hasValidLimit ? 'text-emerald-400' : 'text-slate-400 italic'} print-text-dark`}>
+                      {formattedLimit}
                     </strong>
                   </div>
                 </div>
@@ -551,9 +549,9 @@ export const ExpedienteImprimibleModal: React.FC<ExpedienteImprimibleModalProps>
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> Parámetros Contables CNE
                 </span>
                 <div>
-                  <span className="text-slate-400 print-text-muted text-[10px] block">Tope Legal Estimado de Gastos:</span>
-                  <strong className="text-emerald-400 print-text-dark font-mono text-xs">
-                    {estimatedLimit > 0 ? `$${estimatedLimit.toLocaleString('es-CO')} COP` : 'Información pendiente'}
+                  <span className="text-slate-400 print-text-muted text-[10px] block">Tope Legal CNE (Campaña Actual):</span>
+                  <strong className={`font-mono text-xs ${hasValidLimit ? 'text-emerald-400' : 'text-slate-400 italic'} print-text-dark`}>
+                    {formattedLimit}
                   </strong>
                 </div>
                 <div>
