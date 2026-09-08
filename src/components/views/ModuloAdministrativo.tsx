@@ -211,6 +211,11 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
     return clone;
   });
 
+  // Real RBAC users loaded exclusively from Supabase profiles.
+  const [usersList, setUsersList] = useState<any[]>([]);
+  const [rbacLoading, setRbacLoading] = useState(false);
+  const [rbacError, setRbacError] = useState('');
+
   const assignedUsers = useMemo(() => ({
     admin: usersList.filter(u => u.role === 'admin' && u.status === 'Activo'),
     estrategico: usersList.filter(u => u.role === 'estrategico' && u.status === 'Activo'),
@@ -228,11 +233,6 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
     setSaveSuccessMessage(true);
     setTimeout(() => setSaveSuccessMessage(false), 3000);
   };
-
-  // Real RBAC users loaded exclusively from Supabase profiles.
-  const [usersList, setUsersList] = useState<any[]>([]);
-  const [rbacLoading, setRbacLoading] = useState(false);
-  const [rbacError, setRbacError] = useState('');
 
   const [userSearchTerm, setUserSearchTerm] = useState('');
   const [showAddUserSection, setShowAddUserSection] = useState(false);

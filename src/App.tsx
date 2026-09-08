@@ -571,7 +571,9 @@ export default function App() {
 
           <ErrorBoundary 
             moduleName={currentView}
-            onReset={() => setCurrentView('primera_interfaz')}
+            onReset={() => {
+              setLiveDataRevision(prev => prev + 1);
+            }}
           >
             <Suspense fallback={<ModuleFallback />}>
             <AnimatePresence mode="wait">
