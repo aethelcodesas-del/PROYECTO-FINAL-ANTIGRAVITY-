@@ -821,20 +821,10 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
         </div>
       )}
 
-      {(budgetLoading || budgetSaving || budgetSyncError) && (
-        <div className={`p-3.5 rounded-xl text-xs font-bold border flex items-center gap-2 ${
-          budgetSyncError
-            ? 'bg-rose-950/80 border-rose-500/50 text-rose-200'
-            : 'bg-cyan-950/70 border-cyan-500/40 text-cyan-200'
-        }`}>
-          {budgetSaving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
-          <span>
-            {budgetLoading
-              ? 'Cargando libro presupuestal real desde Supabase...'
-              : budgetSaving
-                ? 'Sincronizando movimiento con Supabase...'
-                : `Sincronización pendiente: ${budgetSyncError}`}
-          </span>
+      {budgetSyncError && (
+        <div className="p-3.5 rounded-xl text-xs font-bold border flex items-center gap-2 bg-rose-950/80 border-rose-500/50 text-rose-200">
+          <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+          <span>{budgetSyncError}</span>
         </div>
       )}
 
