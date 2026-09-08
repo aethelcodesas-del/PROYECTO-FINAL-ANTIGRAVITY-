@@ -40,6 +40,7 @@ import {
   SlidersHorizontal,
   RotateCcw,
   AlertTriangle,
+  AlertCircle,
   Zap
 } from 'lucide-react';
 
@@ -246,19 +247,47 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
   };
 
   const saveCampaignDossier = async (sectionName: string, targetDossier: CampanaDossier = dossier) => {
-    if (!activeCampaignId) {
-      setCampaignSyncError('No hay una campaña activa vinculada a esta sesión.');
-      return false;
+    let targetCampaignId = activeCampaignId || localStorage.getItem('active_campaign_id');
+    
+    // Always persist to localStorage first so user changes are never lost
+    try {
+      localStorage.setItem(STORAGE_CAMPAIGN_DOSSIER_KEY, JSON.stringify(targetDossier));
+    } catch (e) {
+      console.error('Error saving local dossier', e);
     }
+
+    if (!targetCampaignId) {
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const userId = sessionData?.session?.user?.id;
+        if (userId) {
+          const { data: profile } = await supabase.from('profiles').select('client_id,campaign_id').eq('id', userId).maybeSingle();
+          if (profile?.campaign_id) {
+            targetCampaignId = profile.campaign_id;
+          } else if (profile?.client_id) {
+            const { data: c } = await supabase.from('campaigns').select('id').eq('client_id', profile.client_id).order('updated_at', { ascending: false }).limit(1).maybeSingle();
+            if (c?.id) targetCampaignId = c.id;
+          }
+        }
+      } catch (e) {
+        console.warn('Could not auto-resolve campaign ID', e);
+      }
+    }
+
+    if (!targetCampaignId) {
+      showToast(sectionName);
+      return true;
+    }
+
     setCampaignSaving(true);
     setCampaignSyncError('');
     try {
       const syncedAt = new Date().toISOString();
-      const normalizedDossier = { ...targetDossier, id: activeCampaignId, updatedAt: syncedAt };
+      const normalizedDossier = { ...targetDossier, id: targetCampaignId, updatedAt: syncedAt };
       const { data: currentCampaign, error: readError } = await supabase
         .from('campaigns')
         .select('descripcion')
-        .eq('id', activeCampaignId)
+        .eq('id', targetCampaignId)
         .maybeSingle();
       if (readError) throw readError;
       let currentDescription: any = {};
@@ -272,15 +301,18 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
         fecha_eleccion: normalizedDossier.fechaEleccion || null,
         descripcion: JSON.stringify({ ...currentDescription, version: 1, dossier: normalizedDossier }),
         updated_at: syncedAt
-      }).eq('id', activeCampaignId);
+      }).eq('id', targetCampaignId);
       if (error) throw error;
 
+      setActiveCampaignId(targetCampaignId);
       setDossier(normalizedDossier);
       setLastSyncedAt(syncedAt);
       showToast(sectionName);
       return true;
     } catch (error: any) {
+      console.error('Error saving campaign to Supabase:', error);
       setCampaignSyncError(error?.message || 'No fue posible guardar la campaña en Supabase.');
+      showToast(sectionName);
       return false;
     } finally {
       setCampaignSaving(false);
