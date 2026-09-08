@@ -3,7 +3,6 @@ import { CampanaDossier } from '../../types/campana';
 import { 
   Printer, 
   X, 
-  FileText, 
   Building2, 
   User, 
   Award, 
@@ -11,8 +10,8 @@ import {
   Briefcase, 
   Users, 
   ShieldCheck,
-  CheckCircle2,
-  FileCheck
+  FileCheck,
+  Clock
 } from 'lucide-react';
 
 interface ExpedienteImprimibleModalProps {
@@ -28,7 +27,30 @@ export const ExpedienteImprimibleModal: React.FC<ExpedienteImprimibleModalProps>
 }) => {
   if (!isOpen) return null;
 
+  // Format Helper: guarantees real data or 'Pendiente' without mock or fake strings
+  const formatData = (value: any, fallback: string = 'Pendiente'): string => {
+    if (value === null || value === undefined) return fallback;
+    const str = String(value).trim();
+    if (!str || str.toLowerCase() === 'n/a' || str.toLowerCase() === 'no registrado' || str.toLowerCase() === 'sin asignar') {
+      return fallback;
+    }
+    return str;
+  };
+
+  const generationTimestamp = new Intl.DateTimeFormat('es-CO', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  }).format(new Date());
+
   const handlePrintPDF = () => {
+    if (!dossier.nombreCandidato?.trim() || !dossier.cedulaCandidato?.trim()) {
+      alert('No es posible generar el expediente PDF sin antes registrar la información obligatoria del candidato en el sistema.');
+      return;
+    }
     window.print();
   };
 
@@ -39,7 +61,12 @@ export const ExpedienteImprimibleModal: React.FC<ExpedienteImprimibleModalProps>
     Asamblea: 950000000,
     JAL: 120000000
   };
-  const estimatedLimit = cneLimitMap[dossier.corporacion] || 1000000000;
+  const estimatedLimit = cneLimitMap[dossier.corporacion] || 0;
+
+  const candidateFullName = formatData(dossier.nombreCandidato, 'Información pendiente de registro');
+  const candidateStatus = dossier.nombreCandidato?.trim() && dossier.cedulaCandidato?.trim() 
+    ? 'Expediente Oficial Registrado' 
+    : 'Información pendiente de registro';
 
   return (
     <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-4 animate-fadeIn">
@@ -132,33 +159,39 @@ export const ExpedienteImprimibleModal: React.FC<ExpedienteImprimibleModalProps>
           {/* Official Institutional Header */}
           <div className="print-card border-b border-slate-700/80 pb-4 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <img
-                src={dossier.fotoUrl || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=300&q=80'}
-                alt={dossier.nombreCandidato}
-                className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover border border-cyan-400/40 shrink-0 shadow-md"
-              />
+              {dossier.fotoUrl ? (
+                <img
+                  src={dossier.fotoUrl}
+                  alt={candidateFullName}
+                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl object-cover border border-cyan-400/40 shrink-0 shadow-md"
+                />
+              ) : (
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl bg-[#051833] border border-cyan-400/40 flex flex-col items-center justify-center text-slate-400 shrink-0 shadow-md">
+                  <User className="w-8 h-8 text-slate-400" />
+                </div>
+              )}
               <div>
                 <div className="text-[10px] font-black uppercase tracking-widest text-emerald-400 print-text-dark flex items-center gap-1.5">
                   <ShieldCheck className="w-3.5 h-3.5" />
                   <span>CONSEJO NACIONAL ELECTORAL • REGISTRADURÍA NACIONAL</span>
                 </div>
                 <h2 className="text-base sm:text-xl font-black text-white print-text-dark mt-0.5">
-                  {dossier.nombreCandidato || 'CANDIDATO NO REGISTRADO'}
+                  {candidateFullName}
                 </h2>
                 <p className="text-slate-400 print-text-muted text-xs font-semibold">
-                  Expediente de Candidatura a {dossier.corporacion} de {dossier.municipio || dossier.departamento} ({dossier.departamento})
+                  Expediente de Candidatura a {formatData(dossier.corporacion)} de {formatData(dossier.municipio || dossier.departamento)} ({formatData(dossier.departamento)})
                 </p>
                 <div className="text-[10px] text-cyan-300 print-text-dark mt-1">
-                  ID Expediente: <span className="font-mono">{dossier.id}</span> • Proceso: <strong>{dossier.tipoProcesoEleccion}</strong>
+                  ID Expediente: <span className="font-mono">{formatData(dossier.id)}</span> • Estado: <strong>{candidateStatus}</strong> • Proceso: <strong>{formatData(dossier.tipoProcesoEleccion)}</strong>
                 </div>
               </div>
             </div>
 
             <div className="text-right space-y-1 self-stretch sm:self-auto bg-[#041325] print-card p-3 rounded-xl border border-cyan-500/30">
               <div className="text-[10px] text-slate-400 print-text-muted font-bold uppercase">Fecha de Elecciones (Día E)</div>
-              <div className="text-sm sm:text-base font-black text-amber-300 print-text-dark font-mono">{dossier.fechaEleccion}</div>
+              <div className="text-sm sm:text-base font-black text-amber-300 print-text-dark font-mono">{formatData(dossier.fechaEleccion)}</div>
               <div className="text-[10px] text-emerald-400 print-text-dark font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30">
-                Tope Legal CNE: ${estimatedLimit.toLocaleString()} COP
+                Tope Legal CNE: {estimatedLimit > 0 ? `$${estimatedLimit.toLocaleString('es-CO')} COP` : 'Pendiente'}
               </div>
             </div>
           </div>
@@ -173,12 +206,12 @@ export const ExpedienteImprimibleModal: React.FC<ExpedienteImprimibleModalProps>
                 <span>1. Parámetros Electorales & Tarjetón</span>
               </div>
               <div className="grid grid-cols-2 gap-2 text-[11px]">
-                <div><span className="text-slate-500 print-text-muted block text-[10px]">Corporación:</span> <strong className="text-white print-text-dark">{dossier.corporacion}</strong></div>
-                <div><span className="text-slate-500 print-text-muted block text-[10px]">Circunscripción:</span> <strong className="text-white print-text-dark">{dossier.circunscripcionTerritorial}</strong></div>
-                <div><span className="text-slate-500 print-text-muted block text-[10px]">Departamento:</span> <strong className="text-white print-text-dark">{dossier.departamento}</strong></div>
-                <div><span className="text-slate-500 print-text-muted block text-[10px]">Municipio / Distrito:</span> <strong className="text-white print-text-dark">{dossier.municipio || 'Departamental'}</strong></div>
-                <div><span className="text-slate-500 print-text-muted block text-[10px]">Modalidad:</span> <strong className="text-white print-text-dark">{dossier.modalidadCandidatura}</strong></div>
-                <div><span className="text-slate-500 print-text-muted block text-[10px]">Posición Tarjetón:</span> <strong className="text-amber-300 print-text-dark font-mono">{dossier.posicionTarjeton || 'Por Asignar'}</strong></div>
+                <div><span className="text-slate-500 print-text-muted block text-[10px]">Corporación:</span> <strong className="text-white print-text-dark">{formatData(dossier.corporacion)}</strong></div>
+                <div><span className="text-slate-500 print-text-muted block text-[10px]">Circunscripción:</span> <strong className="text-white print-text-dark">{formatData(dossier.circunscripcionTerritorial)}</strong></div>
+                <div><span className="text-slate-500 print-text-muted block text-[10px]">Departamento:</span> <strong className="text-white print-text-dark">{formatData(dossier.departamento)}</strong></div>
+                <div><span className="text-slate-500 print-text-muted block text-[10px]">Municipio / Distrito:</span> <strong className="text-white print-text-dark">{formatData(dossier.municipio || (dossier.circunscripcionTerritorial === 'Departamento' ? 'Departamental' : ''))}</strong></div>
+                <div><span className="text-slate-500 print-text-muted block text-[10px]">Modalidad:</span> <strong className="text-white print-text-dark">{formatData(dossier.modalidadCandidatura)}</strong></div>
+                <div><span className="text-slate-500 print-text-muted block text-[10px]">Posición Tarjetón:</span> <strong className="text-amber-300 print-text-dark font-mono">{formatData(dossier.posicionTarjeton)}</strong></div>
               </div>
             </div>
 
@@ -189,12 +222,12 @@ export const ExpedienteImprimibleModal: React.FC<ExpedienteImprimibleModalProps>
                 <span>2. Ficha Técnica del Candidato</span>
               </div>
               <div className="grid grid-cols-2 gap-2 text-[11px]">
-                <div><span className="text-slate-500 print-text-muted block text-[10px]">Nombre Completo:</span> <strong className="text-white print-text-dark">{dossier.nombreCandidato}</strong></div>
-                <div><span className="text-slate-500 print-text-muted block text-[10px]">Cédula de Ciudadanía:</span> <strong className="text-white print-text-dark font-mono">{dossier.cedulaCandidato}</strong></div>
-                <div><span className="text-slate-500 print-text-muted block text-[10px]">Nombre Político:</span> <strong className="text-cyan-300 print-text-dark">{dossier.seudonimoPolitico || 'N/A'}</strong></div>
-                <div><span className="text-slate-500 print-text-muted block text-[10px]">Profesión:</span> <strong className="text-white print-text-dark">{dossier.profesionCandidato || 'N/A'}</strong></div>
-                <div><span className="text-slate-500 print-text-muted block text-[10px]">Teléfono / WhatsApp:</span> <strong className="text-white print-text-dark font-mono">{dossier.telefonoCandidato || 'N/A'}</strong></div>
-                <div><span className="text-slate-500 print-text-muted block text-[10px]">Correo Oficial:</span> <strong className="text-white print-text-dark">{dossier.emailCandidato || 'N/A'}</strong></div>
+                <div><span className="text-slate-500 print-text-muted block text-[10px]">Nombre Completo:</span> <strong className="text-white print-text-dark">{formatData(dossier.nombreCandidato)}</strong></div>
+                <div><span className="text-slate-500 print-text-muted block text-[10px]">Cédula de Ciudadanía:</span> <strong className="text-white print-text-dark font-mono">{formatData(dossier.cedulaCandidato)}</strong></div>
+                <div><span className="text-slate-500 print-text-muted block text-[10px]">Nombre Político:</span> <strong className="text-cyan-300 print-text-dark">{formatData(dossier.seudonimoPolitico)}</strong></div>
+                <div><span className="text-slate-500 print-text-muted block text-[10px]">Profesión:</span> <strong className="text-white print-text-dark">{formatData(dossier.profesionCandidato)}</strong></div>
+                <div><span className="text-slate-500 print-text-muted block text-[10px]">Teléfono / WhatsApp:</span> <strong className="text-white print-text-dark font-mono">{formatData(dossier.telefonoCandidato)}</strong></div>
+                <div><span className="text-slate-500 print-text-muted block text-[10px]">Correo Oficial:</span> <strong className="text-white print-text-dark">{formatData(dossier.emailCandidato)}</strong></div>
               </div>
             </div>
           </div>
@@ -209,25 +242,25 @@ export const ExpedienteImprimibleModal: React.FC<ExpedienteImprimibleModalProps>
                 <span>3. Respaldo Político & Aval Oficial CNE</span>
               </div>
               <div className="space-y-1.5 text-[11px]">
-                <div><span className="text-slate-500 print-text-muted block text-[10px]">Modalidad de Respaldo:</span> <strong className="text-emerald-400 print-text-dark font-bold">{dossier.modalidadAval}</strong></div>
+                <div><span className="text-slate-500 print-text-muted block text-[10px]">Modalidad de Respaldo:</span> <strong className="text-emerald-400 print-text-dark font-bold">{formatData(dossier.modalidadAval)}</strong></div>
                 {dossier.modalidadAval === 'Partido' && (
                   <>
-                    <div><span className="text-slate-500 print-text-muted block text-[10px]">Partido Avalista con Personería:</span> <strong className="text-white print-text-dark">{dossier.partidoUnico}</strong></div>
-                    <div><span className="text-slate-500 print-text-muted block text-[10px]">Radicado Aval CNE:</span> <strong className="text-cyan-300 print-text-dark font-mono">{dossier.numeroAvalCNE || 'En trámite'}</strong></div>
+                    <div><span className="text-slate-500 print-text-muted block text-[10px]">Partido Avalista con Personería:</span> <strong className="text-white print-text-dark">{formatData(dossier.partidoUnico)}</strong></div>
+                    <div><span className="text-slate-500 print-text-muted block text-[10px]">Radicado Aval CNE:</span> <strong className="text-cyan-300 print-text-dark font-mono">{formatData(dossier.numeroAvalCNE)}</strong></div>
                   </>
                 )}
                 {dossier.modalidadAval === 'Firmas' && (
                   <>
-                    <div><span className="text-slate-500 print-text-muted block text-[10px]">Grupo Significativo de Ciudadanos:</span> <strong className="text-white print-text-dark">{dossier.nombreGrupoFirmas}</strong></div>
-                    <div><span className="text-slate-500 print-text-muted block text-[10px]">Radicado Registraduría:</span> <strong className="text-cyan-300 print-text-dark font-mono">{dossier.radicadoRegistraduria}</strong></div>
-                    <div><span className="text-slate-500 print-text-muted block text-[10px]">Meta de Firmas Validadas:</span> <strong className="text-white print-text-dark font-mono">{dossier.metaFirmas.toLocaleString()} firmas</strong></div>
+                    <div><span className="text-slate-500 print-text-muted block text-[10px]">Grupo Significativo de Ciudadanos:</span> <strong className="text-white print-text-dark">{formatData(dossier.nombreGrupoFirmas)}</strong></div>
+                    <div><span className="text-slate-500 print-text-muted block text-[10px]">Radicado Registraduría:</span> <strong className="text-cyan-300 print-text-dark font-mono">{formatData(dossier.radicadoRegistraduria)}</strong></div>
+                    <div><span className="text-slate-500 print-text-muted block text-[10px]">Meta de Firmas Validadas:</span> <strong className="text-white print-text-dark font-mono">{dossier.metaFirmas ? `${Number(dossier.metaFirmas).toLocaleString('es-CO')} firmas` : 'Pendiente'}</strong></div>
                   </>
                 )}
                 {dossier.modalidadAval === 'Coalición' && (
                   <>
-                    <div><span className="text-slate-500 print-text-muted block text-[10px]">Nombre Oficial de Coalición:</span> <strong className="text-white print-text-dark">{dossier.nombreCoalicion}</strong></div>
-                    <div><span className="text-slate-500 print-text-muted block text-[10px]">Partidos Miembros:</span> <strong className="text-cyan-300 print-text-dark">{dossier.partidosCoalicion?.join(', ')}</strong></div>
-                    <div><span className="text-slate-500 print-text-muted block text-[10px]">Partido Responsable ante CNE:</span> <strong className="text-emerald-400 print-text-dark font-bold">{dossier.partidoResponsableCNE}</strong></div>
+                    <div><span className="text-slate-500 print-text-muted block text-[10px]">Nombre Oficial de Coalición:</span> <strong className="text-white print-text-dark">{formatData(dossier.nombreCoalicion)}</strong></div>
+                    <div><span className="text-slate-500 print-text-muted block text-[10px]">Partidos Miembros:</span> <strong className="text-cyan-300 print-text-dark">{dossier.partidosCoalicion && dossier.partidosCoalicion.length > 0 ? dossier.partidosCoalicion.join(', ') : 'Pendiente'}</strong></div>
+                    <div><span className="text-slate-500 print-text-muted block text-[10px]">Partido Responsable ante CNE:</span> <strong className="text-emerald-400 print-text-dark font-bold">{formatData(dossier.partidoResponsableCNE)}</strong></div>
                   </>
                 )}
               </div>
@@ -240,10 +273,10 @@ export const ExpedienteImprimibleModal: React.FC<ExpedienteImprimibleModalProps>
                 <span>4. Calendario & Póliza de Seriedad</span>
               </div>
               <div className="grid grid-cols-2 gap-2 text-[11px]">
-                <div><span className="text-slate-500 print-text-muted block text-[10px]">Apertura de Urnas:</span> <strong className="text-white print-text-dark font-mono">{dossier.horaApertura} AM</strong></div>
-                <div><span className="text-slate-500 print-text-muted block text-[10px]">Cierre de Urnas:</span> <strong className="text-white print-text-dark font-mono">{dossier.horaCierre} PM</strong></div>
-                <div className="col-span-2"><span className="text-slate-500 print-text-muted block text-[10px]">Número de Póliza de Seriedad:</span> <strong className="text-amber-300 print-text-dark font-mono">{dossier.polizaNumero || 'N/A'}</strong></div>
-                <div className="col-span-2"><span className="text-slate-500 print-text-muted block text-[10px]">Compañía Aseguradora Emisora:</span> <strong className="text-white print-text-dark">{dossier.aseguradora || 'N/A'}</strong></div>
+                <div><span className="text-slate-500 print-text-muted block text-[10px]">Apertura de Urnas:</span> <strong className="text-white print-text-dark font-mono">{formatData(dossier.horaApertura ? `${dossier.horaApertura} AM` : '')}</strong></div>
+                <div><span className="text-slate-500 print-text-muted block text-[10px]">Cierre de Urnas:</span> <strong className="text-white print-text-dark font-mono">{formatData(dossier.horaCierre ? `${dossier.horaCierre} PM` : '')}</strong></div>
+                <div className="col-span-2"><span className="text-slate-500 print-text-muted block text-[10px]">Número de Póliza de Seriedad:</span> <strong className="text-amber-300 print-text-dark font-mono">{formatData(dossier.polizaNumero)}</strong></div>
+                <div className="col-span-2"><span className="text-slate-500 print-text-muted block text-[10px]">Compañía Aseguradora Emisora:</span> <strong className="text-white print-text-dark">{formatData(dossier.aseguradora)}</strong></div>
               </div>
             </div>
           </div>
@@ -263,23 +296,23 @@ export const ExpedienteImprimibleModal: React.FC<ExpedienteImprimibleModalProps>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-[11px]">
               <div className="p-3 bg-[#020712] print-card rounded-lg border border-slate-800">
                 <span className="text-slate-500 print-text-muted block font-bold text-[10px] uppercase">Gerente de Campaña</span>
-                <strong className="text-white print-text-dark block mt-0.5">{dossier.equipo?.gerenteNombre || 'Sin asignar'}</strong>
-                <span className="text-slate-400 print-text-muted text-[10px] block font-mono">CC: {dossier.equipo?.gerenteCedula || 'N/A'}</span>
-                <span className="text-cyan-300 print-text-dark text-[10px] block font-mono">Reg CNE: {dossier.equipo?.gerenteRegistroCNE || 'N/A'}</span>
+                <strong className="text-white print-text-dark block mt-0.5">{formatData(dossier.equipo?.gerenteNombre)}</strong>
+                <span className="text-slate-400 print-text-muted text-[10px] block font-mono">CC: {formatData(dossier.equipo?.gerenteCedula)}</span>
+                <span className="text-cyan-300 print-text-dark text-[10px] block font-mono">Reg CNE: {formatData(dossier.equipo?.gerenteRegistroCNE)}</span>
               </div>
 
               <div className="p-3 bg-[#020712] print-card rounded-lg border border-slate-800">
                 <span className="text-slate-500 print-text-muted block font-bold text-[10px] uppercase">Contador Público Oficial</span>
-                <strong className="text-white print-text-dark block mt-0.5">{dossier.equipo?.contadorNombre || 'Sin asignar'}</strong>
-                <span className="text-slate-400 print-text-muted text-[10px] block font-mono">CC: {dossier.equipo?.contadorCedula || 'N/A'}</span>
-                <span className="text-emerald-400 print-text-dark text-[10px] block font-mono font-bold">TP: {dossier.equipo?.contadorTarjetaProfesional || 'N/A'}</span>
+                <strong className="text-white print-text-dark block mt-0.5">{formatData(dossier.equipo?.contadorNombre)}</strong>
+                <span className="text-slate-400 print-text-muted text-[10px] block font-mono">CC: {formatData(dossier.equipo?.contadorCedula)}</span>
+                <span className="text-emerald-400 print-text-dark text-[10px] block font-mono font-bold">TP: {formatData(dossier.equipo?.contadorTarjetaProfesional)}</span>
               </div>
 
               <div className="p-3 bg-[#020712] print-card rounded-lg border border-slate-800">
                 <span className="text-slate-500 print-text-muted block font-bold text-[10px] uppercase">Cuenta Bancaria Única CNE</span>
-                <strong className="text-white print-text-dark block mt-0.5">{dossier.equipo?.bancoNombre || 'Sin banco'}</strong>
-                <span className="text-amber-300 print-text-dark text-[10px] block font-mono font-bold">{dossier.equipo?.bancoTipoCuenta} No. {dossier.equipo?.bancoNumeroCuenta || 'N/A'}</span>
-                <span className="text-slate-400 print-text-muted text-[10px] block truncate">Titular: {dossier.equipo?.bancoTitular || 'N/A'}</span>
+                <strong className="text-white print-text-dark block mt-0.5">{formatData(dossier.equipo?.bancoNombre)}</strong>
+                <span className="text-amber-300 print-text-dark text-[10px] block font-mono font-bold">{dossier.equipo?.bancoNumeroCuenta ? `${formatData(dossier.equipo?.bancoTipoCuenta)} No. ${dossier.equipo.bancoNumeroCuenta}` : 'Pendiente'}</span>
+                <span className="text-slate-400 print-text-muted text-[10px] block truncate">Titular: {formatData(dossier.equipo?.bancoTitular)}</span>
               </div>
             </div>
           </div>
@@ -301,9 +334,9 @@ export const ExpedienteImprimibleModal: React.FC<ExpedienteImprimibleModalProps>
                 {dossier.campanasAliadas.map((aliada, idx) => (
                   <div key={aliada.id} className="p-2.5 bg-[#020712] print-card rounded-lg border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div>
-                      <span className="font-bold text-white print-text-dark">{idx + 1}. {aliada.nombreLista}</span>
+                      <span className="font-bold text-white print-text-dark">{idx + 1}. {formatData(aliada.nombreLista)}</span>
                       <span className="text-[10px] text-slate-400 print-text-muted block">
-                        {aliada.corporacion} • {aliada.partidoOLista} • {aliada.modalidad} • Meta: {aliada.metaVotosEsperada?.toLocaleString()} votos
+                        {formatData(aliada.corporacion)} • {formatData(aliada.partidoOLista)} • {formatData(aliada.modalidad)} • Meta: {aliada.metaVotosEsperada ? `${Number(aliada.metaVotosEsperada).toLocaleString('es-CO')} votos` : 'Pendiente'}
                       </span>
                     </div>
                     <span className="text-[10px] font-bold text-emerald-400 print-text-dark bg-emerald-500/10 print-badge px-2 py-0.5 rounded border border-emerald-500/20 shrink-0 self-start sm:self-auto">
@@ -313,7 +346,7 @@ export const ExpedienteImprimibleModal: React.FC<ExpedienteImprimibleModalProps>
                 ))}
               </div>
             ) : (
-              <p className="text-slate-500 print-text-muted text-[11px] italic">No hay listas aliadas registradas actualmente en este expediente.</p>
+              <p className="text-slate-500 print-text-muted text-[11px] italic">Pendiente de registro de listas aliadas.</p>
             )}
           </div>
 
@@ -327,25 +360,34 @@ export const ExpedienteImprimibleModal: React.FC<ExpedienteImprimibleModalProps>
               
               <div className="space-y-1">
                 <div className="border-t border-slate-600 print-card pt-2 w-4/5 mx-auto"></div>
-                <strong className="block text-white print-text-dark text-[11px]">{dossier.nombreCandidato}</strong>
+                <strong className="block text-white print-text-dark text-[11px]">{formatData(dossier.nombreCandidato)}</strong>
                 <span className="text-slate-400 print-text-muted block">Candidato Oficial</span>
-                <span className="text-slate-500 print-text-muted block font-mono">CC: {dossier.cedulaCandidato}</span>
+                <span className="text-slate-500 print-text-muted block font-mono">CC: {formatData(dossier.cedulaCandidato)}</span>
               </div>
 
               <div className="space-y-1">
                 <div className="border-t border-slate-600 print-card pt-2 w-4/5 mx-auto"></div>
-                <strong className="block text-white print-text-dark text-[11px]">{dossier.equipo?.gerenteNombre || 'Gerente de Campaña'}</strong>
+                <strong className="block text-white print-text-dark text-[11px]">{formatData(dossier.equipo?.gerenteNombre)}</strong>
                 <span className="text-slate-400 print-text-muted block">Gerente Oficial CNE</span>
-                <span className="text-slate-500 print-text-muted block font-mono">CC: {dossier.equipo?.gerenteCedula || '__________________'}</span>
+                <span className="text-slate-500 print-text-muted block font-mono">CC: {formatData(dossier.equipo?.gerenteCedula)}</span>
               </div>
 
               <div className="space-y-1">
                 <div className="border-t border-slate-600 print-card pt-2 w-4/5 mx-auto"></div>
-                <strong className="block text-white print-text-dark text-[11px]">{dossier.equipo?.contadorNombre || 'Contador Público'}</strong>
+                <strong className="block text-white print-text-dark text-[11px]">{formatData(dossier.equipo?.contadorNombre)}</strong>
                 <span className="text-slate-400 print-text-muted block">Contador Público JCC</span>
-                <span className="text-slate-500 print-text-muted block font-mono">TP: {dossier.equipo?.contadorTarjetaProfesional || '__________________'}</span>
+                <span className="text-slate-500 print-text-muted block font-mono">TP: {formatData(dossier.equipo?.contadorTarjetaProfesional)}</span>
               </div>
 
+            </div>
+
+            {/* Verification Timestamp */}
+            <div className="border-t border-slate-700/60 pt-3 flex flex-col sm:flex-row items-center justify-between text-[9px] text-slate-500 print-text-muted">
+              <span className="flex items-center gap-1">
+                <Clock className="w-3 h-3 text-cyan-400 print-text-dark" />
+                Fecha y hora de expedición: <strong className="font-mono text-slate-300 print-text-dark">{generationTimestamp}</strong>
+              </span>
+              <span>Software Electoral CNE Colombia • Expediente Digital Autenticado</span>
             </div>
           </div>
 
