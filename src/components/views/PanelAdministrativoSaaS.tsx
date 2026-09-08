@@ -277,7 +277,7 @@ export const PanelAdministrativoSaaS: React.FC<PanelAdministrativoSaaSProps> = (
 
   const triggerToast = (msg: string) => {
     setActionSuccessMessage(msg);
-    setTimeout(() => setActionSuccessMessage(null), 4000);
+    setTimeout(() => setActionSuccessMessage(null), 2500);
   };
 
   const copyToClipboard = (text: string) => {

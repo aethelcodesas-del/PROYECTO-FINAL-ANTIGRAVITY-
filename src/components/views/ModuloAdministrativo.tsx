@@ -158,6 +158,15 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
   const [crmLoading, setCrmLoading] = useState(false);
   const [crmError, setCrmError] = useState('');
 
+  // Auto-dismiss floating action messages quickly (2.5 seconds)
+  useEffect(() => {
+    if (!actionSuccessMessage) return;
+    const timer = setTimeout(() => {
+      setActionSuccessMessage('');
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, [actionSuccessMessage]);
+
   // Base configuration list of permissions/functions for each module (as shown in images)
   const MODULE_FUNCTIONS = {
     admin: [
@@ -2343,23 +2352,22 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
 
   return (
     <div className="responsive-view min-h-[calc(100dvh-60px)] w-full min-w-0 bg-[#030712] text-slate-100 relative overflow-x-hidden">
-      {/* Floating Success Toast */}
+      {/* Floating Success Toast - Compact & Auto-dismiss */}
       {actionSuccessMessage && (
-        <div className="fixed top-20 sm:top-24 left-3 right-3 sm:left-auto sm:right-6 z-50 animate-bounce duration-500 bg-[#022c22]/95 border border-emerald-500/50 backdrop-blur-md rounded-xl p-3 sm:p-4 shadow-[0_0_25px_rgba(16,185,129,0.35)] flex items-center gap-3 sm:max-w-sm text-slate-100">
-          <div className="bg-emerald-500/20 p-2 rounded-lg text-emerald-400">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
+        <div className="fixed top-16 sm:top-20 right-3 sm:right-6 z-50 transition-all duration-300 transform bg-[#022c22]/95 border border-emerald-500/40 backdrop-blur-md rounded-xl py-2 px-3.5 shadow-xl shadow-emerald-950/60 flex items-center gap-2.5 max-w-[340px] text-slate-100 animate-in fade-in slide-in-from-top-2">
+          <div className="bg-emerald-500/20 p-1.5 rounded-lg text-emerald-400 shrink-0">
+            <Check className="w-4 h-4" />
           </div>
-          <div>
-            <h4 className="font-extrabold text-xs text-emerald-400 uppercase tracking-wider">¡Registro Exitoso!</h4>
-            <p className="text-[11px] text-slate-300 mt-0.5 leading-relaxed">{actionSuccessMessage}</p>
+          <div className="min-w-0 flex-1">
+            <h4 className="font-bold text-[11px] text-emerald-400 uppercase tracking-wider">¡Registro Exitoso!</h4>
+            <p className="text-[11px] text-slate-200 mt-0.5 leading-snug break-words">{actionSuccessMessage}</p>
           </div>
           <button 
             onClick={() => setActionSuccessMessage('')}
-            className="text-slate-400 hover:text-slate-200 transition-colors ml-auto text-[10px] uppercase font-bold"
+            className="text-slate-400 hover:text-slate-100 transition-colors ml-1 p-1 rounded-md text-[10px] uppercase font-bold shrink-0"
+            title="Cerrar"
           >
-            Cerrar
+            <X className="w-3.5 h-3.5" />
           </button>
         </div>
       )}
