@@ -829,16 +829,6 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
           <div className="flex flex-wrap items-center gap-2 shrink-0">
             <button
               type="button"
-              onClick={() => setShowResetModal(true)}
-              className="px-3 py-2 bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 text-xs font-bold rounded-xl border border-rose-500/40 flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
-              title="Limpiar y restablecer todos los datos del software para comenzar desde cero"
-            >
-              <RotateCcw className="w-4 h-4 text-rose-400" />
-              <span>Empezar Desde Cero</span>
-            </button>
-
-            <button
-              type="button"
               onClick={() => setShowChecklistModal(true)}
               className="px-3 py-2 bg-[#051833] hover:bg-[#09254d] text-emerald-400 text-xs font-bold rounded-xl border border-emerald-500/40 flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
               title="Auditoría de requisitos legales CNE"
