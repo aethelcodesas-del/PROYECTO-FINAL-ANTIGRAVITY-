@@ -195,36 +195,57 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
 
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
-          .select('client_id,campaign_id')
+          .select('client_id,campaign_id,role')
           .eq('id', userId)
           .maybeSingle();
         if (profileError) throw profileError;
 
-        const rawRemembered = profile?.campaign_id || localStorage.getItem('active_campaign_id');
-        const rememberedId = isUUID(rawRemembered) ? rawRemembered : null;
-        const profileClientId = isUUID(profile?.client_id) ? profile.client_id : null;
+        const isGlobalAdmin = ['SUPERADMIN', 'GLOBAL_ADMIN'].includes(String(profile?.role || '').toUpperCase());
         const profileCampaignId = isUUID(profile?.campaign_id) ? profile.campaign_id : null;
+        const profileClientId = isUUID(profile?.client_id) ? profile.client_id : null;
+        const rawRemembered = localStorage.getItem('active_campaign_id');
+        const rememberedId = isUUID(rawRemembered) ? rawRemembered : null;
 
         let campaigns: any[] | null = null;
         let campaignError: any = null;
 
-        const targetCampaignId = rememberedId || profileCampaignId;
-        if (targetCampaignId) {
-          const res = await supabase
-            .from('campaigns')
-            .select('id,client_id,cargo_postulacion,presupuesto_total')
-            .eq('id', targetCampaignId)
-            .limit(1);
-          campaigns = res.data;
-          campaignError = res.error;
+        if (!isGlobalAdmin) {
+          if (profileCampaignId) {
+            const res = await supabase
+              .from('campaigns')
+              .select('id,client_id,cargo_postulacion,presupuesto_total')
+              .eq('id', profileCampaignId)
+              .limit(1);
+            campaigns = res.data;
+            campaignError = res.error;
+          }
+          if (!campaigns?.length && profileClientId) {
+            const resDirect = await supabase
+              .from('campaigns')
+              .select('id,client_id,cargo_postulacion,presupuesto_total')
+              .eq('id', profileClientId)
+              .limit(1);
+            if (resDirect.data?.length) {
+              campaigns = resDirect.data;
+              campaignError = resDirect.error;
+            } else {
+              const res = await supabase
+                .from('campaigns')
+                .select('id,client_id,cargo_postulacion,presupuesto_total')
+                .eq('client_id', profileClientId)
+                .order('updated_at', { ascending: false })
+                .limit(1);
+              campaigns = res.data;
+              campaignError = res.error;
+            }
+          }
         }
 
-        if (!campaigns?.length && profileClientId) {
+        if (!campaigns?.length && rememberedId) {
           const res = await supabase
             .from('campaigns')
             .select('id,client_id,cargo_postulacion,presupuesto_total')
-            .eq('client_id', profileClientId)
-            .order('updated_at', { ascending: false })
+            .eq('id', rememberedId)
             .limit(1);
           campaigns = res.data;
           campaignError = res.error;

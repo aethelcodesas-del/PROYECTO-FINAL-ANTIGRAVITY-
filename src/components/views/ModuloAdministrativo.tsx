@@ -1998,25 +1998,42 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
         setDashboardLoading(false);
         return null;
       }
-      const { data: profile, error: profileError } = await supabase.from('profiles').select('client_id,campaign_id').eq('id', userId).maybeSingle();
+      const { data: profile, error: profileError } = await supabase.from('profiles').select('client_id,campaign_id,role').eq('id', userId).maybeSingle();
       if (profileError) throw profileError;
       if (!profile?.client_id && !profile?.campaign_id) throw new Error('Tu usuario no tiene una organización electoral asignada.');
 
-      const rawRemembered = profile.campaign_id || localStorage.getItem('active_campaign_id');
-      const targetCampaignId = isUUID(rawRemembered) ? rawRemembered : (isUUID(profile.campaign_id) ? profile.campaign_id : null);
+      const isGlobalAdmin = ['SUPERADMIN', 'GLOBAL_ADMIN'].includes(String(profile?.role || '').toUpperCase());
+      const profileCampaignId = isUUID(profile.campaign_id) ? profile.campaign_id : null;
       const profileClientId = isUUID(profile.client_id) ? profile.client_id : null;
+      const rawRemembered = localStorage.getItem('active_campaign_id');
+      const rememberedId = isUUID(rawRemembered) ? rawRemembered : null;
 
       let campaign: any = null;
-      if (targetCampaignId) {
-        const { data } = await supabase.from('campaigns').select('id,client_id,presupuesto_total').eq('id', targetCampaignId).maybeSingle();
+      if (!isGlobalAdmin) {
+        if (profileCampaignId) {
+          const { data } = await supabase.from('campaigns').select('id,client_id,presupuesto_total').eq('id', profileCampaignId).maybeSingle();
+          if (data) campaign = data;
+        }
+        if (!campaign && profileClientId) {
+          const { data: directData } = await supabase.from('campaigns').select('id,client_id,presupuesto_total').eq('id', profileClientId).maybeSingle();
+          if (directData) campaign = directData;
+          else {
+            const { data } = await supabase.from('campaigns').select('id,client_id,presupuesto_total').eq('client_id', profileClientId).order('updated_at', { ascending: false }).limit(1).maybeSingle();
+            if (data) campaign = data;
+          }
+        }
+      }
+
+      if (!campaign && rememberedId) {
+        const { data } = await supabase.from('campaigns').select('id,client_id,presupuesto_total').eq('id', rememberedId).maybeSingle();
         if (data) campaign = data;
       }
-      if (!campaign && profileClientId) {
-        const { data } = await supabase.from('campaigns').select('id,client_id,presupuesto_total').eq('client_id', profileClientId).order('updated_at', { ascending: false }).limit(1).maybeSingle();
+      if (!campaign) {
+        const { data } = await supabase.from('campaigns').select('id,client_id,presupuesto_total').order('updated_at', { ascending: false }).limit(1).maybeSingle();
         if (data) campaign = data;
       }
 
-      const activeCampaignId = isUUID(campaign?.id) ? campaign.id : targetCampaignId;
+      const activeCampaignId = isUUID(campaign?.id) ? campaign.id : profileCampaignId;
       const effectiveClientId = isUUID(campaign?.client_id) ? campaign.client_id : profileClientId;
 
       const userMatchIds = new Set<string>();

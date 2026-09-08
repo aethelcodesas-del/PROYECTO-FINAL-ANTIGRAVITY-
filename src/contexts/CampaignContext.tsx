@@ -293,33 +293,59 @@ export const CampaignProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
         const { data: profile } = await supabase
           .from('profiles')
-          .select('client_id, campaign_id')
+          .select('client_id, campaign_id, role')
           .eq('id', userId)
           .maybeSingle();
 
-        const rawRemembered = profile?.campaign_id || localStorage.getItem('active_campaign_id');
-        const rememberedId = isUUID(rawRemembered) ? rawRemembered : null;
+        const isGlobalAdmin = ['SUPERADMIN', 'GLOBAL_ADMIN'].includes(String(profile?.role || '').toUpperCase());
         const profileClientId = isUUID(profile?.client_id) ? profile.client_id : null;
         const profileCampaignId = isUUID(profile?.campaign_id) ? profile.campaign_id : null;
+        const rawRemembered = localStorage.getItem('active_campaign_id');
+        const rememberedId = isUUID(rawRemembered) ? rawRemembered : null;
 
         let rows: any[] | null = null;
         let dbError: any = null;
 
-        // 1. Si hay ID de campaña, buscar directamente
-        const targetId = rememberedId || profileCampaignId;
-        if (targetId) {
+        // 1. For clients, strictly prioritize their own campaign_id or client_id from profile
+        if (!isGlobalAdmin) {
+          if (profileCampaignId) {
+            const result = await supabase.from('campaigns').select(
+              'id, nombre, candidato_nombre, cargo_postulacion, departamento, municipio, circunscripcion, client_id, descripcion, presupuesto_total, estado'
+            ).eq('id', profileCampaignId).limit(1);
+            rows = result.data;
+            dbError = result.error;
+          }
+          if (!rows?.length && profileClientId) {
+            const resultDirect = await supabase.from('campaigns').select(
+              'id, nombre, candidato_nombre, cargo_postulacion, departamento, municipio, circunscripcion, client_id, descripcion, presupuesto_total, estado'
+            ).eq('id', profileClientId).limit(1);
+            if (resultDirect.data?.length) {
+              rows = resultDirect.data;
+              dbError = resultDirect.error;
+            } else {
+              const result = await supabase.from('campaigns').select(
+                'id, nombre, candidato_nombre, cargo_postulacion, departamento, municipio, circunscripcion, client_id, descripcion, presupuesto_total, estado'
+              ).eq('client_id', profileClientId).order('updated_at', { ascending: false }).limit(1);
+              rows = result.data;
+              dbError = result.error;
+            }
+          }
+        }
+
+        // 2. If global admin or not found, check remembered targetId
+        if (!rows?.length && rememberedId) {
           const result = await supabase.from('campaigns').select(
             'id, nombre, candidato_nombre, cargo_postulacion, departamento, municipio, circunscripcion, client_id, descripcion, presupuesto_total, estado'
-          ).eq('id', targetId).limit(1);
+          ).eq('id', rememberedId).limit(1);
           rows = result.data;
           dbError = result.error;
         }
 
-        // 2. Si no hay resultado y hay client_id, buscar por client_id
-        if (!rows?.length && profileClientId) {
+        // 3. Fallback to latest campaign if still no rows
+        if (!rows?.length) {
           const result = await supabase.from('campaigns').select(
             'id, nombre, candidato_nombre, cargo_postulacion, departamento, municipio, circunscripcion, client_id, descripcion, presupuesto_total, estado'
-          ).eq('client_id', profileClientId).order('updated_at', { ascending: false }).limit(1);
+          ).order('updated_at', { ascending: false }).limit(1);
           rows = result.data;
           dbError = result.error;
         }
