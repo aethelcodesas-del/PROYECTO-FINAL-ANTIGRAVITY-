@@ -317,7 +317,7 @@ async function createCampaignUser(request, configuration) {
     display_name: displayName,
     role: 'ADMIN_CLIENTE',
     status: 'ACTIVE',
-    client_id: campaign.client_id || null,
+    client_id: campaign.client_id || campaign.id,
     campaign_id: campaign.id,
     allowed_modules: ['ADMINISTRATIVE', 'TERRITORY', 'STRATEGY', 'CRM', 'DAY_D'],
     updated_at: new Date().toISOString()

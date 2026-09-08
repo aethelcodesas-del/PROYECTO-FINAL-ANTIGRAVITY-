@@ -410,7 +410,7 @@ async function startAppServer(shouldListen = true) {
         display_name: displayName,
         role: 'ADMIN_CLIENTE',
         status: 'ACTIVE',
-        client_id: sourceCampaign.client_id || null,
+        client_id: sourceCampaign.client_id || sourceCampaign.id,
         campaign_id: sourceCampaign.id,
         allowed_modules: ['ADMINISTRATIVE', 'TERRITORY', 'STRATEGY', 'CRM', 'DAY_D'],
         updated_at: new Date().toISOString()
