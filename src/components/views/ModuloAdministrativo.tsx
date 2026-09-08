@@ -634,29 +634,30 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
         }
         ownerId = refreshed.session.user.id;
       }
-      const { data: ownerProfile, error: ownerError } = await supabase
-        .from('profiles')
-        .select('client_id,campaign_id,role')
-        .eq('id', ownerId)
-        .maybeSingle();
+      const [{ data: ownerProfile, error: ownerError }, { data: campaigns, error: campaignsError }] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('client_id,campaign_id,role')
+          .eq('id', ownerId)
+          .maybeSingle(),
+        supabase.from('campaigns').select('id,client_id,nombre')
+      ]);
       if (ownerError) throw ownerError;
+      if (campaignsError) throw campaignsError;
 
       const rawRemembered = ownerProfile?.campaign_id || localStorage.getItem('active_campaign_id') || authUser?.campaignId;
       const targetCampaignId = isUUID(rawRemembered) ? rawRemembered : (isUUID(ownerProfile?.campaign_id) ? ownerProfile.campaign_id : null);
       const profileClientId = isUUID(ownerProfile?.client_id) ? ownerProfile.client_id : (isUUID(authUser?.clientId) ? authUser.clientId : null);
 
-      let campaignData: any = null;
-      if (targetCampaignId) {
-        const { data } = await supabase.from('campaigns').select('id,client_id').eq('id', targetCampaignId).maybeSingle();
-        if (data) campaignData = data;
-      }
-      if (!campaignData && profileClientId) {
-        const { data } = await supabase.from('campaigns').select('id,client_id').eq('client_id', profileClientId).order('updated_at', { ascending: false }).limit(1).maybeSingle();
-        if (data) campaignData = data;
-      }
+      const soleCampaign = (campaigns || []).length === 1 ? campaigns![0] : undefined;
+      const matchingCampaign = (campaigns || []).find((c: any) =>
+        (targetCampaignId && c.id === targetCampaignId) ||
+        (profileClientId && c.client_id === profileClientId) ||
+        (profileClientId && c.id === profileClientId)
+      ) || soleCampaign;
 
-      const activeCampaignId = isUUID(campaignData?.id) ? campaignData.id : targetCampaignId;
-      const effectiveClientId = isUUID(campaignData?.client_id) ? campaignData.client_id : profileClientId;
+      const activeCampaignId = matchingCampaign?.id || targetCampaignId;
+      const effectiveClientId = matchingCampaign?.client_id || profileClientId;
 
       const matchIds = new Set<string>();
       if (activeCampaignId) matchIds.add(activeCampaignId);
@@ -666,23 +667,27 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
       if (authUser?.clientId && isUUID(authUser.clientId)) matchIds.add(authUser.clientId);
       if (authUser?.campaignId && isUUID(authUser.campaignId)) matchIds.add(authUser.campaignId);
 
-      let profilesQuery = supabase
+      const { data: rawProfiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id,email,display_name,role,status,allowed_modules,client_id,campaign_id,created_at')
         .neq('id', ownerId)
-        .neq('role', 'SUPERADMIN');
+        .order('created_at', { ascending: true });
 
-      if (matchIds.size > 0) {
-        const orConditions: string[] = [];
-        matchIds.forEach((id) => {
-          orConditions.push(`campaign_id.eq.${id}`);
-          orConditions.push(`client_id.eq.${id}`);
-        });
-        profilesQuery = profilesQuery.or(orConditions.join(','));
-      } else {
-        profilesQuery = profilesQuery.is('client_id', null).is('campaign_id', null);
-      }
-      const { data: profiles, error: profilesError } = await profilesQuery.order('created_at', { ascending: true });
+      if (profilesError) throw profilesError;
+
+      const profiles = (rawProfiles || []).filter((profile: any) => {
+        const r = String(profile.role || '').toUpperCase();
+        if (['SUPERADMIN', 'GLOBAL_ADMIN'].includes(r)) return false;
+        if (profile.id === ownerId) return false;
+
+        if (profile.campaign_id && matchIds.has(profile.campaign_id)) return true;
+        if (profile.client_id && matchIds.has(profile.client_id)) return true;
+
+        if (!profile.campaign_id && !profile.client_id) return true;
+        if (campaigns && campaigns.length <= 1) return true;
+
+        return false;
+      });
       if (profilesError) throw profilesError;
 
       const profileIds = (profiles || []).map((profile: any) => profile.id);
@@ -2020,23 +2025,25 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
       if (profile.campaign_id && isUUID(profile.campaign_id)) userMatchIds.add(profile.campaign_id);
       if (profile.client_id && isUUID(profile.client_id)) userMatchIds.add(profile.client_id);
 
-      let userPromise: Promise<any>;
-      if (userMatchIds.size > 0) {
-        const orConditions: string[] = [];
-        userMatchIds.forEach((id) => {
-          orConditions.push(`campaign_id.eq.${id}`);
-          orConditions.push(`client_id.eq.${id}`);
-        });
-        userPromise = supabase
+      const userPromise = (async () => {
+        const { data: rawProfiles } = await supabase
           .from('profiles')
-          .select('id', { count: 'exact', head: true })
-          .neq('id', userId)
-          .neq('role', 'SUPERADMIN')
-          .in('status', ['ACTIVE', 'ACTIVO'])
-          .or(orConditions.join(','));
-      } else {
-        userPromise = Promise.resolve({ count: 0, error: null } as any);
-      }
+          .select('id,role,status,client_id,campaign_id')
+          .neq('id', userId);
+        const activeSubusers = (rawProfiles || []).filter((p: any) => {
+          const r = String(p.role || '').toUpperCase();
+          if (['SUPERADMIN', 'GLOBAL_ADMIN'].includes(r)) return false;
+          if (p.id === userId) return false;
+          const s = String(p.status || '').toUpperCase();
+          const isActive = s === 'ACTIVE' || s === 'ACTIVO' || !s;
+          if (!isActive) return false;
+          if (p.campaign_id && userMatchIds.has(p.campaign_id)) return true;
+          if (p.client_id && userMatchIds.has(p.client_id)) return true;
+          if (!p.campaign_id && !p.client_id) return true;
+          return false;
+        });
+        return { count: activeSubusers.length, error: null };
+      })();
 
       const leaderPromise = effectiveClientId
         ? supabase.from('leaders').select('id', { count: 'exact', head: true }).eq('client_id', effectiveClientId).eq('status', 'ACTIVE')
