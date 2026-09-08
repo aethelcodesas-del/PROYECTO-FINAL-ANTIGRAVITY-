@@ -66,6 +66,17 @@ export interface CampanaDossier {
   modalidadCandidatura: 'Uninominal' | 'Lista Abierta' | 'Lista Cerrada';
   posicionTarjeton: string;
 
+  // Parámetros específicos de Elección Atípica
+  decretoConvocatoriaAtipica?: string;
+  fechaDecretoAtipica?: string;
+  motivoVacanciaAtipica?: string;
+  periodoFinAtipica?: string;
+  duracionCampanaDias?: number;
+
+  // Parámetros específicos de Elección Ordinaria
+  periodoCuatrenio?: string;
+  faseProcesoOrdinario?: string;
+
   // Section 2: Candidate
   nombreCandidato: string;
   cedulaCandidato: string;
