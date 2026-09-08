@@ -930,224 +930,50 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
             </div>
 
             {/* -------------------------------------------------------------------------------- */}
-            {/* DEDICATED PROFESSIONAL FUNCTIONS PANEL: ELECCIÓN ATÍPICA vs ELECCIÓN ORDINARIA */}
+            {/* INFORMATIVE NOTICE: ELECCIÓN ATÍPICA vs ELECCIÓN ORDINARIA */}
             {/* -------------------------------------------------------------------------------- */}
             {activeDossier.tipoProcesoEleccion === 'Atípica' ? (
-              <div className="mt-4 p-5 bg-gradient-to-br from-amber-950/30 via-[#030d1f] to-[#04152d] rounded-2xl border border-amber-500/40 shadow-2xl space-y-4 animate-fadeIn">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-amber-500/20 pb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="p-2 bg-amber-500/20 border border-amber-500/40 rounded-xl text-amber-400">
-                      <Zap className="w-5 h-5" />
+              <div className="mt-3 p-3.5 bg-amber-950/20 rounded-xl border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs animate-fadeIn">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-1.5 bg-amber-500/20 border border-amber-500/40 rounded-lg text-amber-400 shrink-0">
+                    <Zap className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-bold text-amber-300 text-xs tracking-wide">Régimen Informativo: Elección Atípica</span>
+                      <span className="text-[10px] text-slate-400">Ley 136/1994 (Art. 106) & Res. CNE</span>
                     </div>
-                    <div>
-                      <h4 className="font-black text-amber-300 text-sm uppercase tracking-wider flex items-center gap-2">
-                        Funciones y Parámetros Oficiales de Elección Atípica
-                      </h4>
-                      <p className="text-[11px] text-slate-300">
-                        Marco Legal: <strong>Ley 136 de 1994 (Art. 106)</strong>, <strong>Ley 1475 de 2011</strong> & Resoluciones Especiales CNE / Registraduría.
-                      </p>
-                    </div>
-                  </div>
-                  <span className="px-2.5 py-1 bg-amber-500/15 text-amber-300 border border-amber-500/30 rounded-lg text-[10px] font-extrabold uppercase">
-                    ⚡ Cronograma Abreviado
-                  </span>
-                </div>
-
-                {/* Form fields specific to Elección Atípica */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 text-xs pt-1">
-                  <div className="p-3 bg-[#030d1f]/80 rounded-xl border border-amber-500/20 space-y-1">
-                    <label className="block font-bold text-amber-200">Decreto de Convocatoria *</label>
-                    <input
-                      type="text"
-                      value={activeDossier.decretoConvocatoriaAtipica || ''}
-                      onChange={(e) => updateDossier({ decretoConvocatoriaAtipica: e.target.value })}
-                      placeholder="Ej. Decreto 0382 de 2024 (Gobernación)"
-                      className="w-full bg-[#051833] border border-amber-500/30 rounded-lg px-2.5 py-1.5 font-medium text-white focus:outline-none focus:border-amber-400"
-                    />
-                    <p className="text-[9px] text-slate-400">Acto administrativo que convoca a elecciones.</p>
-                  </div>
-
-                  <div className="p-3 bg-[#030d1f]/80 rounded-xl border border-amber-500/20 space-y-1">
-                    <label className="block font-bold text-amber-200">Fecha Expedición Decreto *</label>
-                    <input
-                      type="date"
-                      value={activeDossier.fechaDecretoAtipica || ''}
-                      onChange={(e) => updateDossier({ fechaDecretoAtipica: e.target.value })}
-                      className="w-full bg-[#051833] border border-amber-500/30 rounded-lg px-2.5 py-1.5 font-medium text-white focus:outline-none focus:border-amber-400"
-                    />
-                    <p className="text-[9px] text-slate-400">Fecha de firma del decreto departamental o nacional.</p>
-                  </div>
-
-                  <div className="p-3 bg-[#030d1f]/80 rounded-xl border border-amber-500/20 space-y-1">
-                    <label className="block font-bold text-amber-200">Causal de Vacancia Absoluta *</label>
-                    <select
-                      value={activeDossier.motivoVacanciaAtipica || 'Nulidad Electoral Declarada'}
-                      onChange={(e) => updateDossier({ motivoVacanciaAtipica: e.target.value })}
-                      className="w-full bg-[#051833] border border-amber-500/30 rounded-lg px-2.5 py-1.5 font-medium text-white focus:outline-none focus:border-amber-400"
-                    >
-                      <option value="Nulidad Electoral Declarada">Nulidad Electoral Declarada (Tribunal / Consejo de Estado)</option>
-                      <option value="Destitución / Sanción Disciplinaria">Destitución / Sanción Disciplinaria en Firme</option>
-                      <option value="Renuncia Aceptada">Renuncia Aceptada del Mandatario</option>
-                      <option value="Fallecimiento">Fallecimiento del Titular</option>
-                      <option value="Inhabilidad Sobreviniente">Inhabilidad Sobreviniente</option>
-                      <option value="Incapacidad Física Permanente">Incapacidad Física Permanente</option>
-                    </select>
-                    <p className="text-[9px] text-slate-400">Motivo legal que originó la falta absoluta.</p>
-                  </div>
-
-                  <div className="p-3 bg-[#030d1f]/80 rounded-xl border border-amber-500/20 space-y-1">
-                    <label className="block font-bold text-amber-200">Finalización del Periodo Atípico</label>
-                    <input
-                      type="date"
-                      value={activeDossier.periodoFinAtipica || '2027-12-31'}
-                      onChange={(e) => updateDossier({ periodoFinAtipica: e.target.value })}
-                      className="w-full bg-[#051833] border border-amber-500/30 rounded-lg px-2.5 py-1.5 font-medium text-white focus:outline-none focus:border-amber-400"
-                    />
-                    <p className="text-[9px] text-slate-400">Culminación del periodo constitucional restante.</p>
+                    <p className="text-[11px] text-slate-300 mt-0.5">
+                      Proceso extraordinario por vacancia absoluta con cronograma abreviado (40–55 días), censo electoral previo congelado y periodo complementario.
+                    </p>
                   </div>
                 </div>
-
-                {/* Specific operational rule cards for Elección Atípica */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2">
-                  <div className="p-3 bg-[#020b18] border border-amber-500/20 rounded-xl space-y-1">
-                    <span className="text-[11px] font-extrabold text-amber-300 flex items-center gap-1.5">
-                      ⏱️ Cronograma Exprés (40-55 Días)
-                    </span>
-                    <p className="text-[10px] text-slate-300 leading-relaxed">
-                      El calendario electoral es abreviado. El plazo de inscripción de candidatos se reduce a solo 15 días calendario tras el decreto.
-                    </p>
-                  </div>
-
-                  <div className="p-3 bg-[#020b18] border border-amber-500/20 rounded-xl space-y-1">
-                    <span className="text-[11px] font-extrabold text-amber-300 flex items-center gap-1.5">
-                      🔒 Censo Electoral Congelado
-                    </span>
-                    <p className="text-[10px] text-slate-300 leading-relaxed">
-                      No se abren nuevas inscripciones de cédulas. Rige el censo electoral oficial de la última elección ordinaria con bajas legales.
-                    </p>
-                  </div>
-
-                  <div className="p-3 bg-[#020b18] border border-amber-500/20 rounded-xl space-y-1">
-                    <span className="text-[11px] font-extrabold text-amber-300 flex items-center gap-1.5">
-                      🛡️ Testigos y Jurados Rápidos
-                    </span>
-                    <p className="text-[10px] text-slate-300 leading-relaxed">
-                      La postulación y acreditación de testigos electorales se realiza en plataforma simplificada con resolución directa de Registraduría.
-                    </p>
-                  </div>
-
-                  <div className="p-3 bg-[#020b18] border border-amber-500/20 rounded-xl space-y-1">
-                    <span className="text-[11px] font-extrabold text-amber-300 flex items-center gap-1.5">
-                      💼 Periodo Complementario
-                    </span>
-                    <p className="text-[10px] text-slate-300 leading-relaxed">
-                      El candidato electo asume funciones institucionales únicamente para culminar el tiempo que le faltaba al periodo en curso.
-                    </p>
-                  </div>
+                <div className="flex items-center gap-1.5 flex-wrap shrink-0">
+                  <span className="px-2 py-0.5 bg-amber-500/15 text-amber-300 border border-amber-500/30 rounded-md text-[10px] font-semibold">⚡ Cronograma 40-55d</span>
+                  <span className="px-2 py-0.5 bg-amber-500/15 text-amber-300 border border-amber-500/30 rounded-md text-[10px] font-semibold">🔒 Censo Congelado</span>
+                  <span className="px-2 py-0.5 bg-amber-500/15 text-amber-300 border border-amber-500/30 rounded-md text-[10px] font-semibold">💼 Culminación Periodo</span>
                 </div>
               </div>
             ) : (
-              <div className="mt-4 p-5 bg-gradient-to-br from-cyan-950/30 via-[#030d1f] to-[#04152d] rounded-2xl border border-cyan-500/30 shadow-2xl space-y-4 animate-fadeIn">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-cyan-500/20 pb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="p-2 bg-cyan-500/20 border border-cyan-500/40 rounded-xl text-cyan-300">
-                      <Vote className="w-5 h-5" />
+              <div className="mt-3 p-3.5 bg-cyan-950/20 rounded-xl border border-cyan-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs animate-fadeIn">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-1.5 bg-cyan-500/20 border border-cyan-500/40 rounded-lg text-cyan-300 shrink-0">
+                    <Vote className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-bold text-cyan-300 text-xs tracking-wide">Régimen Informativo: Elección Ordinaria</span>
+                      <span className="text-[10px] text-slate-400">Art. 260 CP & Ley 1475/2011</span>
                     </div>
-                    <div>
-                      <h4 className="font-black text-cyan-300 text-sm uppercase tracking-wider flex items-center gap-2">
-                        Funciones y Parámetros Oficiales de Elección Ordinaria
-                      </h4>
-                      <p className="text-[11px] text-slate-300">
-                        Marco Legal: <strong>Constitución Política de Colombia (Art. 260)</strong>, <strong>Ley 1475 de 2011</strong> & Calendario Nacional Registraduría.
-                      </p>
-                    </div>
-                  </div>
-                  <span className="px-2.5 py-1 bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 rounded-lg text-[10px] font-extrabold uppercase">
-                    🏛️ Periodo Constitucional 4 Años
-                  </span>
-                </div>
-
-                {/* Form fields specific to Elección Ordinaria */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-xs pt-1">
-                  <div className="p-3 bg-[#030d1f]/80 rounded-xl border border-cyan-500/20 space-y-1">
-                    <label className="block font-bold text-cyan-200">Cuatrienio Constitucional *</label>
-                    <select
-                      value={activeDossier.periodoCuatrenio || 'Periodo Constitucional 2024 - 2027'}
-                      onChange={(e) => updateDossier({ periodoCuatrenio: e.target.value })}
-                      className="w-full bg-[#051833] border border-cyan-500/30 rounded-lg px-2.5 py-1.5 font-medium text-white focus:outline-none focus:border-cyan-400"
-                    >
-                      <option value="Periodo Constitucional 2024 - 2027">Periodo Constitucional 2024 - 2027 (Territoriales)</option>
-                      <option value="Periodo Constitucional 2028 - 2031">Periodo Constitucional 2028 - 2031 (Territoriales)</option>
-                      <option value="Periodo Constitucional 2026 - 2030">Periodo Constitucional 2026 - 2030 (Congreso y Presidencia)</option>
-                    </select>
-                    <p className="text-[9px] text-slate-400">Ciclo de gobierno constitucional completo.</p>
-                  </div>
-
-                  <div className="p-3 bg-[#030d1f]/80 rounded-xl border border-cyan-500/20 space-y-1">
-                    <label className="block font-bold text-cyan-200">Fase del Calendario Electoral *</label>
-                    <select
-                      value={activeDossier.faseProcesoOrdinario || 'Campaña Activa & Despliegue Territorial'}
-                      onChange={(e) => updateDossier({ faseProcesoOrdinario: e.target.value })}
-                      className="w-full bg-[#051833] border border-cyan-500/30 rounded-lg px-2.5 py-1.5 font-medium text-white focus:outline-none focus:border-cyan-400"
-                    >
-                      <option value="Inscripción de Candidaturas">1. Inscripción de Candidaturas y Avales</option>
-                      <option value="Campaña Activa & Despliegue Territorial">2. Campaña Activa & Despliegue Territorial</option>
-                      <option value="Acreditación Masiva de Testigos">3. Acreditación Masiva de Testigos y Jurados</option>
-                      <option value="Día E & Transmisión de Datos">4. Día E & Transmisión de Datos E-14</option>
-                      <option value="Escrutinios & Rendición CNE">5. Escrutinios & Rendición Cuentas Claras CNE</option>
-                    </select>
-                    <p className="text-[9px] text-slate-400">Etapa operativa actual de la campaña electoral.</p>
-                  </div>
-
-                  <div className="p-3 bg-[#030d1f]/80 rounded-xl border border-cyan-500/20 space-y-1">
-                    <label className="block font-bold text-cyan-200">Censo Electoral & Puestos de Votación</label>
-                    <input
-                      type="text"
-                      readOnly
-                      value="Censo Nacional Actualizado Registraduría"
-                      className="w-full bg-[#020b18] border border-cyan-500/20 rounded-lg px-2.5 py-1.5 font-semibold text-emerald-400 cursor-not-allowed"
-                    />
-                    <p className="text-[9px] text-slate-400">Inscripción regular y zonificación de mesas de votación.</p>
+                    <p className="text-[11px] text-slate-300 mt-0.5">
+                      Proceso electoral constitucional de cuatrienio regular con apertura de censo, zonificación ciudadana y rendición ordinaria CNE.
+                    </p>
                   </div>
                 </div>
-
-                {/* Specific operational rule cards for Elección Ordinaria */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2">
-                  <div className="p-3 bg-[#020b18] border border-cyan-500/20 rounded-xl space-y-1">
-                    <span className="text-[11px] font-extrabold text-cyan-300 flex items-center gap-1.5">
-                      📅 Calendario Integral (4 Años)
-                    </span>
-                    <p className="text-[10px] text-slate-300 leading-relaxed">
-                      El proceso contempla el cronograma oficial completo: inscripción de cédulas, propaganda, designación de jurados y testigos.
-                    </p>
-                  </div>
-
-                  <div className="p-3 bg-[#020b18] border border-cyan-500/20 rounded-xl space-y-1">
-                    <span className="text-[11px] font-extrabold text-cyan-300 flex items-center gap-1.5">
-                      🗳️ Censo Electoral Abierto
-                    </span>
-                    <p className="text-[10px] text-slate-300 leading-relaxed">
-                      Inscripción y zonificación general de ciudadanos en puestos de votación habilitada hasta 2 meses antes del Día E.
-                    </p>
-                  </div>
-
-                  <div className="p-3 bg-[#020b18] border border-cyan-500/20 rounded-xl space-y-1">
-                    <span className="text-[11px] font-extrabold text-cyan-300 flex items-center gap-1.5">
-                      📢 Publicidad y Propaganda
-                    </span>
-                    <p className="text-[10px] text-slate-300 leading-relaxed">
-                      Espacio público permitido hasta 3 meses antes y medios de comunicación masivos hasta 60 días antes del Día E.
-                    </p>
-                  </div>
-
-                  <div className="p-3 bg-[#020b18] border border-cyan-500/20 rounded-xl space-y-1">
-                    <span className="text-[11px] font-extrabold text-cyan-300 flex items-center gap-1.5">
-                      📊 Rendición Cuentas Claras
-                    </span>
-                    <p className="text-[10px] text-slate-300 leading-relaxed">
-                      Régimen de topes de gastos e ingresos fijados anualmente por resolución ordinaria del Consejo Nacional Electoral (CNE).
-                    </p>
-                  </div>
+                <div className="flex items-center gap-1.5 flex-wrap shrink-0">
+                  <span className="px-2 py-0.5 bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 rounded-md text-[10px] font-semibold">🏛️ Periodo 4 Años</span>
+                  <span className="px-2 py-0.5 bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 rounded-md text-[10px] font-semibold">🗳️ Censo Abierto</span>
+                  <span className="px-2 py-0.5 bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 rounded-md text-[10px] font-semibold">📊 Cuentas Claras CNE</span>
                 </div>
               </div>
             )}
