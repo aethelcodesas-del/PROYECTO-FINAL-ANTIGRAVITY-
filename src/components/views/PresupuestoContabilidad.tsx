@@ -179,6 +179,91 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
     setItems((data || []).map(parseBudgetItem));
   };
 
+  const saveBudgetItemApi = async (payload: any) => {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (token) {
+        const response = await fetch('/api/supabase-admin/political-crm', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ table: 'budget_items', data: payload })
+        });
+        if (response.ok) {
+          const json = await response.json();
+          return { data: json.data, error: null };
+        }
+        const errJson = await response.json().catch(() => ({}));
+        if (response.status !== 404 && errJson.error) {
+          return { data: null, error: { message: errJson.error } };
+        }
+      }
+    } catch {
+      // Fallback
+    }
+    const { data, error } = await supabase.from('budget_items').insert(payload).select();
+    return { data, error };
+  };
+
+  const updateBudgetItemApi = async (id: string, payload: any) => {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (token) {
+        const response = await fetch('/api/supabase-admin/political-crm', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ table: 'budget_items', id, data: payload })
+        });
+        if (response.ok) return { error: null };
+        const errJson = await response.json().catch(() => ({}));
+        if (response.status !== 404 && errJson.error) {
+          return { error: { message: errJson.error } };
+        }
+      }
+    } catch {
+      // Fallback
+    }
+    const { error } = await supabase.from('budget_items').update(payload).eq('id', id);
+    return { error };
+  };
+
+  const deleteBudgetItemApi = async (options: { id?: string; ids?: string[]; campaign_id?: string }) => {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (token) {
+        const response = await fetch('/api/supabase-admin/political-crm', {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ table: 'budget_items', ...options })
+        });
+        if (response.ok) return { error: null };
+        const errJson = await response.json().catch(() => ({}));
+        if (response.status !== 404 && errJson.error) {
+          return { error: { message: errJson.error } };
+        }
+      }
+    } catch {
+      // Fallback
+    }
+    let query = supabase.from('budget_items').delete();
+    if (options.id) query = query.eq('id', options.id);
+    else if (options.ids) query = query.in('id', options.ids);
+    else if (options.campaign_id) query = query.eq('campaign_id', options.campaign_id);
+    const { error } = await query;
+    return { error };
+  };
+
   const isUUID = (val: any): val is string => typeof val === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
 
   useEffect(() => {
@@ -539,10 +624,9 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
     setBudgetSyncError('');
     try {
       const payload = budgetItemPayload(itemToSave);
-      const operation = editingItem
-        ? supabase.from('budget_items').update(payload).eq('id', editingItem.id)
-        : supabase.from('budget_items').insert(payload);
-      const { error } = await operation;
+      const { error } = editingItem
+        ? await updateBudgetItemApi(editingItem.id, payload)
+        : await saveBudgetItemApi(payload);
       if (error) throw error;
       await reloadBudgetItems();
       showNotification(editingItem ? `Ítem "${formNombre}" actualizado en Supabase.` : `Nuevo ítem "${formNombre}" registrado en Supabase.`);
@@ -560,7 +644,7 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
     const itemToDelete = items.find(i => i.id === id);
     if (confirm(`¿Está seguro de eliminar "${itemToDelete?.nombre || 'este ítem'}" del presupuesto oficial?`)) {
       setBudgetSaving(true);
-      const { error } = await supabase.from('budget_items').delete().eq('id', id);
+      const { error } = await deleteBudgetItemApi({ id });
       setBudgetSaving(false);
       if (error) return showNotification(`No se pudo eliminar: ${error.message}`, 'error');
       setItems(prev => prev.filter(i => i.id !== id));
@@ -575,7 +659,7 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
     if (!current) return;
     const nextStatus = statuses[(statuses.indexOf(current.estado) + 1) % statuses.length];
     const updated: BudgetItem = { ...current, estado: nextStatus };
-    const { error } = await supabase.from('budget_items').update(budgetItemPayload(updated)).eq('id', id);
+    const { error } = await updateBudgetItemApi(id, budgetItemPayload(updated));
     if (error) return showNotification(`No se pudo cambiar el estado: ${error.message}`, 'error');
     setItems(prev => prev.map(item => item.id === id ? updated : item));
   };
@@ -653,10 +737,10 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
     try {
       const oldDraftIds = items.filter(i => i.estado === 'Borrador').map(i => i.id);
       if (oldDraftIds.length) {
-        const { error: deleteError } = await supabase.from('budget_items').delete().in('id', oldDraftIds);
+        const { error: deleteError } = await deleteBudgetItemApi({ ids: oldDraftIds });
         if (deleteError) throw deleteError;
       }
-      const { error } = await supabase.from('budget_items').insert(newDraftItems.map(budgetItemPayload));
+      const { error } = await saveBudgetItemApi(newDraftItems.map(budgetItemPayload));
       if (error) throw error;
       await reloadBudgetItems();
       showNotification(`✅ Plantilla guardada en Supabase para [${selectedCorporation} - ${selectedScenario}]. Presupuesto proyectado: $${baseAmount.toLocaleString()} COP.`);
@@ -679,7 +763,7 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
       const drafts = items.filter(item => item.estado === 'Borrador');
       const results = await Promise.all(drafts.map(item => {
         const approved = { ...item, estado: 'Aprobado' as const };
-        return supabase.from('budget_items').update(budgetItemPayload(approved)).eq('id', item.id);
+        return updateBudgetItemApi(item.id, budgetItemPayload(approved));
       }));
       const failed = results.find(result => result.error);
       if (failed?.error) throw failed.error;
@@ -759,7 +843,7 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
 
     if (!activeCampaignId || !activeClientId) return showNotification('No hay campaña activa.', 'error');
     setBudgetSaving(true);
-    const { error } = await supabase.from('budget_items').insert(budgetItemPayload(newItem));
+    const { error } = await saveBudgetItemApi(budgetItemPayload(newItem));
     setBudgetSaving(false);
     if (error) return showNotification(`No se pudo registrar la factura: ${error.message}`, 'error');
     await reloadBudgetItems();
@@ -782,7 +866,7 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
   const handleResetDefaults = async () => {
     if (confirm('¿Desea restaurar los datos iniciales de presupuesto y topes CNE?')) {
       if (!activeCampaignId) return showNotification('No hay campaña activa.', 'error');
-      const { error } = await supabase.from('budget_items').delete().eq('campaign_id', activeCampaignId);
+      const { error } = await deleteBudgetItemApi({ campaign_id: activeCampaignId });
       if (error) return showNotification(`No se pudo limpiar el presupuesto: ${error.message}`, 'error');
       setItems(initialBudgetItems);
       localStorage.removeItem('presupuesto_items_master_v2');

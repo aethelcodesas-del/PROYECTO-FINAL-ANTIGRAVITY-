@@ -1299,8 +1299,9 @@ async function handlePoliticalCrm(request, configuration) {
   if (parsed.error) return parsed.error;
 
   const table = String(parsed.body?.table || '').trim().toLowerCase();
-  if (table !== 'voters' && table !== 'leaders') {
-    return json({ error: 'Tabla no autorizada para CRM político.' }, 400);
+  const ALLOWED_CRM_TABLES = ['voters', 'leaders', 'budget_items'];
+  if (!ALLOWED_CRM_TABLES.includes(table)) {
+    return json({ error: 'Tabla no autorizada para CRM o presupuesto.' }, 400);
   }
 
   const method = request.method.toUpperCase();
@@ -1310,23 +1311,35 @@ async function handlePoliticalCrm(request, configuration) {
 
   if (method === 'POST') {
     const rawData = parsed.body?.data;
-    if (!rawData || typeof rawData !== 'object') {
+    if (!rawData || (typeof rawData !== 'object' && !Array.isArray(rawData))) {
       return json({ error: 'Los datos del registro son requeridos.' }, 400);
     }
 
-    const payload = { ...rawData };
-    const payloadClientId = normalizeUuid(payload.client_id);
-    const payloadCampaignId = normalizeUuid(payload.campaign_id);
+    let payload;
+    if (Array.isArray(rawData)) {
+      payload = rawData.map(item => {
+        const itemObj = { ...item };
+        if (!requesterIsGlobal) {
+          if (!itemObj.client_id && userClientId) itemObj.client_id = userClientId;
+          if (!itemObj.campaign_id && userCampaignId) itemObj.campaign_id = userCampaignId;
+        }
+        return itemObj;
+      });
+    } else {
+      payload = { ...rawData };
+      const payloadClientId = normalizeUuid(payload.client_id);
+      const payloadCampaignId = normalizeUuid(payload.campaign_id);
 
-    if (!requesterIsGlobal) {
-      if (userClientId && payloadClientId && userClientId !== payloadClientId) {
-        return json({ error: 'No tienes permisos sobre esta organización electoral.' }, 403);
+      if (!requesterIsGlobal) {
+        if (userClientId && payloadClientId && userClientId !== payloadClientId) {
+          return json({ error: 'No tienes permisos sobre esta organización electoral.' }, 403);
+        }
+        if (userCampaignId && payloadCampaignId && userCampaignId !== payloadCampaignId) {
+          return json({ error: 'No tienes permisos sobre esta campaña electoral.' }, 403);
+        }
+        if (!payload.client_id && userClientId) payload.client_id = userClientId;
+        if (!payload.campaign_id && userCampaignId) payload.campaign_id = userCampaignId;
       }
-      if (userCampaignId && payloadCampaignId && userCampaignId !== payloadCampaignId) {
-        return json({ error: 'No tienes permisos sobre esta campaña electoral.' }, 403);
-      }
-      if (!payload.client_id && userClientId) payload.client_id = userClientId;
-      if (!payload.campaign_id && userCampaignId) payload.campaign_id = userCampaignId;
     }
 
     const result = await restRequest(configuration, table, {
@@ -1340,8 +1353,7 @@ async function handlePoliticalCrm(request, configuration) {
       return json({ error: msg }, result.status || 400);
     }
 
-    const rows = Array.isArray(result.data) ? result.data : [result.data];
-    return json({ success: true, data: rows[0] || result.data }, 201);
+    return json({ success: true, data: result.data }, 201);
   }
 
   if (method === 'PATCH' || method === 'PUT') {
@@ -1375,9 +1387,20 @@ async function handlePoliticalCrm(request, configuration) {
 
   if (method === 'DELETE') {
     const id = String(parsed.body?.id || '').trim();
-    if (!id) return json({ error: 'El ID del registro es requerido.' }, 400);
+    const ids = Array.isArray(parsed.body?.ids) ? parsed.body.ids.filter(Boolean) : [];
+    const campaignId = String(parsed.body?.campaign_id || '').trim();
 
-    const query = { id: `eq.${id}` };
+    const query = {};
+    if (id) {
+      query.id = `eq.${id}`;
+    } else if (ids.length > 0) {
+      query.id = `in.(${ids.join(',')})`;
+    } else if (campaignId) {
+      query.campaign_id = `eq.${campaignId}`;
+    } else {
+      return json({ error: 'Parámetros de eliminación no válidos.' }, 400);
+    }
+
     if (!requesterIsGlobal && userClientId) {
       query.client_id = `eq.${userClientId}`;
     }

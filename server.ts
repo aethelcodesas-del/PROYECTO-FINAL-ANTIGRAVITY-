@@ -800,20 +800,21 @@ async function startAppServer(shouldListen = true) {
       if (!requesterUser) return res.status(401).json({ error: 'Sesión expirada.' });
 
       const { table, data } = req.body || {};
-      if (table !== 'voters' && table !== 'leaders') {
+      const ALLOWED = ['voters', 'leaders', 'budget_items'];
+      if (!ALLOWED.includes(table)) {
         return res.status(400).json({ error: 'Tabla no válida.' });
       }
-      if (!data || typeof data !== 'object') {
+      if (!data || (typeof data !== 'object' && !Array.isArray(data))) {
         return res.status(400).json({ error: 'Datos no válidos.' });
       }
 
-      const { data: inserted, error } = await supabaseAdmin.from(table).insert(data).select().single();
+      const { data: inserted, error } = await supabaseAdmin.from(table).insert(data).select();
       if (error) {
-        return res.status(400).json({ error: error.code === '23505' ? 'La cédula ya está registrada en el CRM.' : error.message });
+        return res.status(400).json({ error: error.code === '23505' ? 'El registro ya existe en el sistema.' : error.message });
       }
-      return res.json({ success: true, data: inserted });
+      return res.json({ success: true, data: Array.isArray(data) ? inserted : inserted?.[0] });
     } catch (error: any) {
-      return res.status(500).json({ error: error?.message || 'Error al guardar en CRM político.' });
+      return res.status(500).json({ error: error?.message || 'Error al guardar en base de datos.' });
     }
   });
 
@@ -825,7 +826,8 @@ async function startAppServer(shouldListen = true) {
       if (!accessToken) return res.status(401).json({ error: 'Sesión requerida.' });
 
       const { table, id, data } = req.body || {};
-      if ((table !== 'voters' && table !== 'leaders') || !id) {
+      const ALLOWED = ['voters', 'leaders', 'budget_items'];
+      if (!ALLOWED.includes(table) || !id) {
         return res.status(400).json({ error: 'Parámetros no válidos.' });
       }
 
@@ -833,7 +835,7 @@ async function startAppServer(shouldListen = true) {
       if (error) return res.status(400).json({ error: error.message });
       return res.json({ success: true, data: updated });
     } catch (error: any) {
-      return res.status(500).json({ error: error?.message || 'Error al actualizar CRM.' });
+      return res.status(500).json({ error: error?.message || 'Error al actualizar registro.' });
     }
   });
 
@@ -844,12 +846,24 @@ async function startAppServer(shouldListen = true) {
       const accessToken = bearer.startsWith('Bearer ') ? bearer.slice(7) : '';
       if (!accessToken) return res.status(401).json({ error: 'Sesión requerida.' });
 
-      const { table, id } = req.body || {};
-      if ((table !== 'voters' && table !== 'leaders') || !id) {
+      const { table, id, ids, campaign_id } = req.body || {};
+      const ALLOWED = ['voters', 'leaders', 'budget_items'];
+      if (!ALLOWED.includes(table)) {
         return res.status(400).json({ error: 'Parámetros no válidos.' });
       }
 
-      const { error } = await supabaseAdmin.from(table).delete().eq('id', id);
+      let query = supabaseAdmin.from(table).delete();
+      if (id) {
+        query = query.eq('id', id);
+      } else if (Array.isArray(ids) && ids.length > 0) {
+        query = query.in('id', ids);
+      } else if (campaign_id) {
+        query = query.eq('campaign_id', campaign_id);
+      } else {
+        return res.status(400).json({ error: 'Criterio de eliminación requerido.' });
+      }
+
+      const { error } = await query;
       if (error) return res.status(400).json({ error: error.message });
       return res.json({ success: true });
     } catch (error: any) {
