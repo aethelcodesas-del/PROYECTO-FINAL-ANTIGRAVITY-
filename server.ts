@@ -715,14 +715,23 @@ async function startAppServer(shouldListen = true) {
         return false;
       });
 
-      const subuserIds = subusers.map((u: any) => u.id);
+      const mappedSubusers = subusers.map((p: any) => {
+        const pAuth = authUsersMap.get(p.id);
+        const pIsCandidate = isCandidateOwnerServer(p, pAuth?.user_metadata, activeCampaign, camps);
+        return {
+          ...p,
+          is_candidate_owner: pIsCandidate
+        };
+      });
+
+      const subuserIds = mappedSubusers.map((u: any) => u.id);
       let permissions: any[] = [];
       if (subuserIds.length > 0) {
         const { data: perms } = await supabaseAdmin.from('user_permissions').select('user_id,module_code,function_code,actions').in('user_id', subuserIds);
         permissions = perms || [];
       }
 
-      return res.json({ success: true, users: subusers, permissions, campaign: activeCampaign });
+      return res.json({ success: true, users: mappedSubusers, permissions, campaign: activeCampaign });
     } catch (error: any) {
       return res.status(500).json({ error: error?.message || 'Error al listar usuarios.' });
     }

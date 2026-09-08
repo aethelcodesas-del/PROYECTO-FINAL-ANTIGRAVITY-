@@ -645,21 +645,35 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
               const profiles = jsonRes.users;
               const permissionsData = Array.isArray(jsonRes.permissions) ? jsonRes.permissions : [];
 
-              const mappedUsers = profiles.map((profile: any) => ({
-                id: profile.id,
-                name: profile.display_name || profile.email,
-                email: profile.email,
-                role: roleFromProfile(profile),
-                status: ['ACTIVE', 'ACTIVO'].includes(String(profile.status || '').toUpperCase()) ? 'Activo' : 'Suspendido',
-                clientId: profile.client_id || profile.campaign_id
-              }));
+              const candNameClean = String(campaignCtx.candidateName || '').trim().toLowerCase();
+              const mappedUsers = profiles.map((profile: any) => {
+                const pName = String(profile.display_name || profile.name || '').trim().toLowerCase();
+                const pEmail = String(profile.email || '').trim().toLowerCase();
+                const pRole = String(profile.role || '').trim().toUpperCase();
+                const isCandidate = Boolean(
+                  profile.is_candidate_owner ||
+                  pRole === 'CANDIDATO' ||
+                  (candNameClean && pName && (pName === candNameClean || pName.includes(candNameClean) || candNameClean.includes(pName))) ||
+                  (authUser && pEmail === authUser.email.toLowerCase() && (authUser.role === 'administrador' || authUser.role === 'superadmin' || pRole === 'ADMIN_CLIENTE' || pRole === 'CANDIDATO'))
+                );
+
+                return {
+                  id: profile.id,
+                  name: profile.display_name || profile.name || profile.email,
+                  email: profile.email,
+                  role: roleFromProfile(profile),
+                  status: ['ACTIVE', 'ACTIVO'].includes(String(profile.status || '').toUpperCase()) ? 'Activo' : 'Suspendido',
+                  clientId: profile.client_id || profile.campaign_id,
+                  isCandidateOwner: isCandidate
+                };
+              });
 
               const mappedPermissions: Record<string, { id: string; name: string; category: string; enabled: boolean }[]> = {};
               mappedUsers.forEach((user: any) => {
                 const explicit = permissionsData.filter((permission: any) => permission.user_id === user.id);
                 mappedPermissions[user.id] = MODULE_FUNCTIONS[user.role].map((permission) => ({
                   ...permission,
-                  enabled: explicit.some((saved: any) => saved.function_code === permission.id && (saved.actions || []).includes('ACCESS'))
+                  enabled: user.isCandidateOwner ? true : explicit.some((saved: any) => saved.function_code === permission.id && (saved.actions || []).includes('ACCESS'))
                 }));
               });
 
@@ -754,21 +768,35 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
           : { data: [], error: null } as any;
         if (permissionsResult.error) throw permissionsResult.error;
 
-        const mappedUsers = (profiles || []).map((profile: any) => ({
-          id: profile.id,
-          name: profile.display_name || profile.email,
-          email: profile.email,
-          role: roleFromProfile(profile),
-          status: ['ACTIVE', 'ACTIVO'].includes(String(profile.status || '').toUpperCase()) ? 'Activo' : 'Suspendido',
-          clientId: profile.client_id || profile.campaign_id
-        }));
+        const candNameClean = String(campaignCtx.candidateName || (campaigns && campaigns[0]?.candidato_nombre) || '').trim().toLowerCase();
+        const mappedUsers = (profiles || []).map((profile: any) => {
+          const pName = String(profile.display_name || profile.name || '').trim().toLowerCase();
+          const pEmail = String(profile.email || '').trim().toLowerCase();
+          const pRole = String(profile.role || '').trim().toUpperCase();
+          const isCandidate = Boolean(
+            profile.is_candidate_owner ||
+            pRole === 'CANDIDATO' ||
+            (candNameClean && pName && (pName === candNameClean || pName.includes(candNameClean) || candNameClean.includes(pName))) ||
+            (authUser && pEmail === authUser.email.toLowerCase() && (authUser.role === 'administrador' || authUser.role === 'superadmin' || pRole === 'ADMIN_CLIENTE' || pRole === 'CANDIDATO'))
+          );
+
+          return {
+            id: profile.id,
+            name: profile.display_name || profile.name || profile.email,
+            email: profile.email,
+            role: roleFromProfile(profile),
+            status: ['ACTIVE', 'ACTIVO'].includes(String(profile.status || '').toUpperCase()) ? 'Activo' : 'Suspendido',
+            clientId: profile.client_id || profile.campaign_id,
+            isCandidateOwner: isCandidate
+          };
+        });
 
         const mappedPermissions: Record<string, { id: string; name: string; category: string; enabled: boolean }[]> = {};
         mappedUsers.forEach((user: any) => {
           const explicit = (permissionsResult.data || []).filter((permission: any) => permission.user_id === user.id);
           mappedPermissions[user.id] = MODULE_FUNCTIONS[user.role].map((permission) => ({
             ...permission,
-            enabled: explicit.some((saved: any) => saved.function_code === permission.id && (saved.actions || []).includes('ACCESS'))
+            enabled: user.isCandidateOwner ? true : explicit.some((saved: any) => saved.function_code === permission.id && (saved.actions || []).includes('ACCESS'))
           }));
         });
 
@@ -787,6 +815,11 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
   }, [activeTab]);
 
   const handleUserRoleChangeReal = async (userId: string, newRole: 'admin' | 'estrategico' | 'territorial') => {
+    const target = usersList.find(u => u.id === userId);
+    if (target?.isCandidateOwner) {
+      setRbacError('El rol del candidato propietario está protegido y no puede modificarse.');
+      return;
+    }
     setRbacError('');
     // Optimistic UI update so users never disappear from list
     setUsersList(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
@@ -837,6 +870,9 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
   const toggleUserStatusReal = async (userId: string) => {
     const targetUser = usersList.find((user) => user.id === userId);
     if (!targetUser) return;
+    if (targetUser.isCandidateOwner) {
+      return setRbacError('La cuenta del candidato propietario permanece siempre activa.');
+    }
     if (authUser && targetUser.email.toLowerCase() === authUser.email.toLowerCase()) {
       return setRbacError('No puedes suspender tu propia cuenta.');
     }
@@ -881,6 +917,10 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
   };
 
   const handleDeleteUserReal = async (userId: string, email: string, name: string) => {
+    const target = usersList.find(u => u.id === userId);
+    if (target?.isCandidateOwner) {
+      return setRbacError('No se puede eliminar la cuenta del candidato propietario.');
+    }
     if (authUser && email.toLowerCase() === authUser.email.toLowerCase()) return setRbacError('No puedes eliminar tu propia cuenta.');
     if (!window.confirm(`¿Eliminar el acceso de ${name} (${email})? Esta acción retirará su perfil y todos sus permisos.`)) return;
 
@@ -921,6 +961,10 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
   };
 
   const saveUserPermissionsReal = async (user: any) => {
+    if (user.isCandidateOwner) {
+      setRbacError('Las funciones del candidato propietario se encuentran permanentemente protegidas.');
+      return;
+    }
     setRbacError('');
     const selected = (userPermissions[user.id] || []).filter((permission) => permission.enabled);
     const moduleCode = user.role === 'admin' ? 'ADMINISTRATIVE' : user.role === 'estrategico' ? 'STRATEGY' : 'TERRITORY';
@@ -2983,9 +3027,15 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                         {/* Column 2: Role selection */}
                         <div className="col-span-2 w-full sm:w-auto">
                           <select
+                            disabled={usr.isCandidateOwner}
                             value={usr.role}
                             onChange={(e) => void handleUserRoleChangeReal(usr.id, e.target.value as any)}
-                            className="bg-[#030d1f] border border-cyan-500/35 rounded-lg px-2 py-1 text-xs text-cyan-300 font-medium focus:outline-none focus:border-cyan-400 cursor-pointer w-full"
+                            className={`border rounded-lg px-2 py-1 text-xs font-medium focus:outline-none w-full transition-all ${
+                              usr.isCandidateOwner
+                                ? 'bg-slate-900/60 border-slate-700/60 text-slate-400 cursor-not-allowed opacity-75'
+                                : 'bg-[#030d1f] border-cyan-500/35 text-cyan-300 focus:border-cyan-400 cursor-pointer'
+                            }`}
+                            title={usr.isCandidateOwner ? "El rol del candidato propietario no puede modificarse" : "Cambiar módulo asignado"}
                           >
                             <option value="admin">Administrativa</option>
                             <option value="estrategico">Estratégica</option>
@@ -2997,16 +3047,16 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                         <div className="col-span-2 w-full sm:w-auto">
                           <button
                             type="button"
-                            disabled={!!(authUser && usr.email.toLowerCase() === authUser.email.toLowerCase())}
+                            disabled={usr.isCandidateOwner || !!(authUser && usr.email.toLowerCase() === authUser.email.toLowerCase())}
                             onClick={() => void toggleUserStatusReal(usr.id)}
                             className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold border transition-all w-full ${
-                              authUser && usr.email.toLowerCase() === authUser.email.toLowerCase()
+                              usr.isCandidateOwner || (authUser && usr.email.toLowerCase() === authUser.email.toLowerCase())
                                 ? 'bg-slate-800/80 border-slate-700 text-slate-500 cursor-not-allowed opacity-50'
                                 : usr.status === 'Activo'
                                 ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400 cursor-pointer'
                                 : 'bg-rose-500/15 border-rose-500/30 text-rose-400 cursor-pointer'
                             }`}
-                            title={authUser && usr.email.toLowerCase() === authUser.email.toLowerCase() ? "No puedes suspender tu propia cuenta" : ""}
+                            title={usr.isCandidateOwner ? "La cuenta del candidato propietario permanece siempre activa" : authUser && usr.email.toLowerCase() === authUser.email.toLowerCase() ? "No puedes suspender tu propia cuenta" : ""}
                           >
                             {usr.status === 'Activo' ? '🟢 Activo' : '🔴 Suspendido'}
                           </button>
@@ -3028,14 +3078,14 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                           </button>
                           <button
                             type="button"
-                            disabled={!!(authUser && usr.email.toLowerCase() === authUser.email.toLowerCase())}
+                            disabled={usr.isCandidateOwner || !!(authUser && usr.email.toLowerCase() === authUser.email.toLowerCase())}
                             onClick={() => void handleDeleteUserReal(usr.id, usr.email, usr.name)}
                             className={`px-2.5 py-1.5 border rounded-lg text-[10px] font-bold transition-all flex items-center justify-center gap-1 w-10 sm:w-auto ${
-                              authUser && usr.email.toLowerCase() === authUser.email.toLowerCase()
+                              usr.isCandidateOwner || (authUser && usr.email.toLowerCase() === authUser.email.toLowerCase())
                                 ? 'bg-slate-800/80 border-slate-700 text-slate-500 cursor-not-allowed opacity-50'
                                 : 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 border-rose-500/30 cursor-pointer'
                             }`}
-                            title={authUser && usr.email.toLowerCase() === authUser.email.toLowerCase() ? "No puedes eliminar tu propia cuenta" : "Eliminar usuario permanentemente"}
+                            title={usr.isCandidateOwner ? "No se puede eliminar la cuenta del candidato propietario" : authUser && usr.email.toLowerCase() === authUser.email.toLowerCase() ? "No puedes eliminar tu propia cuenta" : "Eliminar usuario permanentemente"}
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -3053,40 +3103,55 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                               </span>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
-                              {(userPermissions[usr.id] || []).map(p => (
-                                <label
-                                  key={p.id}
-                                  className={`flex items-center justify-between p-2.5 rounded-lg border transition-all cursor-pointer ${
-                                    p.enabled
-                                      ? 'bg-cyan-500/10 border-cyan-500/35 text-white'
-                                      : 'bg-[#030d1f]/40 border-cyan-500/10 text-slate-500 hover:border-cyan-500/20'
-                                  }`}
-                                >
-                                  <span className="text-[11px] font-medium leading-tight">{p.name}</span>
-                                  <input
-                                    type="checkbox"
-                                    checked={p.enabled}
-                                    onChange={(e) => {
-                                      setUserPermissions(prev => ({
-                                        ...prev,
-                                        [usr.id]: prev[usr.id].map(item => item.id === p.id ? { ...item, enabled: e.target.checked } : item)
-                                      }));
-                                    }}
-                                    className="accent-cyan-500 cursor-pointer h-3.5 w-3.5"
-                                  />
-                                </label>
-                              ))}
+                              {(userPermissions[usr.id] || []).map(p => {
+                                const isChecked = usr.isCandidateOwner ? true : p.enabled;
+                                return (
+                                  <label
+                                    key={p.id}
+                                    className={`flex items-center justify-between p-2.5 rounded-lg border transition-all ${
+                                      usr.isCandidateOwner
+                                        ? 'bg-cyan-950/40 border-cyan-500/20 text-slate-300 cursor-not-allowed opacity-75'
+                                        : isChecked
+                                        ? 'bg-cyan-500/10 border-cyan-500/35 text-white cursor-pointer'
+                                        : 'bg-[#030d1f]/40 border-cyan-500/10 text-slate-500 hover:border-cyan-500/20 cursor-pointer'
+                                    }`}
+                                  >
+                                    <span className="text-[11px] font-medium leading-tight">{p.name}</span>
+                                    <input
+                                      type="checkbox"
+                                      disabled={usr.isCandidateOwner}
+                                      checked={isChecked}
+                                      onChange={(e) => {
+                                        if (usr.isCandidateOwner) return;
+                                        setUserPermissions(prev => ({
+                                          ...prev,
+                                          [usr.id]: prev[usr.id].map(item => item.id === p.id ? { ...item, enabled: e.target.checked } : item)
+                                        }));
+                                      }}
+                                      className={`accent-cyan-500 h-3.5 w-3.5 ${usr.isCandidateOwner ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}`}
+                                    />
+                                  </label>
+                                );
+                              })}
                             </div>
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-cyan-500/10">
                               <div className="text-[9px] text-slate-400 font-medium">
-                                * Las modificaciones se aplican en tiempo real al acceso de este usuario.
+                                {usr.isCandidateOwner
+                                  ? '🔒 Las funciones del candidato propietario se encuentran habilitadas de forma permanente e inmodificable.'
+                                  : '* Las modificaciones se aplican en tiempo real al acceso de este usuario.'}
                               </div>
                               <button
                                 type="button"
-                                onClick={() => void saveUserPermissionsReal(usr)}
-                                className="px-3 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-[10px] uppercase tracking-wider rounded-lg shadow-md transition-all cursor-pointer flex items-center gap-1"
+                                disabled={usr.isCandidateOwner}
+                                onClick={() => !usr.isCandidateOwner && void saveUserPermissionsReal(usr)}
+                                className={`px-3 py-1.5 font-black text-[10px] uppercase tracking-wider rounded-lg shadow-md transition-all flex items-center gap-1 ${
+                                  usr.isCandidateOwner
+                                    ? 'bg-slate-800 border border-slate-700 text-slate-500 cursor-not-allowed opacity-60'
+                                    : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 cursor-pointer'
+                                }`}
+                                title={usr.isCandidateOwner ? "Funciones de candidato protegidas contra modificación" : ""}
                               >
-                                ⚡ Actualizar Funciones
+                                {usr.isCandidateOwner ? '🔒 Funciones Protegidas' : '⚡ Actualizar Funciones'}
                               </button>
                             </div>
                           </div>

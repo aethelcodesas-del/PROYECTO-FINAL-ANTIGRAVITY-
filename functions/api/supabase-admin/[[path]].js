@@ -703,7 +703,16 @@ async function listManagedUsers(request, configuration) {
     return false;
   });
 
-  const subuserIds = subusers.map((u) => u.id);
+  const mappedSubusers = subusers.map((p) => {
+    const pAuth = authUsersMap.get(p.id);
+    const pIsCandidate = isCandidateOwnerAccount(p, pAuth?.user_metadata, activeCampaign, allCampaigns);
+    return {
+      ...p,
+      is_candidate_owner: pIsCandidate
+    };
+  });
+
+  const subuserIds = mappedSubusers.map((u) => u.id);
   let permissions = [];
   if (subuserIds.length > 0) {
     const permResult = await restRequest(configuration, 'user_permissions', {
@@ -717,7 +726,7 @@ async function listManagedUsers(request, configuration) {
 
   return json({
     success: true,
-    users: subusers,
+    users: mappedSubusers,
     permissions,
     campaign: activeCampaign
   });
