@@ -4078,7 +4078,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
         {/* ---------------------------------------------------------------------- */}
         {activeTab === 'presupuesto_cne' && (
           <div className="animate-fadeIn">
-            <PresupuestoContabilidad onSelectView={onSelectView} />
+            <PresupuestoContabilidad onSelectView={onSelectView} authUser={authUser} />
           </div>
         )}
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useCampaignData, useCampaignLive } from '../../contexts/CampaignContext';
-import { ViewMode, BankTransaction, BudgetItem } from '../../types';
+import { ViewMode, BankTransaction, BudgetItem, AuthUser } from '../../types';
 import { supabase } from '../../lib/supabase';
 import { isExpectedEmptyCampaignState } from '../../lib/campaignSetupState';
 import { 
@@ -18,7 +18,7 @@ import {
   Layers,
   Building2,
   FileSpreadsheet,
-  Award,
+  PieChart,
   Filter,
   CheckSquare,
   ChevronLeft,
@@ -40,6 +40,7 @@ interface PresupuestoContabilidadProps {
   transactions?: BankTransaction[];
   onOpenAddTransactionModal?: () => void;
   onOpenOCRModal?: () => void;
+  authUser?: AuthUser | null;
 }
 
 // Initial Colombia CNE Compliant Budget Items (Starts clean from zero for real campaign usage)
@@ -49,7 +50,8 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
   onSelectView,
   transactions = [],
   onOpenAddTransactionModal,
-  onOpenOCRModal
+  onOpenOCRModal,
+  authUser
 }) => {
   // Master Active Sub-Tab
   const [activeSubTab, setActiveSubTab] = useState<'oficial_cne' | 'borrador_estrategico' | 'gestion_items' | 'ocr_scanner'>('oficial_cne');
