@@ -330,19 +330,6 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
     });
   };
 
-  // Sync assignedUsers from usersList whenever usersList changes
-  useEffect(() => {
-    const adminUsers = usersList.filter(u => u.role === 'admin').map(u => u.name);
-    const strategicUsers = usersList.filter(u => u.role === 'estrategico').map(u => u.name);
-    const territorialUsers = usersList.filter(u => u.role === 'territorial').map(u => u.name);
-
-    setAssignedUsers({
-      admin: adminUsers,
-      estrategico: strategicUsers,
-      territorial: territorialUsers
-    });
-  }, [usersList]);
-
   // Inline User Creation with passwords and customized permissions validation
   const handleCreateUserInline = () => {
     if (!newUserName || !newUserEmail || !newPassword || !confirmPassword) {
