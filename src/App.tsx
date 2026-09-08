@@ -264,10 +264,11 @@ export default function App() {
     }
   }, [currentView, adminTab, strategicTab, territorialSubTab]);
 
-  // Listen to browser Back/Forward or direct hash changes
+  // Listen to browser Back/Forward, popstate or direct hash changes
   useEffect(() => {
     const handleHashChange = () => {
-      const parsed = parseRouteFromHash(window.location.hash);
+      const hash = window.location.hash || `#${window.location.pathname}`;
+      const parsed = parseRouteFromHash(hash);
       if (parsed) {
         if (parsed.view && (authUser || ['landing', 'module_select', 'global_admin'].includes(parsed.view))) {
           setCurrentView(parsed.view);
@@ -279,7 +280,11 @@ export default function App() {
     };
 
     window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
+    window.addEventListener('popstate', handleHashChange);
+    return () => {
+      window.removeEventListener('hashchange', handleHashChange);
+      window.removeEventListener('popstate', handleHashChange);
+    };
   }, [authUser]);
 
   // Auto-scroll main view to top whenever view or tabs change
