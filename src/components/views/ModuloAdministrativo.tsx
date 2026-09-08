@@ -155,6 +155,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
   const [saveSuccessMessage, setSaveSuccessMessage] = useState(false);
   const [actionSuccessMessage, setActionSuccessMessage] = useState('');
   const [crmClientId, setCrmClientId] = useState<string | null>(null);
+  const [crmCampaignId, setCrmCampaignId] = useState<string | null>(null);
   const [crmLoading, setCrmLoading] = useState(false);
   const [crmError, setCrmError] = useState('');
 
@@ -1804,6 +1805,8 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
       if (campErr) throw campErr;
       const activeCampaign = campaignRows?.[0];
       const realClientId = isUUID(activeCampaign?.client_id) ? activeCampaign.client_id : profileClientId;
+      const realCampaignId = isUUID(activeCampaign?.id) ? activeCampaign.id : (rememberedCampaignId || null);
+      setCrmCampaignId(realCampaignId);
 
       const [leadersResult, votersResult] = await Promise.all([
         realClientId
@@ -1912,12 +1915,93 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
     };
   }, [activeTab, crmClientId]);
 
+  const savePoliticalCrmRecord = async (table: 'voters' | 'leaders', payload: any) => {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (token) {
+        const response = await fetch('/api/supabase-admin/political-crm', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ table, data: payload })
+        });
+        if (response.ok) {
+          const json = await response.json();
+          return { data: json.data, error: null };
+        }
+        const errJson = await response.json().catch(() => ({}));
+        if (response.status !== 404 && errJson.error) {
+          return { data: null, error: { message: errJson.error } };
+        }
+      }
+    } catch {
+      // Fallback to client SDK
+    }
+    const { data, error } = await supabase.from(table).insert(payload).select().single();
+    return { data, error };
+  };
+
+  const updatePoliticalCrmRecord = async (table: 'voters' | 'leaders', id: string, payload: any) => {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (token) {
+        const response = await fetch('/api/supabase-admin/political-crm', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ table, id, data: payload })
+        });
+        if (response.ok) return { error: null };
+        const errJson = await response.json().catch(() => ({}));
+        if (response.status !== 404 && errJson.error) {
+          return { error: { message: errJson.error } };
+        }
+      }
+    } catch {
+      // Fallback
+    }
+    const { error } = await supabase.from(table).update(payload).eq('id', id);
+    return { error };
+  };
+
+  const deletePoliticalCrmRecordApi = async (table: 'leaders' | 'voters', id: string) => {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+      if (token) {
+        const response = await fetch('/api/supabase-admin/political-crm', {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ table, id })
+        });
+        if (response.ok) return { error: null };
+        const errJson = await response.json().catch(() => ({}));
+        if (response.status !== 404 && errJson.error) {
+          return { error: { message: errJson.error } };
+        }
+      }
+    } catch {
+      // Fallback
+    }
+    const { error } = await supabase.from(table).delete().eq('id', id);
+    return { error };
+  };
+
   const togglePoliticalCrmStatus = async (table: 'leaders' | 'voters', id: string, currentStatus: string) => {
     const isActive = !currentStatus.toLowerCase().includes('suspend');
-    const { error } = await supabase.from(table).update({
+    const { error } = await updatePoliticalCrmRecord(table, id, {
       status: isActive ? 'INACTIVE' : 'ACTIVE',
       updated_at: new Date().toISOString()
-    }).eq('id', id);
+    });
     if (error) return setCrmError(error.message);
     setActionSuccessMessage(isActive ? 'Registro suspendido correctamente.' : 'Registro activado correctamente.');
     await loadRealPoliticalCrm();
@@ -1925,7 +2009,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
 
   const deletePoliticalCrmRecord = async (table: 'leaders' | 'voters', id: string, name: string) => {
     if (!window.confirm(`¿Eliminar definitivamente a ${name} del CRM electoral?`)) return;
-    const { error } = await supabase.from(table).delete().eq('id', id);
+    const { error } = await deletePoliticalCrmRecordApi(table, id);
     if (error) return setCrmError(error.message);
     setActionSuccessMessage(`${name} fue eliminado del CRM.`);
     await loadRealPoliticalCrm();
@@ -1984,8 +2068,9 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
     if (!crmClientId) return setCrmError('No hay una organización electoral activa.');
     setCrmLoading(true);
     const [comuna, ...barrioParts] = newLeaderZona.split('/').map(value => value.trim());
-    const { error } = await supabase.from('leaders').insert({
+    const { error } = await savePoliticalCrmRecord('leaders', {
       client_id: crmClientId,
+      campaign_id: crmCampaignId || crmClientId,
       nombre: newLeaderNombre.trim(),
       cedula: newLeaderCc.trim(),
       telefono: newLeaderTelefono.trim() || null,
@@ -2054,8 +2139,9 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
 
     if (!crmClientId) return setCrmError('No hay una organización electoral activa.');
     const voterName = cedulaSearchResult.nombre === 'CIUDADANO HABILITADO EN CENSO' ? `Ciudadano Habilitado CNE (${cedulaSearchResult.cc})` : cedulaSearchResult.nombre;
-    const { error } = await supabase.from('voters').insert({
+    const { error } = await savePoliticalCrmRecord('voters', {
       client_id: crmClientId,
+      campaign_id: crmCampaignId || crmClientId,
       nombre: voterName,
       cedula: cedulaSearchResult.cc,
       municipio: cedulaSearchResult.municipio || crmCampaignMunicipality || null,
@@ -2113,8 +2199,9 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
 
     if (!crmClientId) return setCrmError('No hay una organización electoral activa.');
     const assignedLeader = leadersAndCoordinators.find(leader => leader.id === newLider);
-    const { error } = await supabase.from('voters').insert({
+    const { error } = await savePoliticalCrmRecord('voters', {
       client_id: crmClientId,
+      campaign_id: crmCampaignId || crmClientId,
       nombre: newNombre.trim(),
       cedula: newCc.trim(),
       email: newEmail.trim() || null,

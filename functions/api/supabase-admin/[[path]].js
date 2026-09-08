@@ -1291,6 +1291,113 @@ async function analyzeE14Image(request, configuration, env) {
   });
 }
 
+async function handlePoliticalCrm(request, configuration) {
+  const requester = await verifyRequester(request, configuration, MANAGER_ROLES);
+  if (requester.error) return requester.error;
+
+  const parsed = await parseRequestBody(request);
+  if (parsed.error) return parsed.error;
+
+  const table = String(parsed.body?.table || '').trim().toLowerCase();
+  if (table !== 'voters' && table !== 'leaders') {
+    return json({ error: 'Tabla no autorizada para CRM político.' }, 400);
+  }
+
+  const method = request.method.toUpperCase();
+  const requesterIsGlobal = GLOBAL_OWNER_ROLES.includes(requester.role);
+  const userClientId = normalizeUuid(requester.profile?.client_id);
+  const userCampaignId = normalizeUuid(requester.profile?.campaign_id);
+
+  if (method === 'POST') {
+    const rawData = parsed.body?.data;
+    if (!rawData || typeof rawData !== 'object') {
+      return json({ error: 'Los datos del registro son requeridos.' }, 400);
+    }
+
+    const payload = { ...rawData };
+    const payloadClientId = normalizeUuid(payload.client_id);
+    const payloadCampaignId = normalizeUuid(payload.campaign_id);
+
+    if (!requesterIsGlobal) {
+      if (userClientId && payloadClientId && userClientId !== payloadClientId) {
+        return json({ error: 'No tienes permisos sobre esta organización electoral.' }, 403);
+      }
+      if (userCampaignId && payloadCampaignId && userCampaignId !== payloadCampaignId) {
+        return json({ error: 'No tienes permisos sobre esta campaña electoral.' }, 403);
+      }
+      if (!payload.client_id && userClientId) payload.client_id = userClientId;
+      if (!payload.campaign_id && userCampaignId) payload.campaign_id = userCampaignId;
+    }
+
+    const result = await restRequest(configuration, table, {
+      method: 'POST',
+      body: payload,
+      prefer: 'return=representation'
+    });
+
+    if (!result.ok) {
+      const msg = errorMessage(result.data, 'No fue posible guardar el registro en la base de datos.');
+      return json({ error: msg }, result.status || 400);
+    }
+
+    const rows = Array.isArray(result.data) ? result.data : [result.data];
+    return json({ success: true, data: rows[0] || result.data }, 201);
+  }
+
+  if (method === 'PATCH' || method === 'PUT') {
+    const id = String(parsed.body?.id || '').trim();
+    if (!id) return json({ error: 'El ID del registro es requerido.' }, 400);
+
+    const updateData = parsed.body?.data;
+    if (!updateData || typeof updateData !== 'object') {
+      return json({ error: 'Los datos a actualizar son requeridos.' }, 400);
+    }
+
+    const query = { id: `eq.${id}` };
+    if (!requesterIsGlobal && userClientId) {
+      query.client_id = `eq.${userClientId}`;
+    }
+
+    const result = await restRequest(configuration, table, {
+      method: 'PATCH',
+      query,
+      body: updateData,
+      prefer: 'return=representation'
+    });
+
+    if (!result.ok) {
+      const msg = errorMessage(result.data, 'No fue posible actualizar el registro.');
+      return json({ error: msg }, result.status || 400);
+    }
+
+    return json({ success: true, data: result.data });
+  }
+
+  if (method === 'DELETE') {
+    const id = String(parsed.body?.id || '').trim();
+    if (!id) return json({ error: 'El ID del registro es requerido.' }, 400);
+
+    const query = { id: `eq.${id}` };
+    if (!requesterIsGlobal && userClientId) {
+      query.client_id = `eq.${userClientId}`;
+    }
+
+    const result = await restRequest(configuration, table, {
+      method: 'DELETE',
+      query
+    });
+
+    if (!result.ok) {
+      const msg = errorMessage(result.data, 'No fue posible eliminar el registro.');
+      return json({ error: msg }, result.status || 400);
+    }
+
+    return json({ success: true, message: 'Registro eliminado correctamente.' });
+  }
+
+  return json({ error: 'Método HTTP no permitido para esta ruta.' }, 405);
+}
+
 function routeSegments(url) {
   const pathname = new URL(url).pathname;
   const rawSegments = pathname.split('/').filter(Boolean);
@@ -1321,7 +1428,8 @@ export async function onRequest(context) {
     segments[0] === 'campaign-user' && segments[2] === 'reset-password';
   const isCampaignDelete = segments.length === 2 && segments[0] === 'campaigns';
   const isE14Ocr = segments.length === 1 && segments[0] === 'e14-ocr';
-  const knownRoute = isCampaignUser || isManagedUser || isManagedUserId || isActiveCampaign || isPasswordReset || isCampaignDelete || isE14Ocr;
+  const isPoliticalCrm = segments.length === 1 && segments[0] === 'political-crm';
+  const knownRoute = isCampaignUser || isManagedUser || isManagedUserId || isActiveCampaign || isPasswordReset || isCampaignDelete || isE14Ocr || isPoliticalCrm;
 
   if (!knownRoute) return json({ error: 'Ruta administrativa no disponible.' }, 404);
 
@@ -1346,8 +1454,11 @@ export async function onRequest(context) {
       return deleteCampaignAndExclusiveUsers(request, configuration, segments[1]);
     }
     if (isE14Ocr && method === 'POST') return analyzeE14Image(request, configuration, env);
+    if (isPoliticalCrm && (method === 'POST' || method === 'PATCH' || method === 'PUT' || method === 'DELETE')) {
+      return handlePoliticalCrm(request, configuration);
+    }
 
-    const allow = isCampaignDelete || isManagedUserId ? 'GET, POST, PATCH, DELETE' : 'GET, POST';
+    const allow = isCampaignDelete || isManagedUserId || isPoliticalCrm ? 'GET, POST, PATCH, DELETE' : 'GET, POST';
     return json({ error: 'Método HTTP no permitido para esta ruta.' }, 405, { allow });
   } catch (error) {
     console.error(JSON.stringify({

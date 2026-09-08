@@ -785,6 +785,78 @@ async function startAppServer(shouldListen = true) {
     }
   });
 
+  app.post('/api/supabase-admin/political-crm', async (req, res) => {
+    try {
+      if (!supabaseAdmin) return res.status(503).json({ error: 'Falta configurar SUPABASE_SECRET_KEY en el servidor.' });
+      const bearer = req.headers.authorization || '';
+      const accessToken = bearer.startsWith('Bearer ') ? bearer.slice(7) : '';
+      if (!accessToken) return res.status(401).json({ error: 'Sesión requerida.' });
+
+      const publicKey = String(process.env.VITE_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '').trim();
+      const supabaseUrl = String(process.env.VITE_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim();
+      const authVerifier = createClient(supabaseUrl, publicKey, { auth: { persistSession: false, autoRefreshToken: false } });
+      const { data: requesterData } = await authVerifier.auth.getUser(accessToken);
+      const requesterUser = requesterData.user;
+      if (!requesterUser) return res.status(401).json({ error: 'Sesión expirada.' });
+
+      const { table, data } = req.body || {};
+      if (table !== 'voters' && table !== 'leaders') {
+        return res.status(400).json({ error: 'Tabla no válida.' });
+      }
+      if (!data || typeof data !== 'object') {
+        return res.status(400).json({ error: 'Datos no válidos.' });
+      }
+
+      const { data: inserted, error } = await supabaseAdmin.from(table).insert(data).select().single();
+      if (error) {
+        return res.status(400).json({ error: error.code === '23505' ? 'La cédula ya está registrada en el CRM.' : error.message });
+      }
+      return res.json({ success: true, data: inserted });
+    } catch (error: any) {
+      return res.status(500).json({ error: error?.message || 'Error al guardar en CRM político.' });
+    }
+  });
+
+  app.patch('/api/supabase-admin/political-crm', async (req, res) => {
+    try {
+      if (!supabaseAdmin) return res.status(503).json({ error: 'Falta configurar SUPABASE_SECRET_KEY en el servidor.' });
+      const bearer = req.headers.authorization || '';
+      const accessToken = bearer.startsWith('Bearer ') ? bearer.slice(7) : '';
+      if (!accessToken) return res.status(401).json({ error: 'Sesión requerida.' });
+
+      const { table, id, data } = req.body || {};
+      if ((table !== 'voters' && table !== 'leaders') || !id) {
+        return res.status(400).json({ error: 'Parámetros no válidos.' });
+      }
+
+      const { data: updated, error } = await supabaseAdmin.from(table).update(data).eq('id', id).select();
+      if (error) return res.status(400).json({ error: error.message });
+      return res.json({ success: true, data: updated });
+    } catch (error: any) {
+      return res.status(500).json({ error: error?.message || 'Error al actualizar CRM.' });
+    }
+  });
+
+  app.delete('/api/supabase-admin/political-crm', async (req, res) => {
+    try {
+      if (!supabaseAdmin) return res.status(503).json({ error: 'Falta configurar SUPABASE_SECRET_KEY en el servidor.' });
+      const bearer = req.headers.authorization || '';
+      const accessToken = bearer.startsWith('Bearer ') ? bearer.slice(7) : '';
+      if (!accessToken) return res.status(401).json({ error: 'Sesión requerida.' });
+
+      const { table, id } = req.body || {};
+      if ((table !== 'voters' && table !== 'leaders') || !id) {
+        return res.status(400).json({ error: 'Parámetros no válidos.' });
+      }
+
+      const { error } = await supabaseAdmin.from(table).delete().eq('id', id);
+      if (error) return res.status(400).json({ error: error.message });
+      return res.json({ success: true });
+    } catch (error: any) {
+      return res.status(500).json({ error: error?.message || 'Error al eliminar registro.' });
+    }
+  });
+
   // ==========================================
   // MODULE 1: GESTIÓN ADMINISTRATIVA APIs (ISOLATED)
   // ==========================================
