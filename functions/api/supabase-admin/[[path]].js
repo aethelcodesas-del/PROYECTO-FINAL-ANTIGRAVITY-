@@ -1468,11 +1468,48 @@ async function handlePoliticalCrm(request, configuration) {
       }
     }
 
-    const result = await restRequest(configuration, table, {
+    // Helper to verify client exists in clients table to prevent foreign key errors
+    const verifyClientExists = async (cid) => {
+      if (!cid) return null;
+      try {
+        const check = await restRequest(configuration, 'clients', {
+          query: { select: 'id', id: `eq.${cid}`, limit: 1 }
+        });
+        if (Array.isArray(check.data) && check.data.length > 0) return cid;
+      } catch {}
+      return null;
+    };
+
+    if (Array.isArray(payload)) {
+      for (const item of payload) {
+        if (item.client_id) {
+          item.client_id = await verifyClientExists(item.client_id);
+        }
+      }
+    } else if (payload && typeof payload === 'object') {
+      if (payload.client_id) {
+        payload.client_id = await verifyClientExists(payload.client_id);
+      }
+    }
+
+    let result = await restRequest(configuration, table, {
       method: 'POST',
       body: payload,
       prefer: 'return=representation'
     });
+
+    if (!result.ok && String(result.data?.message || '').includes('_client_id_fkey')) {
+      if (Array.isArray(payload)) {
+        payload.forEach(i => { if (i) i.client_id = null; });
+      } else if (payload && typeof payload === 'object') {
+        payload.client_id = null;
+      }
+      result = await restRequest(configuration, table, {
+        method: 'POST',
+        body: payload,
+        prefer: 'return=representation'
+      });
+    }
 
     if (!result.ok) {
       const msg = errorMessage(result.data, 'No fue posible guardar el registro en la base de datos.');
@@ -1491,17 +1528,40 @@ async function handlePoliticalCrm(request, configuration) {
       return json({ error: 'Los datos a actualizar son requeridos.' }, 400);
     }
 
+    if (updateData.client_id) {
+      try {
+        const check = await restRequest(configuration, 'clients', {
+          query: { select: 'id', id: `eq.${updateData.client_id}`, limit: 1 }
+        });
+        if (!Array.isArray(check.data) || check.data.length === 0) {
+          updateData.client_id = null;
+        }
+      } catch {
+        updateData.client_id = null;
+      }
+    }
+
     const query = { id: `eq.${id}` };
     if (!requesterIsGlobal && userClientId) {
       query.client_id = `eq.${userClientId}`;
     }
 
-    const result = await restRequest(configuration, table, {
+    let result = await restRequest(configuration, table, {
       method: 'PATCH',
       query,
       body: updateData,
       prefer: 'return=representation'
     });
+
+    if (!result.ok && String(result.data?.message || '').includes('_client_id_fkey')) {
+      updateData.client_id = null;
+      result = await restRequest(configuration, table, {
+        method: 'PATCH',
+        query,
+        body: updateData,
+        prefer: 'return=representation'
+      });
+    }
 
     if (!result.ok) {
       const msg = errorMessage(result.data, 'No fue posible actualizar el registro.');

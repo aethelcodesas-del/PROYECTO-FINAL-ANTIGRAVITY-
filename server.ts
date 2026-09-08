@@ -949,7 +949,39 @@ async function startAppServer(shouldListen = true) {
         return res.status(400).json({ error: 'Datos no válidos.' });
       }
 
-      const { data: inserted, error } = await supabaseAdmin.from(table).insert(data).select();
+      if (table === 'budget_items' || table === 'voters' || table === 'leaders') {
+        const sanitizeClient = async (item: any) => {
+          if (!item || typeof item !== 'object') return item;
+          if (item.client_id) {
+            const { data: clientExists } = await supabaseAdmin.from('clients').select('id').eq('id', item.client_id).maybeSingle();
+            if (!clientExists) {
+              item.client_id = null;
+            }
+          }
+          return item;
+        };
+
+        if (Array.isArray(data)) {
+          for (const item of data) {
+            await sanitizeClient(item);
+          }
+        } else {
+          await sanitizeClient(data);
+        }
+      }
+
+      let { data: inserted, error } = await supabaseAdmin.from(table).insert(data).select();
+      if (error && String(error.message || '').includes('_client_id_fkey')) {
+        if (Array.isArray(data)) {
+          data.forEach((i: any) => { if (i) i.client_id = null; });
+        } else if (data && typeof data === 'object') {
+          data.client_id = null;
+        }
+        const retry = await supabaseAdmin.from(table).insert(data).select();
+        inserted = retry.data;
+        error = retry.error;
+      }
+
       if (error) {
         return res.status(400).json({ error: error.code === '23505' ? 'El registro ya existe en el sistema.' : error.message });
       }
@@ -972,7 +1004,25 @@ async function startAppServer(shouldListen = true) {
         return res.status(400).json({ error: 'Parámetros no válidos.' });
       }
 
-      const { data: updated, error } = await supabaseAdmin.from(table).update(data).eq('id', id).select();
+      if (table === 'budget_items' || table === 'voters' || table === 'leaders') {
+        if (data && typeof data === 'object' && data.client_id) {
+          const { data: clientExists } = await supabaseAdmin.from('clients').select('id').eq('id', data.client_id).maybeSingle();
+          if (!clientExists) {
+            data.client_id = null;
+          }
+        }
+      }
+
+      let { data: updated, error } = await supabaseAdmin.from(table).update(data).eq('id', id).select();
+      if (error && String(error.message || '').includes('_client_id_fkey')) {
+        if (data && typeof data === 'object') {
+          data.client_id = null;
+        }
+        const retry = await supabaseAdmin.from(table).update(data).eq('id', id).select();
+        updated = retry.data;
+        error = retry.error;
+      }
+
       if (error) return res.status(400).json({ error: error.message });
       return res.json({ success: true, data: updated });
     } catch (error: any) {

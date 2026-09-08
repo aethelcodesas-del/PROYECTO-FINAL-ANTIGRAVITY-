@@ -142,8 +142,8 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
   };
 
   const budgetItemPayload = (item: BudgetItem) => ({
-    client_id: activeClientId,
-    campaign_id: activeCampaignId,
+    client_id: activeClientId && activeClientId !== activeCampaignId ? activeClientId : null,
+    campaign_id: activeCampaignId || null,
     tipo: item.tipo === 'Ingreso' ? 'INGRESO' : 'GASTO',
     categoria_cne: `${item.codigoRubro} - ${item.nombreRubro}`,
     concepto: item.nombre,
@@ -179,7 +179,11 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
     setItems((data || []).map(parseBudgetItem));
   };
 
-  const saveBudgetItemApi = async (payload: any) => {
+  const saveBudgetItemApi = async (rawPayload: any) => {
+    let payload = { ...rawPayload };
+    if (payload.client_id && payload.client_id === payload.campaign_id) {
+      payload.client_id = null;
+    }
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
@@ -198,17 +202,29 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
         }
         const errJson = await response.json().catch(() => ({}));
         if (response.status !== 404 && errJson.error) {
+          if (String(errJson.error).includes('_client_id_fkey') && payload.client_id) {
+            return saveBudgetItemApi({ ...payload, client_id: null });
+          }
           return { data: null, error: { message: errJson.error } };
         }
       }
     } catch {
       // Fallback
     }
-    const { data, error } = await supabase.from('budget_items').insert(payload).select();
+    let { data, error } = await supabase.from('budget_items').insert(payload).select();
+    if (error && String(error.message || '').includes('_client_id_fkey') && payload.client_id) {
+      const retry = await supabase.from('budget_items').insert({ ...payload, client_id: null }).select();
+      data = retry.data;
+      error = retry.error;
+    }
     return { data, error };
   };
 
-  const updateBudgetItemApi = async (id: string, payload: any) => {
+  const updateBudgetItemApi = async (id: string, rawPayload: any) => {
+    let payload = { ...rawPayload };
+    if (payload.client_id && payload.client_id === payload.campaign_id) {
+      payload.client_id = null;
+    }
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
@@ -224,13 +240,20 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
         if (response.ok) return { error: null };
         const errJson = await response.json().catch(() => ({}));
         if (response.status !== 404 && errJson.error) {
+          if (String(errJson.error).includes('_client_id_fkey') && payload.client_id) {
+            return updateBudgetItemApi(id, { ...payload, client_id: null });
+          }
           return { error: { message: errJson.error } };
         }
       }
     } catch {
       // Fallback
     }
-    const { error } = await supabase.from('budget_items').update(payload).eq('id', id);
+    let { error } = await supabase.from('budget_items').update(payload).eq('id', id);
+    if (error && String(error.message || '').includes('_client_id_fkey') && payload.client_id) {
+      const retry = await supabase.from('budget_items').update({ ...payload, client_id: null }).eq('id', id);
+      error = retry.error;
+    }
     return { error };
   };
 
@@ -384,7 +407,10 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
         if (!campaign) throw new Error('No existe una campaña activa accesible para este usuario.');
 
         if (!mounted) return;
-        setActiveClientId(campaign.client_id || profileClientId || profileCampaignId || null);
+        const safeClientId = (campaign.client_id && campaign.client_id !== campaign.id)
+          ? campaign.client_id
+          : (profileClientId && profileClientId !== campaign.id ? profileClientId : null);
+        setActiveClientId(safeClientId);
         setActiveCampaignId(campaign.id);
         const limitVal = Number(campaign.presupuesto_total ?? liveMetrics.budgetLimitCop ?? 0);
         setCampaignBudgetLimit(limitVal);
