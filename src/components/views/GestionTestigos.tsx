@@ -43,8 +43,10 @@ import {
   AlertCircle,
   PlusCircle
 } from 'lucide-react';
+import { useCampaignData } from '../../contexts/CampaignContext';
 import { 
   getPartidosPrioritariosCandidato, 
+  getPuestosPorCircunscripcion,
   saveCustomPuesto, 
   deleteCustomPuesto, 
   PuestoVotacionInfo,
@@ -151,11 +153,12 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
   // -------------------------------------------------------------------------
   // 2. GENERACIÓN DINÁMICA DE PUESTOS Y PARTIDOS SEGÚN LA CIRCUNSCRIPCIÓN
   // -------------------------------------------------------------------------
-  const candidateDepartamento = campaignDossier?.departamento || '';
-  const candidateMunicipio = normalizeMunicipioName(campaignDossier?.municipio) || '';
-  const candidateCircunscripcion = campaignDossier?.circunscripcionTerritorial || '';
-  const candidateCorporacion = campaignDossier?.corporacion || '';
-  const candidateName = campaignDossier?.candidatoPrincipal?.nombreCompleto || campaignDossier?.nombreCandidato || '';
+  const { campaign } = useCampaignData();
+  const candidateDepartamento = campaignDossier?.departamento || campaign?.department || 'Córdoba';
+  const candidateMunicipio = normalizeMunicipioName(campaignDossier?.municipio || campaign?.municipality || 'Cotorra');
+  const candidateCircunscripcion = campaignDossier?.circunscripcionTerritorial || campaign?.circunscripcion || 'Municipal';
+  const candidateCorporacion = campaignDossier?.corporacion || campaign?.officeType || 'Alcaldía';
+  const candidateName = campaignDossier?.candidatoPrincipal?.nombreCompleto || campaignDossier?.nombreCandidato || campaign?.candidateName || '';
   const normalizedElectoralScope = `${candidateCircunscripcion} ${candidateCorporacion}`.toUpperCase();
   const activeTerritoryLabel = normalizedElectoralScope.includes('NACIONAL') || normalizedElectoralScope.includes('PRESIDENCIA') || normalizedElectoralScope.includes('SENADO')
     ? 'Colombia'
@@ -163,8 +166,19 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
       ? candidateDepartamento
       : candidateMunicipio;
 
-  const [campaignPollingPlaces, setCampaignPollingPlaces] = useState<PuestoVotacionInfo[]>([]);
-  const puestosTerritorioOpt = campaignPollingPlaces;
+  const resolvedScope: 'Municipio' | 'Departamento' | 'Nacional' =
+    normalizedElectoralScope.includes('NACIONAL') || normalizedElectoralScope.includes('PRESIDENCIA') || normalizedElectoralScope.includes('SENADO')
+      ? 'Nacional'
+      : normalizedElectoralScope.includes('DEPARTAMENT') || normalizedElectoralScope.includes('GOBERNACIÓN') || normalizedElectoralScope.includes('GOBERNACION') || normalizedElectoralScope.includes('ASAMBLEA')
+        ? 'Departamento'
+        : 'Municipio';
+
+  // Puestos de votación cargados automáticamente según la circunscripción territorial del aspirante
+  const puestosTerritorioOpt = useMemo(() => {
+    const dep = candidateDepartamento || 'Córdoba';
+    const mun = candidateMunicipio || 'Cotorra';
+    return getPuestosPorCircunscripcion(dep, mun, resolvedScope);
+  }, [candidateDepartamento, candidateMunicipio, resolvedScope, customPuestosVersion]);
 
   // Partidos prioritarios calculados según avales y coalición del candidato
   const partidosPoliticosOpt = useMemo(() => {

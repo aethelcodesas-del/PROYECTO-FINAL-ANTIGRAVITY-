@@ -361,38 +361,51 @@ export function deleteCustomPuesto(id: string): PuestoVotacionInfo[] {
  * - Incluye puestos personalizados añadidos por el usuario para ese territorio.
  */
 export function getPuestosPorCircunscripcion(
-  departamento: string = 'Antioquia',
-  municipioRaw: string = 'Medellín',
+  departamento: string = 'Córdoba',
+  municipioRaw: string = 'Cotorra',
   circunscripcion: 'Municipio' | 'Departamento' | 'Nacional' = 'Municipio'
 ): PuestoVotacionInfo[] {
-  const normMun = normalizeMunicipioName(municipioRaw);
+  const normMun = normalizeMunicipioName(municipioRaw) || 'Cotorra';
+  const normDep = departamento || 'Córdoba';
   const customList = getCustomPuestosStored().filter(p => 
-    p.departamento.toLowerCase() === departamento.toLowerCase() &&
+    circunscripcion === 'Nacional' ||
+    p.departamento.toLowerCase() === normDep.toLowerCase() &&
     (circunscripcion === 'Departamento' || p.municipio.toLowerCase() === normMun.toLowerCase())
   );
 
   let basePuestos: PuestoVotacionInfo[] = [];
 
-  if (circunscripcion === 'Departamento') {
-    // Si la campaña es departamental (Gobernación / Asamblea), traer puestos clave de la capital y municipios
+  if (circunscripcion === 'Nacional') {
+    // Si la campaña es nacional (Presidencia, Senado)
+    Object.entries(puestosEmblematicosPorMunicipio).forEach(([mun, list]) => {
+      list.forEach((p, idx) => {
+        basePuestos.push({
+          ...p,
+          id: `nac-${mun.toLowerCase().replace(/\s+/g, '-')}-${idx + 1}`,
+          departamento: mun === 'Bogotá D.C.' ? 'Bogotá D.C.' : mun === 'Medellín' ? 'Antioquia' : mun === 'Cali' ? 'Valle del Cauca' : mun === 'Barranquilla' ? 'Atlántico' : 'Córdoba',
+          municipio: mun
+        });
+      });
+    });
+  } else if (circunscripcion === 'Departamento') {
+    // Si la campaña es departamental (Gobernación / Asamblea), traer puestos de la capital y municipios
     const capitalKey = Object.keys(puestosEmblematicosPorMunicipio).find(k => 
       k.toLowerCase() === normMun.toLowerCase() || 
-      (departamento.toLowerCase().includes('bogotá') && k.includes('Bogotá'))
+      (normDep.toLowerCase().includes('bogotá') && k.includes('Bogotá'))
     );
 
     if (capitalKey && puestosEmblematicosPorMunicipio[capitalKey]) {
       basePuestos = puestosEmblematicosPorMunicipio[capitalKey].map((p, idx) => ({
         ...p,
         id: `dep-${idx + 1}`,
-        departamento,
+        departamento: normDep,
         municipio: capitalKey
       }));
     } else {
-      basePuestos = generarPuestosParaCualquierMunicipio(departamento, normMun || `${departamento} Central`);
+      basePuestos = generarPuestosParaCualquierMunicipio(normDep, normMun || `${normDep} Central`);
     }
   } else {
     // Si la campaña es municipal / distrital (Alcaldía, Concejo, JAL)
-    // 1. Buscar si tenemos la lista emblemática precisa
     const exactMatchKey = Object.keys(puestosEmblematicosPorMunicipio).find(k => 
       k.toLowerCase() === normMun.toLowerCase()
     );
@@ -400,14 +413,19 @@ export function getPuestosPorCircunscripcion(
     if (exactMatchKey && puestosEmblematicosPorMunicipio[exactMatchKey]) {
       basePuestos = puestosEmblematicosPorMunicipio[exactMatchKey].map((p, idx) => ({
         ...p,
-        id: `pst-${normMun.toLowerCase()}-${idx + 1}`,
-        departamento,
+        id: `pst-${normMun.toLowerCase().replace(/\s+/g, '-')}-${idx + 1}`,
+        departamento: normDep,
         municipio: normMun
       }));
     } else {
-      // 2. Generar puestos realistas y georreferenciados para cualquier municipio
-      basePuestos = generarPuestosParaCualquierMunicipio(departamento, normMun);
+      // Generar puestos oficiales y georreferenciados para cualquier municipio
+      basePuestos = generarPuestosParaCualquierMunicipio(normDep, normMun);
     }
+  }
+
+  // Si por alguna razón basePuestos está vacío, asegurar generación inmediata
+  if (basePuestos.length === 0) {
+    basePuestos = generarPuestosParaCualquierMunicipio(normDep, normMun);
   }
 
   // Combinar con puestos customizados
