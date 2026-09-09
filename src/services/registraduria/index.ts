@@ -13,3 +13,4 @@ export * from './processRegistry';
 export * from './cloudflareScheduledHandler';
 export * from './pdfDivipoleAdapter';
 export * from './nationalDivipoleStagingService';
+export * from './offlineOfficialFileIngestion';
