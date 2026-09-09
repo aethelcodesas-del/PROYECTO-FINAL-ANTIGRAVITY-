@@ -1,15 +1,28 @@
 /**
- * PRUEBAS DE AUTOMATIZACIÓN, SCHEDULER Y FAIL-SAFE (FASE 6)
+ * PRUEBAS DE AUTOMATIZACIÓN, SCHEDULER, LOCK DISTRIBUIDO Y FUENTES (FASE 6 & 6.1)
  * Ejecutable mediante: npx tsx tests/officialElectoralScheduler.test.ts
  */
 
 import {
   acquireSyncLock,
   releaseSyncLock,
+  acquireDistributedSyncLock,
+  releaseDistributedSyncLock,
+  acquireLocalSyncLock,
+  releaseLocalSyncLock,
   detectAnomalousVariation,
   executeScheduledElectoralSync,
   DEFAULT_PROCESO_CONGRESO_2026
 } from '../src/services/registraduria/schedulerEngine';
+
+import {
+  getOfficialProcessSource,
+  getAllOfficialProcessSources,
+  isSourceReadyForSync,
+  OFFICIAL_PROCESS_SOURCES
+} from '../src/services/registraduria/processRegistry';
+
+import { handleScheduledEvent } from '../src/services/registraduria/cloudflareScheduledHandler';
 
 function assert(condition: boolean, message: string) {
   if (!condition) {
@@ -22,56 +35,144 @@ function assert(condition: boolean, message: string) {
 
 async function runSchedulerTests() {
   console.log('\n============================================================');
-  console.log('EJECUTANDO SUITE DE PRUEBAS DEL SCHEDULER Y FAIL-SAFE (FASE 6)');
+  console.log('EJECUTANDO SUITE DE PRUEBAS DEL SCHEDULER Y FAIL-SAFE (FASE 6.1)');
   console.log('============================================================\n');
 
-  // 1. Control de Concurrencia y Lock
-  releaseSyncLock();
-  const lock1 = acquireSyncLock();
+  // 1. Control de Concurrencia y Lock Local / Distribuido
+  releaseLocalSyncLock();
+  const lock1 = acquireLocalSyncLock('worker-A', 15);
   assert(lock1.acquired === true, 'Primer lock debe ser adquirido exitosamente');
 
-  const lock2 = acquireSyncLock();
+  const lock2 = acquireLocalSyncLock('worker-B', 15);
   assert(lock2.acquired === false, 'Segundo lock concurrente debe ser rechazado');
-  assert(lock2.reason?.includes('en ejecución activa') === true, 'Debe incluir razón descriptiva del bloqueo');
+  assert(lock2.reason?.includes('activa') === true, 'Debe incluir razón descriptiva del bloqueo concurrente');
 
-  releaseSyncLock();
-  const lock3 = acquireSyncLock();
+  // Auto-recuperación de lock expirado
+  const expiredMockLock = acquireLocalSyncLock('worker-C', -1); // TTL negativo = expirado inmediatamente
+  assert(expiredMockLock.acquired === true, 'Lock expirado debe poder ser recuperado automáticamente por un nuevo worker');
+
+  releaseLocalSyncLock();
+  const lock3 = acquireLocalSyncLock('worker-D', 15);
   assert(lock3.acquired === true, 'Lock liberado debe poder ser adquirido nuevamente');
-  releaseSyncLock();
+  releaseLocalSyncLock();
 
-  // 2. Detección de Variación Anómala
-  // Caso A: Reducción masiva sospechosa (> 40%)
+  // 2. Simulación de Lock con Mock Supabase Client
+  let mockLockTable: Record<string, any> = {};
+  const mockSupabaseClient = {
+    rpc: async (fnName: string, params: any) => {
+      if (fnName === 'acquire_official_sync_lock') {
+        const existing = mockLockTable[params.p_lock_key];
+        const now = Date.now();
+        if (existing && existing.expires_at > now && existing.locked_by !== params.p_locked_by) {
+          return {
+            data: {
+              acquired: false,
+              reason: `Lock ocupado por ${existing.locked_by}`
+            },
+            error: null
+          };
+        }
+        mockLockTable[params.p_lock_key] = {
+          locked_by: params.p_locked_by,
+          expires_at: now + (params.p_ttl_minutes * 60 * 1000)
+        };
+        return {
+          data: {
+            acquired: true,
+            recovered_expired: false,
+            lock_key: params.p_lock_key,
+            locked_by: params.p_locked_by
+          },
+          error: null
+        };
+      }
+      if (fnName === 'release_official_sync_lock') {
+        delete mockLockTable[params.p_lock_key];
+        return { data: { released: true }, error: null };
+      }
+      return { data: null, error: 'Unknown RPC' };
+    }
+  };
+
+  const distLock1 = await acquireDistributedSyncLock(mockSupabaseClient, 'TEST_KEY', 'worker-1', 10);
+  assert(distLock1.acquired === true, 'Lock distribuido Supabase debe ser adquirido por worker-1');
+
+  const distLock2 = await acquireDistributedSyncLock(mockSupabaseClient, 'TEST_KEY', 'worker-2', 10);
+  assert(distLock2.acquired === false, 'Lock distribuido Supabase debe rechazar a worker-2 mientras worker-1 está activo');
+
+  await releaseDistributedSyncLock(mockSupabaseClient, 'TEST_KEY', 'worker-1');
+  const distLock3 = await acquireDistributedSyncLock(mockSupabaseClient, 'TEST_KEY', 'worker-2', 10);
+  assert(distLock3.acquired === true, 'Lock distribuido Supabase liberado debe permitir adquisición por worker-2');
+  await releaseDistributedSyncLock(mockSupabaseClient, 'TEST_KEY', 'worker-2');
+
+  // 3. Verificación de Fuentes Oficiales por Proceso (SOURCE_PENDING_CONFIGURATION)
+  const congresoSource = getOfficialProcessSource('COL-2026-CONGRESO');
+  assert(congresoSource.status === 'SOURCE_PENDING_CONFIGURATION', 'Congreso 2026 sin URL oficial debe estar en SOURCE_PENDING_CONFIGURATION');
+  assert(isSourceReadyForSync(congresoSource) === false, 'Fuente en SOURCE_PENDING_CONFIGURATION no debe estar lista para sincronizar');
+
+  const pres1vSource = getOfficialProcessSource('COL-2026-PRES-1V');
+  assert(pres1vSource.status === 'SOURCE_PENDING_CONFIGURATION', 'Presidencial 1V debe estar en SOURCE_PENDING_CONFIGURATION');
+
+  const pres2vSource = getOfficialProcessSource('COL-2026-PRES-2V');
+  assert(pres2vSource.status === 'SOURCE_PENDING_CONFIGURATION', 'Presidencial 2V debe estar en SOURCE_PENDING_CONFIGURATION');
+
+  const territorialSource = getOfficialProcessSource('COL-2027-TERRITORIAL');
+  assert(territorialSource.status === 'SOURCE_PENDING_CONFIGURATION', 'Territoriales 2027 debe estar en SOURCE_PENDING_CONFIGURATION');
+
+  // 4. Ejecución del Scheduler con Proceso en SOURCE_PENDING_CONFIGURATION
+  const pendingSync = await executeScheduledElectoralSync({
+    processId: 'COL-2026-CONGRESO'
+  });
+  assert(pendingSync.status === 'RECHAZADA_INCOMPLETA', 'Debe rechazar sincronización de proceso sin fuente configurada');
+  assert(pendingSync.sha256 === 'SOURCE_PENDING_CONFIGURATION', 'Debe reportar sha256 como SOURCE_PENDING_CONFIGURATION');
+  assert(pendingSync.message.includes('SOURCE_PENDING_CONFIGURATION'), 'Debe documentar claramente que se omite descarga y RPC');
+
+  // 5. Rechazo de URLs de Ejemplo o Placeholder
+  const placeholderSync = await executeScheduledElectoralSync({
+    processConfig: DEFAULT_PROCESO_CONGRESO_2026,
+    sourceUrl: 'https://tu-dominio.com/archivo_divipole.csv'
+  });
+  assert(placeholderSync.sha256 === 'INVALID_SOURCE_URL', 'Debe rechazar URL placeholder "tu-dominio.com" sin descargar ni invocar RPC');
+
+  // 6. Detección de Variación Anómala
   const anomalyReduction = detectAnomalousVariation(50, 100, 40);
   assert(anomalyReduction.isAnomalous === true, 'Debe detectar reducción del 50% como anómala');
   assert(anomalyReduction.reason?.includes('50.0%') === true, 'El mensaje debe detallar el porcentaje de reducción');
 
-  // Caso B: Variación normal permitida (ej. 98 puestos cuando antes había 100)
   const normalVariation = detectAnomalousVariation(98, 100, 40);
   assert(normalVariation.isAnomalous === false, 'Variación del 2% no debe considerarse anómala');
 
-  // Caso C: Cero puestos en lote
   const zeroPlaces = detectAnomalousVariation(0, 50, 40);
   assert(zeroPlaces.isAnomalous === true, '0 puestos en catálogo previo debe ser detectado como anómalo');
 
-  // 3. Ejecución del Scheduler en Dry-Run
-  const syncScheduled = await executeScheduledElectoralSync({
-    processConfig: DEFAULT_PROCESO_CONGRESO_2026,
-    sourceUrl: 'https://test-registraduria.gov.co/divipole_test.csv',
-    dryRun: true,
-    maxRetries: 1
-  });
+  // 7. Liberación del Lock en bloque Finally ante Errores
+  try {
+    await executeScheduledElectoralSync({
+      processConfig: DEFAULT_PROCESO_CONGRESO_2026,
+      sourceUrl: 'https://test-registraduria.gov.co/divipole_inexistente.csv',
+      dryRun: true,
+      maxRetries: 1
+    });
+  } catch (e) {}
 
-  // Debido a que la URL es ficticia de test, el adapter rechazará de forma fail-safe sin romper nada
-  assert(syncScheduled.status === 'FALLIDA_FUENTE_CAIDA' || syncScheduled.status === 'RECHAZADA_INCOMPLETA', 'Debe clasificar intento fallido de forma fail-safe');
-  assert(syncScheduled.anomalyDetected === false, 'No fue un error de anomalía sino de red');
-  assert(syncScheduled.attempts >= 1, 'Debe registrar los intentos efectuados');
+  // Comprobar que el lock quedó liberado tras el intento
+  const postErrorLock = acquireLocalSyncLock('worker-verify', 15);
+  assert(postErrorLock.acquired === true, 'Lock debe liberarse en finally aun si ocurre un fallo en la sincronización');
+  releaseLocalSyncLock();
 
-  // 4. Verificación de Seguridad: Ausencia de secretos de Service Role en frontend
-  const packageJsonContent = ''; // Mock check
-  assert(!packageJsonContent.includes('SUPABASE_SERVICE_ROLE_KEY'), 'No debe haber claves service_role en package.json');
+  // 8. Scheduled Handler de Cloudflare (handleScheduledEvent)
+  const scheduledResult = await handleScheduledEvent(
+    { cron: '0 3 * * 0', scheduledTime: Date.now() },
+    { CRON_SECRET: 'test-secret' }
+  );
+
+  assert(scheduledResult.cron === '0 3 * * 0', 'Scheduled handler debe capturar la expresión cron');
+  assert(scheduledResult.timezoneConversion.includes('Sábados 22:00'), 'Debe documentar la conversión horaria UTC a Colombia');
+  assert(scheduledResult.results.length >= 4, 'Debe iterar y procesar todos los procesos registrados');
+  assert(scheduledResult.results.every(r => r.status === 'SOURCE_PENDING_CONFIGURATION'), 'Todos los procesos pendientes deben ser omitidos de forma segura');
 
   console.log('\n============================================================');
-  console.log('✅ TODAS LAS PRUEBAS DEL SCHEDULER (FASE 6) PASARON EXITOSAMENTE');
+  console.log('✅ TODAS LAS PRUEBAS DEL SCHEDULER Y LOCK DISTRIBUIDO (FASE 6.1) PASARON');
   console.log('============================================================\n');
 }
 

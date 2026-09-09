@@ -5,6 +5,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { executeScheduledElectoralSync } from '../../../../src/services/registraduria/schedulerEngine';
+import { getAllOfficialProcessSources } from '../../../../src/services/registraduria/processRegistry';
 
 const JSON_HEADERS = {
   'content-type': 'application/json; charset=utf-8',
@@ -40,12 +41,14 @@ export async function onRequestGet(context) {
 
   const supabaseUrl = env.VITE_SUPABASE_URL || env.SUPABASE_URL;
   const supabaseKey = env.SUPABASE_SERVICE_ROLE_KEY;
+  const registeredProcesses = getAllOfficialProcessSources();
 
   if (!supabaseUrl || !supabaseKey) {
     return new Response(JSON.stringify({
       success: true,
       status: 'READY_NO_DB',
-      message: 'Servicio de sincronización activo. Credenciales de base de datos no conectadas en este worker.'
+      message: 'Servicio de sincronización activo. Credenciales de base de datos no conectadas en este worker.',
+      processes: registeredProcesses
     }), { status: 200, headers: JSON_HEADERS });
   }
 
@@ -60,6 +63,7 @@ export async function onRequestGet(context) {
     return new Response(JSON.stringify({
       success: true,
       service: 'RegistraduriaOfficialSyncService',
+      processes: registeredProcesses,
       history: latestHistory || []
     }), { status: 200, headers: JSON_HEADERS });
   } catch (err) {
@@ -95,6 +99,7 @@ export async function onRequestPost(context) {
 
   try {
     const result = await executeScheduledElectoralSync({
+      processId: body.processId,
       processConfig: body.processConfig,
       sourceUrl: body.sourceUrl,
       sourceType: body.sourceType || 'DIVIPOLE',
