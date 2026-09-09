@@ -8,3 +8,4 @@ export * from './divipoleAdapter';
 export * from './censusAdapter';
 export * from './registraduriaOfficialAdapter';
 export * from './electoralSyncService';
+export * from './schedulerEngine';
