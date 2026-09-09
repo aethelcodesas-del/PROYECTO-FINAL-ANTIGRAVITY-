@@ -1522,19 +1522,9 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
 
                 {/* Puesto de Votación (Circunscripción Dinámica) */}
                 <div className="md:col-span-2">
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="block font-bold text-slate-300">
-                      Puesto de votación *
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setShowAddPuestoModal(true)}
-                      className="text-[11px] text-cyan-300 hover:text-cyan-200 font-bold flex items-center gap-1 cursor-pointer"
-                    >
-                      <PlusCircle className="w-3 h-3" />
-                      <span>+ Crear otro puesto</span>
-                    </button>
-                  </div>
+                  <label className="block font-bold text-slate-300 mb-1">
+                    Puesto de votación *
+                  </label>
                   <select
                     value={witPuesto}
                     onChange={(e) => {
