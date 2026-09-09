@@ -1,5 +1,5 @@
 /**
- * REGISTRO OFICIAL DE PROCESOS Y FUENTES ELECTORALES (FASE 6.1)
+ * REGISTRO OFICIAL DE PROCESOS Y FUENTES ELECTORALES (FASE 6.1 / AUDITORÍA DE FUENTES)
  * 
  * Centraliza la configuración de fuentes para cada proceso electoral:
  * - COL-2026-CONGRESO
@@ -15,8 +15,18 @@
 
 import { ElectoralProcessConfig } from './types';
 
-export type OfficialSourceType = 'DIVIPOLE_CSV' | 'CENSO_CSV' | 'DIVIPOLE_JSON' | 'PDF_UNSUPPORTED' | 'PENDING';
-export type SourceConfigurationStatus = 'CONFIGURED' | 'SOURCE_PENDING_CONFIGURATION';
+export type OfficialSourceType = 
+  | 'DIVIPOLE_CSV' 
+  | 'CENSO_CSV' 
+  | 'DIVIPOLE_JSON' 
+  | 'PDF_UNSUPPORTED' 
+  | 'HTML_PORTAL'
+  | 'PENDING';
+
+export type SourceConfigurationStatus = 
+  | 'SOURCE_VALIDATED' 
+  | 'SOURCE_PENDING_CONFIGURATION' 
+  | 'SOURCE_UNAVAILABLE';
 
 export interface OfficialProcessSourceDefinition {
   processConfig: ElectoralProcessConfig;
@@ -25,6 +35,7 @@ export interface OfficialProcessSourceDefinition {
   enabled: boolean;
   status: SourceConfigurationStatus;
   notes: string;
+  expectedSchema?: string[];
 }
 
 /**
@@ -40,12 +51,17 @@ export const OFFICIAL_PROCESS_SOURCES: Record<string, OfficialProcessSourceDefin
       fechaEleccion: '2026-03-08',
       corporacionesHabilitadas: ['SENADO', 'CAMARA']
     },
-    // Si la Registraduría publica únicamente PDF, se marca como no soportado/pendiente
-    sourceUrl: null,
-    sourceType: 'PENDING',
+    // URL oficial de la Registraduría Nacional (documento PDF)
+    sourceUrl: 'https://www.registraduria.gov.co/IMG/pdf/Divipole_definitiva_%20Elecciones_Congreso_2026_GEO_CITREP_Exterior_L_V_v5.pdf',
+    sourceType: 'PDF_UNSUPPORTED',
     enabled: false,
     status: 'SOURCE_PENDING_CONFIGURATION',
-    notes: 'Pendiente de enlace oficial estructurado (CSV/JSON) publicado por la Registraduría Nacional para Congreso 2026.'
+    notes: 'Fuente oficial publicada en formato PDF (Divipole definitiva Elecciones Congreso 2026 GEO CITREP Exterior). Requiere canal de extracción estructurado (CSV/JSON) o datos abiertos antes de activar ingesta en base de datos.',
+    expectedSchema: [
+      'COD_DPTO', 'DEPARTAMENTO', 'COD_MPIO', 'MUNICIPIO', 
+      'COD_ZONA', 'ZONA', 'COD_PUESTO', 'PUESTO', 
+      'DIRECCION', 'MESAS', 'CENSO', 'LATITUD', 'LONGITUD', 'CITREP_EXTERIOR'
+    ]
   },
   'COL-2026-PRES-1V': {
     processConfig: {
@@ -56,11 +72,12 @@ export const OFFICIAL_PROCESS_SOURCES: Record<string, OfficialProcessSourceDefin
       fechaEleccion: '2026-05-31',
       corporacionesHabilitadas: ['PRESIDENCIA']
     },
-    sourceUrl: null,
-    sourceType: 'PENDING',
+    sourceUrl: 'https://www.registraduria.gov.co/-2026-.html',
+    sourceType: 'HTML_PORTAL',
     enabled: false,
     status: 'SOURCE_PENDING_CONFIGURATION',
-    notes: 'Pendiente de publicación de DIVIPOLE oficial para Presidencia 2026 Primera Vuelta.'
+    notes: 'Portal web informativo de Elecciones 2026. Protegido por WAF/Anti-Bot. Pendiente de publicación de dataset estructurado.',
+    expectedSchema: ['COD_DPTO', 'COD_MPIO', 'COD_PUESTO', 'MESAS', 'CENSO']
   },
   'COL-2026-PRES-2V': {
     processConfig: {
@@ -71,11 +88,12 @@ export const OFFICIAL_PROCESS_SOURCES: Record<string, OfficialProcessSourceDefin
       fechaEleccion: '2026-06-21',
       corporacionesHabilitadas: ['PRESIDENCIA']
     },
-    sourceUrl: null,
-    sourceType: 'PENDING',
+    sourceUrl: 'https://www.registraduria.gov.co/IMG/pdf/puestos_votacion_2da_vuelta_2026.pdf',
+    sourceType: 'PDF_UNSUPPORTED',
     enabled: false,
     status: 'SOURCE_PENDING_CONFIGURATION',
-    notes: 'Pendiente de confirmación según calendario electoral para Segunda Vuelta Presidencial 2026.'
+    notes: 'Documento PDF de puestos de votación segunda vuelta presidencial. No procesable directamente por parser CSV sin pipeline de extracción.',
+    expectedSchema: ['COD_DPTO', 'DEPARTAMENTO', 'COD_MPIO', 'MUNICIPIO', 'COD_PUESTO', 'PUESTO', 'MESAS']
   },
   'COL-2027-TERRITORIAL': {
     processConfig: {
@@ -90,7 +108,7 @@ export const OFFICIAL_PROCESS_SOURCES: Record<string, OfficialProcessSourceDefin
     sourceType: 'PENDING',
     enabled: false,
     status: 'SOURCE_PENDING_CONFIGURATION',
-    notes: 'Pendiente de convocatoria y calendario oficial para Elecciones Territoriales 2027.'
+    notes: 'Pendiente de convocatoria oficial y calendario electoral de la Registraduría para comicios territoriales 2027.'
   }
 };
 
@@ -114,7 +132,7 @@ export function getOfficialProcessSource(processId: string): OfficialProcessSour
     sourceUrl: null,
     sourceType: 'PENDING',
     enabled: false,
-    status: 'SOURCE_PENDING_CONFIGURATION',
+    status: 'SOURCE_UNAVAILABLE',
     notes: `Proceso ${processId} no registrado en el catálogo oficial.`
   };
 }
@@ -131,7 +149,7 @@ export function getAllOfficialProcessSources(): OfficialProcessSourceDefinition[
  */
 export function isSourceReadyForSync(sourceDef: OfficialProcessSourceDefinition): boolean {
   if (!sourceDef.enabled) return false;
-  if (sourceDef.status !== 'CONFIGURED') return false;
+  if (sourceDef.status !== 'SOURCE_VALIDATED') return false;
   if (!sourceDef.sourceUrl || sourceDef.sourceUrl.trim() === '') return false;
   
   // Rechazar URLs de ejemplo o placeholders genéricos
@@ -140,8 +158,8 @@ export function isSourceReadyForSync(sourceDef: OfficialProcessSourceDefinition)
     return false;
   }
 
-  // Si la fuente es PDF no estructurado, no es procesable directamente por el parser CSV/JSON
-  if (sourceDef.sourceType === 'PDF_UNSUPPORTED' || url.endsWith('.pdf')) {
+  // Si la fuente es PDF no estructurado o portal HTML, no es procesable directamente por el parser CSV/JSON
+  if (sourceDef.sourceType === 'PDF_UNSUPPORTED' || sourceDef.sourceType === 'HTML_PORTAL' || url.endsWith('.pdf')) {
     return false;
   }
 
