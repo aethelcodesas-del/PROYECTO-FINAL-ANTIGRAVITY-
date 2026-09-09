@@ -424,7 +424,7 @@ export const PrimeraInterfaz: React.FC<PrimeraInterfazProps> = ({ onLoginSuccess
       };
       setFailedAttempts(0);
       setLockoutTime(null);
-      writeAuditLog(trustedUser, 'LOGIN_SUCCESS', 'AUTENTICACION', 'Inicio de sesión validado por Supabase.', 'Éxito');
+      writeAuditLog(trustedUser, 'LOGIN_SUCCESS', 'AUTENTICACION', 'Inicio de sesión validado por el servidor.', 'Éxito');
       onLoginSuccess(trustedUser, selectedModuleForLogin?.route || 'primera_interfaz');
       setIsAuthenticating(false);
       return;

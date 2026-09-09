@@ -423,7 +423,7 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
         }
         await reloadBudgetItems(campaign.id);
       } catch (error: any) {
-        if (mounted) setBudgetSyncError(isExpectedEmptyCampaignState(error) ? '' : (error?.message || 'No fue posible cargar el presupuesto desde Supabase.'));
+        if (mounted) setBudgetSyncError(isExpectedEmptyCampaignState(error) ? '' : (error?.message || 'No fue posible cargar el presupuesto desde el servidor.'));
       } finally {
         if (mounted) setBudgetLoading(false);
       }
@@ -655,11 +655,11 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
         : await saveBudgetItemApi(payload);
       if (error) throw error;
       await reloadBudgetItems();
-      showNotification(editingItem ? `Ítem "${formNombre}" actualizado en Supabase.` : `Nuevo ítem "${formNombre}" registrado en Supabase.`);
+      showNotification(editingItem ? `Ítem "${formNombre}" actualizado en el sistema.` : `Nuevo ítem "${formNombre}" registrado en el sistema.`);
       setShowItemModal(false);
     } catch (error: any) {
       setBudgetSyncError(error?.message || 'No fue posible guardar el ítem.');
-      showNotification(`No se pudo guardar: ${error?.message || 'error de Supabase'}`, 'error');
+      showNotification(`No se pudo guardar: ${error?.message || 'error del servidor'}`, 'error');
     } finally {
       setBudgetSaving(false);
     }
@@ -674,7 +674,7 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
       setBudgetSaving(false);
       if (error) return showNotification(`No se pudo eliminar: ${error.message}`, 'error');
       setItems(prev => prev.filter(i => i.id !== id));
-      showNotification('Ítem eliminado del presupuesto y de Supabase.', 'info');
+      showNotification('Ítem eliminado del presupuesto.', 'info');
     }
   };
 
@@ -769,9 +769,9 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
       const { error } = await saveBudgetItemApi(newDraftItems.map(budgetItemPayload));
       if (error) throw error;
       await reloadBudgetItems();
-      showNotification(`✅ Plantilla guardada en Supabase para [${selectedCorporation} - ${selectedScenario}]. Presupuesto proyectado: $${baseAmount.toLocaleString()} COP.`);
+      showNotification(`✅ Plantilla guardada en el sistema para [${selectedCorporation} - ${selectedScenario}]. Presupuesto proyectado: $${baseAmount.toLocaleString()} COP.`);
     } catch (error: any) {
-      showNotification(`No se pudo crear el borrador: ${error?.message || 'error de Supabase'}`, 'error');
+      showNotification(`No se pudo crear el borrador: ${error?.message || 'error del servidor'}`, 'error');
     } finally {
       setBudgetSaving(false);
     }
@@ -794,9 +794,9 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
       const failed = results.find(result => result.error);
       if (failed?.error) throw failed.error;
       await reloadBudgetItems();
-      showNotification(`🎉 Se formalizaron ${draftCount} ítems en Supabase como Presupuesto Oficial CNE.`);
+      showNotification(`🎉 Se formalizaron ${draftCount} ítems en el sistema como Presupuesto Oficial CNE.`);
     } catch (error: any) {
-      showNotification(`No se pudo aprobar el borrador: ${error?.message || 'error de Supabase'}`, 'error');
+      showNotification(`No se pudo aprobar el borrador: ${error?.message || 'error del servidor'}`, 'error');
     } finally {
       setBudgetSaving(false);
     }
@@ -873,7 +873,7 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
     setBudgetSaving(false);
     if (error) return showNotification(`No se pudo registrar la factura: ${error.message}`, 'error');
     await reloadBudgetItems();
-    showNotification(`Factura ${ocrSuccessData.factura} registrada y soportada en Supabase.`);
+    showNotification(`Factura ${ocrSuccessData.factura} registrada y soportada en el sistema.`);
     setOcrSuccessData(null);
   };
 

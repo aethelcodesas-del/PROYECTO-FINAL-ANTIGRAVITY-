@@ -107,7 +107,7 @@ export interface GlobalAdminModuleConfig {
 export interface GlobalAdminApiItem {
   id: string;
   name: string;
-  provider: 'Google Gemini' | 'Supabase PostgreSQL' | 'Twilio / WhatsApp' | 'Google Maps Platform' | 'Registraduría Nacional' | 'Pasarela de Pagos';
+  provider: 'Google Gemini' | 'PostgreSQL Cloud' | 'Twilio / WhatsApp' | 'Google Maps Platform' | 'Registraduría Nacional' | 'Pasarela de Pagos';
   endpoint: string;
   status: 'ONLINE' | 'DEGRADED' | 'OFFLINE' | 'MAINTENANCE';
   responseTimeMs: number;

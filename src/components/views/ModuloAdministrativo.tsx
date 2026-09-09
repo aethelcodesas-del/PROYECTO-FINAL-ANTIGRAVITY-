@@ -405,9 +405,9 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
 
         (signUpPromise as any).then(({ data, error }: any) => {
           if (error) {
-            console.error("Error registering user in Supabase:", error.message);
+            console.error("Error registering user in auth server:", error.message);
             if (error.message.toLowerCase().includes('rate limit') || error.message.toLowerCase().includes('limit exceeded')) {
-              console.log("Supabase Auth rate limit hit. Falling back to direct database insertion...");
+              console.log("Auth rate limit hit. Falling back to direct database insertion...");
               const tempId = 'fallback-' + Date.now();
               const dbPromise = insforge.database.from('users_list').insert([{
                 id: tempId,
@@ -427,7 +427,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                 if (dbErr) {
                   setPasswordError(`Error al insertar en la base de datos de la campaña: ${dbErr.message}`);
                 } else {
-                  console.log("User successfully added to InsForge database users_list under rate-limit fallback!");
+                  console.log("User successfully added to database users_list under rate-limit fallback!");
                   setUserPermissions(prev => ({
                     ...prev,
                     [tempId]: finalPerms
@@ -483,20 +483,20 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
   </div>
 </div>`
                   }).then(({ error: mailErr }: any) => {
-                    if (mailErr) console.error("Error sending confirmation email via InsForge:", mailErr.message);
+                    if (mailErr) console.error("Error sending confirmation email:", mailErr.message);
                   });
                 }
               });
             } else {
-              setPasswordError(`Error de Supabase Auth / Base de Datos: ${error.message}`);
+              setPasswordError(`Error de Autenticación / Base de Datos: ${error.message}`);
             }
           } else {
-            console.log("User successfully registered in Supabase auth:", data.user);
-            const supabaseUserId = data.user.id;
+            console.log("User successfully registered in auth:", data.user);
+            const authUserId = data.user.id;
 
-            // Insert into InsForge database users_list table as a subuser
+            // Insert into database users_list table as a subuser
             const dbPromise = insforge.database.from('users_list').insert([{
-              id: supabaseUserId,
+              id: authUserId,
               email: normalizedEmail,
               first_name: newUserName,
               last_name: '',
@@ -804,7 +804,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
         setUserPermissions(mappedPermissions);
       }
     } catch (error: any) {
-      setRbacError(isExpectedEmptyCampaignState(error) ? '' : `Supabase: ${error?.message || 'No fue posible cargar los usuarios y permisos.'}`);
+      setRbacError(isExpectedEmptyCampaignState(error) ? '' : `Servidor: ${error?.message || 'No fue posible cargar los usuarios y permisos.'}`);
     } finally {
       setRbacLoading(false);
     }
@@ -862,8 +862,8 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
       role: profileRoleFor(newRole),
       updated_at: new Date().toISOString()
     }).eq('id', userId);
-    if (error) return setRbacError(`Supabase: ${error.message}`);
-    setActionSuccessMessage('Módulo actualizado correctamente en Supabase.');
+    if (error) return setRbacError(`Servidor: ${error.message}`);
+    setActionSuccessMessage('Módulo actualizado correctamente en el sistema.');
     await loadRealRbac();
   };
 
@@ -907,7 +907,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
     }
 
     const { error } = await supabase.from('profiles').update({ status: nextStatus, updated_at: new Date().toISOString() }).eq('id', userId);
-    if (error) return setRbacError(`Supabase: ${error.message}`);
+    if (error) return setRbacError(`Servidor: ${error.message}`);
     setActionSuccessMessage(`Usuario ${nextStatus === 'ACTIVE' ? 'activado' : 'suspendido'} correctamente.`);
     window.dispatchEvent(new Event('global-admin-users-changed'));
     window.dispatchEvent(new CustomEvent('platform-data-changed', {
@@ -949,9 +949,9 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
     }
 
     const { error: permissionsError } = await supabase.from('user_permissions').delete().eq('user_id', userId);
-    if (permissionsError) return setRbacError(`Supabase: ${permissionsError.message}`);
+    if (permissionsError) return setRbacError(`Servidor: ${permissionsError.message}`);
     const { error: profileError } = await supabase.from('profiles').delete().eq('id', userId);
-    if (profileError) return setRbacError(`Supabase: ${profileError.message}`);
+    if (profileError) return setRbacError(`Servidor: ${profileError.message}`);
     setActionSuccessMessage(`Acceso de ${name} eliminado correctamente.`);
     window.dispatchEvent(new Event('global-admin-users-changed'));
     window.dispatchEvent(new CustomEvent('platform-data-changed', {
@@ -997,7 +997,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
 
     if (!apiSaved) {
       const { error: deleteError } = await supabase.from('user_permissions').delete().eq('user_id', user.id);
-      if (deleteError) return setRbacError(`Supabase: ${deleteError.message}`);
+      if (deleteError) return setRbacError(`Servidor: ${deleteError.message}`);
       if (selected.length) {
         const { error: insertError } = await supabase.from('user_permissions').insert(selected.map((permission) => ({
           user_id: user.id,
@@ -1005,7 +1005,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
           function_code: permission.id,
           actions: ['ACCESS']
         })));
-        if (insertError) return setRbacError(`Supabase: ${insertError.message}`);
+        if (insertError) return setRbacError(`Servidor: ${insertError.message}`);
       }
     }
 
@@ -1086,7 +1086,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
 
       setNewUserName(''); setNewUserEmail(''); setNewPassword(''); setConfirmPassword(''); setNewUserPermissions({}); setShowAddUserSection(false);
       setActionSuccessMessage(hasCampaignScope
-        ? 'Usuario real creado en Supabase Auth con sus permisos RBAC.'
+        ? 'Usuario real creado en el sistema con sus permisos RBAC.'
         : 'Usuario creado correctamente y pendiente de asignación a una campaña.');
       window.dispatchEvent(new CustomEvent('global-admin-users-changed', {
         detail: { email: normalizedEmail, userId: result?.user?.id }
@@ -1096,7 +1096,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
       }));
       await loadRealRbac();
     } catch (error: any) {
-      setPasswordError(`Supabase: ${error?.message || 'No fue posible crear el usuario.'}`);
+      setPasswordError(`Servidor: ${error?.message || 'No fue posible crear el usuario.'}`);
     } finally {
       setRbacLoading(false);
     }
@@ -1472,7 +1472,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
           await loadRealJurors(realJurorClientId);
         }
       } catch (error: any) {
-        setJurorError(isExpectedEmptyCampaignState(error) ? '' : (error?.message || 'No fue posible cargar los jurados desde Supabase.'));
+        setJurorError(isExpectedEmptyCampaignState(error) ? '' : (error?.message || 'No fue posible cargar los jurados desde el servidor.'));
       } finally {
         setJurorLoading(false);
       }
@@ -1725,7 +1725,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
     const { error } = await operation;
     setJurorLoading(false);
     if (error) return setJurorError(error.message);
-    setActionSuccessMessage(editingJuradoId ? `Jurado ${jurNombre} actualizado en Supabase.` : `Candidato ${jurNombre} postulado realmente para el sorteo.`);
+    setActionSuccessMessage(editingJuradoId ? `Jurado ${jurNombre} actualizado en el sistema.` : `Candidato ${jurNombre} postulado realmente para el sorteo.`);
     resetJuradoForm();
     await loadRealJurors();
   };
@@ -1761,7 +1761,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
       const { error } = await supabase.from('jurors').delete().eq('id', id);
       if (error) return setJurorError(error.message);
       setJurados(prev => prev.filter(j => j.id !== id));
-      setActionSuccessMessage('Jurado eliminado correctamente de Supabase.');
+      setActionSuccessMessage('Jurado eliminado correctamente del sistema.');
     }
   };
 
@@ -1923,7 +1923,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
         fecha: voter.created_at?.slice(0, 10) || ''
       })));
     } catch (error: any) {
-      setCrmError(isExpectedEmptyCampaignState(error) ? '' : (error?.message || 'No fue posible cargar líderes y votantes desde Supabase.'));
+      setCrmError(isExpectedEmptyCampaignState(error) ? '' : (error?.message || 'No fue posible cargar líderes y votantes desde el servidor.'));
     } finally {
       setCrmLoading(false);
     }
@@ -2092,7 +2092,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
       }));
       setActionSuccessMessage(`Esquema de ${schemaType === 'voters' ? 'votantes' : 'líderes'} guardado en la campaña real.`);
     } catch (error: any) {
-      setCrmError(error?.message || 'No fue posible guardar el esquema en Supabase.');
+      setCrmError(error?.message || 'No fue posible guardar el esquema en el servidor.');
     } finally {
       setCrmLoading(false);
     }
@@ -2147,7 +2147,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
     setNewLeaderDocumentos('');
     setNewLeaderDescripcion('');
     setShowAddLeaderForm(false);
-    setActionSuccessMessage('Líder registrado realmente en Supabase y habilitado en la estructura territorial.');
+    setActionSuccessMessage('Líder registrado en el sistema y habilitado en la estructura territorial.');
     await loadRealPoliticalCrm();
   };
 
@@ -2278,7 +2278,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
     setNewPuesto('');
     setNewMesa('');
     setShowAddVoterForm(false);
-    setActionSuccessMessage('Votante empadronado realmente en Supabase y asociado a su líder.');
+    setActionSuccessMessage('Votante empadronado en el sistema y asociado a su líder.');
     await loadRealPoliticalCrm();
   };
 

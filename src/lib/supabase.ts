@@ -35,18 +35,18 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
  */
 export async function testSupabaseConnection(): Promise<{ success: boolean; message: string }> {
   if (!IS_SUPABASE_CONFIGURED) {
-    return { success: false, message: 'Supabase no está configurado. Agrega VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY.' };
+    return { success: false, message: 'La base de datos en la nube no está configurada.' };
   }
   try {
     const { error } = await supabase.from('campaigns').select('count', { count: 'exact', head: true });
     if (error && error.code !== 'PGRST116' && !error.message.includes('relation "public.campaigns" does not exist')) {
-      console.warn('Supabase ping check:', error.message);
-      return { success: true, message: `Conectado a Supabase (${SUPABASE_URL})` };
+      console.warn('Database ping check:', error.message);
+      return { success: true, message: 'Conectado a la base de datos central en la nube' };
     }
-    return { success: true, message: `Conexión exitosa a Supabase (${SUPABASE_URL})` };
+    return { success: true, message: 'Conexión exitosa a la base de datos central' };
   } catch (err: any) {
-    console.error('Error connecting to Supabase:', err);
-    return { success: false, message: err?.message || 'Error al conectar con Supabase' };
+    console.error('Error connecting to database:', err);
+    return { success: false, message: err?.message || 'Error al conectar con la base de datos' };
   }
 }
 
@@ -179,7 +179,7 @@ export async function saveDemoLeadToSupabase(lead: {
     }
     return { success: true, data };
   } catch (err: any) {
-    console.error('Error saving lead to Supabase:', err);
+    console.error('Error saving lead to database:', err);
     return { success: false, error: err?.message };
   }
 }

@@ -229,7 +229,7 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
         if (mounted) {
           setActiveCampaignId(null);
           setCampaignBudgetLimit(null);
-          setCampaignSyncError(isExpectedEmptyCampaignState(error) ? '' : (error?.message || 'No fue posible cargar la campaña desde Supabase.'));
+          setCampaignSyncError(isExpectedEmptyCampaignState(error) ? '' : (error?.message || 'No fue posible cargar la campaña desde el servidor.'));
         }
       } finally {
         if (mounted) setCampaignLoading(false);
@@ -324,8 +324,8 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
       showToast(sectionName);
       return true;
     } catch (error: any) {
-      console.error('Error saving campaign to Supabase:', error);
-      setCampaignSyncError(error?.message || 'No fue posible guardar la campaña en Supabase.');
+      console.error('Error saving campaign:', error);
+      setCampaignSyncError(error?.message || 'No fue posible guardar la campaña en el servidor.');
       showToast(sectionName);
       return false;
     } finally {

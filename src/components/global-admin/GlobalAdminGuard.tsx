@@ -189,7 +189,7 @@ export const GlobalAdminGuard: React.FC<GlobalAdminGuardProps> = ({ onBackToApp 
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Correo registrado en Supabase"
+                placeholder="Correo electrónico registrado"
                 spellCheck={false}
                 autoCapitalize="none"
                 style={{ fontFamily: 'Consolas, "Courier New", monospace', letterSpacing: '0.02em' }}
@@ -277,7 +277,7 @@ export const GlobalAdminGuard: React.FC<GlobalAdminGuardProps> = ({ onBackToApp 
 
       {/* Security Footer Notice */}
       <div className="mt-6 text-center text-[11px] font-mono text-slate-500 max-w-sm">
-        <p>AUDITORÍA EN TIEMPO REAL ACTIVA • SESIONES PROTEGIDAS POR TOKEN SHA-256 Y RLS SUPABASE</p>
+        <p>AUDITORÍA EN TIEMPO REAL ACTIVA • SESIONES PROTEGIDAS POR TOKEN SHA-256 Y POLÍTICAS RLS</p>
       </div>
     </div>
   );

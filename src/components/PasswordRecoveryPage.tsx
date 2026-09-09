@@ -72,7 +72,7 @@ export function PasswordRecoveryPage() {
           </div>
           <div>
             <h1 className="text-xl font-bold text-white">Crear nueva contraseña</h1>
-            <p className="text-sm text-slate-400">Recuperación segura mediante Supabase</p>
+            <p className="text-sm text-slate-400">Recuperación segura de cuenta</p>
           </div>
         </div>
 

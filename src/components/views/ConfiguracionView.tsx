@@ -133,7 +133,7 @@ export const ConfiguracionView: React.FC<ConfiguracionViewProps> = ({ onSelectVi
   const [supabaseStatus, setSupabaseStatus] = useState<{ checked: boolean; success: boolean; message: string }>({
     checked: false,
     success: true,
-    message: 'Base de datos Supabase conectada mediante TLS 1.3 con RLS activo.'
+    message: 'Base de datos central conectada mediante TLS 1.3 con RLS activo.'
   });
 
   const handleSyncDatabase = async () => {
@@ -151,7 +151,7 @@ export const ConfiguracionView: React.FC<ConfiguracionViewProps> = ({ onSelectVi
       setSupabaseStatus({
         checked: true,
         success: false,
-        message: e?.message || 'Error al conectar con Supabase'
+        message: e?.message || 'Error al conectar con la base de datos'
       });
     } finally {
       setIsSyncing(false);
@@ -769,7 +769,7 @@ export const ConfiguracionView: React.FC<ConfiguracionViewProps> = ({ onSelectVi
               <div>
                 <h2 className="text-sm font-extrabold text-white uppercase tracking-wider flex items-center gap-2">
                   <Database className="w-4 h-4 text-emerald-400" />
-                  Base de Datos Supabase (PostgreSQL Cloud)
+                  Base de Datos Central (PostgreSQL Cloud)
                 </h2>
                 <p className="text-xs text-slate-400 mt-0.5">
                   Conexión segura en tiempo real con cifrado TLS 1.3 y seguridad a nivel de fila (RLS).
@@ -789,18 +789,18 @@ export const ConfiguracionView: React.FC<ConfiguracionViewProps> = ({ onSelectVi
                   API Endpoint / URL
                 </div>
                 <div className="font-mono text-[11px] text-slate-200 truncate select-all">
-                  {SUPABASE_URL}
+                  https://••••••••.cloud-cluster/rest/v1
                 </div>
-                <div className="text-[10px] text-slate-500">REST v1: {SUPABASE_URL}/rest/v1/</div>
+                <div className="text-[10px] text-slate-500">API Endpoint seguro REST v1 (Conectado)</div>
               </div>
 
               <div className="p-3.5 rounded-2xl bg-[#030e1f] border border-cyan-500/20 space-y-1">
                 <div className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
                   <Key className="w-3.5 h-3.5" />
-                  Publishable Anon Key
+                  Publishable Key
                 </div>
                 <div className="font-mono text-[11px] text-slate-200 truncate select-all">
-                  {SUPABASE_ANON_KEY.slice(0, 16)}...{SUPABASE_ANON_KEY.slice(-12)}
+                  {SUPABASE_ANON_KEY ? `${SUPABASE_ANON_KEY.slice(0, 12)}••••••••${SUPABASE_ANON_KEY.slice(-8)}` : '••••••••••••'}
                 </div>
                 <div className="text-[10px] text-emerald-400/80">Token JWT firmado y verificado</div>
               </div>

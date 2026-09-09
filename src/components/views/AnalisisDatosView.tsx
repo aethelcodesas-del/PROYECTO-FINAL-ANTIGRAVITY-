@@ -561,7 +561,7 @@ export const AnalisisDatosView: React.FC<{
             className="px-4 py-2.5 bg-gradient-to-r from-cyan-600 to-teal-600 hover:from-cyan-500 hover:to-teal-500 text-white font-extrabold text-xs rounded-xl shadow-lg flex items-center gap-2 cursor-pointer transition-all disabled:opacity-50"
           >
             <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-            <span>{isRefreshing ? 'Consultando Supabase...' : 'Actualizar datos reales'}</span>
+            <span>{isRefreshing ? 'Consultando servidor...' : 'Actualizar datos reales'}</span>
           </button>
 
           <button

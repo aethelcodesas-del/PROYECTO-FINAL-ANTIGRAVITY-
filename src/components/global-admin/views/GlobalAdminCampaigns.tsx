@@ -649,7 +649,7 @@ export const GlobalAdminCampaigns: React.FC = () => {
                   </div>
                   <div>
                     <h4 className="font-bold text-white">Acceso del propietario de la campaña</h4>
-                    <p className="text-[10px] leading-relaxed text-slate-400">Estas credenciales permitirán ingresar al software. La contraseña se almacena cifrada exclusivamente en Supabase Auth.</p>
+                    <p className="text-[10px] leading-relaxed text-slate-400">Estas credenciales permitirán ingresar al software. La contraseña se almacena cifrada exclusivamente en el servidor de autenticación.</p>
                   </div>
                 </div>
 

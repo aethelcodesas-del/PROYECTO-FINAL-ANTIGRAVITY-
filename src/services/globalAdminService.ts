@@ -217,7 +217,7 @@ export class GlobalAdminService {
     ]);
 
     const firstError = profilesResult.error || campaignsResult.error || modulesResult.error;
-    if (firstError) throw new Error(`Supabase: ${firstError.message}`);
+    if (firstError) throw new Error(`Servidor: ${firstError.message}`);
 
     const profiles = profilesResult.data || [];
     const campaigns = campaignsResult.data || [];
@@ -261,9 +261,9 @@ export class GlobalAdminService {
       systemHealth: {
         status: 'HEALTHY',
         uptimeSeconds: 0,
-        uptimeFormatted: 'Supabase conectado',
+        uptimeFormatted: 'Servidor conectado',
         nodeVersion: 'N/A',
-        environment: 'Supabase Cloud',
+        environment: 'PostgreSQL Cloud',
         platform: 'PostgreSQL',
         memoryUsageMb: { rss: 0, heapTotal: 0, heapUsed: 0 },
         cpuLoadPct: 0,
@@ -282,8 +282,8 @@ export class GlobalAdminService {
       supabase.from('profiles').select('*').order('created_at', { ascending: false }),
       supabase.from('campaigns').select('id,client_id,nombre')
     ]);
-    if (error) throw new Error(`Supabase: ${error.message}`);
-    if (campaignsError) throw new Error(`Supabase: ${campaignsError.message}`);
+    if (error) throw new Error(`Servidor: ${error.message}`);
+    if (campaignsError) throw new Error(`Servidor: ${campaignsError.message}`);
     const campaignNames = new Map((campaigns || []).map((campaign: any) => [
       campaign.id,
       campaign.nombre || campaign.name || 'Campaña asignada'
@@ -333,7 +333,7 @@ export class GlobalAdminService {
   }
 
   static async createUser(userData: Partial<GlobalAdminUser> & { password?: string }): Promise<GlobalAdminUser> {
-    throw new Error('Para crear un usuario real, créalo primero en Supabase Authentication y luego asígnale un perfil. No se generarán usuarios simulados.');
+    throw new Error('Para crear un usuario real, créalo primero en el servidor de autenticación y luego asígnale un perfil. No se generarán usuarios simulados.');
   }
 
   static async updateUser(id: string, userData: Partial<GlobalAdminUser>): Promise<GlobalAdminUser> {
@@ -348,7 +348,7 @@ export class GlobalAdminService {
       status: userData.status ? statusMap[userData.status] : undefined,
       updated_at: new Date().toISOString()
     }).eq('id', id);
-    if (error) throw new Error(`Supabase: ${error.message}`);
+    if (error) throw new Error(`Servidor: ${error.message}`);
     const users = await this.getUsers();
     const updated = users.find((user) => user.id === id);
     if (!updated) throw new Error('El usuario actualizado no pudo recuperarse.');
@@ -374,14 +374,14 @@ export class GlobalAdminService {
   // 4. Roles & Permissions (RBAC)
   static async getRoles(): Promise<{ roles: GlobalAdminRole[]; permissionsCatalog: GlobalAdminPermission[] }> {
     const { data, error } = await supabase.from('custom_roles').select('*').order('created_at', { ascending: true });
-    if (error) throw new Error(`Supabase: ${error.message}`);
+    if (error) throw new Error(`Servidor: ${error.message}`);
     const users = await this.getUsers();
     const systemCodes = ['SUPERADMIN', 'ADMIN_CLIENTE', 'DIRECTOR', 'COORDINADOR', 'USUARIO', 'USUARIO_LIMITADO'];
     const systemRoles: GlobalAdminRole[] = systemCodes.map((code) => ({
       id: code,
       code,
       name: code.replaceAll('_', ' '),
-      description: 'Rol de sistema administrado por Supabase RLS',
+      description: 'Rol de sistema administrado por políticas RLS',
       isSystem: true,
       userCount: users.filter((user) => user.roleCode === code).length,
       permissions: [],
@@ -428,7 +428,7 @@ export class GlobalAdminService {
       is_system: false,
       created_at: new Date().toISOString()
     }).select().single();
-    if (error) throw new Error(`Supabase: ${error.message}`);
+    if (error) throw new Error(`Servidor: ${error.message}`);
     return {
       id: inserted.id,
       code: inserted.code,
@@ -449,7 +449,7 @@ export class GlobalAdminService {
       allowed_modules: data.permissions,
       updated_at: new Date().toISOString()
     }).eq('id', id).select().single();
-    if (error) throw new Error(`Supabase: ${error.message}`);
+    if (error) throw new Error(`Servidor: ${error.message}`);
     return {
       id: updated.id,
       code: updated.code,
@@ -465,7 +465,7 @@ export class GlobalAdminService {
 
   static async deleteRole(id: string): Promise<{ success: boolean; message: string }> {
     const { error } = await supabase.from('custom_roles').delete().eq('id', id);
-    if (error) throw new Error(`Supabase: ${error.message}`);
+    if (error) throw new Error(`Servidor: ${error.message}`);
     return { success: true, message: 'Rol eliminado correctamente.' };
   }
 
@@ -481,7 +481,7 @@ export class GlobalAdminService {
         const result = await this.request<{ success: boolean; campaigns: GlobalAdminCampaign[] }>('/campaigns');
         return result.campaigns || [];
       } catch {
-        throw new Error(`Supabase: ${error.message}`);
+        throw new Error(`Servidor: ${error.message}`);
       }
     }
 
@@ -572,7 +572,7 @@ export class GlobalAdminService {
         });
         return result.campaign;
       } catch {
-        throw new Error(`Supabase: ${error.message}`);
+        throw new Error(`Servidor: ${error.message}`);
       }
     }
 
@@ -616,7 +616,7 @@ export class GlobalAdminService {
       try {
         await this.request(`/campaigns/${id}`, { method: 'DELETE' });
       } catch {
-        throw new Error(`Supabase: ${error.message}`);
+        throw new Error(`Servidor: ${error.message}`);
       }
     }
   }
@@ -660,7 +660,7 @@ export class GlobalAdminService {
         });
         return result.campaign;
       } catch {
-        throw new Error(`Supabase: ${error.message}`);
+        throw new Error(`Servidor: ${error.message}`);
       }
     }
 
@@ -762,7 +762,7 @@ export class GlobalAdminService {
         activeUsers24h: activeAdminUsers,
         apiRequests24h: totalAdminRecords,
         errorRatePct: 0,
-        dependencies: ['Supabase Auth', 'PostgreSQL RLS', 'CNE Ley 1475 API'],
+        dependencies: ['Autenticación Central', 'PostgreSQL RLS', 'CNE Ley 1475 API'],
         features: [
           { id: 'feat-adm-1', name: 'Gestión de Usuarios y Roles', enabled: savedOverrides['mod-1']?.features?.['feat-adm-1'] ?? true },
           { id: 'feat-adm-2', name: 'Presupuesto y Cuentas Claras CNE', enabled: savedOverrides['mod-1']?.features?.['feat-adm-2'] ?? true },
@@ -782,7 +782,7 @@ export class GlobalAdminService {
         activeUsers24h: activeStrategicUsers,
         apiRequests24h: totalStrategicRecords,
         errorRatePct: 0,
-        dependencies: ['Google Gemini AI Engine', 'Supabase Database', 'Motor Estadístico'],
+        dependencies: ['Google Gemini AI Engine', 'Base de Datos Central', 'Motor Estadístico'],
         features: [
           { id: 'feat-est-1', name: 'Matriz FODA Dinámica', enabled: savedOverrides['mod-2']?.features?.['feat-est-1'] ?? true },
           { id: 'feat-est-2', name: 'Simulador de Metas Electorales', enabled: savedOverrides['mod-2']?.features?.['feat-est-2'] ?? true },
@@ -857,7 +857,7 @@ export class GlobalAdminService {
   // 7. APIs
   static async getApis(): Promise<GlobalAdminApiItem[]> {
     return [
-      { id: 'api-1', name: 'Supabase Database & Auth API', endpoint: 'https://cjvztlvxdsuiluybvtpl.supabase.co/rest/v1/', status: 'ONLINE', latencyMs: 38, lastCheckedAt: new Date().toISOString(), totalRequestsToday: 1420, errorRatePct: 0, isRequired: true },
+      { id: 'api-1', name: 'Base de Datos & Auth Cloud API', endpoint: 'https://cjvztlvxdsuiluybvtpl.supabase.co/rest/v1/', status: 'ONLINE', latencyMs: 38, lastCheckedAt: new Date().toISOString(), totalRequestsToday: 1420, errorRatePct: 0, isRequired: true },
       { id: 'api-2', name: 'Google Gemini AI Engine', endpoint: 'https://generativelanguage.googleapis.com/v1beta', status: 'ONLINE', latencyMs: 145, lastCheckedAt: new Date().toISOString(), totalRequestsToday: 320, errorRatePct: 0.1, isRequired: false },
       { id: 'api-3', name: 'Censo Electoral Registraduría API', endpoint: 'https://coresoft.solutions/api/cedula', status: 'ONLINE', latencyMs: 82, lastCheckedAt: new Date().toISOString(), totalRequestsToday: 640, errorRatePct: 0, isRequired: false }
     ];
@@ -967,10 +967,10 @@ export class GlobalAdminService {
     return {
       status: 'HEALTHY',
       uptimeSeconds: 86400,
-      uptimeFormatted: 'Supabase Cloud Activo',
+      uptimeFormatted: 'Cloud Backend Activo',
       nodeVersion: 'Cloudflare Pages Edge',
       environment: 'Producción',
-      platform: 'Cloudflare Pages / Supabase',
+      platform: 'Cloudflare Pages / PostgreSQL Cloud',
       memoryUsageMb: { rss: 45, heapTotal: 30, heapUsed: 22 },
       cpuLoadPct: 3,
       dbLatencyMs: 25,

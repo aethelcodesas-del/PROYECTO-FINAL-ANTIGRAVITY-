@@ -335,7 +335,7 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
         setWitnessClientId(profile.client_id);
         await reloadRealWitnesses(profile.client_id);
       } catch (error: any) {
-        if (mounted) setWitnessSyncError(isExpectedEmptyCampaignState(error) ? '' : (error?.message || 'No fue posible cargar testigos desde Supabase.'));
+        if (mounted) setWitnessSyncError(isExpectedEmptyCampaignState(error) ? '' : (error?.message || 'No fue posible cargar testigos desde el servidor.'));
       } finally {
         if (mounted) setWitnessLoading(false);
       }
@@ -559,7 +559,7 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
       setWitnessSaving(false);
       if (error) return setWitnessSyncError(error.message);
       setTestigos(prev => prev.filter(t => t.id !== id));
-      showToast(`Testigo eliminado correctamente de Supabase.`);
+      showToast(`Testigo eliminado correctamente del sistema.`);
     }
   };
 
@@ -609,7 +609,7 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
       const { error } = await operation;
       if (error) throw error;
       await reloadRealWitnesses();
-      showToast(editingWitnessId ? `✅ Modificación sincronizada para ${witNombre.trim()}` : `✅ Testigo ${witNombre.trim()} inscrito en Supabase para ${witPartido}`);
+      showToast(editingWitnessId ? `✅ Modificación sincronizada para ${witNombre.trim()}` : `✅ Testigo ${witNombre.trim()} inscrito en el sistema para ${witPartido}`);
       resetWitnessForm();
     } catch (error: any) {
       setWitnessSyncError(error?.message || 'No fue posible guardar el testigo.');
@@ -627,7 +627,7 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
     const { error } = await supabase.from('witnesses').update(witnessPayload(updated)).eq('id', id);
     if (error) return setWitnessSyncError(error.message);
     setTestigos(prev => prev.map(t => t.id === id ? updated : t));
-    showToast(`Estado de acreditación actualizado en Supabase.`);
+    showToast(`Estado de acreditación actualizado en el sistema.`);
   };
 
   // -------------------------------------------------------------------------
@@ -735,7 +735,7 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
       await reloadRealWitnesses();
       setShowImportModal(false);
       setImportTextData('');
-      showToast(`🎉 ¡${importedCount} testigos importados a Supabase y asignados a ${candidateMunicipio}!`);
+      showToast(`🎉 ¡${importedCount} testigos importados al sistema y asignados a ${candidateMunicipio}!`);
     } else {
       alert('No se pudieron importar testigos (posibles cédulas duplicadas o formato inválido).');
     }

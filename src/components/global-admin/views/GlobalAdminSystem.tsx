@@ -101,7 +101,7 @@ export const GlobalAdminSystem: React.FC = () => {
 
         <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 backdrop-blur-md">
           <div className="flex items-center justify-between text-slate-400 mb-2">
-            <span>LATENCIA BD / SUPABASE</span>
+            <span>LATENCIA BD / SERVIDOR</span>
             <Database className="w-4 h-4 text-cyan-400" />
           </div>
           <span className="text-xl font-bold text-cyan-300 block">

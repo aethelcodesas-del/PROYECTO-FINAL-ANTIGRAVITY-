@@ -157,7 +157,7 @@ const [isLoading, setIsLoading] = useState(false);
 
     const email = identifier.trim().toLowerCase();
     if (!email || !email.includes('@')) {
-      setErrorMsg('Ingresa el correo electrónico registrado en Supabase.');
+      setErrorMsg('Ingresa el correo electrónico registrado en el sistema.');
       return;
     }
     if (!password) {
@@ -397,7 +397,7 @@ const [isLoading, setIsLoading] = useState(false);
                   type="text"
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="Correo registrado en Supabase"
+                  placeholder="Correo electrónico registrado"
                   className="w-full pl-10 pr-4 py-2.5 bg-slate-950/80 border border-slate-700/80 rounded-xl text-xs sm:text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all"
                 />
               </div>
