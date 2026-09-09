@@ -837,26 +837,26 @@ export const GestionEncuestasSondeos: React.FC<GestionEncuestasSondeosProps> = (
       <div className="bg-[#05162a] border border-cyan-500/30 rounded-2xl p-6 text-slate-100 shadow-xl relative overflow-hidden">
         <div className="absolute -right-10 -bottom-10 w-60 h-60 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
         
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 relative z-10">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <div className="p-2.5 bg-gradient-to-br from-cyan-500/20 to-blue-600/30 border border-cyan-400/40 rounded-xl text-cyan-300">
-                <PieChart className="w-6 h-6" />
+                <PieChart className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
               <div>
-                <h2 className="text-xl font-black text-white tracking-tight flex items-center gap-2">
+                <h2 className="text-lg sm:text-xl font-black text-white tracking-tight flex items-center gap-2">
                   Gestión y Configuración de Encuestas y Sondeos
                 </h2>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex flex-col sm:flex-row items-center gap-2 flex-wrap w-full lg:w-auto">
             <button
               type="button"
               onClick={openPollsterRegistration}
               disabled={savingRealData}
-              className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all cursor-pointer transform hover:scale-105"
+              className="flex items-center justify-center gap-2 w-full sm:w-auto px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all cursor-pointer transform hover:scale-105"
             >
               <UserPlus className="w-4 h-4" />
               <span>+ Registrar Encuestador</span>
@@ -864,7 +864,7 @@ export const GestionEncuestasSondeos: React.FC<GestionEncuestasSondeosProps> = (
 
             <button
               onClick={() => setActiveSubTab('crear')}
-              className="flex items-center gap-2 px-3.5 py-2.5 bg-[#0a2342] hover:bg-cyan-500/20 border border-cyan-500/40 text-cyan-200 font-bold text-xs rounded-xl transition-all cursor-pointer"
+              className="flex items-center justify-center gap-2 w-full sm:w-auto px-3.5 py-2.5 bg-[#0a2342] hover:bg-cyan-500/20 border border-cyan-500/40 text-cyan-200 font-bold text-xs rounded-xl transition-all cursor-pointer"
             >
               <Plus className="w-4 h-4 text-cyan-400" />
               <span>Nueva Encuesta</span>
@@ -872,7 +872,7 @@ export const GestionEncuestasSondeos: React.FC<GestionEncuestasSondeosProps> = (
 
             <button
               onClick={() => void loadRealSurveyData()}
-              className="flex items-center gap-2 px-3.5 py-2.5 bg-[#0a2342] hover:bg-cyan-500/20 border border-cyan-500/40 text-cyan-200 font-bold text-xs rounded-xl transition-all cursor-pointer"
+              className="flex items-center justify-center gap-2 w-full sm:w-auto px-3.5 py-2.5 bg-[#0a2342] hover:bg-cyan-500/20 border border-cyan-500/40 text-cyan-200 font-bold text-xs rounded-xl transition-all cursor-pointer"
             >
               <RefreshCw className={`w-4 h-4 text-cyan-400 ${realDataLoading ? 'animate-spin' : ''}`} />
               <span>Sincronizar</span>
@@ -880,7 +880,7 @@ export const GestionEncuestasSondeos: React.FC<GestionEncuestasSondeosProps> = (
 
             <button
               onClick={() => setActiveSubTab('georreferenciacion')}
-              className="flex items-center gap-2 px-3.5 py-2.5 bg-[#0a2342] hover:bg-cyan-500/20 border border-cyan-500/40 text-cyan-200 font-bold text-xs rounded-xl transition-all cursor-pointer"
+              className="flex items-center justify-center gap-2 w-full sm:w-auto px-3.5 py-2.5 bg-[#0a2342] hover:bg-cyan-500/20 border border-cyan-500/40 text-cyan-200 font-bold text-xs rounded-xl transition-all cursor-pointer"
             >
               <Crosshair className="w-4 h-4 text-emerald-400" />
               <span>Mapa GPS en Vivo</span>
@@ -889,7 +889,7 @@ export const GestionEncuestasSondeos: React.FC<GestionEncuestasSondeosProps> = (
         </div>
 
         {/* Global Statistics Summary */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mt-6 pt-5 border-t border-cyan-500/20">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mt-6 pt-5 border-t border-cyan-500/20">
           <div className="bg-[#081d38] border border-cyan-500/20 rounded-xl p-3">
             <span className="text-[10px] text-cyan-300/80 font-bold uppercase tracking-wider block">Estudios Activos</span>
             <div className="text-xl font-black text-white mt-1 flex items-center gap-2">
@@ -933,10 +933,10 @@ export const GestionEncuestasSondeos: React.FC<GestionEncuestasSondeosProps> = (
       </div>
 
       {/* Navigation Sub-Tabs */}
-      <div className="flex items-center gap-2 border-b border-cyan-500/20 pb-2 overflow-x-auto">
+      <div className="flex items-center gap-2 border-b border-cyan-500/20 pb-2 overflow-x-auto whitespace-nowrap scrollbar-hide">
         <button
           onClick={() => setActiveSubTab('estudios')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+          className={`flex-shrink-0 flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             activeSubTab === 'estudios'
               ? 'bg-cyan-500 text-slate-950 shadow-md font-extrabold'
               : 'bg-[#06182c] text-cyan-200/80 hover:text-white hover:bg-cyan-500/10 border border-cyan-500/20'
@@ -948,7 +948,7 @@ export const GestionEncuestasSondeos: React.FC<GestionEncuestasSondeosProps> = (
 
         <button
           onClick={() => setActiveSubTab('encuestadores')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+          className={`flex-shrink-0 flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             activeSubTab === 'encuestadores'
               ? 'bg-cyan-500 text-slate-950 shadow-md font-extrabold'
               : 'bg-[#06182c] text-cyan-200/80 hover:text-white hover:bg-cyan-500/10 border border-cyan-500/20'
@@ -960,7 +960,7 @@ export const GestionEncuestasSondeos: React.FC<GestionEncuestasSondeosProps> = (
 
         <button
           onClick={() => setActiveSubTab('georreferenciacion')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+          className={`flex-shrink-0 flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             activeSubTab === 'georreferenciacion'
               ? 'bg-cyan-500 text-slate-950 shadow-md font-extrabold'
               : 'bg-[#06182c] text-cyan-200/80 hover:text-white hover:bg-cyan-500/10 border border-cyan-500/20'
@@ -972,7 +972,7 @@ export const GestionEncuestasSondeos: React.FC<GestionEncuestasSondeosProps> = (
 
         <button
           onClick={() => setActiveSubTab('crear')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+          className={`flex-shrink-0 flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             activeSubTab === 'crear'
               ? 'bg-cyan-500 text-slate-950 shadow-md font-extrabold'
               : 'bg-[#06182c] text-cyan-200/80 hover:text-white hover:bg-cyan-500/10 border border-cyan-500/20'
@@ -984,7 +984,7 @@ export const GestionEncuestasSondeos: React.FC<GestionEncuestasSondeosProps> = (
 
         <button
           onClick={() => setActiveSubTab('calculadora')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+          className={`flex-shrink-0 flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             activeSubTab === 'calculadora'
               ? 'bg-cyan-500 text-slate-950 shadow-md font-extrabold'
               : 'bg-[#06182c] text-cyan-200/80 hover:text-white hover:bg-cyan-500/10 border border-cyan-500/20'
@@ -996,7 +996,7 @@ export const GestionEncuestasSondeos: React.FC<GestionEncuestasSondeosProps> = (
 
         <button
           onClick={() => setActiveSubTab('resultados')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+          className={`flex-shrink-0 flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             activeSubTab === 'resultados'
               ? 'bg-cyan-500 text-slate-950 shadow-md font-extrabold'
               : 'bg-[#06182c] text-cyan-200/80 hover:text-white hover:bg-cyan-500/10 border border-cyan-500/20'
