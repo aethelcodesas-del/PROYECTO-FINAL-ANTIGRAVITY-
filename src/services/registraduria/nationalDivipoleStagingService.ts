@@ -275,3 +275,88 @@ export async function executeNationalDivipoleBatchLoad(
     message: syncResult.message
   };
 }
+
+export interface NationalCertificationResult {
+  certified: boolean;
+  status: 'CERTIFIED_NATIONAL_COMPLETE' | 'SOURCE_EXTRACTION_INCOMPLETE' | 'OFFICIAL_FULL_FILE_REQUIRED' | 'INVALID_PAYLOAD';
+  departmentsCount: number;
+  municipalitiesCount: number;
+  zonesCount: number;
+  pollingPlacesCount: number;
+  pollingTablesCount: number;
+  hasBogota: boolean;
+  missingMandatoryDepartments: string[];
+  errors: string[];
+  warnings: string[];
+}
+
+/**
+ * Realiza la certificación rigurosa del Catálogo Nacional Completo (Fase 13)
+ */
+export function certifyNationalDivipolePayload(
+  payload: OfficialAdapterResult | null | undefined
+): NationalCertificationResult {
+  if (!payload || !payload.departments) {
+    return {
+      certified: false,
+      status: 'OFFICIAL_FULL_FILE_REQUIRED',
+      departmentsCount: 0,
+      municipalitiesCount: 0,
+      zonesCount: 0,
+      pollingPlacesCount: 0,
+      pollingTablesCount: 0,
+      hasBogota: false,
+      missingMandatoryDepartments: ['TODOS (Archivo nacional no disponible)'],
+      errors: ['El documento oficial nacional completo no está disponible en el entorno de desarrollo.'],
+      warnings: []
+    };
+  }
+
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const foundDepts = new Set(payload.departments.map(d => d.codDptoDivipole));
+  const hasBogota = foundDepts.has('11');
+
+  const deptsCount = payload.departments.length;
+  const mpiosCount = payload.municipalities.length;
+  const placesCount = payload.pollingPlaces.length;
+  const tablesCount = payload.pollingTables.length;
+
+  const isFullNational = deptsCount >= MIN_NATIONAL_PLAUSIBILITY_THRESHOLDS.MIN_DEPARTMENTS &&
+                         mpiosCount >= MIN_NATIONAL_PLAUSIBILITY_THRESHOLDS.MIN_MUNICIPALITIES;
+
+  if (!isFullNational) {
+    errors.push(
+      `El payload contiene una muestra parcial (${deptsCount} departamentos, ${mpiosCount} municipios). Se requieren los 32 departamentos y más de 1.000 municipios para certificar la carga nacional completa.`
+    );
+    return {
+      certified: false,
+      status: 'SOURCE_EXTRACTION_INCOMPLETE',
+      departmentsCount: deptsCount,
+      municipalitiesCount: mpiosCount,
+      zonesCount: payload.zones.length,
+      pollingPlacesCount: placesCount,
+      pollingTablesCount: tablesCount,
+      hasBogota,
+      missingMandatoryDepartments: [],
+      errors,
+      warnings
+    };
+  }
+
+  return {
+    certified: true,
+    status: 'CERTIFIED_NATIONAL_COMPLETE',
+    departmentsCount: deptsCount,
+    municipalitiesCount: mpiosCount,
+    zonesCount: payload.zones.length,
+    pollingPlacesCount: placesCount,
+    pollingTablesCount: tablesCount,
+    hasBogota,
+    missingMandatoryDepartments: [],
+    errors: [],
+    warnings
+  };
+}
+
