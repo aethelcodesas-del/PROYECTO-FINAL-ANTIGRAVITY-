@@ -199,6 +199,72 @@ export const puestosEmblematicosPorMunicipio: Record<string, Omit<PuestoVotacion
     { nombre: 'Coliseo La Cuchilla', comuna: 'Comuna 02 (La Cumbre)', mesas: 25, censoEstimado: 8750, lat: 7.0580, lng: -73.0780, direccion: 'Cra. 10 # 3-45' }
   ],
 
+  // COTORRA (CÓRDOBA) - DIVIPOLE REGISTRADURÍA
+  'Cotorra': [
+    { nombre: 'I.E. Cotorra (Sede Principal)', comuna: 'Cabecera Municipal (Centro)', mesas: 18, censoEstimado: 6300, lat: 9.0435, lng: -75.7925, direccion: 'Calle 8 # 6-25, Casco Urbano' },
+    { nombre: 'Polideportivo Municipal de Cotorra', comuna: 'Zona Urbana (Sector San Roque)', mesas: 14, censoEstimado: 4900, lat: 9.0410, lng: -75.7960, direccion: 'Carrera 4 # 10-12' },
+    { nombre: 'I.E. Trementino', comuna: 'Corregimiento Trementino', mesas: 10, censoEstimado: 3500, lat: 9.0750, lng: -75.7620, direccion: 'Plaza Principal Corregimiento Trementino' },
+    { nombre: 'I.E. El Paso de las Flores', comuna: 'Corregimiento El Paso', mesas: 8, censoEstimado: 2800, lat: 9.0210, lng: -75.8230, direccion: 'Sector Principal El Paso de las Flores' },
+    { nombre: 'I.E. Los Cedros', comuna: 'Corregimiento Los Cedros', mesas: 6, censoEstimado: 2100, lat: 9.0620, lng: -75.8340, direccion: 'Centro Poblado Los Cedros' },
+    { nombre: 'I.E. Abrojal', comuna: 'Corregimiento Abrojal', mesas: 5, censoEstimado: 1750, lat: 9.0880, lng: -75.8050, direccion: 'Plaza Central Abrojal' },
+    { nombre: 'I.E. San Roque Rural', comuna: 'Corregimiento San Roque', mesas: 6, censoEstimado: 2100, lat: 9.0340, lng: -75.7710, direccion: 'Vía San Roque Veredal' },
+    { nombre: 'Escuela Rural El Carmen', comuna: 'Corregimiento El Carmen', mesas: 4, censoEstimado: 1400, lat: 9.0520, lng: -75.7480, direccion: 'Sector El Carmen Rural' }
+  ],
+
+  // MONTERÍA (CÓRDOBA) - DIVIPOLE REGISTRADURÍA
+  'Montería': [
+    { nombre: 'I.E. Colegio Nacional José María Córdoba', comuna: 'Comuna 01 (Centro)', mesas: 42, censoEstimado: 14700, lat: 8.7540, lng: -75.8840, direccion: 'Calle 27 # 4-30' },
+    { nombre: 'Universidad de Córdoba (Sede Berástegui)', comuna: 'Comuna 09 (Zona Norte)', mesas: 48, censoEstimado: 16800, lat: 8.7880, lng: -75.8620, direccion: 'Cra. 6 # 77-305' },
+    { nombre: 'Coliseo Miguel "Happy" Lora', comuna: 'Comuna 02 (La Granja)', mesas: 36, censoEstimado: 12600, lat: 8.7420, lng: -75.8920, direccion: 'Cra. 4 # 14-25' },
+    { nombre: 'I.E. INEM Lorenzo María Lleras', comuna: 'Comuna 05 (Zona Sur)', mesas: 38, censoEstimado: 13300, lat: 8.7310, lng: -75.8980, direccion: 'Cra. 2 # 18-50' },
+    { nombre: 'I.E. Normal Superior de Montería', comuna: 'Comuna 03 (La Pradera)', mesas: 34, censoEstimado: 11900, lat: 8.7610, lng: -75.8710, direccion: 'Calle 29 # 14-20' },
+    { nombre: 'I.E. San Jerónimo de Montería', comuna: 'Comuna 04 (Cantaclaro)', mesas: 30, censoEstimado: 10500, lat: 8.7450, lng: -75.8580, direccion: 'Calle 35 # 8-15' },
+    { nombre: 'I.E. Antonia Santos', comuna: 'Comuna 08 (Mocarí)', mesas: 28, censoEstimado: 9800, lat: 8.8020, lng: -75.8550, direccion: 'Cra. 1W # 12-40' },
+    { nombre: 'I.E. Cristóbal Colón', comuna: 'Comuna 06 (Suroriente)', mesas: 26, censoEstimado: 9100, lat: 8.7240, lng: -75.8850, direccion: 'Calle 14 # 9-20' }
+  ],
+
+  // SANTA CRUZ DE LORICA (CÓRDOBA)
+  'Santa Cruz de Lorica': [
+    { nombre: 'I.E. Rafael Núñez (Sede Central)', comuna: 'Zona Urbana (Centro Histórico)', mesas: 32, censoEstimado: 11200, lat: 9.2390, lng: -75.8140, direccion: 'Calle 1 # 18-20' },
+    { nombre: 'I.E. Lacides C. Bersal', comuna: 'Zona Urbana (Barrio Alto Kennedy)', mesas: 28, censoEstimado: 9800, lat: 9.2450, lng: -75.8210, direccion: 'Cra. 25 # 8-10' },
+    { nombre: 'Coliseo de Lorica', comuna: 'Zona Cívica', mesas: 24, censoEstimado: 8400, lat: 9.2340, lng: -75.8110, direccion: 'Av. Bicentenario' },
+    { nombre: 'I.E. Santa Cruz de El Carito', comuna: 'Corregimiento El Carito', mesas: 12, censoEstimado: 4200, lat: 9.2810, lng: -75.7620, direccion: 'Plaza Principal El Carito' }
+  ],
+
+  // CERETÉ (CÓRDOBA)
+  'Cereté': [
+    { nombre: 'I.E. Marceliano Polo (Sede Principal)', comuna: 'Zona Urbana (Centro)', mesas: 34, censoEstimado: 11900, lat: 8.8840, lng: -75.7920, direccion: 'Cra. 13 # 10-25' },
+    { nombre: 'I.E. Alfonso Spath Spath', comuna: 'Corregimiento Martínez', mesas: 16, censoEstimado: 5600, lat: 8.9150, lng: -75.7480, direccion: 'Plaza Central Martínez' },
+    { nombre: 'Coliseo Mario de León', comuna: 'Zona Cívica y Deportiva', mesas: 26, censoEstimado: 9100, lat: 8.8780, lng: -75.7980, direccion: 'Calle 14 # 20-30' }
+  ],
+
+  // SAHAGÚN (CÓRDOBA)
+  'Sahagún': [
+    { nombre: 'I.E. Normal Superior Lácides Iriarte', comuna: 'Zona Urbana (Centro)', mesas: 35, censoEstimado: 12250, lat: 8.9480, lng: -75.4420, direccion: 'Calle 18 # 11-20' },
+    { nombre: 'Coliseo Noel Cogollo', comuna: 'Zona Cívica', mesas: 28, censoEstimado: 9800, lat: 8.9420, lng: -75.4380, direccion: 'Cra. 6 # 14-30' },
+    { nombre: 'I.E. San José de Sahagún', comuna: 'Zona Urbana (San José)', mesas: 26, censoEstimado: 9100, lat: 8.9550, lng: -75.4490, direccion: 'Calle 12 # 5-15' }
+  ],
+
+  // SINCELEJO (SUCRE)
+  'Sincelejo': [
+    { nombre: 'I.E. Antonio Lenis (Sede Principal)', comuna: 'Comuna 01 (Centro)', mesas: 36, censoEstimado: 12600, lat: 9.3010, lng: -75.3980, direccion: 'Calle 20 # 18-35' },
+    { nombre: 'Coliseo Las Delicias', comuna: 'Comuna 02 (Las Delicias)', mesas: 30, censoEstimado: 10500, lat: 9.3080, lng: -75.3890, direccion: 'Cra. 16 # 28-40' },
+    { nombre: 'I.E. Simón Araújo', comuna: 'Comuna 04 (Majagual)', mesas: 32, censoEstimado: 11200, lat: 9.2940, lng: -75.4120, direccion: 'Cra. 25 # 14-10' }
+  ],
+
+  // VALLEDUPAR (CESAR)
+  'Valledupar': [
+    { nombre: 'I.E. Colegio Nacional Loperena (Sede Central)', comuna: 'Comuna 01 (Centro Histórico)', mesas: 40, censoEstimado: 14000, lat: 10.4760, lng: -73.2480, direccion: 'Calle 16 # 11-40' },
+    { nombre: 'I.E. CASD Simón Bolívar', comuna: 'Comuna 02 (Los Cortijos)', mesas: 35, censoEstimado: 12250, lat: 10.4850, lng: -73.2610, direccion: 'Calle 12 # 19-30' },
+    { nombre: 'Coliseo Julio Monsalvo Castilla', comuna: 'Comuna 04 (Ciudadela Deportiva)', mesas: 32, censoEstimado: 11200, lat: 10.4610, lng: -73.2390, direccion: 'Av. Simón Bolívar' }
+  ],
+
+  // SOLEDAD (ATLÁNTICO)
+  'Soledad': [
+    { nombre: 'I.E. INEM de Soledad', comuna: 'Comuna 01 (Centro)', mesas: 38, censoEstimado: 13300, lat: 10.9210, lng: -74.7720, direccion: 'Calle 18 # 19-45' },
+    { nombre: 'I.E. Politécnico de Soledad', comuna: 'Comuna 03 (Las Gaviotas)', mesas: 34, censoEstimado: 11900, lat: 10.9350, lng: -74.7890, direccion: 'Cra. 24 # 30-10' }
+  ],
+
   // BELLO
   'Bello': [
     { nombre: 'I.E. Fernando Vélez', comuna: 'Comuna 03 (Santa Ana)', mesas: 32, censoEstimado: 11200, lat: 6.3340, lng: -75.5580, direccion: 'Calle 51 # 50-20' },
