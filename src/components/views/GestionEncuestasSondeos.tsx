@@ -834,99 +834,99 @@ export const GestionEncuestasSondeos: React.FC<GestionEncuestasSondeosProps> = (
       )}
       
       {/* Module Title Header */}
-      <div className="bg-[#05162a] border border-cyan-500/30 rounded-2xl p-6 text-slate-100 shadow-xl relative overflow-hidden">
+      <div className="bg-[#05162a] border border-cyan-500/30 rounded-2xl p-4 sm:p-6 text-slate-100 shadow-xl relative overflow-hidden">
         <div className="absolute -right-10 -bottom-10 w-60 h-60 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
         
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 relative z-10">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <div className="p-2.5 bg-gradient-to-br from-cyan-500/20 to-blue-600/30 border border-cyan-400/40 rounded-xl text-cyan-300">
+              <div className="p-2 sm:p-2.5 bg-gradient-to-br from-cyan-500/20 to-blue-600/30 border border-cyan-400/40 rounded-xl text-cyan-300">
                 <PieChart className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
               <div>
-                <h2 className="text-lg sm:text-xl font-black text-white tracking-tight flex items-center gap-2">
+                <h2 className="text-base sm:text-xl font-black text-white tracking-tight flex items-center gap-2">
                   Gestión y Configuración de Encuestas y Sondeos
                 </h2>
               </div>
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center gap-2 flex-wrap w-full lg:w-auto">
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full lg:w-auto">
             <button
               type="button"
               onClick={openPollsterRegistration}
               disabled={savingRealData}
-              className="flex items-center justify-center gap-2 w-full sm:w-auto px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all cursor-pointer transform hover:scale-105"
+              className="flex items-center justify-center gap-1.5 sm:gap-2 w-full sm:w-auto px-3 sm:px-4 py-2 sm:py-2.5 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-black text-[11px] sm:text-xs rounded-xl shadow-lg transition-all cursor-pointer transform hover:scale-105"
             >
-              <UserPlus className="w-4 h-4" />
+              <UserPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>+ Registrar Encuestador</span>
             </button>
 
             <button
               onClick={() => setActiveSubTab('crear')}
-              className="flex items-center justify-center gap-2 w-full sm:w-auto px-3.5 py-2.5 bg-[#0a2342] hover:bg-cyan-500/20 border border-cyan-500/40 text-cyan-200 font-bold text-xs rounded-xl transition-all cursor-pointer"
+              className="flex items-center justify-center gap-1.5 sm:gap-2 w-full sm:w-auto px-3 sm:px-3.5 py-2 sm:py-2.5 bg-[#0a2342] hover:bg-cyan-500/20 border border-cyan-500/40 text-cyan-200 font-bold text-[11px] sm:text-xs rounded-xl transition-all cursor-pointer"
             >
-              <Plus className="w-4 h-4 text-cyan-400" />
+              <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-400" />
               <span>Nueva Encuesta</span>
             </button>
 
             <button
               onClick={() => void loadRealSurveyData()}
-              className="flex items-center justify-center gap-2 w-full sm:w-auto px-3.5 py-2.5 bg-[#0a2342] hover:bg-cyan-500/20 border border-cyan-500/40 text-cyan-200 font-bold text-xs rounded-xl transition-all cursor-pointer"
+              className="flex items-center justify-center gap-1.5 sm:gap-2 w-full sm:w-auto px-3 sm:px-3.5 py-2 sm:py-2.5 bg-[#0a2342] hover:bg-cyan-500/20 border border-cyan-500/40 text-cyan-200 font-bold text-[11px] sm:text-xs rounded-xl transition-all cursor-pointer"
             >
-              <RefreshCw className={`w-4 h-4 text-cyan-400 ${realDataLoading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-400 ${realDataLoading ? 'animate-spin' : ''}`} />
               <span>Sincronizar</span>
             </button>
 
             <button
               onClick={() => setActiveSubTab('georreferenciacion')}
-              className="flex items-center justify-center gap-2 w-full sm:w-auto px-3.5 py-2.5 bg-[#0a2342] hover:bg-cyan-500/20 border border-cyan-500/40 text-cyan-200 font-bold text-xs rounded-xl transition-all cursor-pointer"
+              className="flex items-center justify-center gap-1.5 sm:gap-2 w-full sm:w-auto px-3 sm:px-3.5 py-2 sm:py-2.5 bg-[#0a2342] hover:bg-cyan-500/20 border border-cyan-500/40 text-cyan-200 font-bold text-[11px] sm:text-xs rounded-xl transition-all cursor-pointer"
             >
-              <Crosshair className="w-4 h-4 text-emerald-400" />
+              <Crosshair className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400" />
               <span>Mapa GPS en Vivo</span>
             </button>
           </div>
         </div>
 
         {/* Global Statistics Summary */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mt-6 pt-5 border-t border-cyan-500/20">
-          <div className="bg-[#081d38] border border-cyan-500/20 rounded-xl p-3">
-            <span className="text-[10px] text-cyan-300/80 font-bold uppercase tracking-wider block">Estudios Activos</span>
-            <div className="text-xl font-black text-white mt-1 flex items-center gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 mt-4 sm:mt-6 pt-4 sm:pt-5 border-t border-cyan-500/20">
+          <div className="bg-[#081d38] border border-cyan-500/20 rounded-xl p-2.5 sm:p-3">
+            <span className="text-[9px] sm:text-[10px] text-cyan-300/80 font-bold uppercase tracking-wider block">Estudios Activos</span>
+            <div className="text-base sm:text-xl font-black text-white mt-1 flex items-center gap-1.5 sm:gap-2 flex-wrap">
               <span>{studies.length}</span>
-              <span className="text-[10px] text-emerald-400 font-normal bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">{studiesInField} en campo</span>
+              <span className="text-[9px] sm:text-[10px] text-emerald-400 font-normal bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">{studiesInField} en campo</span>
             </div>
           </div>
           
-          <div className="bg-[#081d38] border border-cyan-500/20 rounded-xl p-3">
-            <span className="text-[10px] text-cyan-300/80 font-bold uppercase tracking-wider block">Encuestadores Registrados</span>
-            <div className="text-xl font-black text-cyan-300 mt-1 flex items-center gap-2">
+          <div className="bg-[#081d38] border border-cyan-500/20 rounded-xl p-2.5 sm:p-3">
+            <span className="text-[9px] sm:text-[10px] text-cyan-300/80 font-bold uppercase tracking-wider block">Encuestadores Registrados</span>
+            <div className="text-base sm:text-xl font-black text-cyan-300 mt-1 flex items-center gap-1.5 sm:gap-2 flex-wrap">
               <span>{pollsters.length}</span>
-              <span className="text-[10px] text-emerald-400 font-normal">100% CNE</span>
+              <span className="text-[9px] sm:text-[10px] text-emerald-400 font-normal">100% CNE</span>
             </div>
           </div>
 
-          <div className="bg-[#081d38] border border-cyan-500/20 rounded-xl p-3">
-            <span className="text-[10px] text-cyan-300/80 font-bold uppercase tracking-wider block">Monitoreo GPS en Vivo</span>
-            <div className="text-xl font-black text-emerald-400 mt-1 flex items-center gap-2">
+          <div className="bg-[#081d38] border border-cyan-500/20 rounded-xl p-2.5 sm:p-3">
+            <span className="text-[9px] sm:text-[10px] text-cyan-300/80 font-bold uppercase tracking-wider block">Monitoreo GPS en Vivo</span>
+            <div className="text-base sm:text-xl font-black text-emerald-400 mt-1 flex items-center gap-1.5 sm:gap-2 flex-wrap">
               <span>{pollstersInsideGeofence} / {pollstersWithGps.length}</span>
-              <span className="text-[10px] text-emerald-400 font-normal">En Perímetro</span>
+              <span className="text-[9px] sm:text-[10px] text-emerald-400 font-normal">En Perímetro</span>
             </div>
           </div>
 
-          <div className="bg-[#081d38] border border-cyan-500/20 rounded-xl p-3">
-            <span className="text-[10px] text-cyan-300/80 font-bold uppercase tracking-wider block">Margen Error Prom.</span>
-            <div className="text-xl font-black text-amber-300 mt-1 flex items-center gap-2">
+          <div className="bg-[#081d38] border border-cyan-500/20 rounded-xl p-2.5 sm:p-3">
+            <span className="text-[9px] sm:text-[10px] text-cyan-300/80 font-bold uppercase tracking-wider block">Margen Error Prom.</span>
+            <div className="text-base sm:text-xl font-black text-amber-300 mt-1 flex items-center gap-1.5 sm:gap-2 flex-wrap">
               <span>{studies.length ? `± ${averageMargin.toFixed(1)}%` : '—'}</span>
-              <span className="text-[10px] text-slate-400 font-normal">Conf. 95%</span>
+              <span className="text-[9px] sm:text-[10px] text-slate-400 font-normal">Conf. 95%</span>
             </div>
           </div>
 
-          <div className="bg-[#081d38] border border-cyan-500/20 rounded-xl p-3">
-            <span className="text-[10px] text-cyan-300/80 font-bold uppercase tracking-wider block">Auditoría IA Muestral</span>
-            <div className="text-xl font-black text-emerald-300 mt-1 flex items-center gap-2">
+          <div className="bg-[#081d38] border border-cyan-500/20 rounded-xl p-2.5 sm:p-3 col-span-2 sm:col-span-1 lg:col-span-1">
+            <span className="text-[9px] sm:text-[10px] text-cyan-300/80 font-bold uppercase tracking-wider block">Auditoría IA Muestral</span>
+            <div className="text-base sm:text-xl font-black text-emerald-300 mt-1 flex items-center gap-1.5 sm:gap-2 flex-wrap">
               <span>—</span>
-              <span className="text-[10px] text-slate-400 font-normal">Sin auditoría real</span>
+              <span className="text-[9px] sm:text-[10px] text-slate-400 font-normal">Sin auditoría real</span>
             </div>
           </div>
         </div>
