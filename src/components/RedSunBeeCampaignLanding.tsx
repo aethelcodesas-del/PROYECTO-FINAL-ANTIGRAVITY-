@@ -344,18 +344,20 @@ export const RedSunBeeCampaignLanding: React.FC<RedSunBeeCampaignLandingProps> =
             className="fixed inset-0 z-[200] flex items-center justify-center overflow-hidden bg-black"
             aria-hidden="true"
           >
-            <div className="lusion-intro-orb" />
             <motion.div
-              initial={{ clipPath: 'inset(0 100% 0 0)' }}
-              animate={{ clipPath: 'inset(0 0% 0 0)' }}
+              initial={{ clipPath: 'inset(-20% 100% -20% -20%)' }}
+              animate={{ clipPath: 'inset(-20% -20% -20% -20%)' }}
               transition={{ duration: 0.72, ease: [0.16, 1, 0.3, 1] }}
-              className="relative text-center"
+              className="relative text-center px-8 py-6"
             >
-              <div className="text-[clamp(2rem,8vw,7rem)] font-black leading-none tracking-[-0.07em] text-white">
-                CAMPAÑA<span className="text-redsun-gradient">GANADORA</span>
+              <div className="text-[clamp(2.4rem,8.5vw,7.2rem)] font-black leading-[1.15] tracking-[-0.03em] text-white select-none pb-2 pt-1 flex items-center justify-center flex-wrap">
+                <span className="inline-block text-white">CAMPAÑA</span>
+                <span className="text-redsun-gradient font-black inline-block ml-1 sm:ml-2">GANADORA</span>
               </div>
-              <div className="mt-4 flex items-center justify-center gap-3 text-[10px] font-bold uppercase tracking-[0.42em] text-zinc-500">
-                <span className="h-px w-10 bg-zinc-700" /> Experiencia electoral inteligente <span className="h-px w-10 bg-zinc-700" />
+              <div className="mt-2 flex items-center justify-center gap-3 text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.38em] text-zinc-400">
+                <span className="h-px w-10 sm:w-16 bg-gradient-to-r from-transparent to-zinc-600" />
+                <span>Experiencia electoral inteligente</span>
+                <span className="h-px w-10 sm:w-16 bg-gradient-to-l from-transparent to-zinc-600" />
               </div>
             </motion.div>
             <div className="lusion-intro-progress" />
