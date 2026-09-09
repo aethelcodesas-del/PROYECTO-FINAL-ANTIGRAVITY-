@@ -144,30 +144,98 @@ export function parsePdfDivipoleRows(
 
   const seenCodes = new Set<string>();
 
+  // Detectar delimitador primario
+  let primaryDelimiter = ';';
+  for (const line of lines) {
+    if (line.includes(';')) { primaryDelimiter = ';'; break; }
+    if (line.includes('\t')) { primaryDelimiter = '\t'; break; }
+    if (line.includes('|')) { primaryDelimiter = '|'; break; }
+    if (line.includes(',')) { primaryDelimiter = ','; }
+  }
+
+  // Mapa de índices por cabecera
+  let headerMap: Record<string, number> | null = null;
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
     if (!line) continue;
 
-    const parts = line.split(/[;\t,|]+/).map(p => cleanText(p));
+    const parts = line.split(primaryDelimiter).map(p => cleanText(p));
     if (parts.length < 5) {
       continue;
     }
 
     // Detectar si es fila de cabecera
-    const firstCol = (parts[0] || '').toLowerCase();
-    if (firstCol.includes('cod') || firstCol === 'departamento' || firstCol === 'dpto') {
+    const lineLower = line.toLowerCase();
+    if (lineLower.includes('cod_dpto') || lineLower.includes('departamento') || (parts[0] || '').toLowerCase().includes('cod')) {
+      headerMap = {};
+      parts.forEach((col, idx) => {
+        const c = col.toLowerCase().replace(/[^a-z0-9]/g, '_');
+        if (c.includes('dpto') && c.includes('cod')) headerMap!['cod_dpto'] = idx;
+        else if (c.includes('departamento') || c.includes('nom_dpto')) headerMap!['nom_dpto'] = idx;
+        else if (c.includes('mpio') && c.includes('cod')) headerMap!['cod_mpio'] = idx;
+        else if (c.includes('municipio') || c.includes('nom_mpio')) headerMap!['nom_mpio'] = idx;
+        else if (c.includes('zona') && c.includes('cod')) headerMap!['cod_zona'] = idx;
+        else if (c.includes('puesto') && c.includes('cod')) headerMap!['cod_puesto'] = idx;
+        else if (c === 'puesto' || c.includes('nom_puesto') || c.includes('nombre_puesto')) headerMap!['nom_puesto'] = idx;
+        else if (c.includes('dir') || c.includes('direccion')) headerMap!['direccion'] = idx;
+        else if (c.includes('mesa')) headerMap!['mesas'] = idx;
+        else if (c.includes('lat')) headerMap!['latitud'] = idx;
+        else if (c.includes('lon')) headerMap!['longitud'] = idx;
+        else if (c.includes('rural')) headerMap!['es_rural'] = idx;
+        else if (c.includes('censo')) headerMap!['censo'] = idx;
+      });
       continue;
     }
 
-    // Identificar columnas estándar
-    const rawDpto = parts[0] || '';
-    const nombreDpto = parts[1] || '';
-    const rawMpio = parts[2] || '';
-    const nombreMpio = parts[3] || '';
-    const rawZona = parts.length >= 7 ? parts[4] : '01';
-    const rawPuesto = parts.length >= 7 ? parts[5] : parts[4];
-    const nombrePuesto = parts.length >= 7 ? parts[6] : parts[parts.length - 2];
-    const rawMesas = parts[parts.length - 1];
+    // Extraer campos según cabecera o posiciones estándar
+    let rawDpto = '';
+    let nombreDpto = '';
+    let rawMpio = '';
+    let nombreMpio = '';
+    let rawZona = '01';
+    let rawPuesto = '01';
+    let nombrePuesto = '';
+    let rawMesas = '1';
+    let direccion: string | undefined;
+    let latitud: number | undefined;
+    let longitud: number | undefined;
+    let esRuralExplicit: boolean | undefined;
+
+    if (headerMap && Object.keys(headerMap).length >= 4) {
+      rawDpto = headerMap['cod_dpto'] !== undefined ? parts[headerMap['cod_dpto']] || '' : parts[0] || '';
+      nombreDpto = headerMap['nom_dpto'] !== undefined ? parts[headerMap['nom_dpto']] || '' : parts[1] || '';
+      rawMpio = headerMap['cod_mpio'] !== undefined ? parts[headerMap['cod_mpio']] || '' : parts[2] || '';
+      nombreMpio = headerMap['nom_mpio'] !== undefined ? parts[headerMap['nom_mpio']] || '' : parts[3] || '';
+      rawZona = headerMap['cod_zona'] !== undefined ? parts[headerMap['cod_zona']] || '01' : parts[4] || '01';
+      rawPuesto = headerMap['cod_puesto'] !== undefined ? parts[headerMap['cod_puesto']] || '01' : parts[5] || '01';
+      nombrePuesto = headerMap['nom_puesto'] !== undefined ? parts[headerMap['nom_puesto']] || '' : parts[6] || '';
+      rawMesas = headerMap['mesas'] !== undefined ? parts[headerMap['mesas']] || '1' : parts[7] || '1';
+
+      if (headerMap['direccion'] !== undefined) direccion = parts[headerMap['direccion']];
+      if (headerMap['latitud'] !== undefined && parts[headerMap['latitud']]) {
+        const lat = parseFloat(parts[headerMap['latitud']]);
+        if (!isNaN(lat)) latitud = lat;
+      }
+      if (headerMap['longitud'] !== undefined && parts[headerMap['longitud']]) {
+        const lon = parseFloat(parts[headerMap['longitud']]);
+        if (!isNaN(lon)) longitud = lon;
+      }
+      if (headerMap['es_rural'] !== undefined && parts[headerMap['es_rural']]) {
+        const rVal = parts[headerMap['es_rural']].toLowerCase();
+        esRuralExplicit = rVal === '1' || rVal === 'true' || rVal === 'si' || rVal === 's';
+      }
+    } else {
+      // Posicional estándar
+      rawDpto = parts[0] || '';
+      nombreDpto = parts[1] || '';
+      rawMpio = parts[2] || '';
+      nombreMpio = parts[3] || '';
+      rawZona = parts.length >= 7 ? parts[4] : '01';
+      rawPuesto = parts.length >= 7 ? parts[5] : parts[4];
+      nombrePuesto = parts.length >= 7 ? parts[6] : parts[parts.length - 2];
+      rawMesas = parts[parts.length - 1] || '1';
+    }
 
     const codDpto = padLeft(rawDpto.replace(/\D/g, ''), 2);
     const codMpio = padLeft(rawMpio.replace(/\D/g, ''), 3);
@@ -195,7 +263,9 @@ export function parsePdfDivipoleRows(
     const mesasNum = parseInt(rawMesas.replace(/\D/g, ''), 10);
     const mesasValidas = (!isNaN(mesasNum) && mesasNum > 0) ? mesasNum : 1;
 
-    const esRural = codZona === '99' || nombrePuesto.toLowerCase().includes('correg') || nombrePuesto.toLowerCase().includes('vereda');
+    const esRural = esRuralExplicit !== undefined 
+      ? esRuralExplicit 
+      : (codZona === '99' || nombrePuesto.toLowerCase().includes('correg') || nombrePuesto.toLowerCase().includes('vereda'));
 
     rows.push({
       codDpto,
@@ -206,7 +276,10 @@ export function parsePdfDivipoleRows(
       nombreZona: `ZONA ${codZona}`,
       codPuesto,
       nombrePuesto: nombrePuesto || `PUESTO ${codPuesto}`,
+      direccion,
       mesas: mesasValidas,
+      latitud,
+      longitud,
       esRural
     });
   }

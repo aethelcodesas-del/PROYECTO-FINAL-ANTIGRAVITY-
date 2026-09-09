@@ -28,12 +28,19 @@ export interface OfflineIngestionPayloadInput {
   processId: string;
   sourceOriginUrl: string;
   obtainedAt: string;
+  fileName?: string;
+  mimeType?: string;
   fileBufferOrContent: Uint8Array | ArrayBuffer | string;
   notes?: string;
 }
 
 export interface OfflineIngestionValidationResult {
   isValid: boolean;
+  status: 'VALID' | 'INVALID' | 'WAF_HTML_ERROR' | 'EMPTY_FILE' | 'UNSUPPORTED_FORMAT';
+  fileName?: string;
+  mimeType: string;
+  fileExtension: string;
+  obtainedAt: string;
   sha256: string;
   fileSizeBytes: number;
   isAuthenticPdf: boolean;
@@ -62,6 +69,12 @@ export async function ingestOfflineOfficialFile(
   const sourceDef = getOfficialProcessSource(input.processId);
   const processConfig = sourceDef.processConfig;
 
+  // Inferir o extraer extensión y MIME
+  const fileName = input.fileName || 'divipole_oficial.pdf';
+  const fileExtension = fileName.includes('.') ? fileName.split('.').pop()?.toLowerCase() || 'pdf' : 'pdf';
+  const mimeType = input.mimeType || (fileExtension === 'pdf' ? 'application/pdf' : 'application/octet-stream');
+  const obtainedAt = input.obtainedAt || new Date().toISOString();
+
   // 1. Determinar tamaño del archivo
   let fileSizeBytes = 0;
   if (typeof input.fileBufferOrContent === 'string') {
@@ -75,6 +88,11 @@ export async function ingestOfflineOfficialFile(
   if (fileSizeBytes === 0) {
     return {
       isValid: false,
+      status: 'EMPTY_FILE',
+      fileName,
+      mimeType,
+      fileExtension,
+      obtainedAt,
       sha256: 'EMPTY_FILE',
       fileSizeBytes: 0,
       isAuthenticPdf: false,
@@ -91,7 +109,8 @@ export async function ingestOfflineOfficialFile(
   // 3. Verificación de Autenticidad Binaria y Detección de Bloqueos HTML/WAF
   const binaryCheck = validatePdfBinaryHeader(input.fileBufferOrContent);
   if (!binaryCheck.isValidPdf) {
-    if (binaryCheck.isHtml) {
+    const isWaf = binaryCheck.isHtml || false;
+    if (isWaf) {
       errors.push('El archivo entregado no es un PDF auténtico; corresponde a una página HTML de bloqueo, desafío WAF o error HTTP 403.');
     } else {
       errors.push(binaryCheck.reason || 'El archivo carece de la firma binaria requerida de un documento PDF oficial.');
@@ -99,10 +118,15 @@ export async function ingestOfflineOfficialFile(
 
     return {
       isValid: false,
+      status: isWaf ? 'WAF_HTML_ERROR' : 'UNSUPPORTED_FORMAT',
+      fileName,
+      mimeType: isWaf ? 'text/html' : mimeType,
+      fileExtension,
+      obtainedAt,
       sha256,
       fileSizeBytes,
       isAuthenticPdf: false,
-      isWafOrHtmlError: binaryCheck.isHtml,
+      isWafOrHtmlError: isWaf,
       processConfig,
       errors,
       warnings
@@ -121,6 +145,11 @@ export async function ingestOfflineOfficialFile(
     errors.push(adapterResult.rawErrorMessage || 'No fue posible estructurar registros válidos desde el documento oficial.');
     return {
       isValid: false,
+      status: 'INVALID',
+      fileName,
+      mimeType,
+      fileExtension,
+      obtainedAt,
       sha256,
       fileSizeBytes,
       isAuthenticPdf: true,
@@ -132,7 +161,7 @@ export async function ingestOfflineOfficialFile(
     };
   }
 
-  // 5. Control de Cobertura Nacional y Ejecución en DRY-RUN
+  // 5. Control de Cobertura Nacional y Ejecución en DRY-RUN o Carga Real
   const nationalSummary = await executeNationalDivipoleBatchLoad(adapterResult, {
     dryRun: options.dryRun ?? true,
     strictPlausibilityCheck: options.requireNationalCoverage ?? false,
@@ -147,8 +176,15 @@ export async function ingestOfflineOfficialFile(
     }
   }
 
+  const isValid = errors.length === 0;
+
   return {
-    isValid: errors.length === 0,
+    isValid,
+    status: isValid ? 'VALID' : 'INVALID',
+    fileName,
+    mimeType,
+    fileExtension,
+    obtainedAt,
     sha256,
     fileSizeBytes,
     isAuthenticPdf: true,
