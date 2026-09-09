@@ -11,3 +11,4 @@ export * from './electoralSyncService';
 export * from './schedulerEngine';
 export * from './processRegistry';
 export * from './cloudflareScheduledHandler';
+export * from './pdfDivipoleAdapter';
