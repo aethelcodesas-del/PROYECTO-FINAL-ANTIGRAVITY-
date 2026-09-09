@@ -167,17 +167,24 @@ export function parsePdfDivipoleRows(
 
     // Detectar si es fila de cabecera
     const lineLower = line.toLowerCase();
-    if (lineLower.includes('cod_dpto') || lineLower.includes('departamento') || (parts[0] || '').toLowerCase().includes('cod')) {
+    const firstCol = (parts[0] || '').toLowerCase();
+    if (
+      lineLower.includes('cod_dpto') || 
+      lineLower.includes('departamento') || 
+      firstCol === 'dd' || 
+      firstCol.includes('cod')
+    ) {
       headerMap = {};
       parts.forEach((col, idx) => {
         const c = col.toLowerCase().replace(/[^a-z0-9]/g, '_');
-        if (c.includes('dpto') && c.includes('cod')) headerMap!['cod_dpto'] = idx;
-        else if (c.includes('departamento') || c.includes('nom_dpto')) headerMap!['nom_dpto'] = idx;
-        else if (c.includes('mpio') && c.includes('cod')) headerMap!['cod_mpio'] = idx;
-        else if (c.includes('municipio') || c.includes('nom_mpio')) headerMap!['nom_mpio'] = idx;
-        else if (c.includes('zona') && c.includes('cod')) headerMap!['cod_zona'] = idx;
-        else if (c.includes('puesto') && c.includes('cod')) headerMap!['cod_puesto'] = idx;
+        if (c === 'dd' || (c.includes('dpto') && c.includes('cod'))) headerMap!['cod_dpto'] = idx;
+        else if (c === 'departamento' || c.includes('nom_dpto') || c === 'dpto') headerMap!['nom_dpto'] = idx;
+        else if (c === 'mm' || (c.includes('mpio') && c.includes('cod'))) headerMap!['cod_mpio'] = idx;
+        else if (c === 'municipio' || c.includes('nom_mpio') || c === 'mpio') headerMap!['nom_mpio'] = idx;
+        else if (c === 'zz' || (c.includes('zona') && c.includes('cod')) || c === 'zona') headerMap!['cod_zona'] = idx;
+        else if (c === 'pp' || (c.includes('puesto') && c.includes('cod'))) headerMap!['cod_puesto'] = idx;
         else if (c === 'puesto' || c.includes('nom_puesto') || c.includes('nombre_puesto')) headerMap!['nom_puesto'] = idx;
+        else if (c.includes('comuna') || c.includes('corregimiento')) headerMap!['comuna'] = idx;
         else if (c.includes('dir') || c.includes('direccion')) headerMap!['direccion'] = idx;
         else if (c.includes('mesa')) headerMap!['mesas'] = idx;
         else if (c.includes('lat')) headerMap!['latitud'] = idx;
