@@ -1247,7 +1247,7 @@ export const colombiaTerritorialData: Record<string, string[]> = {
   ]
 };
 
-// Colombian Official Recognized Parties (CNE)
+// Colombian Official Recognized Parties (CNE & Registraduría)
 export const partidosPoliticosColombia = [
   'Partido Liberal Colombiano',
   'Partido Conservador Colombiano',
@@ -1260,11 +1260,28 @@ export const partidosPoliticosColombia = [
   'Nuevo Liberalismo',
   'En Marcha',
   'Dignidad & Compromiso',
+  'Fuerza de la Paz',
   'Fuerza Ciudadana',
   'Colombia Justa Libres',
   'Partido ASI (Alianza Social Independiente)',
   'Partido MAIS (Movimiento Alternativo Indígena y Social)',
   'AICO (Autoridades Indígenas de Colombia)',
   'Partido ADA (Alianza Democrática Amplia)',
-  'Liga de Gobernantes Anti-Corrupción'
+  'Liga de Gobernantes Anti-Corrupción',
+  'Movimiento Salvación Nacional',
+  'Partido Comunista Colombiano',
+  'Polo Democrático Alternativo',
+  'Unión Patriótica (UP)',
+  'Colombia Humana',
+  'Partido Demócrata Colombiano',
+  'Esperanza Democrática',
+  'Partido Creemos',
+  'Partido Independientes',
+  'Partido Gente en Movimiento',
+  'Partido Ecologista Colombiano',
+  'Movimiento Todos Somos Colombia',
+  'Movimiento SOS Colombia',
+  'Movimiento Significativo de Ciudadanos (Firmas)',
+  'Coalición Política / Interpartidista',
+  'Otro Partido / Movimiento Político'
 ];

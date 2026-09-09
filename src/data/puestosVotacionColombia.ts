@@ -414,38 +414,47 @@ export function getPuestosPorCircunscripcion(
   return [...customList, ...basePuestos];
 }
 
+import { partidosPoliticosColombia } from './colombiaTerritorialData';
+
 /**
- * Obtiene la lista de partidos políticos priorizando el aval del candidato y coalición
+ * Obtiene la lista completa de todos los partidos políticos oficiales de Colombia,
+ * priorizando al inicio el aval y coalición del candidato si están definidos.
  */
 export function getPartidosPrioritariosCandidato(campaignDossier: any): string[] {
-  const partidosSet = new Set<string>();
+  const prioritariosSet = new Set<string>();
 
   // 1. Partido o Movimiento Principal del Candidato
-  if (campaignDossier?.partidoUnico) {
-    partidosSet.add(campaignDossier.partidoUnico.trim());
+  if (campaignDossier?.partidoUnico && typeof campaignDossier.partidoUnico === 'string' && campaignDossier.partidoUnico.trim()) {
+    prioritariosSet.add(campaignDossier.partidoUnico.trim());
   }
-  if (campaignDossier?.movimientoFirmas) {
-    partidosSet.add(campaignDossier.movimientoFirmas.trim());
+  if (campaignDossier?.movimientoFirmas && typeof campaignDossier.movimientoFirmas === 'string' && campaignDossier.movimientoFirmas.trim()) {
+    prioritariosSet.add(campaignDossier.movimientoFirmas.trim());
   }
-  if (campaignDossier?.partidoAvalPrincipal) {
-    partidosSet.add(campaignDossier.partidoAvalPrincipal.trim());
+  if (campaignDossier?.partidoAvalPrincipal && typeof campaignDossier.partidoAvalPrincipal === 'string' && campaignDossier.partidoAvalPrincipal.trim()) {
+    prioritariosSet.add(campaignDossier.partidoAvalPrincipal.trim());
   }
 
   // 2. Partidos de la Coalición
   if (Array.isArray(campaignDossier?.coalicionPartidos)) {
     campaignDossier.coalicionPartidos.forEach((p: string) => {
-      if (p && p.trim()) partidosSet.add(p.trim());
+      if (p && typeof p === 'string' && p.trim()) prioritariosSet.add(p.trim());
     });
   }
 
   // 3. Campañas y Listas Aliadas
   if (Array.isArray(campaignDossier?.campanasAliadas)) {
     campaignDossier.campanasAliadas.forEach((aliada: any) => {
-      if (aliada?.partido && aliada.partido.trim()) {
-        partidosSet.add(aliada.partido.trim());
+      if (aliada?.partido && typeof aliada.partido === 'string' && aliada.partido.trim()) {
+        prioritariosSet.add(aliada.partido.trim());
       }
     });
   }
 
-  return Array.from(partidosSet);
+  // Combinar los avales prioritarios de la campaña con TODOS los partidos políticos oficiales de Colombia
+  const listadoCompleto = Array.from(new Set([
+    ...Array.from(prioritariosSet),
+    ...partidosPoliticosColombia
+  ]));
+
+  return listadoCompleto;
 }

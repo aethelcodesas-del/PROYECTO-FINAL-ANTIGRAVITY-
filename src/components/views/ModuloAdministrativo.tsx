@@ -5,9 +5,7 @@ import { GeoSubdivisionSelect } from '../common/GeoSubdivisionSelect';
 import { ViewMode, CalendarEvent, AuthUser } from '../../types';
 import { supabase } from '../../lib/supabaseClient';
 import { insforge } from '../../lib/insforgeClient';
-import { isExpectedEmptyCampaignState } from '../../lib/campaignSetupState';
-import { colombiaTerritorialData } from '../../data/colombiaTerritorialData';
-import { loadCampaignPollingPlaces } from '../../services/campaignPollingStationService';
+import { colombiaTerritorialData, partidosPoliticosColombia } from '../../data/colombiaTerritorialData';
 import { PresupuestoContabilidad } from './PresupuestoContabilidad';
 import { GestionConfiguracionCampana } from './GestionConfiguracionCampana';
 import { GestionEncuestasSondeos } from './GestionEncuestasSondeos';
@@ -1239,17 +1237,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
   };
 
   // Partidos y Movimientos disponibles
-  const partidosPoliticosOpt = [
-    'Partido Liberal Colombiano',
-    'Partido Alianza Verde',
-    'Centro Democrático',
-    'Nuevo Liberalismo',
-    'Movimiento Ciudadano Regional',
-    'Partido Conservador Colombiano',
-    'Cambio Radical',
-    'Pacto Histórico',
-    'Partido de la U'
-  ];
+  const partidosPoliticosOpt = partidosPoliticosColombia;
 
   // Puestos de Votación consignados para la circunscripción territorial de la campaña
   const puestosTerritorioOpt = [
