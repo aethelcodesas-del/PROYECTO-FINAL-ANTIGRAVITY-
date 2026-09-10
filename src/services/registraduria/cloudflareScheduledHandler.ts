@@ -46,7 +46,8 @@ export interface ScheduledExecutionSummary {
 export async function handleScheduledEvent(
   event: CloudflareScheduledEvent,
   env: CloudflareWorkerEnv,
-  ctx?: { waitUntil: (promise: Promise<any>) => void }
+  ctx?: { waitUntil: (promise: Promise<any>) => void },
+  options?: { dryRun?: boolean }
 ): Promise<ScheduledExecutionSummary> {
   const cronExpr = event?.cron || '0 3 * * 0';
   const now = new Date();
@@ -82,6 +83,7 @@ export async function handleScheduledEvent(
         processConfig: sourceDef.processConfig,
         sourceUrl: sourceDef.sourceUrl || undefined,
         supabaseClient,
+        dryRun: options?.dryRun ?? false,
         workerId: `cf-scheduled-${cronExpr.replace(/\s+/g, '_')}`
       });
 
