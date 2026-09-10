@@ -21,19 +21,37 @@ export type OfficialSourceType =
   | 'DIVIPOLE_JSON' 
   | 'PDF_UNSUPPORTED' 
   | 'HTML_PORTAL'
+  | 'OFFICIAL_CENSUS_PUBLICATION'
   | 'PENDING';
+
+export type SourceAuthorityRole =
+  | 'DIVIPOLE_MASTER'
+  | 'CENSUS_VALIDATION'
+  | 'MASTER_VALIDATION'
+  | 'COMPLEMENTARY_REFERENCE';
 
 export type SourceConfigurationStatus = 
   | 'SOURCE_VALIDATED' 
   | 'SOURCE_PENDING_CONFIGURATION' 
-  | 'SOURCE_UNAVAILABLE';
+  | 'SOURCE_UNAVAILABLE'
+  | 'SOURCE_BLOCKED'
+  | 'AUTHORIZED_SOURCE'
+  | 'UNAUTHORIZED_SOURCE';
 
 export interface OfficialProcessSourceDefinition {
   processConfig: ElectoralProcessConfig;
   sourceUrl: string | null;
   sourceType: OfficialSourceType;
+  publisher?: string;
+  format?: 'HTML' | 'PDF' | 'CSV' | 'JSON' | 'TEXT';
+  authority?: SourceAuthorityRole;
   enabled: boolean;
   status: SourceConfigurationStatus;
+  lastKnownSha256?: string | null;
+  lastSuccessfulCheckAt?: string | null;
+  lastSuccessfulValidationAt?: string | null;
+  lastFailureAt?: string | null;
+  lastFailureReason?: string | null;
   notes: string;
   expectedSchema?: string[];
 }
@@ -54,6 +72,8 @@ export const OFFICIAL_PROCESS_SOURCES: Record<string, OfficialProcessSourceDefin
     // URL oficial de la Registraduría Nacional (documento PDF)
     sourceUrl: 'https://www.registraduria.gov.co/IMG/pdf/Divipole_definitiva_%20Elecciones_Congreso_2026_GEO_CITREP_Exterior_L_V_v5.pdf',
     sourceType: 'PDF_UNSUPPORTED',
+    format: 'PDF',
+    authority: 'DIVIPOLE_MASTER',
     enabled: false,
     status: 'SOURCE_PENDING_CONFIGURATION',
     notes: 'Fuente oficial publicada en formato PDF (Divipole definitiva Elecciones Congreso 2026 GEO CITREP Exterior). Requiere canal de extracción estructurado (CSV/JSON) o datos abiertos antes de activar ingesta en base de datos.',
@@ -74,10 +94,41 @@ export const OFFICIAL_PROCESS_SOURCES: Record<string, OfficialProcessSourceDefin
     },
     sourceUrl: 'https://www.registraduria.gov.co/-2026-.html',
     sourceType: 'HTML_PORTAL',
+    format: 'HTML',
+    authority: 'DIVIPOLE_MASTER',
     enabled: false,
     status: 'SOURCE_PENDING_CONFIGURATION',
     notes: 'Portal web informativo de Elecciones 2026. Protegido por WAF/Anti-Bot. Pendiente de publicación de dataset estructurado.',
     expectedSchema: ['COD_DPTO', 'COD_MPIO', 'COD_PUESTO', 'MESAS', 'CENSO']
+  },
+  'REGISTRADURIA_CENSO_PRESIDENCIAL_2026': {
+    processConfig: {
+      codigoProceso: 'COL-2026-PRES-1V',
+      nombre: 'Publicación Oficial de Censo Electoral Presidencial 2026',
+      tipoProceso: 'PRESIDENCIAL',
+      anio: 2026,
+      fechaEleccion: '2026-05-31',
+      corporacionesHabilitadas: ['PRESIDENCIA']
+    },
+    publisher: 'Registraduría Nacional del Estado Civil',
+    sourceUrl: 'https://www.registraduria.gov.co/Registraduria-Nacional-entrega-detalles-del-censo-electoral-en-Colombia-y-el.html',
+    sourceType: 'OFFICIAL_CENSUS_PUBLICATION',
+    format: 'HTML',
+    authority: 'MASTER_VALIDATION',
+    enabled: false,
+    status: 'SOURCE_PENDING_CONFIGURATION',
+    lastKnownSha256: null,
+    lastSuccessfulCheckAt: null,
+    lastSuccessfulValidationAt: null,
+    lastFailureAt: null,
+    lastFailureReason: null,
+    notes: 'Publicación oficial informativa de la Registraduría Nacional sobre el censo electoral en Colombia y el exterior para Elecciones 2026. Utilizada exclusivamente como fuente de validación automática del Censo (CENSUS_VALIDATION), sin sustituir la DIVIPOLE oficial ni modificar polling_stations.',
+    expectedSchema: [
+      'TOTAL_COLOMBIA', 'TOTAL_EXTERIOR', 'TOTAL_NACIONAL',
+      'HOMBRES_COLOMBIA', 'MUJERES_COLOMBIA', 'PUESTOS_COLOMBIA', 'MESAS_COLOMBIA',
+      'HOMBRES_EXTERIOR', 'MUJERES_EXTERIOR', 'PUESTOS_EXTERIOR', 'MESAS_EXTERIOR',
+      'FECHA_CORTE', 'FECHA_ACTUALIZACION', 'DESGLOSE_DEPARTAMENTOS'
+    ]
   },
   'COL-2026-PRES-2V': {
     processConfig: {
@@ -90,6 +141,8 @@ export const OFFICIAL_PROCESS_SOURCES: Record<string, OfficialProcessSourceDefin
     },
     sourceUrl: 'https://www.registraduria.gov.co/IMG/pdf/puestos_votacion_2da_vuelta_2026.pdf',
     sourceType: 'PDF_UNSUPPORTED',
+    format: 'PDF',
+    authority: 'DIVIPOLE_MASTER',
     enabled: false,
     status: 'SOURCE_PENDING_CONFIGURATION',
     notes: 'Documento PDF de puestos de votación segunda vuelta presidencial. No procesable directamente por parser CSV sin pipeline de extracción.',
@@ -106,6 +159,7 @@ export const OFFICIAL_PROCESS_SOURCES: Record<string, OfficialProcessSourceDefin
     },
     sourceUrl: null,
     sourceType: 'PENDING',
+    authority: 'DIVIPOLE_MASTER',
     enabled: false,
     status: 'SOURCE_PENDING_CONFIGURATION',
     notes: 'Pendiente de convocatoria oficial y calendario electoral de la Registraduría para comicios territoriales 2027.'
