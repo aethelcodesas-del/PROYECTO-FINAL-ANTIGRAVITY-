@@ -129,10 +129,11 @@ async function runPagesWorkerSeparationTests() {
   assert(schedulerTomlContent.includes('[triggers]'), 'wrangler.scheduler.toml contiene [triggers]');
   assert(schedulerJsonContent.triggers !== undefined, 'wrangler.scheduler.json contiene triggers');
 
-  // 3. El cron es exactamente "0 3 * * 0"
-  console.log('--- 3. El cron del Worker es exactamente "0 3 * * 0" ---');
-  assert(schedulerTomlContent.includes('crons = ["0 3 * * 0"]'), 'wrangler.scheduler.toml tiene cron "0 3 * * 0"');
-  assert(schedulerJsonContent.triggers.crons[0] === '0 3 * * 0', 'wrangler.scheduler.json tiene cron "0 3 * * 0"');
+  // 3. El cron es domingo 03:00 UTC ("0 3 * * SUN" o "0 3 * * 0")
+  console.log('--- 3. El cron del Worker es exactamente domingo 03:00 UTC ("0 3 * * SUN" o "0 3 * * 0") ---');
+  const validCronPattern = /crons\s*=\s*\["(0 3 \* \* (SUN|0))"\]/;
+  assert(validCronPattern.test(schedulerTomlContent), 'wrangler.scheduler.toml tiene cron domingo 03:00 UTC');
+  assert(['0 3 * * SUN', '0 3 * * 0'].includes(schedulerJsonContent.triggers.crons[0]), 'wrangler.scheduler.json tiene cron domingo 03:00 UTC');
 
   // 4. Existe un único Scheduled Trigger
   console.log('--- 4. Unicidad del Scheduled Trigger en el Worker ---');

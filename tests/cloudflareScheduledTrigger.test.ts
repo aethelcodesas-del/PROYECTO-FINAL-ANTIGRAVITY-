@@ -111,16 +111,17 @@ async function runCloudflareScheduledTriggerTests() {
   assert(typeof cloudflareHandler.fetch === 'function', 'cloudflareHandler.fetch está definido como función exportada');
   assert(typeof handleScheduledEvent === 'function', 'handleScheduledEvent está disponible');
 
-  // TEST 2: El cron es exactamente "0 3 * * 0" en la configuración del Worker Scheduler
-  console.log('--- TEST 2: El cron es exactamente "0 3 * * 0" en el Worker Scheduler ---');
+  // TEST 2: El cron es domingo 03:00 UTC ("0 3 * * SUN" o "0 3 * * 0") en la configuración del Worker Scheduler
+  console.log('--- TEST 2: El cron es domingo 03:00 UTC en el Worker Scheduler ---');
   const schedulerTomlPath = path.resolve(process.cwd(), 'wrangler.scheduler.toml');
   const schedulerJsonPath = path.resolve(process.cwd(), 'wrangler.scheduler.json');
   
   const tomlContent = fs.readFileSync(schedulerTomlPath, 'utf8');
   const jsonContent = JSON.parse(fs.readFileSync(schedulerJsonPath, 'utf8'));
 
-  assert(tomlContent.includes('crons = ["0 3 * * 0"]'), 'wrangler.scheduler.toml contiene cron "0 3 * * 0"');
-  assert(Array.isArray(jsonContent.triggers?.crons) && jsonContent.triggers.crons[0] === '0 3 * * 0', 'wrangler.scheduler.json contiene crons ["0 3 * * 0"]');
+  const validCronPattern = /crons\s*=\s*\["(0 3 \* \* (SUN|0))"\]/;
+  assert(validCronPattern.test(tomlContent), 'wrangler.scheduler.toml contiene cron domingo 03:00 UTC');
+  assert(Array.isArray(jsonContent.triggers?.crons) && ['0 3 * * SUN', '0 3 * * 0'].includes(jsonContent.triggers.crons[0]), 'wrangler.scheduler.json contiene cron domingo 03:00 UTC');
 
   // TEST 3: El handler recibe un Scheduled Event
   console.log('--- TEST 3: El handler recibe un Scheduled Event ---');
