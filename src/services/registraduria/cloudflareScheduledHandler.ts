@@ -63,12 +63,12 @@ export async function handleScheduledEvent(
   const executionResults: ScheduledExecutionSummary['results'] = [];
 
   for (const sourceDef of registeredSources) {
-    const processId = sourceDef.processConfig.codigoProceso;
+    const sourceIdentifier = sourceDef.sourceId || sourceDef.processConfig.codigoProceso;
 
-    // Si la fuente está en estado pendiente de configuración, omitir de forma segura sin llamar a la RPC
+    // Si la fuente está en estado pendiente de configuración o deshabilitada, omitir de forma segura sin llamar a la RPC
     if (sourceDef.status === 'SOURCE_PENDING_CONFIGURATION' || !sourceDef.enabled) {
       executionResults.push({
-        processId,
+        processId: sourceIdentifier,
         status: 'SOURCE_PENDING_CONFIGURATION',
         message: `Omitido: ${sourceDef.notes}`,
         success: true // Omitido controlado exitosamente
@@ -78,7 +78,7 @@ export async function handleScheduledEvent(
 
     try {
       const syncResult = await executeScheduledElectoralSync({
-        processId,
+        processId: sourceIdentifier,
         processConfig: sourceDef.processConfig,
         sourceUrl: sourceDef.sourceUrl || undefined,
         supabaseClient,
@@ -86,14 +86,14 @@ export async function handleScheduledEvent(
       });
 
       executionResults.push({
-        processId,
+        processId: sourceIdentifier,
         status: syncResult.status,
         message: syncResult.message,
         success: syncResult.success
       });
     } catch (err: any) {
       executionResults.push({
-        processId,
+        processId: sourceIdentifier,
         status: 'FALLIDA_FUENTE_CAIDA',
         message: err?.message || 'Error inesperado durante ejecución programada.',
         success: false

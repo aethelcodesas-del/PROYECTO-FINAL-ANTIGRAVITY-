@@ -17,6 +17,7 @@ import {
   isSourceReadyForSync,
   OfficialProcessSourceDefinition
 } from './processRegistry';
+import { checkOfficialCensusPublication } from './censusPublicationValidator';
 
 export interface SchedulerExecutionOptions {
   processConfig?: ElectoralProcessConfig;
@@ -271,7 +272,55 @@ export async function executeScheduledElectoralSync(
   let lastAdapterResult: OfficialAdapterResult | null = null;
 
   try {
-    // 3. Bucle de Descarga con Reintentos Controlados para Errores Transitorios
+    // 3. Caso especial: Fuentes de tipo OFFICIAL_CENSUS_PUBLICATION (Validación de Censo)
+    if (processSourceDef.sourceType === 'OFFICIAL_CENSUS_PUBLICATION' || processSourceDef.authority === 'MASTER_VALIDATION') {
+      const startTime = Date.now();
+      let htmlContent: string | undefined = undefined;
+
+      try {
+        const response = await fetch(sourceUrl, {
+          method: 'GET',
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+          }
+        });
+        if (response.ok) {
+          htmlContent = await response.text();
+        } else if (response.status === 403 || response.status === 401) {
+          htmlContent = '<!DOCTYPE html><html><head><title>403 Forbidden</title></head><body>403 Forbidden - Cloudflare Bot Management Challenge</body></html>';
+        }
+      } catch (err: any) {
+        // En caso de bloqueo por red o WAF directo
+      }
+
+      const censusCheck = await checkOfficialCensusPublication({
+        sourceId: processSourceDef.sourceId || processId,
+        url: sourceUrl,
+        htmlContentOrBuffer: htmlContent,
+        lastKnownSha256: processSourceDef.lastKnownSha256,
+        lastKnownValidVersion: processSourceDef.lastKnownValidVersion,
+        supabaseClient: options.supabaseClient,
+        dryRun: options.dryRun ?? false
+      });
+
+      return {
+        success: censusCheck.success,
+        status: censusCheck.status as any,
+        sha256: censusCheck.sha256 || (censusCheck.status === 'SOURCE_BLOCKED' ? 'SOURCE_BLOCKED' : 'ERROR'),
+        registrosRecibidos: censusCheck.extractedData ? 1 : 0,
+        registrosValidos: censusCheck.extractedData ? 1 : 0,
+        cantidadNuevos: 0,
+        cantidadModificados: 0,
+        cantidadDesactivados: 0,
+        duracionMs: Date.now() - startTime,
+        attempts: 1,
+        anomalyDetected: false,
+        error: censusCheck.error,
+        message: censusCheck.message
+      };
+    }
+
+    // 4. Bucle de Descarga con Reintentos Controlados para Errores Transitorios (Fuentes DIVIPOLE / CSV)
     while (attempt <= maxRetries) {
       attempt++;
       lastAdapterResult = await fetchAndParseOfficialSource(sourceUrl, processConfig, {

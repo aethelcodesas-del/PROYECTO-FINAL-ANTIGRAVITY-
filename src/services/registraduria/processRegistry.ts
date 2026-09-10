@@ -31,27 +31,40 @@ export type SourceAuthorityRole =
   | 'COMPLEMENTARY_REFERENCE';
 
 export type SourceConfigurationStatus = 
+  | 'SOURCE_CONFIGURED'
+  | 'SOURCE_ACTIVE'
+  | 'FIRST_CHECK_REQUIRED'
   | 'SOURCE_VALIDATED' 
   | 'SOURCE_PENDING_CONFIGURATION' 
   | 'SOURCE_UNAVAILABLE'
   | 'SOURCE_BLOCKED'
   | 'AUTHORIZED_SOURCE'
-  | 'UNAUTHORIZED_SOURCE';
+  | 'UNAUTHORIZED_SOURCE'
+  | 'NO_CHANGES'
+  | 'NEW_OFFICIAL_PUBLICATION'
+  | 'VALIDATION_FAILED'
+  | 'NO_VALID_VERSION_AVAILABLE';
 
 export interface OfficialProcessSourceDefinition {
+  sourceId?: string;
+  processId?: string;
   processConfig: ElectoralProcessConfig;
   sourceUrl: string | null;
   sourceType: OfficialSourceType;
   publisher?: string;
   format?: 'HTML' | 'PDF' | 'CSV' | 'JSON' | 'TEXT';
   authority?: SourceAuthorityRole;
+  validationMode?: 'CENSUS_VALIDATION' | 'DIVIPOLE_INGESTION' | 'DIVIPOLE_VALIDATION' | string;
+  expectedContent?: 'OFFICIAL_ELECTORAL_CENSUS' | 'DIVIPOLE_TABLE' | string;
   enabled: boolean;
   status: SourceConfigurationStatus;
   lastKnownSha256?: string | null;
+  lastKnownValidVersion?: any;
   lastSuccessfulCheckAt?: string | null;
   lastSuccessfulValidationAt?: string | null;
   lastFailureAt?: string | null;
   lastFailureReason?: string | null;
+  lastCutoffDate?: string | null;
   notes: string;
   expectedSchema?: string[];
 }
@@ -61,6 +74,8 @@ export interface OfficialProcessSourceDefinition {
  */
 export const OFFICIAL_PROCESS_SOURCES: Record<string, OfficialProcessSourceDefinition> = {
   'COL-2026-CONGRESO': {
+    sourceId: 'COL-2026-CONGRESO',
+    processId: 'COL-2026-CONGRESO',
     processConfig: {
       codigoProceso: 'COL-2026-CONGRESO',
       nombre: 'Elecciones de Congreso de la República 2026',
@@ -84,6 +99,8 @@ export const OFFICIAL_PROCESS_SOURCES: Record<string, OfficialProcessSourceDefin
     ]
   },
   'COL-2026-PRES-1V': {
+    sourceId: 'COL-2026-PRES-1V',
+    processId: 'COL-2026-PRES-1V',
     processConfig: {
       codigoProceso: 'COL-2026-PRES-1V',
       nombre: 'Elecciones Presidenciales Primera Vuelta 2026',
@@ -102,6 +119,8 @@ export const OFFICIAL_PROCESS_SOURCES: Record<string, OfficialProcessSourceDefin
     expectedSchema: ['COD_DPTO', 'COD_MPIO', 'COD_PUESTO', 'MESAS', 'CENSO']
   },
   'REGISTRADURIA_CENSO_PRESIDENCIAL_2026': {
+    sourceId: 'REGISTRADURIA_CENSO_PRESIDENCIAL_2026',
+    processId: 'COL-2026-PRES-1V',
     processConfig: {
       codigoProceso: 'COL-2026-PRES-1V',
       nombre: 'Publicación Oficial de Censo Electoral Presidencial 2026',
@@ -115,14 +134,18 @@ export const OFFICIAL_PROCESS_SOURCES: Record<string, OfficialProcessSourceDefin
     sourceType: 'OFFICIAL_CENSUS_PUBLICATION',
     format: 'HTML',
     authority: 'MASTER_VALIDATION',
-    enabled: false,
-    status: 'SOURCE_PENDING_CONFIGURATION',
+    validationMode: 'CENSUS_VALIDATION',
+    expectedContent: 'OFFICIAL_ELECTORAL_CENSUS',
+    enabled: true,
+    status: 'SOURCE_CONFIGURED',
     lastKnownSha256: null,
+    lastKnownValidVersion: null,
     lastSuccessfulCheckAt: null,
     lastSuccessfulValidationAt: null,
     lastFailureAt: null,
     lastFailureReason: null,
-    notes: 'Publicación oficial informativa de la Registraduría Nacional sobre el censo electoral en Colombia y el exterior para Elecciones 2026. Utilizada exclusivamente como fuente de validación automática del Censo (CENSUS_VALIDATION), sin sustituir la DIVIPOLE oficial ni modificar polling_stations.',
+    lastCutoffDate: null,
+    notes: 'Publicación oficial informativa de la Registraduría Nacional sobre el censo electoral en Colombia y el exterior para Elecciones 2026. Utilizada exclusivamente como fuente de validación automática del Censo (CENSUS_VALIDATION / MASTER_VALIDATION), sin sustituir la DIVIPOLE oficial ni modificar polling_stations.',
     expectedSchema: [
       'TOTAL_COLOMBIA', 'TOTAL_EXTERIOR', 'TOTAL_NACIONAL',
       'HOMBRES_COLOMBIA', 'MUJERES_COLOMBIA', 'PUESTOS_COLOMBIA', 'MESAS_COLOMBIA',
@@ -131,6 +154,8 @@ export const OFFICIAL_PROCESS_SOURCES: Record<string, OfficialProcessSourceDefin
     ]
   },
   'COL-2026-PRES-2V': {
+    sourceId: 'COL-2026-PRES-2V',
+    processId: 'COL-2026-PRES-2V',
     processConfig: {
       codigoProceso: 'COL-2026-PRES-2V',
       nombre: 'Elecciones Presidenciales Segunda Vuelta 2026',
@@ -149,6 +174,8 @@ export const OFFICIAL_PROCESS_SOURCES: Record<string, OfficialProcessSourceDefin
     expectedSchema: ['COD_DPTO', 'DEPARTAMENTO', 'COD_MPIO', 'MUNICIPIO', 'COD_PUESTO', 'PUESTO', 'MESAS']
   },
   'COL-2027-TERRITORIAL': {
+    sourceId: 'COL-2027-TERRITORIAL',
+    processId: 'COL-2027-TERRITORIAL',
     processConfig: {
       codigoProceso: 'COL-2027-TERRITORIAL',
       nombre: 'Elecciones de Autoridades Territoriales 2027',
@@ -203,7 +230,7 @@ export function getAllOfficialProcessSources(): OfficialProcessSourceDefinition[
  */
 export function isSourceReadyForSync(sourceDef: OfficialProcessSourceDefinition): boolean {
   if (!sourceDef.enabled) return false;
-  if (sourceDef.status !== 'SOURCE_VALIDATED') return false;
+  if (sourceDef.status === 'SOURCE_PENDING_CONFIGURATION' || sourceDef.status === 'SOURCE_UNAVAILABLE') return false;
   if (!sourceDef.sourceUrl || sourceDef.sourceUrl.trim() === '') return false;
   
   // Rechazar URLs de ejemplo o placeholders genéricos

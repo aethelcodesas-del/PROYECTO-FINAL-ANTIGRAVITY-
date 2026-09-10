@@ -65,6 +65,10 @@ export interface CensusValidationDiscrepancy {
 export interface CensusPublicationCheckResult {
   success: boolean;
   status: 
+    | 'SOURCE_CONFIGURED'
+    | 'FIRST_CHECK_REQUIRED'
+    | 'FIRST_CHECK_SUCCESS'
+    | 'SOURCE_ACTIVE'
     | 'AUTHORIZED_SOURCE'
     | 'UNAUTHORIZED_SOURCE'
     | 'SOURCE_VALID'
@@ -73,13 +77,18 @@ export interface CensusPublicationCheckResult {
     | 'NEW_OFFICIAL_PUBLICATION'
     | 'VALIDATION_FAILED'
     | 'MATCH'
-    | 'CENSUS_VALIDATION_MISMATCH';
+    | 'CENSUS_VALIDATION_MATCH'
+    | 'CENSUS_VALIDATION_MISMATCH'
+    | 'NO_VALID_VERSION_AVAILABLE';
+  sourceId?: string;
   sourceUrl: string;
   checkedAt: string;
   sha256?: string;
   cutoffDate?: string;
   publicationUpdatedAt?: string;
   extractedData?: OfficialCensusExtractedData;
+  lastKnownValidVersion?: OfficialCensusExtractedData | null;
+  noValidVersionAvailable?: boolean;
   discrepancies: CensusValidationDiscrepancy[];
   databaseWritesPerformed: number;
   pollingStationsUntouched: boolean;
@@ -203,6 +212,20 @@ export function parseOfficialCensusPublicationHtml(
   }
 
   const text = cleanHtmlText(htmlContent);
+  const lowerText = text.toLowerCase();
+
+  // Verificación de indicadores oficiales de Censo Electoral de Colombia
+  const hasCensusIndicators = 
+    (lowerText.includes('censo') || lowerText.includes('electoral') || lowerText.includes('electores') || lowerText.includes('votaci')) &&
+    (lowerText.includes('registradur') || lowerText.includes('colombia') || lowerText.includes('mesas') || lowerText.includes('puestos') || lowerText.includes('departamento') || lowerText.includes('exterior'));
+
+  if (!hasCensusIndicators) {
+    return {
+      success: false,
+      isBlocked: false,
+      error: 'El contenido HTML no corresponde a una publicación oficial del Censo Electoral de la Registraduría (faltan indicadores oficiales de censo/elecciones).'
+    };
+  }
 
   // 2. Extracción de Fecha de Corte Oficial
   let cutoffDate: string | undefined;
@@ -401,9 +424,11 @@ export function validateCensusPublicationAgainstMasterCatalog(
  * Ejecuta el flujo integral de validación de la publicación oficial de censo (Modo Seguro / Dry-Run)
  */
 export async function checkOfficialCensusPublication(options: {
+  sourceId?: string;
   url?: string;
   htmlContentOrBuffer?: string | Uint8Array;
   lastKnownSha256?: string | null;
+  lastKnownValidVersion?: OfficialCensusExtractedData | null;
   masterCatalog?: {
     totalNacional?: number;
     totalColombia?: number;
@@ -415,8 +440,10 @@ export async function checkOfficialCensusPublication(options: {
   dryRun?: boolean;
   supabaseClient?: any;
 }): Promise<CensusPublicationCheckResult> {
+  const sourceId = options.sourceId || 'REGISTRADURIA_CENSO_PRESIDENCIAL_2026';
   const url = options.url || 'https://www.registraduria.gov.co/Registraduria-Nacional-entrega-detalles-del-censo-electoral-en-Colombia-y-el.html';
   const checkedAt = new Date().toISOString();
+  const isFirstCheck = options.lastKnownSha256 === null || options.lastKnownSha256 === undefined;
 
   // 1. VALIDATE_DOMAIN
   const domainValidation = validateOfficialRegistraduriaDomain(url);
@@ -424,8 +451,11 @@ export async function checkOfficialCensusPublication(options: {
     return {
       success: false,
       status: 'UNAUTHORIZED_SOURCE',
+      sourceId,
       sourceUrl: url,
       checkedAt,
+      lastKnownValidVersion: options.lastKnownValidVersion ?? null,
+      noValidVersionAvailable: !options.lastKnownValidVersion,
       discrepancies: [],
       databaseWritesPerformed: 0,
       pollingStationsUntouched: true,
@@ -441,13 +471,16 @@ export async function checkOfficialCensusPublication(options: {
     return {
       success: false,
       status: 'SOURCE_BLOCKED',
+      sourceId,
       sourceUrl: url,
       checkedAt,
+      lastKnownValidVersion: options.lastKnownValidVersion ?? null,
+      noValidVersionAvailable: !options.lastKnownValidVersion,
       discrepancies: [],
       databaseWritesPerformed: 0,
       pollingStationsUntouched: true,
       campaignsUntouched: true,
-      message: 'No se pudo obtener el contenido HTML de la fuente oficial (bloqueo WAF o falta de contenido).',
+      message: 'No se pudo obtener el contenido HTML de la fuente oficial (bloqueo WAF/403 o inaccesibilidad temporal).',
       error: 'HTTP 403 Forbidden / Cloudflare WAF Bot Challenge'
     };
   }
@@ -457,31 +490,62 @@ export async function checkOfficialCensusPublication(options: {
   // 3. DETECT_WAF & VALIDATE_RESPONSE
   const blockCheck = detectWafOrHtmlError(rawHtml);
   if (blockCheck.isBlocked) {
+    // Si la respuesta es WAF/403, el estado DEBE ser SOURCE_BLOCKED (NO SOURCE_PENDING_CONFIGURATION)
+    // y NUNCA se debe guardar el SHA-256 de una página de error o WAF.
     return {
       success: false,
       status: 'SOURCE_BLOCKED',
+      sourceId,
       sourceUrl: url,
       checkedAt,
+      lastKnownValidVersion: options.lastKnownValidVersion ?? null,
+      noValidVersionAvailable: !options.lastKnownValidVersion,
       discrepancies: [],
       databaseWritesPerformed: 0,
       pollingStationsUntouched: true,
       campaignsUntouched: true,
-      message: `Bloqueo detectado: ${blockCheck.reason}`,
+      message: `Bloqueo detectado en fuente oficial: ${blockCheck.reason}`,
       error: blockCheck.reason
     };
   }
 
-  // 4. CALCULATE_SHA256
-  const sha256 = await calculateSha256(content);
+  // 4. PARSE_OFFICIAL_CENSUS (Validar contenido antes de registrar SHA)
+  const parseResult = parseOfficialCensusPublicationHtml(rawHtml);
+  if (!parseResult.success || !parseResult.data) {
+    return {
+      success: false,
+      status: 'VALIDATION_FAILED',
+      sourceId,
+      sourceUrl: url,
+      checkedAt,
+      lastKnownValidVersion: options.lastKnownValidVersion ?? null,
+      noValidVersionAvailable: !options.lastKnownValidVersion,
+      discrepancies: [],
+      databaseWritesPerformed: 0,
+      pollingStationsUntouched: true,
+      campaignsUntouched: true,
+      message: `Error al validar contenido de publicación oficial: ${parseResult.error || 'Estructura o datos incompletos'}`,
+      error: parseResult.error
+    };
+  }
 
-  // 5. COMPARE_VERSION
+  // 5. CALCULATE_SHA256 (Solo sobre contenido validado)
+  const sha256 = await calculateSha256(content);
+  const extractedData = parseResult.data;
+
+  // 6. COMPARE_VERSION
   if (options.lastKnownSha256 && options.lastKnownSha256 === sha256) {
     return {
       success: true,
       status: 'NO_CHANGES',
+      sourceId,
       sourceUrl: url,
       checkedAt,
       sha256,
+      cutoffDate: extractedData.cutoffDate,
+      publicationUpdatedAt: extractedData.publicationUpdatedAt,
+      extractedData,
+      lastKnownValidVersion: extractedData,
       discrepancies: [],
       databaseWritesPerformed: 0,
       pollingStationsUntouched: true,
@@ -490,29 +554,9 @@ export async function checkOfficialCensusPublication(options: {
     };
   }
 
-  // 6. PARSE_OFFICIAL_CENSUS
-  const parseResult = parseOfficialCensusPublicationHtml(rawHtml);
-  if (!parseResult.success || !parseResult.data) {
-    return {
-      success: false,
-      status: 'VALIDATION_FAILED',
-      sourceUrl: url,
-      checkedAt,
-      sha256,
-      discrepancies: [],
-      databaseWritesPerformed: 0,
-      pollingStationsUntouched: true,
-      campaignsUntouched: true,
-      message: `Error al interpretar publicación oficial: ${parseResult.error || 'Datos incompletos'}`,
-      error: parseResult.error
-    };
-  }
-
-  const extractedData = parseResult.data;
-
   // 7. COMPARE_WITH_MASTER
   let discrepancies: CensusValidationDiscrepancy[] = [];
-  let validationStatus: 'MATCH' | 'CENSUS_VALIDATION_MISMATCH' | 'NEW_OFFICIAL_PUBLICATION' = 'NEW_OFFICIAL_PUBLICATION';
+  let validationStatus: 'MATCH' | 'CENSUS_VALIDATION_MATCH' | 'CENSUS_VALIDATION_MISMATCH' | 'NEW_OFFICIAL_PUBLICATION' | 'FIRST_CHECK_SUCCESS' = isFirstCheck ? 'FIRST_CHECK_SUCCESS' : 'NEW_OFFICIAL_PUBLICATION';
 
   if (options.masterCatalog) {
     const comparison = validateCensusPublicationAgainstMasterCatalog(
@@ -522,10 +566,12 @@ export async function checkOfficialCensusPublication(options: {
       checkedAt
     );
     discrepancies = comparison.discrepancies;
-    validationStatus = comparison.status;
+    validationStatus = comparison.status === 'MATCH' 
+      ? (isFirstCheck ? 'FIRST_CHECK_SUCCESS' : 'CENSUS_VALIDATION_MATCH')
+      : 'CENSUS_VALIDATION_MISMATCH';
   }
 
-  // 8. Historial (Cero escrituras en DIVIPOLE master)
+  // 8. Historial (Cero escrituras en tablas maestras DIVIPOLE)
   if (!options.dryRun && options.supabaseClient) {
     try {
       await options.supabaseClient.from('divipole_sync_history').insert({
@@ -543,22 +589,57 @@ export async function checkOfficialCensusPublication(options: {
   }
 
   return {
-    success: true,
+    success: validationStatus !== 'CENSUS_VALIDATION_MISMATCH' || discrepancies.length === 0,
     status: validationStatus,
+    sourceId,
     sourceUrl: url,
     checkedAt,
     sha256,
     cutoffDate: extractedData.cutoffDate,
     publicationUpdatedAt: extractedData.publicationUpdatedAt,
     extractedData,
+    lastKnownValidVersion: extractedData,
     discrepancies,
     databaseWritesPerformed: 0, // Cero escrituras a tablas maestras
     pollingStationsUntouched: true,
     campaignsUntouched: true,
-    message: validationStatus === 'MATCH'
+    message: validationStatus === 'FIRST_CHECK_SUCCESS'
+      ? 'Primera comprobación oficial completada exitosamente. Publicación validada y SHA-256 inicial registrado.'
+      : validationStatus === 'MATCH' || validationStatus === 'CENSUS_VALIDATION_MATCH'
       ? 'Publicación oficial validada con éxito. Cifras coinciden al 100% con el catálogo maestro.'
       : validationStatus === 'CENSUS_VALIDATION_MISMATCH'
       ? `Se detectaron ${discrepancies.length} discrepancias respecto al catálogo maestro. Alerta CENSUS_VALIDATION_MISMATCH generada sin alterar DIVIPOLE.`
-      : 'Nueva publicación oficial parseada y lista para validación.'
+      : 'Nueva publicación oficial parseada y validada con éxito.'
   };
+}
+
+/**
+ * Formatea el reporte de telemetría de la fuente oficial de censo
+ */
+export function formatCensusSourceTelemetry(params: {
+  sourceId?: string;
+  publisher?: string;
+  status: string;
+  checkedAt?: string | null;
+  sha256?: string | null;
+  cutoffDate?: string | null;
+  lastSuccessfulValidationAt?: string | null;
+  lastFailureReason?: string | null;
+  lastKnownValidVersion?: any;
+}): string {
+  return [
+    '============================================================',
+    'TELEMETRÍA DE FUENTE OFICIAL DE CENSO ELECTORAL',
+    '============================================================',
+    `Fuente: ${params.sourceId || 'REGISTRADURIA_CENSO_PRESIDENCIAL_2026'}`,
+    `Publicador: ${params.publisher || 'Registraduría Nacional del Estado Civil'}`,
+    `Estado: ${params.status}`,
+    `Última comprobación: ${params.checkedAt || 'N/A'}`,
+    `Último SHA: ${params.sha256 || 'N/A'}`,
+    `Último corte: ${params.cutoffDate || 'N/A'}`,
+    `Última validación exitosa: ${params.lastSuccessfulValidationAt || 'N/A'}`,
+    `Último error: ${params.lastFailureReason || 'Ninguno'}`,
+    `Versión válida disponible: ${params.lastKnownValidVersion ? 'DISPONIBLE' : 'NO_VALID_VERSION_AVAILABLE'}`,
+    '============================================================'
+  ].join('\n');
 }
