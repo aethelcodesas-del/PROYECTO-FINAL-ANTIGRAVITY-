@@ -105,15 +105,15 @@ async function runScheduledTriggerDeploymentTests() {
   const initialUsersSnapshot = JSON.stringify(db.users);
 
   // 1. Cron 0 3 * * 0
-  console.log('--- 1. Verificación de Expresión Cron "0 3 * * 0" ---');
-  const wranglerTomlPath = path.resolve(process.cwd(), 'wrangler.toml');
-  const wranglerJsonPath = path.resolve(process.cwd(), 'wrangler.json');
+  console.log('--- 1. Verificación de Expresión Cron "0 3 * * 0" en Worker Scheduler ---');
+  const schedulerTomlPath = path.resolve(process.cwd(), 'wrangler.scheduler.toml');
+  const schedulerJsonPath = path.resolve(process.cwd(), 'wrangler.scheduler.json');
   
-  const tomlContent = fs.readFileSync(wranglerTomlPath, 'utf8');
-  const jsonContent = JSON.parse(fs.readFileSync(wranglerJsonPath, 'utf8'));
+  const tomlContent = fs.readFileSync(schedulerTomlPath, 'utf8');
+  const jsonContent = JSON.parse(fs.readFileSync(schedulerJsonPath, 'utf8'));
 
-  assert(tomlContent.includes('crons = ["0 3 * * 0"]'), 'wrangler.toml declara cron "0 3 * * 0"');
-  assert(jsonContent.triggers?.crons?.[0] === '0 3 * * 0', 'wrangler.json declara cron "0 3 * * 0"');
+  assert(tomlContent.includes('crons = ["0 3 * * 0"]'), 'wrangler.scheduler.toml declara cron "0 3 * * 0"');
+  assert(jsonContent.triggers?.crons?.[0] === '0 3 * * 0', 'wrangler.scheduler.json declara cron "0 3 * * 0"');
 
   // 2. Handler scheduled() exportado
   console.log('--- 2. Verificación de Exportación de Handler scheduled() ---');
@@ -139,8 +139,11 @@ async function runScheduledTriggerDeploymentTests() {
   // 4. Ausencia de triggers duplicados
   console.log('--- 4. Ausencia de Triggers Duplicados ---');
   const tomlMatches = tomlContent.match(/crons\s*=\s*\[(.*?)\]/g) || [];
-  assert(tomlMatches.length === 1, 'Exactamente 1 definición de trigger en wrangler.toml');
-  assert(jsonContent.triggers.crons.length === 1, 'Exactamente 1 trigger en wrangler.json');
+  assert(tomlMatches.length === 1, 'Exactamente 1 definición de trigger en wrangler.scheduler.toml');
+  assert(jsonContent.triggers.crons.length === 1, 'Exactamente 1 trigger en wrangler.scheduler.json');
+
+  const pagesToml = fs.readFileSync(path.resolve(process.cwd(), 'wrangler.toml'), 'utf8');
+  assert(!pagesToml.includes('[triggers]'), 'wrangler.toml de Pages limpio de triggers');
 
   // 5. Separación CONFIGURED vs ACTIVE
   console.log('--- 5. Separación Rigurosa CONFIGURED vs ACTIVE ---');

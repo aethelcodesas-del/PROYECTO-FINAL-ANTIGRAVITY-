@@ -1,0 +1,17 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "campana-ganadora-registraduria-scheduler",
+  "main": "workers/registraduria-scheduler.ts",
+  "compatibility_date": "2024-09-23",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "triggers": {
+    "crons": [
+      "0 3 * * 0"
+    ]
+  },
+  "vars": {
+    "VITE_SUPABASE_URL": "https://cjvztlvxdsuiluybvtpl.supabase.co"
+  }
+}

@@ -111,16 +111,16 @@ async function runCloudflareScheduledTriggerTests() {
   assert(typeof cloudflareHandler.fetch === 'function', 'cloudflareHandler.fetch está definido como función exportada');
   assert(typeof handleScheduledEvent === 'function', 'handleScheduledEvent está disponible');
 
-  // TEST 2: El cron es exactamente "0 3 * * 0"
-  console.log('--- TEST 2: El cron es exactamente "0 3 * * 0" ---');
-  const wranglerTomlPath = path.resolve(process.cwd(), 'wrangler.toml');
-  const wranglerJsonPath = path.resolve(process.cwd(), 'wrangler.json');
+  // TEST 2: El cron es exactamente "0 3 * * 0" en la configuración del Worker Scheduler
+  console.log('--- TEST 2: El cron es exactamente "0 3 * * 0" en el Worker Scheduler ---');
+  const schedulerTomlPath = path.resolve(process.cwd(), 'wrangler.scheduler.toml');
+  const schedulerJsonPath = path.resolve(process.cwd(), 'wrangler.scheduler.json');
   
-  const tomlContent = fs.readFileSync(wranglerTomlPath, 'utf8');
-  const jsonContent = JSON.parse(fs.readFileSync(wranglerJsonPath, 'utf8'));
+  const tomlContent = fs.readFileSync(schedulerTomlPath, 'utf8');
+  const jsonContent = JSON.parse(fs.readFileSync(schedulerJsonPath, 'utf8'));
 
-  assert(tomlContent.includes('crons = ["0 3 * * 0"]'), 'wrangler.toml contiene cron "0 3 * * 0"');
-  assert(Array.isArray(jsonContent.triggers?.crons) && jsonContent.triggers.crons[0] === '0 3 * * 0', 'wrangler.json contiene crons ["0 3 * * 0"]');
+  assert(tomlContent.includes('crons = ["0 3 * * 0"]'), 'wrangler.scheduler.toml contiene cron "0 3 * * 0"');
+  assert(Array.isArray(jsonContent.triggers?.crons) && jsonContent.triggers.crons[0] === '0 3 * * 0', 'wrangler.scheduler.json contiene crons ["0 3 * * 0"]');
 
   // TEST 3: El handler recibe un Scheduled Event
   console.log('--- TEST 3: El handler recibe un Scheduled Event ---');
@@ -183,11 +183,14 @@ async function runCloudflareScheduledTriggerTests() {
   console.log('--- TEST 11: No se modifican usuarios ---');
   assert(JSON.stringify(db.users) === initialUsersSnapshot, 'Usuarios permanecen 100% intactos');
 
-  // TEST 12: No se crean Scheduled Triggers duplicados en la configuración
-  console.log('--- TEST 12: No se crean Scheduled Triggers duplicados en la configuración ---');
+  // TEST 12: No se crean Scheduled Triggers duplicados en la configuración y Pages permanece limpia
+  console.log('--- TEST 12: Unicidad del Scheduled Trigger en Worker y Pages limpia ---');
   const tomlCronMatches = tomlContent.match(/crons\s*=\s*\[(.*?)\]/g) || [];
-  assert(tomlCronMatches.length === 1, 'Exactamente 1 definición de crons en wrangler.toml');
-  assert(jsonContent.triggers.crons.length === 1, 'Exactamente 1 cron en wrangler.json');
+  assert(tomlCronMatches.length === 1, 'Exactamente 1 definición de crons en wrangler.scheduler.toml');
+  assert(jsonContent.triggers.crons.length === 1, 'Exactamente 1 cron en wrangler.scheduler.json');
+
+  const pagesToml = fs.readFileSync(path.resolve(process.cwd(), 'wrangler.toml'), 'utf8');
+  assert(!pagesToml.includes('[triggers]'), 'wrangler.toml de Pages no tiene triggers');
 
   console.log('\n============================================================');
   console.log('✅ TODAS LAS 12 PRUEBAS DEL SCHEDULED TRIGGER PASARON AL 100%');

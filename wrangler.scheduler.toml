@@ -1,0 +1,12 @@
+name = "campana-ganadora-registraduria-scheduler"
+main = "workers/registraduria-scheduler.ts"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+[triggers]
+crons = ["0 3 * * 0"]
+
+[vars]
+VITE_SUPABASE_URL = "https://cjvztlvxdsuiluybvtpl.supabase.co"
+# Las credenciales secretas (SUPABASE_SERVICE_ROLE_KEY, CRON_SECRET, SYNC_ADMIN_KEY)
+# se configuran exclusivamente en Cloudflare vía `wrangler secret put` o Dashboard
