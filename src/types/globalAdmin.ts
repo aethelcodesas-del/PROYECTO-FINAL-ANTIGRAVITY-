@@ -9,7 +9,64 @@ export type GlobalAdminTab =
   | 'seguridad'
   | 'configuracion'
   | 'comercial'
-  | 'sistema';
+  | 'sistema'
+  | 'registraduria';
+
+export type RegistraduriaUpdateMode = 'MANUAL_ONLY';
+
+export interface GlobalAdminRegistraduriaStatus {
+  mode: RegistraduriaUpdateMode;
+  automaticUpdate: 'DISABLED';
+  manualUpdate: 'ENABLED';
+  scope: 'GLOBAL_ADMIN_ONLY';
+  officialSourceUrl: string;
+  sourceDomain: string;
+  lastKnownSha256: string | null;
+  lastValidVersionTag: string | null;
+  lastValidVersionType: 'VALID_SAMPLE' | 'VALID_NATIONAL_OFFICIAL' | 'NOT_AVAILABLE';
+  lastUpdatedAt: string | null;
+  sourceStatus: 'SOURCE_CONFIGURED' | 'SOURCE_ACTIVE' | 'SOURCE_BLOCKED' | 'SOURCE_UNCHANGED' | 'SOURCE_CHANGED';
+  lastCheckedAt: string | null;
+  lastValidationResult: 'PASSED' | 'FAILED' | 'SKIPPED' | 'PENDING';
+  totalDepartments: number;
+  totalMunicipalities: number;
+  totalPollingPlaces: number;
+  totalTables: number;
+}
+
+export interface RegistraduriaDryRunSummary {
+  success: boolean;
+  sha256: string;
+  fileName: string;
+  fileSizeBytes: number;
+  isAuthenticPdf: boolean;
+  isWafOrHtmlError: boolean;
+  departmentsCount: number;
+  municipalitiesCount: number;
+  zonesCount: number;
+  pollingPlacesCount: number;
+  tablesCount: number;
+  departmentsSample: string[];
+  coverageType: 'VALID_SAMPLE' | 'VALID_NATIONAL_OFFICIAL' | 'OFFICIAL_FULL_FILE_REQUIRED';
+  censusValidation: 'PASSED' | 'MISMATCH' | 'SKIPPED';
+  structuralIntegrity: 'PASSED' | 'FAILED';
+  nationalThresholdsMet: boolean;
+  diffs: {
+    inserted: number;
+    updated: number;
+    deleted: number;
+    unchanged: number;
+  };
+  operationalSafety: {
+    pollingStationsUntouched: boolean;
+    campaignsUntouched: boolean;
+    usersUntouched: boolean;
+  };
+  canConfirm: boolean;
+  message: string;
+  warnings: string[];
+  errors: string[];
+}
 
 export interface GlobalAdminSession {
   token: string;

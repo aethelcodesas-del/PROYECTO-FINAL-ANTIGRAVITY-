@@ -12,6 +12,7 @@ import { GlobalAdminSecurity } from './views/GlobalAdminSecurity';
 import { GlobalAdminConfig } from './views/GlobalAdminConfig';
 import { GlobalAdminSystem } from './views/GlobalAdminSystem';
 import { GlobalAdminCommercial } from './views/GlobalAdminCommercial';
+import { GlobalAdminRegistraduria } from './views/GlobalAdminRegistraduria';
 import {
   ShieldAlert,
   LayoutDashboard,
@@ -31,7 +32,8 @@ import {
   Clock,
   Radio,
   ExternalLink,
-  BadgeDollarSign
+  BadgeDollarSign,
+  Globe
 } from 'lucide-react';
 
 interface GlobalAdminLayoutProps {
@@ -96,6 +98,7 @@ export const GlobalAdminLayout: React.FC<GlobalAdminLayoutProps> = ({
     { id: 'roles' as GlobalAdminTab, label: 'Roles y Matriz RBAC', icon: ShieldCheck },
     { id: 'campanas' as GlobalAdminTab, label: 'Gestión Campañas', icon: Flag },
     { id: 'modulos' as GlobalAdminTab, label: 'Control Módulos', icon: Layers },
+    { id: 'registraduria' as GlobalAdminTab, label: 'Actualización Registraduría', icon: Globe },
     { id: 'apis' as GlobalAdminTab, label: 'APIs & Integraciones', icon: Zap },
     { id: 'auditoria' as GlobalAdminTab, label: 'Logs de Auditoría', icon: FileText },
     { id: 'seguridad' as GlobalAdminTab, label: 'Centro de Seguridad', icon: ShieldAlert },
@@ -116,6 +119,8 @@ export const GlobalAdminLayout: React.FC<GlobalAdminLayoutProps> = ({
         return <GlobalAdminCampaigns />;
       case 'modulos':
         return <GlobalAdminModules />;
+      case 'registraduria':
+        return <GlobalAdminRegistraduria />;
       case 'apis':
         return <GlobalAdminApis />;
       case 'auditoria':
