@@ -29,6 +29,7 @@ import {
   Globe
 } from 'lucide-react';
 import { testSupabaseConnection, SUPABASE_URL, SUPABASE_ANON_KEY } from '../../lib/supabase';
+import { ColorModeToggle } from '../common/ColorModeToggle';
 
 interface ConfiguracionViewProps {
   onSelectView: (view: ViewMode) => void;
@@ -272,6 +273,26 @@ export const ConfiguracionView: React.FC<ConfiguracionViewProps> = ({ onSelectVi
       {/* TAB CONTENT: ACCESIBILIDAD Y TEMA */}
       {activeTab === 'accesibilidad' && (
         <div className="space-y-6">
+          {/* Visual Color Mode: Color Establecido vs Efecto Blanco */}
+          <div className="p-6 rounded-3xl bg-[#07172e] border border-cyan-500/20 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h2 className="text-sm font-extrabold text-white uppercase tracking-wider flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-cyan-400" />
+                  Apariencia — Color Principal y Efecto Visual
+                </h2>
+                <p className="text-xs text-slate-300 mt-0.5">
+                  Alterna entre el esquema de color establecido o el efecto blanco de alta luminosidad sin alterar datos ni funciones.
+                </p>
+              </div>
+              <div>
+                <ColorModeToggle variant="segmented" />
+              </div>
+            </div>
+
+            <ColorModeToggle variant="cards" />
+          </div>
+
           {/* Theme Selector Grid */}
           <div className="p-6 rounded-3xl bg-[#07172e] border border-cyan-500/20 space-y-5">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">

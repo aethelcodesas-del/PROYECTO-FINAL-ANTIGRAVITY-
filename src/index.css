@@ -921,3 +921,98 @@ html.reduce-motion ::after {
     scroll-behavior: auto !important;
   }
 }
+
+/* ==========================================================================
+   COLOR MODE SYSTEM: ESTABLISHED (NATIVE) VS WHITE EFFECT
+   ========================================================================== */
+:root {
+  --color-primary-accent: #06b6d4;
+  --color-primary-glow: rgba(6, 182, 212, 0.35);
+  --color-primary-border: rgba(6, 182, 212, 0.4);
+}
+
+html[data-color-mode="white"],
+html.color-mode-white {
+  --color-primary-accent: #ffffff;
+  --color-primary-glow: rgba(255, 255, 255, 0.4);
+  --color-primary-border: rgba(255, 255, 255, 0.5);
+}
+
+/* White mode selection */
+html.color-mode-white ::selection,
+html[data-color-mode="white"] ::selection {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+/* White Mode: Primary highlight text */
+html.color-mode-white .text-cyan-400,
+html.color-mode-white .text-cyan-300,
+html[data-color-mode="white"] .text-cyan-400,
+html[data-color-mode="white"] .text-cyan-300 {
+  color: #ffffff !important;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.35);
+}
+
+/* White Mode: Primary accent borders */
+html.color-mode-white .border-cyan-500\/40,
+html.color-mode-white .border-cyan-500\/30,
+html.color-mode-white .border-cyan-500\/50,
+html.color-mode-white .border-cyan-500\/60,
+html.color-mode-white .hover\:border-cyan-500\/50:hover,
+html.color-mode-white .hover\:border-cyan-500\/60:hover,
+html[data-color-mode="white"] .border-cyan-500\/40,
+html[data-color-mode="white"] .border-cyan-500\/30,
+html[data-color-mode="white"] .border-cyan-500\/50,
+html[data-color-mode="white"] .border-cyan-500\/60 {
+  border-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+/* White Mode: Primary pill badges & containers */
+html.color-mode-white .bg-cyan-950,
+html.color-mode-white .bg-cyan-950\/80,
+html.color-mode-white .bg-cyan-950\/70,
+html.color-mode-white .bg-cyan-950\/60,
+html.color-mode-white .bg-cyan-950\/50,
+html.color-mode-white .bg-cyan-950\/40,
+html.color-mode-white .bg-cyan-950\/30,
+html[data-color-mode="white"] .bg-cyan-950,
+html[data-color-mode="white"] .bg-cyan-950\/80,
+html[data-color-mode="white"] .bg-cyan-950\/70,
+html[data-color-mode="white"] .bg-cyan-950\/60,
+html[data-color-mode="white"] .bg-cyan-950\/50,
+html[data-color-mode="white"] .bg-cyan-950\/40 {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.color-mode-white .bg-cyan-500\/20,
+html.color-mode-white .bg-cyan-500\/15,
+html.color-mode-white .bg-cyan-500\/10,
+html[data-color-mode="white"] .bg-cyan-500\/20,
+html[data-color-mode="white"] .bg-cyan-500\/15,
+html[data-color-mode="white"] .bg-cyan-500\/10 {
+  background-color: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+}
+
+/* White Mode: Gradients */
+html.color-mode-white .from-cyan-950,
+html[data-color-mode="white"] .from-cyan-950 {
+  --tw-gradient-from: rgba(255, 255, 255, 0.14) var(--tw-gradient-from-position) !important;
+}
+
+html.color-mode-white .to-blue-950,
+html[data-color-mode="white"] .to-blue-950 {
+  --tw-gradient-to: rgba(255, 255, 255, 0.04) var(--tw-gradient-to-position) !important;
+}
+
+/* White Mode: Glow and Shadows */
+html.color-mode-white .shadow-cyan-950\/50,
+html.color-mode-white .shadow-cyan-950\/40,
+html.color-mode-white .shadow-cyan-950\/30,
+html[data-color-mode="white"] .shadow-cyan-950\/50,
+html[data-color-mode="white"] .shadow-cyan-950\/40,
+html[data-color-mode="white"] .shadow-cyan-950\/30 {
+  box-shadow: 0 10px 25px -5px rgba(255, 255, 255, 0.08) !important;
+}
+

@@ -16,3 +16,4 @@ global_admin_db.json
 .npm-cache-temp/
 .env*
 .verification-build/
+*.zip

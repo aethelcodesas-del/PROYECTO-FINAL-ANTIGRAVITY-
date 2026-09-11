@@ -13,6 +13,7 @@ import { GlobalAdminConfig } from './views/GlobalAdminConfig';
 import { GlobalAdminSystem } from './views/GlobalAdminSystem';
 import { GlobalAdminCommercial } from './views/GlobalAdminCommercial';
 import { GlobalAdminRegistraduria } from './views/GlobalAdminRegistraduria';
+import { ColorModeToggle } from '../common/ColorModeToggle';
 import {
   ShieldAlert,
   LayoutDashboard,
@@ -174,6 +175,9 @@ export const GlobalAdminLayout: React.FC<GlobalAdminLayoutProps> = ({
 
         {/* Right Session & Actions */}
         <div className="flex items-center space-x-2 sm:space-x-3">
+          {/* Visual Appearance Color Mode Toggle */}
+          <ColorModeToggle />
+
           {/* Session Timer Pill */}
           <div className="hidden sm:flex items-center space-x-2 bg-slate-900/90 border border-slate-800 rounded-xl px-3 py-1.5 text-xs">
             <Clock className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />

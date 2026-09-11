@@ -7,7 +7,7 @@
     "dev": "node server.ts",
     "build": "vite build --configLoader runner",
     "start": "node server.ts",
-    "test": "tsx tests/globalAdminRegistraduriaManual.test.ts && tsx tests/officialNationalFileCertification.test.ts && tsx tests/officialSourceMonitor.test.ts && tsx tests/officialSourceMonitorEndToEnd.test.ts && tsx tests/cloudflarePagesWorkerSeparation.test.ts && tsx tests/cloudflareScheduledTrigger.test.ts && tsx tests/cloudflareScheduledTriggerDeployment.test.ts",
+    "test": "tsx tests/colorModeToggle.test.ts && tsx tests/globalAdminRegistraduriaManual.test.ts && tsx tests/officialNationalFileCertification.test.ts && tsx tests/officialSourceMonitor.test.ts && tsx tests/officialSourceMonitorEndToEnd.test.ts && tsx tests/cloudflarePagesWorkerSeparation.test.ts && tsx tests/cloudflareScheduledTrigger.test.ts && tsx tests/cloudflareScheduledTriggerDeployment.test.ts",
     "lint": "tsc --noEmit"
   },
   "dependencies": {

@@ -5,6 +5,7 @@ import {
   Bell,
   Menu
 } from 'lucide-react';
+import { ColorModeToggle } from './common/ColorModeToggle';
 
 interface HeaderProps {
   currentView: ViewMode;
@@ -98,8 +99,11 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Right Side: Notifications */}
+        {/* Right Side: Appearance Toggle & Notifications */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          {/* Visual Appearance Color Mode Toggle */}
+          <ColorModeToggle />
+
           {/* Notifications */}
           <div className="relative" ref={popoverRef}>
             <button 
