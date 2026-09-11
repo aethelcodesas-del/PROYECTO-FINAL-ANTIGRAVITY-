@@ -1026,7 +1026,16 @@ html.color-mode-white {
 [data-color-mode="white"] [class*="bg-[#081e36]"],
 [data-color-mode="white"] [class*="bg-[#0b2747]"],
 [data-color-mode="white"] [class*="bg-[#06172b]"],
-[data-color-mode="white"] [class*="bg-[#071927]"] {
+[data-color-mode="white"] [class*="bg-[#071927]"],
+[data-color-mode="white"] [class*="bg-[#030e21]"],
+[data-color-mode="white"] [class*="bg-[#030f24]"],
+[data-color-mode="white"] [class*="bg-[#051833]"],
+[data-color-mode="white"] [class*="bg-[#041021]"],
+[data-color-mode="white"] [class*="bg-[#030e1c]"],
+[data-color-mode="white"] [class*="bg-[#071426]"],
+[data-color-mode="white"] [class*="bg-[#041126]"],
+[data-color-mode="white"] [class*="bg-[#030b19]"],
+[data-color-mode="white"] [class*="bg-[#081f3d]"] {
   background-color: #ffffff !important;
   border-color: #e2e8f0 !important;
   color: #0f172a !important;
@@ -1053,7 +1062,9 @@ html.color-mode-white {
 [data-color-mode="white"] .bg-slate-800\/70,
 [data-color-mode="white"] .bg-slate-800\/60,
 [data-color-mode="white"] .bg-slate-800\/50,
-[data-color-mode="white"] .bg-slate-800\/40 {
+[data-color-mode="white"] .bg-slate-800\/40,
+[data-color-mode="white"] .print-header-bar,
+[data-color-mode="white"] .print-badge {
   background-color: #f1f5f9 !important;
   border-color: #e2e8f0 !important;
   color: #1e293b !important;
@@ -1065,17 +1076,26 @@ html.color-mode-white {
 [data-color-mode="white"] [role="menu"],
 [data-color-mode="white"] [role="listbox"],
 [data-color-mode="white"] .modal-content,
-[data-color-mode="white"] .popover-content {
+[data-color-mode="white"] .popover-content,
+[data-color-mode="white"] .print-section {
   background-color: #ffffff !important;
   border-color: #cbd5e1 !important;
   color: #0f172a !important;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
 }
 
+[data-color-mode="white"] #printable-dossier-root {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+  color: #1e293b !important;
+}
+
 /* Dark backdrop overlays for modals remain intact */
 [data-color-mode="white"] .fixed.inset-0.bg-slate-950\/80,
+[data-color-mode="white"] .fixed.inset-0.bg-slate-950\/85,
 [data-color-mode="white"] .fixed.inset-0.bg-black\/70,
 [data-color-mode="white"] .fixed.inset-0.bg-black\/80,
+[data-color-mode="white"] .fixed.inset-0.bg-black\/85,
 [data-color-mode="white"] [class*="fixed inset-0"][class*="bg-slate-950/"],
 [data-color-mode="white"] [class*="fixed inset-0"][class*="bg-black/"] {
   background-color: rgba(2, 6, 23, 0.8) !important;
@@ -1278,6 +1298,10 @@ html.color-mode-white {
 }
 
 /* 13. Scrollbar & UI Accents in White Mode */
+[data-color-mode="white"] .custom-scrollbar {
+  scrollbar-color: #cbd5e1 #f1f5f9 !important;
+}
+
 [data-color-mode="white"] .custom-scrollbar::-webkit-scrollbar-track {
   background: #f1f5f9;
 }

@@ -892,7 +892,7 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
         )}
 
         {/* Section Navigation Tabs */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-t border-cyan-500/15 pt-3 text-xs" style={{scrollbarWidth:'thin', scrollbarColor:'#164e63 transparent'}}>
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-t border-cyan-500/15 pt-3 text-xs custom-scrollbar" style={{scrollbarWidth:'thin'}}>
           {[
             { id: 'territorio', label: '1. Territorio & Elección', icon: MapPin },
             { id: 'candidato', label: '2. Candidato', icon: User },
