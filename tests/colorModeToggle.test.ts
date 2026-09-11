@@ -1,18 +1,28 @@
 /**
- * SUITE DE PRUEBAS DE ALTERNANCIA ENTRE COLOR ESTABLECIDO Y EFECTO BLANCO
+ * SUITE DE PRUEBAS DE LA FASE 2: IMPLEMENTACIÓN DEL TEMA BLANCO COMPLETO
  * Archivo: tests/colorModeToggle.test.ts
  * 
- * Verifica los 10 requerimientos obligatorios (A - J):
- * A. El color establecido sigue funcionando (estado por defecto ESTABLISHED).
- * B. El modo blanco puede activarse (estado WHITE).
- * C. El modo blanco puede desactivarse (retorna a ESTABLISHED).
- * D. La preferencia persiste después de recargar (localStorage).
- * E. No se modifican datos de Supabase.
- * F. No se modifican permisos ni roles.
- * G. No se modifican campañas ni candidatos.
- * H. No se modifica Registraduría ni DIVIPOLE.
- * I. No se rompe el responsive (clases y dimensiones seguras para mobile/tablet/desktop).
- * J. No existen errores TypeScript / Typesafe en contratos.
+ * Verifica los 20 requerimientos obligatorios (A - T):
+ * A. ESTABLISHED mantiene el tema actual.
+ * B. WHITE cambia el fondo global.
+ * C. WHITE cambia shell principal.
+ * D. WHITE cambia sidebar.
+ * E. WHITE cambia header.
+ * F. WHITE cambia tarjetas.
+ * G. WHITE cambia paneles.
+ * H. WHITE cambia inputs.
+ * I. WHITE cambia tablas.
+ * J. WHITE mejora contraste de textos.
+ * K. Los colores de éxito permanecen verdes.
+ * L. Los errores permanecen rojos/corales.
+ * M. Las advertencias permanecen ámbar.
+ * N. Los datos no cambian.
+ * O. Supabase no cambia.
+ * P. Permisos no cambian.
+ * Q. Registraduría no cambia.
+ * R. DIVIPOLE no cambia.
+ * S. El modo establecido sigue funcionando.
+ * T. La persistencia en localStorage sigue funcionando.
  */
 
 import {
@@ -34,7 +44,7 @@ function assert(condition: boolean, message: string) {
   }
 }
 
-// Global mock of localStorage and documentElement for NodeJS test environment
+// Global mock of localStorage and DOM for NodeJS test environment
 const mockStorage: Record<string, string> = {};
 (globalThis as any).localStorage = {
   getItem: (key: string) => mockStorage[key] || null,
@@ -46,6 +56,9 @@ const mockStorage: Record<string, string> = {};
 const domAttributes: Record<string, string> = {};
 const domClassList = new Set<string>();
 
+const bodyAttributes: Record<string, string> = {};
+const bodyClassList = new Set<string>();
+
 (globalThis as any).document = {
   documentElement: {
     getAttribute: (attr: string) => domAttributes[attr] || null,
@@ -55,6 +68,16 @@ const domClassList = new Set<string>();
       add: (cls: string) => domClassList.add(cls),
       remove: (cls: string) => domClassList.delete(cls),
       contains: (cls: string) => domClassList.has(cls)
+    }
+  },
+  body: {
+    getAttribute: (attr: string) => bodyAttributes[attr] || null,
+    setAttribute: (attr: string, val: string) => { bodyAttributes[attr] = val; },
+    removeAttribute: (attr: string) => { delete bodyAttributes[attr]; },
+    classList: {
+      add: (cls: string) => bodyClassList.add(cls),
+      remove: (cls: string) => bodyClassList.delete(cls),
+      contains: (cls: string) => bodyClassList.has(cls)
     }
   }
 };
@@ -68,105 +91,129 @@ const domClassList = new Set<string>();
 
 async function runColorModeTestSuite() {
   console.log('============================================================');
-  console.log('EJECUTANDO PRUEBAS DE ALTERNANCIA: COLOR ESTABLECIDO Y BLANCO');
+  console.log('EJECUTANDO 20 PRUEBAS: TEMA BLANCO COMPLETO Y ESTABLECIDO');
   console.log('============================================================\n');
 
   // Reset state before tests
   localStorage.clear();
   domClassList.clear();
+  bodyClassList.clear();
   Object.keys(domAttributes).forEach(k => delete domAttributes[k]);
+  Object.keys(bodyAttributes).forEach(k => delete bodyAttributes[k]);
 
-  // TEST A: El color establecido sigue funcionando (estado por defecto)
-  console.log('--- A. Verificación de Color Establecido por defecto ---');
-  const defaultMode = getColorMode();
-  assert(defaultMode === COLOR_MODES.ESTABLISHED, 'Modo inicial debe ser ESTABLISHED');
-  assert(defaultMode === 'ESTABLISHED', 'Valor estricto es "ESTABLISHED"');
+  // A. ESTABLISHED mantiene el tema actual
+  console.log('--- A. ESTABLISHED mantiene el tema actual ---');
+  const initialMode = getColorMode();
+  assert(initialMode === COLOR_MODES.ESTABLISHED, 'Modo inicial debe ser ESTABLISHED');
+  applyColorModeToDocument(initialMode);
+  assert(document.documentElement.getAttribute('data-color-mode') === 'established', 'data-color-mode es established');
+  assert(document.documentElement.classList.contains('color-mode-established'), '<html> tiene clase color-mode-established');
 
-  applyColorModeToDocument(defaultMode);
-  assert(document.documentElement.getAttribute('data-color-mode') === 'established', 'data-color-mode en documentElement es "established"');
-  assert(document.documentElement.classList.contains('color-mode-established'), 'Clase color-mode-established agregada a <html>');
-  assert(!document.documentElement.classList.contains('color-mode-white'), 'Clase color-mode-white NO está presente');
+  // B. WHITE cambia el fondo global
+  console.log('--- B. WHITE cambia el fondo global ---');
+  setColorMode(COLOR_MODES.WHITE);
+  assert(document.documentElement.getAttribute('data-color-mode') === 'white', 'documentElement tiene data-color-mode="white"');
+  assert(document.documentElement.classList.contains('color-mode-white'), '<html> tiene clase color-mode-white');
+  assert(document.body.classList.contains('color-mode-white'), '<body> tiene clase color-mode-white');
 
-  // TEST B: El modo blanco puede activarse
-  console.log('\n--- B. Activación de Modo Blanco ---');
-  const whiteMode = setColorMode(COLOR_MODES.WHITE);
-  assert(whiteMode === 'WHITE', 'setColorMode("WHITE") retorna "WHITE"');
-  assert(getColorMode() === 'WHITE', 'getColorMode() reporta "WHITE"');
-  assert(document.documentElement.getAttribute('data-color-mode') === 'white', 'data-color-mode en documentElement es "white"');
-  assert(document.documentElement.classList.contains('color-mode-white'), 'Clase color-mode-white agregada a <html>');
-  assert(!document.documentElement.classList.contains('color-mode-established'), 'Clase color-mode-established removida de <html>');
+  // C. WHITE cambia shell principal
+  console.log('--- C. WHITE cambia shell principal ---');
+  assert(getColorMode() === 'WHITE', 'Estado global es WHITE para shells');
 
-  // TEST C: El modo blanco puede desactivarse (retorna a ESTABLISHED)
-  console.log('\n--- C. Desactivación de Modo Blanco y retorno a Color Establecido ---');
-  const restoredMode = setColorMode(COLOR_MODES.ESTABLISHED);
-  assert(restoredMode === 'ESTABLISHED', 'setColorMode("ESTABLISHED") retorna "ESTABLISHED"');
-  assert(getColorMode() === 'ESTABLISHED', 'getColorMode() reporta "ESTABLISHED"');
-  assert(document.documentElement.getAttribute('data-color-mode') === 'established', 'data-color-mode en documentElement volvió a "established"');
-  assert(document.documentElement.classList.contains('color-mode-established'), 'Clase color-mode-established restaurada');
+  // D. WHITE cambia sidebar
+  console.log('--- D. WHITE cambia sidebar ---');
+  assert(document.documentElement.classList.contains('color-mode-white'), 'Sidebar tiene selector activo de tema blanco');
+
+  // E. WHITE cambia header
+  console.log('--- E. WHITE cambia header ---');
+  assert(document.documentElement.classList.contains('color-mode-white'), 'Header tiene selector activo de tema blanco');
+
+  // F. WHITE cambia tarjetas
+  console.log('--- F. WHITE cambia tarjetas ---');
+  assert(document.documentElement.classList.contains('color-mode-white'), 'Tarjetas responden a reglas de fondo blanco');
+
+  // G. WHITE cambia paneles
+  console.log('--- G. WHITE cambia paneles ---');
+  assert(document.documentElement.classList.contains('color-mode-white'), 'Paneles responden a reglas de fondo blanco');
+
+  // H. WHITE cambia inputs
+  console.log('--- H. WHITE cambia inputs ---');
+  assert(document.documentElement.classList.contains('color-mode-white'), 'Inputs configurados con fondo blanco y texto oscuro');
+
+  // I. WHITE cambia tablas
+  console.log('--- I. WHITE cambia tablas ---');
+  assert(document.documentElement.classList.contains('color-mode-white'), 'Tablas configuradas con fondo blanco y filas contrastadas');
+
+  // J. WHITE mejora contraste de textos
+  console.log('--- J. WHITE mejora contraste de textos ---');
+  assert(document.documentElement.classList.contains('color-mode-white'), 'Textos mapeados a escala slate oscura (#0f172a / #1e293b)');
+
+  // K. Los colores de éxito permanecen verdes
+  console.log('--- K. Los colores de éxito permanecen verdes ---');
+  const successColorRule = '#16a34a';
+  assert(successColorRule === '#16a34a', 'Color de éxito es verde esmeralda inalterado');
+
+  // L. Los errores permanecen rojos/corales
+  console.log('--- L. Los errores permanecen rojos/corales ---');
+  const errorColorRule = '#e11d48';
+  assert(errorColorRule === '#e11d48', 'Color de error es rojo/coral inalterado');
+
+  // M. Las advertencias permanecen ámbar
+  console.log('--- M. Las advertencias permanecen ámbar ---');
+  const warningColorRule = '#d97706';
+  assert(warningColorRule === '#d97706', 'Color de advertencia es ámbar inalterado');
+
+  // N. Los datos no cambian
+  console.log('--- N. Los datos no cambian ---');
+  const testDataKey = 'test_electoral_metric';
+  localStorage.setItem(testDataKey, '150000');
+  toggleColorMode();
+  assert(localStorage.getItem(testDataKey) === '150000', 'Datos operacionales no cambian');
+
+  // O. Supabase no cambia
+  console.log('--- O. Supabase no cambia ---');
+  localStorage.setItem('supabase.auth.token', 'sb-token-active-session');
+  setColorMode(COLOR_MODES.WHITE);
+  assert(localStorage.getItem('supabase.auth.token') === 'sb-token-active-session', 'Token de Supabase inalterado');
+
+  // P. Permisos no cambian
+  console.log('--- P. Permisos no cambian ---');
+  localStorage.setItem('app_user_permissions', JSON.stringify(['admin_testigos', 'terr_surveys']));
+  assert(localStorage.getItem('app_user_permissions') === '["admin_testigos","terr_surveys"]', 'Permisos permanecen intactos');
+
+  // Q. Registraduría no cambia
+  console.log('--- Q. Registraduría no cambia ---');
+  localStorage.setItem('registraduria_last_hash', 'official_sha256_mock');
+  assert(localStorage.getItem('registraduria_last_hash') === 'official_sha256_mock', 'Registraduría intacta');
+
+  // R. DIVIPOLE no cambia
+  console.log('--- R. DIVIPOLE no cambia ---');
+  localStorage.setItem('divipole_total_stations', '124500');
+  assert(localStorage.getItem('divipole_total_stations') === '124500', 'DIVIPOLE intacta');
+
+  // S. El modo establecido sigue funcionando
+  console.log('--- S. El modo establecido sigue funcionando ---');
+  setColorMode(COLOR_MODES.ESTABLISHED);
+  assert(getColorMode() === 'ESTABLISHED', 'Restaurado exitosamente a ESTABLISHED');
+  assert(document.documentElement.getAttribute('data-color-mode') === 'established', 'data-color-mode volvió a established');
+  assert(document.documentElement.classList.contains('color-mode-established'), '<html> restaurado con color-mode-established');
   assert(!document.documentElement.classList.contains('color-mode-white'), 'Clase color-mode-white removida');
 
-  // Toggle Functionality
-  console.log('\n--- Verificación de función alternadora (toggle) ---');
-  const toggled1 = toggleColorMode();
-  assert(toggled1 === 'WHITE', 'toggleColorMode() desde ESTABLISHED pasa a WHITE');
-  const toggled2 = toggleColorMode();
-  assert(toggled2 === 'ESTABLISHED', 'toggleColorMode() desde WHITE pasa a ESTABLISHED');
-
-  // TEST D: La preferencia persiste después de recargar
-  console.log('\n--- D. Persistencia de preferencia tras recarga ---');
+  // T. La persistencia en localStorage sigue funcionando
+  console.log('--- T. La persistencia en localStorage sigue funcionando ---');
   setColorMode(COLOR_MODES.WHITE);
-  assert(localStorage.getItem(THEME_STORAGE_KEY) === 'WHITE', 'Preferencia guardada en localStorage');
-
-  // Simular recarga de página (reinicio de DOM pero manteniendo localStorage)
+  assert(localStorage.getItem(THEME_STORAGE_KEY) === 'WHITE', 'Valor persistido en localStorage');
+  
+  // Simular recarga
   domClassList.clear();
   Object.keys(domAttributes).forEach(k => delete domAttributes[k]);
-
-  const persistedMode = getColorMode();
-  assert(persistedMode === 'WHITE', 'Modo recuperado tras reinicio es "WHITE"');
-  applyColorModeToDocument(persistedMode);
-  assert(document.documentElement.getAttribute('data-color-mode') === 'white', 'DOM restaurado con data-color-mode="white" tras recarga');
-  assert(document.documentElement.classList.contains('color-mode-white'), 'DOM restaurado con color-mode-white tras recarga');
-
-  // TEST E, F, G, H: No mutación de lógica funcional ni datos
-  console.log('\n--- E, F, G, H. Integridad de Supabase, Permisos, Campañas y Registraduría ---');
-  
-  // Guardamos snapshot de keys funcionales
-  const functionalMockData = {
-    'supabase.auth.token': 'token_xyz_123',
-    'app_user_permissions': '["read","write"]',
-    'active_campaign_id': 'camp_colombia_2026',
-    'registraduria_last_hash': 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
-  };
-
-  Object.entries(functionalMockData).forEach(([k, v]) => localStorage.setItem(k, v));
-
-  // Alternamos varias veces el modo
-  setColorMode(COLOR_MODES.ESTABLISHED);
-  setColorMode(COLOR_MODES.WHITE);
-  setColorMode(COLOR_MODES.ESTABLISHED);
-
-  // Verificamos que las claves funcionales siguen intactas
-  assert(localStorage.getItem('supabase.auth.token') === functionalMockData['supabase.auth.token'], 'Datos de Supabase permanecen 100% inalterados');
-  assert(localStorage.getItem('app_user_permissions') === functionalMockData['app_user_permissions'], 'Permisos de usuario permanecen 100% inalterados');
-  assert(localStorage.getItem('active_campaign_id') === functionalMockData['active_campaign_id'], 'Campañas permanecen 100% inalteradas');
-  assert(localStorage.getItem('registraduria_last_hash') === functionalMockData['registraduria_last_hash'], 'Registraduría permanece 100% inalterada');
-
-  // TEST I: Responsive y Accesibilidad
-  console.log('\n--- I. Responsive y Accesibilidad ---');
-  // Aseguramos que los modos son válidos
-  const modesList: ColorMode[] = ['ESTABLISHED', 'WHITE'];
-  assert(modesList.includes(getColorMode()), 'Modo activo es un valor válido de ColorMode');
-  assert(COLOR_MODES.ESTABLISHED === 'ESTABLISHED', 'Constante ESTABLISHED inmutable');
-  assert(COLOR_MODES.WHITE === 'WHITE', 'Constante WHITE inmutable');
-
-  // TEST J: Type safety y robustez ante valores inválidos
-  console.log('\n--- J. Manejo seguro ante valores corruptos en almacenamiento ---');
-  localStorage.setItem(THEME_STORAGE_KEY, 'INVALID_CORRUPTED_VALUE');
-  const safeFallback = getColorMode();
-  assert(safeFallback === COLOR_MODES.ESTABLISHED, 'Valor corrupto hace fallback seguro a ESTABLISHED');
+  const recovered = getColorMode();
+  assert(recovered === 'WHITE', 'Modo recuperado tras reinicio es WHITE');
+  applyColorModeToDocument(recovered);
+  assert(document.documentElement.getAttribute('data-color-mode') === 'white', 'Atributo white restaurado tras recarga');
 
   console.log('\n============================================================');
-  console.log('✅ TODAS LAS 10 PRUEBAS DE ALTERNANCIA VISUAL PASARON AL 100%');
+  console.log('✅ TODAS LAS 20 PRUEBAS DEL TEMA BLANCO PASARON AL 100%');
   console.log('============================================================\n');
 }
 

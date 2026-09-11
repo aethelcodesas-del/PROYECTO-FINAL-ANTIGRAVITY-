@@ -939,170 +939,418 @@ html.color-mode-white {
 }
 
 /* ==========================================================================
-   COLOR MODE SYSTEM: ESTABLISHED VS WHITE
+   COLOR MODE SYSTEM: ESTABLISHED (DARK CYBER) VS WHITE (COMPLETE LIGHT THEME)
    ========================================================================== */
 
-/* 1. Selection & Global Accents in White Mode */
+/* 1. Global Viewport & Shell Backgrounds in White Mode */
+html.color-mode-white,
+html[data-color-mode="white"],
+body.color-mode-white,
+body[data-color-mode="white"] {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+html.color-mode-white #root,
+html[data-color-mode="white"] #root,
+html.color-mode-white .global-admin-shell,
+html[data-color-mode="white"] .global-admin-shell,
+html.color-mode-white .app-shell,
+html[data-color-mode="white"] .app-shell,
+html.color-mode-white .app-main,
+html[data-color-mode="white"] .app-main,
+html.color-mode-white .responsive-view,
+html[data-color-mode="white"] .responsive-view,
+html.color-mode-white main,
+html[data-color-mode="white"] main {
+  background-color: #f8fafc !important;
+  background-image: none !important;
+  color: #0f172a !important;
+}
+
+/* 2. Selection & Global Accents in White Mode */
 html.color-mode-white ::selection,
 html[data-color-mode="white"] ::selection,
 body.color-mode-white ::selection {
-  background-color: #ffffff !important;
-  color: #030712 !important;
-}
-
-/* 2. Text Accents & Glowing Highlights (Cyan/Teal/Sky -> Bright Pure White with Silver Aura) */
-html.color-mode-white [class*="text-cyan-"],
-html.color-mode-white [class*="text-teal-400"],
-html.color-mode-white [class*="text-teal-300"],
-html.color-mode-white [class*="text-sky-400"],
-html[data-color-mode="white"] [class*="text-cyan-"],
-html[data-color-mode="white"] [class*="text-teal-400"],
-html[data-color-mode="white"] [class*="text-teal-300"],
-html[data-color-mode="white"] [class*="text-sky-400"],
-body.color-mode-white [class*="text-cyan-"],
-body.color-mode-white [class*="text-teal-400"] {
+  background-color: #0284c7 !important;
   color: #ffffff !important;
-  text-shadow: 0 0 10px rgba(255, 255, 255, 0.45);
 }
 
-/* 3. Primary Icons (Cyan/Teal/Sky) */
-html.color-mode-white svg[class*="text-cyan-"],
-html.color-mode-white svg[class*="text-teal-400"],
-html.color-mode-white [class*="text-cyan-"] > svg,
-html[data-color-mode="white"] svg[class*="text-cyan-"],
-html[data-color-mode="white"] [class*="text-cyan-"] > svg {
+/* 3. Top Header & Navbars in White Mode */
+html.color-mode-white header,
+html[data-color-mode="white"] header,
+html.color-mode-white .global-admin-shell header,
+html[data-color-mode="white"] .global-admin-shell header {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+  box-shadow: 0 1px 4px 0 rgba(0, 0, 0, 0.05) !important;
+  backdrop-filter: blur(16px) !important;
+}
+
+/* 4. Sidebars & Lateral Drawers in White Mode */
+html.color-mode-white aside,
+html[data-color-mode="white"] aside,
+html.color-mode-white .global-admin-shell aside,
+html[data-color-mode="white"] .global-admin-shell aside {
+  background-color: rgba(255, 255, 255, 0.98) !important;
+  border-color: #e2e8f0 !important;
+  color: #1e293b !important;
+  box-shadow: 1px 0 4px 0 rgba(0, 0, 0, 0.03) !important;
+}
+
+/* Sidebar & Header Inactive Navigation Buttons */
+html.color-mode-white aside button:not([class*="from-"]):not([class*="bg-cyan-"]):not([class*="bg-teal-"]):not([class*="bg-emerald-"]):not([class*="bg-rose-"]):not([class*="bg-amber-"]),
+html[data-color-mode="white"] aside button:not([class*="from-"]):not([class*="bg-cyan-"]):not([class*="bg-teal-"]):not([class*="bg-emerald-"]):not([class*="bg-rose-"]):not([class*="bg-amber-"]) {
+  color: #475569 !important;
+}
+
+html.color-mode-white aside button:hover:not([class*="from-"]):not([class*="bg-cyan-"]):not([class*="bg-teal-"]):not([class*="bg-emerald-"]):not([class*="bg-rose-"]):not([class*="bg-amber-"]),
+html[data-color-mode="white"] aside button:hover:not([class*="from-"]):not([class*="bg-cyan-"]):not([class*="bg-teal-"]):not([class*="bg-emerald-"]):not([class*="bg-rose-"]):not([class*="bg-amber-"]) {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+html.color-mode-white header button:not([class*="from-"]):not([class*="bg-emerald-"]):not([class*="bg-rose-"]):not([class*="bg-amber-"]):not([class*="bg-cyan-"]),
+html[data-color-mode="white"] header button:not([class*="from-"]):not([class*="bg-emerald-"]):not([class*="bg-rose-"]):not([class*="bg-amber-"]):not([class*="bg-cyan-"]) {
+  background-color: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+  color: #1e293b !important;
+}
+
+/* 5. Cards, Panels, Widgets & Containers in White Mode */
+html.color-mode-white [class*="bg-slate-900"],
+html.color-mode-white [class*="bg-slate-950"],
+html.color-mode-white [class*="bg-[#020617]"],
+html.color-mode-white [class*="bg-[#030712]"],
+html.color-mode-white [class*="bg-[#040e21]"],
+html.color-mode-white [class*="bg-[#07172e]"],
+html.color-mode-white [class*="bg-[#030e1f]"],
+html.color-mode-white [class*="bg-[#041226]"],
+html.color-mode-white [class*="bg-[#051329]"],
+html.color-mode-white [class*="bg-[#020a17]"],
+html.color-mode-white [class*="bg-[#030d1d]"],
+html.color-mode-white [class*="bg-[#030d1e]"],
+html[data-color-mode="white"] [class*="bg-slate-900"],
+html[data-color-mode="white"] [class*="bg-slate-950"],
+html[data-color-mode="white"] [class*="bg-[#020617]"],
+html[data-color-mode="white"] [class*="bg-[#030712]"],
+html[data-color-mode="white"] [class*="bg-[#040e21]"],
+html[data-color-mode="white"] [class*="bg-[#07172e]"],
+html[data-color-mode="white"] [class*="bg-[#030e1f]"],
+html[data-color-mode="white"] [class*="bg-[#041226]"],
+html[data-color-mode="white"] [class*="bg-[#051329]"],
+html[data-color-mode="white"] [class*="bg-[#020a17]"],
+html[data-color-mode="white"] [class*="bg-[#030d1d]"],
+html[data-color-mode="white"] [class*="bg-[#030d1e]"] {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Secondary nested containers (filters bar, inner detail blocks, code boxes) */
+html.color-mode-white .bg-slate-950\/70,
+html.color-mode-white .bg-slate-950\/60,
+html.color-mode-white .bg-slate-950\/50,
+html.color-mode-white .bg-slate-950\/40,
+html.color-mode-white .bg-slate-900\/60,
+html.color-mode-white .bg-slate-900\/40,
+html.color-mode-white .bg-slate-800\/80,
+html.color-mode-white .bg-slate-800\/60,
+html.color-mode-white .bg-slate-800\/50,
+html.color-mode-white .bg-slate-800\/40,
+html[data-color-mode="white"] .bg-slate-950\/70,
+html[data-color-mode="white"] .bg-slate-950\/60,
+html[data-color-mode="white"] .bg-slate-900\/60,
+html[data-color-mode="white"] .bg-slate-900\/40,
+html[data-color-mode="white"] .bg-slate-800\/80,
+html[data-color-mode="white"] .bg-slate-800\/60 {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Popovers, Dropdowns & Modals */
+html.color-mode-white .bg-slate-900.border.border-slate-700,
+html.color-mode-white [role="dialog"],
+html[data-color-mode="white"] .bg-slate-900.border.border-slate-700,
+html[data-color-mode="white"] [role="dialog"] {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* 6. Typography & Text Hierarchy in White Mode */
+html.color-mode-white .text-white:not([class*="from-"]):not([class*="bg-gradient-"]):not([class*="bg-emerald-"]):not([class*="bg-rose-"]):not([class*="bg-amber-"]):not([class*="bg-cyan-"]):not([class*="bg-teal-"]):not([class*="bg-blue-"]),
+html[data-color-mode="white"] .text-white:not([class*="from-"]):not([class*="bg-gradient-"]):not([class*="bg-emerald-"]):not([class*="bg-rose-"]):not([class*="bg-amber-"]):not([class*="bg-cyan-"]):not([class*="bg-teal-"]):not([class*="bg-blue-"]),
+html.color-mode-white .text-slate-100,
+html[data-color-mode="white"] .text-slate-100 {
+  color: #0f172a !important;
+}
+
+html.color-mode-white .text-slate-200,
+html[data-color-mode="white"] .text-slate-200 {
+  color: #1e293b !important;
+}
+
+html.color-mode-white .text-slate-300,
+html[data-color-mode="white"] .text-slate-300 {
+  color: #334155 !important;
+}
+
+html.color-mode-white .text-slate-400,
+html[data-color-mode="white"] .text-slate-400 {
+  color: #475569 !important;
+}
+
+html.color-mode-white .text-slate-500,
+html[data-color-mode="white"] .text-slate-500 {
+  color: #64748b !important;
+}
+
+/* 7. Primary Branding Cyan / Blue in White Mode */
+html.color-mode-white .text-cyan-400,
+html.color-mode-white .text-cyan-300,
+html.color-mode-white .text-cyan-500,
+html[data-color-mode="white"] .text-cyan-400,
+html[data-color-mode="white"] .text-cyan-300,
+html[data-color-mode="white"] .text-cyan-500 {
+  color: #0284c7 !important;
+}
+
+html.color-mode-white .text-teal-400,
+html.color-mode-white .text-teal-300,
+html[data-color-mode="white"] .text-teal-400,
+html[data-color-mode="white"] .text-teal-300 {
+  color: #0d9488 !important;
+}
+
+html.color-mode-white .text-sky-400,
+html[data-color-mode="white"] .text-sky-400 {
+  color: #0284c7 !important;
+}
+
+html.color-mode-white .text-blue-400,
+html[data-color-mode="white"] .text-blue-400 {
+  color: #2563eb !important;
+}
+
+html.color-mode-white [class*="bg-cyan-500/20"],
+html.color-mode-white [class*="bg-cyan-500/15"],
+html.color-mode-white [class*="bg-cyan-500/10"],
+html.color-mode-white [class*="bg-cyan-950"],
+html[data-color-mode="white"] [class*="bg-cyan-500/20"],
+html[data-color-mode="white"] [class*="bg-cyan-500/15"],
+html[data-color-mode="white"] [class*="bg-cyan-500/10"],
+html[data-color-mode="white"] [class*="bg-cyan-950"] {
+  background-color: #e0f2fe !important;
+  color: #0369a1 !important;
+  border-color: #bae6fd !important;
+}
+
+/* 8. Active Pills & Prominent Call to Action in White Mode */
+html.color-mode-white [class*="from-cyan-600"][class*="to-blue-700"],
+html.color-mode-white [class*="from-cyan-600"][class*="to-blue-600"],
+html.color-mode-white [class*="from-teal-700"][class*="to-emerald-700"],
+html[data-color-mode="white"] [class*="from-cyan-600"][class*="to-blue-700"],
+html[data-color-mode="white"] [class*="from-cyan-600"][class*="to-blue-600"],
+html[data-color-mode="white"] [class*="from-teal-700"][class*="to-emerald-700"] {
+  background-image: linear-gradient(135deg, #0284c7 0%, #2563eb 100%) !important;
+  color: #ffffff !important;
+  border-color: #0284c7 !important;
+  box-shadow: 0 4px 14px -1px rgba(2, 132, 199, 0.35) !important;
+}
+
+html.color-mode-white [class*="from-cyan-600"][class*="to-blue-700"] *,
+html.color-mode-white [class*="from-cyan-600"][class*="to-blue-600"] *,
+html.color-mode-white [class*="from-teal-700"][class*="to-emerald-700"] *,
+html[data-color-mode="white"] [class*="from-cyan-600"][class*="to-blue-700"] *,
+html[data-color-mode="white"] [class*="from-cyan-600"][class*="to-blue-600"] *,
+html[data-color-mode="white"] [class*="from-teal-700"][class*="to-emerald-700"] * {
   color: #ffffff !important;
   stroke: #ffffff !important;
-  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.5));
 }
 
-/* 4. Primary Call-to-Action & Active Buttons (Gradients -> Solid Glowing White with High Contrast Dark Text) */
-html.color-mode-white [class*="from-cyan-"][class*="to-blue-"],
-html.color-mode-white [class*="from-cyan-"][class*="to-teal-"],
-html.color-mode-white [class*="from-cyan-600"],
-html.color-mode-white [class*="from-cyan-500"],
-html.color-mode-white [class*="from-teal-700"][class*="to-emerald-700"],
-html[data-color-mode="white"] [class*="from-cyan-"][class*="to-blue-"],
-html[data-color-mode="white"] [class*="from-cyan-"][class*="to-teal-"],
-html[data-color-mode="white"] [class*="from-cyan-600"],
-html[data-color-mode="white"] [class*="from-cyan-500"],
-html[data-color-mode="white"] [class*="from-teal-700"][class*="to-emerald-700"] {
-  background-image: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%) !important;
+/* 9. Borders in White Mode */
+html.color-mode-white [class*="border-slate-800"],
+html.color-mode-white [class*="border-slate-750"],
+html.color-mode-white [class*="border-slate-700"],
+html.color-mode-white [class*="border-slate-600"],
+html[data-color-mode="white"] [class*="border-slate-800"],
+html[data-color-mode="white"] [class*="border-slate-750"],
+html[data-color-mode="white"] [class*="border-slate-700"],
+html[data-color-mode="white"] [class*="border-slate-600"] {
+  border-color: #e2e8f0 !important;
+}
+
+html.color-mode-white [class*="border-cyan-500/"],
+html.color-mode-white [class*="border-cyan-400/"],
+html[data-color-mode="white"] [class*="border-cyan-500/"],
+html[data-color-mode="white"] [class*="border-cyan-400/"] {
+  border-color: #bae6fd !important;
+}
+
+/* 10. Inputs, Selects & Forms in White Mode */
+html.color-mode-white input,
+html.color-mode-white select,
+html.color-mode-white textarea,
+html[data-color-mode="white"] input,
+html[data-color-mode="white"] select,
+html[data-color-mode="white"] textarea {
   background-color: #ffffff !important;
-  color: #030712 !important;
-  border-color: rgba(255, 255, 255, 0.9) !important;
-  box-shadow: 0 4px 20px -2px rgba(255, 255, 255, 0.4), 0 0 12px 1px rgba(255, 255, 255, 0.25) !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
 }
 
-/* Ensure text and icons inside white action buttons have crisp dark contrast */
-html.color-mode-white [class*="from-cyan-"][class*="to-blue-"] *,
-html.color-mode-white [class*="from-cyan-"][class*="to-teal-"] *,
-html.color-mode-white [class*="from-cyan-600"] *,
-html.color-mode-white [class*="from-cyan-500"] *,
-html.color-mode-white [class*="from-teal-700"][class*="to-emerald-700"] *,
-html[data-color-mode="white"] [class*="from-cyan-"][class*="to-blue-"] *,
-html[data-color-mode="white"] [class*="from-cyan-"][class*="to-teal-"] *,
-html[data-color-mode="white"] [class*="from-cyan-600"] *,
-html[data-color-mode="white"] [class*="from-cyan-500"] * {
-  color: #030712 !important;
-  stroke: #030712 !important;
-  text-shadow: none !important;
-  font-weight: 800 !important;
+html.color-mode-white input::placeholder,
+html.color-mode-white textarea::placeholder,
+html[data-color-mode="white"] input::placeholder,
+html[data-color-mode="white"] textarea::placeholder {
+  color: #94a3b8 !important;
 }
 
-/* 5. Solid Primary Buttons (bg-cyan-600, bg-cyan-500) */
-html.color-mode-white button[class*="bg-cyan-"],
-html.color-mode-white .bg-cyan-600,
-html.color-mode-white .bg-cyan-500,
-html[data-color-mode="white"] button[class*="bg-cyan-"],
-html[data-color-mode="white"] .bg-cyan-600,
-html[data-color-mode="white"] .bg-cyan-500 {
+html.color-mode-white input:focus,
+html.color-mode-white select:focus,
+html.color-mode-white textarea:focus,
+html[data-color-mode="white"] input:focus,
+html[data-color-mode="white"] select:focus,
+html[data-color-mode="white"] textarea:focus {
+  border-color: #0284c7 !important;
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2) !important;
+}
+
+/* 11. Tables in White Mode */
+html.color-mode-white table,
+html[data-color-mode="white"] table {
   background-color: #ffffff !important;
-  color: #030712 !important;
-  box-shadow: 0 0 16px rgba(255, 255, 255, 0.35) !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
 }
 
-html.color-mode-white button[class*="bg-cyan-"] *,
-html.color-mode-white .bg-cyan-600 *,
-html.color-mode-white .bg-cyan-500 * {
-  color: #030712 !important;
-  stroke: #030712 !important;
+html.color-mode-white table thead,
+html.color-mode-white table th,
+html[data-color-mode="white"] table thead,
+html[data-color-mode="white"] table th {
+  background-color: #f8fafc !important;
+  color: #334155 !important;
+  border-color: #e2e8f0 !important;
 }
 
-/* 6. Primary Accent Borders & Focus Rings */
-html.color-mode-white [class*="border-cyan-"],
-html.color-mode-white [class*="border-teal-400"],
-html.color-mode-white [class*="border-sky-400"],
-html[data-color-mode="white"] [class*="border-cyan-"],
-html[data-color-mode="white"] [class*="border-teal-400"],
-html[data-color-mode="white"] [class*="border-sky-400"],
-body.color-mode-white [class*="border-cyan-"] {
-  border-color: rgba(255, 255, 255, 0.4) !important;
+html.color-mode-white table tr,
+html[data-color-mode="white"] table tr {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
 }
 
-html.color-mode-white [class*="ring-cyan-"],
-html[data-color-mode="white"] [class*="ring-cyan-"] {
-  --tw-ring-color: rgba(255, 255, 255, 0.6) !important;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5) !important;
+html.color-mode-white table tr:nth-child(even),
+html[data-color-mode="white"] table tr:nth-child(even) {
+  background-color: #f8fafc !important;
 }
 
-/* 7. Primary Badges, Pills & Translucent Containers */
-html.color-mode-white [class*="bg-cyan-500/"],
-html.color-mode-white [class*="bg-cyan-400/"],
-html.color-mode-white [class*="bg-teal-500/"],
-html.color-mode-white [class*="bg-cyan-950"],
-html.color-mode-white [class*="bg-cyan-900"],
-html[data-color-mode="white"] [class*="bg-cyan-500/"],
-html[data-color-mode="white"] [class*="bg-cyan-400/"],
-html[data-color-mode="white"] [class*="bg-teal-500/"],
-html[data-color-mode="white"] [class*="bg-cyan-950"],
-html[data-color-mode="white"] [class*="bg-cyan-900"] {
-  background-color: rgba(255, 255, 255, 0.12) !important;
-  border-color: rgba(255, 255, 255, 0.35) !important;
-  color: #ffffff !important;
-  backdrop-filter: blur(12px);
+html.color-mode-white table tr:hover,
+html[data-color-mode="white"] table tr:hover {
+  background-color: #f1f5f9 !important;
 }
 
-/* 8. Glowing Shadows */
-html.color-mode-white [class*="shadow-cyan-"],
-html[data-color-mode="white"] [class*="shadow-cyan-"] {
-  box-shadow: 0 8px 24px -4px rgba(255, 255, 255, 0.18) !important;
+html.color-mode-white table td,
+html[data-color-mode="white"] table td {
+  border-color: #e2e8f0 !important;
+  color: #1e293b !important;
 }
 
-/* 9. Hover States in White Mode */
-html.color-mode-white [class*="hover:bg-cyan-"]:hover,
-html.color-mode-white [class*="hover:bg-teal-"]:hover,
-html[data-color-mode="white"] [class*="hover:bg-cyan-"]:hover,
-html[data-color-mode="white"] [class*="hover:bg-teal-"]:hover {
-  background-color: rgba(255, 255, 255, 0.18) !important;
-  color: #ffffff !important;
-}
-
-html.color-mode-white [class*="hover:border-cyan-"]:hover,
-html[data-color-mode="white"] [class*="hover:border-cyan-"]:hover {
-  border-color: rgba(255, 255, 255, 0.8) !important;
-}
-
-/* 10. STRICT EXCLUSION: Preserve Functional Status Colors (Success, Error, Warning) */
+/* 12. STRICT PRESERVATION: Functional Status Colors (Success, Error, Warning, Info) */
+/* ÉXITO: Verde / Emerald */
 html.color-mode-white .text-emerald-400,
 html.color-mode-white .text-emerald-300,
 html.color-mode-white .text-emerald-500,
 html.color-mode-white .text-green-400,
 html.color-mode-white .text-green-500,
-html.color-mode-white .bg-emerald-500,
+html[data-color-mode="white"] .text-emerald-400,
+html[data-color-mode="white"] .text-emerald-300,
+html[data-color-mode="white"] .text-emerald-500 {
+  color: #16a34a !important;
+}
+
+html.color-mode-white .bg-emerald-950,
+html.color-mode-white .bg-emerald-950\/60,
+html.color-mode-white .bg-emerald-950\/50,
 html.color-mode-white [class*="bg-emerald-500/"],
-html.color-mode-white [class*="border-emerald-"],
+html[data-color-mode="white"] .bg-emerald-950,
+html[data-color-mode="white"] [class*="bg-emerald-500/"] {
+  background-color: #dcfce7 !important;
+  color: #15803d !important;
+  border-color: #bbf7d0 !important;
+}
+
+/* ERROR: Rojo / Rose */
 html.color-mode-white .text-rose-400,
+html.color-mode-white .text-rose-300,
 html.color-mode-white .text-rose-500,
 html.color-mode-white .text-red-400,
 html.color-mode-white .text-red-500,
-html.color-mode-white [class*="bg-rose-"],
-html.color-mode-white [class*="border-rose-"],
+html[data-color-mode="white"] .text-rose-400,
+html[data-color-mode="white"] .text-rose-300,
+html[data-color-mode="white"] .text-rose-500 {
+  color: #e11d48 !important;
+}
+
+html.color-mode-white .bg-rose-950,
+html.color-mode-white .bg-rose-950\/70,
+html.color-mode-white .bg-rose-950\/50,
+html.color-mode-white [class*="bg-rose-500/"],
+html[data-color-mode="white"] .bg-rose-950,
+html[data-color-mode="white"] [class*="bg-rose-500/"] {
+  background-color: #ffe4e6 !important;
+  color: #be123c !important;
+  border-color: #fecdd3 !important;
+}
+
+/* ADVERTENCIA: Ámbar / Amarillo */
 html.color-mode-white .text-amber-400,
 html.color-mode-white .text-amber-300,
+html.color-mode-white .text-amber-500,
 html.color-mode-white .text-yellow-400,
-html.color-mode-white [class*="bg-amber-"],
-html.color-mode-white [class*="border-amber-"] {
-  /* Retain original functional colors unmodified */
+html[data-color-mode="white"] .text-amber-400,
+html[data-color-mode="white"] .text-amber-300,
+html[data-color-mode="white"] .text-amber-500 {
+  color: #d97706 !important;
+}
+
+html.color-mode-white .bg-amber-950,
+html.color-mode-white .bg-amber-950\/60,
+html.color-mode-white .bg-amber-950\/50,
+html.color-mode-white [class*="bg-amber-500/"],
+html[data-color-mode="white"] .bg-amber-950,
+html[data-color-mode="white"] [class*="bg-amber-500/"] {
+  background-color: #fef3c7 !important;
+  color: #b45309 !important;
+  border-color: #fde68a !important;
+}
+
+/* INFORMACIÓN: Azul */
+html.color-mode-white .text-blue-400,
+html.color-mode-white .text-blue-500,
+html[data-color-mode="white"] .text-blue-400,
+html[data-color-mode="white"] .text-blue-500 {
+  color: #2563eb !important;
+}
+
+/* 13. Scrollbar & UI Accents in White Mode */
+html.color-mode-white .custom-scrollbar::-webkit-scrollbar-track,
+html[data-color-mode="white"] .custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+html.color-mode-white .custom-scrollbar::-webkit-scrollbar-thumb,
+html[data-color-mode="white"] .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+
+html.color-mode-white .custom-scrollbar::-webkit-scrollbar-thumb:hover,
+html[data-color-mode="white"] .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 

@@ -105,7 +105,7 @@ export const ColorModeToggle: React.FC<ColorModeToggleProps> = ({
   return (
     <div className={`inline-flex items-center gap-1.5 font-mono text-xs ${className}`}>
       {showLabel && (
-        <span className="text-[11px] text-slate-400 hidden md:inline-block mr-1">
+        <span className={`text-[11px] hidden md:inline-block mr-1 ${isWhiteMode ? 'text-slate-600 font-bold' : 'text-slate-400'}`}>
           Tema:
         </span>
       )}
@@ -113,7 +113,11 @@ export const ColorModeToggle: React.FC<ColorModeToggleProps> = ({
       <div
         role="radiogroup"
         aria-label="Alternar Color Establecido o Blanco"
-        className="bg-slate-900/90 border border-slate-800 rounded-xl p-0.5 flex items-center shadow-inner"
+        className={`rounded-xl p-0.5 flex items-center transition-all ${
+          isWhiteMode
+            ? 'bg-slate-100 border border-slate-300 shadow-inner'
+            : 'bg-slate-900/90 border border-slate-800 shadow-inner'
+        }`}
       >
         {/* Option 1: Color Establecido */}
         <button
@@ -126,7 +130,7 @@ export const ColorModeToggle: React.FC<ColorModeToggleProps> = ({
           className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${
             !isWhiteMode
               ? 'bg-gradient-to-r from-cyan-950 to-blue-950 text-cyan-300 border border-cyan-500/40 shadow-sm'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
           }`}
         >
           <Palette className={`w-3 h-3 ${!isWhiteMode ? 'text-cyan-400' : 'text-slate-500'}`} />
@@ -144,11 +148,11 @@ export const ColorModeToggle: React.FC<ColorModeToggleProps> = ({
           onClick={() => setColorMode('WHITE')}
           className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${
             isWhiteMode
-              ? 'bg-slate-800 text-white border border-white/50 shadow-sm shadow-white/20'
+              ? 'bg-white text-slate-900 border border-slate-300 font-bold shadow-sm shadow-slate-200/50'
               : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
           }`}
         >
-          <Sparkles className={`w-3 h-3 ${isWhiteMode ? 'text-white' : 'text-slate-500'}`} />
+          <Sparkles className={`w-3 h-3 ${isWhiteMode ? 'text-blue-600' : 'text-slate-500'}`} />
           <span>Blanco</span>
         </button>
       </div>
