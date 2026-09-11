@@ -18,10 +18,18 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({
+  currentView = 'modulo_admin',
   unreadNotifications,
   onClearNotifications,
   onToggleSidebar
 }) => {
+  const activeModuleId = (() => {
+    if (currentView === 'modulo_admin') return 'gestion_administrativa';
+    if (currentView === 'gestion_estrategica') return 'gestion_estrategica';
+    if (['gestion_territorial', 'testigo_campo', 'encuestas', 'jurado_campo'].includes(currentView)) return 'gestion_territorial';
+    if (currentView === 'global_admin') return 'global_admin';
+    return 'gestion_administrativa';
+  })();
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState([
     { id: 1, text: 'Nueva encuesta de intención de voto cargada en Gestión Territorial', time: 'Hace 5 min', read: false },
@@ -102,7 +110,7 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Right Side: Appearance Toggle & Notifications */}
         <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           {/* Visual Appearance Color Mode Toggle */}
-          <ColorModeToggle />
+          <ColorModeToggle moduleId={activeModuleId} />
 
           {/* Notifications */}
           <div className="relative" ref={popoverRef}>

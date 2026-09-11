@@ -1003,6 +1003,10 @@ html.color-mode-white {
 }
 
 /* 5. Cards, Panels, Widgets & Containers in White Mode */
+[data-color-mode="white"] .glass-panel-cyber,
+[data-color-mode="white"] .glass-panel-teal,
+[data-color-mode="white"] .glass-panel-cyan,
+[data-color-mode="white"] .functional-card,
 [data-color-mode="white"] [class*="bg-slate-900"],
 [data-color-mode="white"] [class*="bg-slate-950"],
 [data-color-mode="white"] [class*="bg-[#020617]"],
@@ -1029,28 +1033,53 @@ html.color-mode-white {
   box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05) !important;
 }
 
+[data-color-mode="white"] .bg-circuit-pattern {
+  background-color: #f8fafc !important;
+  background-image: none !important;
+}
+
 /* Secondary nested containers (filters bar, inner detail blocks, code boxes) */
 [data-color-mode="white"] .bg-slate-950\/70,
 [data-color-mode="white"] .bg-slate-950\/60,
 [data-color-mode="white"] .bg-slate-950\/50,
 [data-color-mode="white"] .bg-slate-950\/40,
+[data-color-mode="white"] .bg-slate-900\/80,
+[data-color-mode="white"] .bg-slate-900\/70,
 [data-color-mode="white"] .bg-slate-900\/60,
+[data-color-mode="white"] .bg-slate-900\/50,
 [data-color-mode="white"] .bg-slate-900\/40,
+[data-color-mode="white"] .bg-slate-800\/90,
 [data-color-mode="white"] .bg-slate-800\/80,
+[data-color-mode="white"] .bg-slate-800\/70,
 [data-color-mode="white"] .bg-slate-800\/60,
 [data-color-mode="white"] .bg-slate-800\/50,
 [data-color-mode="white"] .bg-slate-800\/40 {
-  background-color: #f8fafc !important;
+  background-color: #f1f5f9 !important;
   border-color: #e2e8f0 !important;
+  color: #1e293b !important;
 }
 
 /* Popovers, Dropdowns & Modals */
 [data-color-mode="white"] .bg-slate-900.border.border-slate-700,
-[data-color-mode="white"] [role="dialog"] {
+[data-color-mode="white"] [role="dialog"],
+[data-color-mode="white"] [role="menu"],
+[data-color-mode="white"] [role="listbox"],
+[data-color-mode="white"] .modal-content,
+[data-color-mode="white"] .popover-content {
   background-color: #ffffff !important;
   border-color: #cbd5e1 !important;
   color: #0f172a !important;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Dark backdrop overlays for modals remain intact */
+[data-color-mode="white"] .fixed.inset-0.bg-slate-950\/80,
+[data-color-mode="white"] .fixed.inset-0.bg-black\/70,
+[data-color-mode="white"] .fixed.inset-0.bg-black\/80,
+[data-color-mode="white"] [class*="fixed inset-0"][class*="bg-slate-950/"],
+[data-color-mode="white"] [class*="fixed inset-0"][class*="bg-black/"] {
+  background-color: rgba(2, 6, 23, 0.8) !important;
+  backdrop-filter: blur(4px) !important;
 }
 
 /* 6. Typography & Text Hierarchy in White Mode */
