@@ -225,7 +225,10 @@ async function runOfficialSourceMonitorTests() {
     },
     dryRun: true
   });
-  assert(res10.status === 'SOURCE_VALIDATION_FAILED', 'Inconsistencia con Censo produce SOURCE_VALIDATION_FAILED');
+  assert(
+    res10.status === 'SOURCE_VALIDATION_FAILED' || res10.status === 'CENSUS_VALIDATION_MISMATCH',
+    'Inconsistencia con Censo produce SOURCE_VALIDATION_FAILED o CENSUS_VALIDATION_MISMATCH'
+  );
   assert(res10.stagingValidated === false, 'Staging rechazado ante inconsistencia con Censo');
 
   // 11. Rollback automático ante fallo de staging

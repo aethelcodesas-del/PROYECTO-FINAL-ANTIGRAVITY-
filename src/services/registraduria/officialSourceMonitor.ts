@@ -7,7 +7,7 @@
  * 2. Cálculo de SHA-256 y comparación con lastKnownSha256 (idempotencia y detección de cambios).
  * 3. Detección segura de bloqueos WAF (HTTP 403 / Captcha / Bot challenge) -> SOURCE_BLOCKED con 0 escrituras.
  * 4. Pipeline de Staging: SOURCE_CHANGED -> Extracción/Normalización -> Validación Estructural -> Validación Cruzada con Censo -> DRY-RUN -> Atomic Sync.
- * 5. Rollback y preservación inalterada de la última versión válida (lastKnownValidVersion).
+ * 5. Rollback y preservación inalterada de la última versión válida (lastKnownValidVersion), diferenciando VALID_SAMPLE vs VALID_NATIONAL_OFFICIAL.
  * 6. Garantía de NO modificación de tablas operativas (polling_stations, campaigns, users, witnesses, jurors).
  * 7. Telemetría estructurada sin exposición de secretos.
  */
@@ -29,7 +29,14 @@ export type OfficialSourceStatus =
   | 'SOURCE_BLOCKED'
   | 'SOURCE_INVALID'
   | 'SOURCE_INCOMPLETE'
-  | 'SOURCE_VALIDATION_FAILED';
+  | 'SOURCE_VALIDATION_FAILED'
+  | 'OFFICIAL_FULL_FILE_REQUIRED'
+  | 'CENSUS_VALIDATION_MISMATCH';
+
+export type ValidVersionType =
+  | 'VALID_SAMPLE'
+  | 'VALID_NATIONAL_OFFICIAL'
+  | 'NOT_AVAILABLE';
 
 export interface OfficialSourceIdentity {
   sourceId: string;
@@ -42,6 +49,7 @@ export interface OfficialSourceIdentity {
   validationMode: 'DIVIPOLE_INGESTION' | 'DIVIPOLE_VALIDATION' | 'CENSUS_VALIDATION' | string;
   lastKnownSha256?: string | null;
   lastKnownValidVersion?: string | null;
+  lastKnownValidVersionType?: ValidVersionType;
   lastCheckedAt?: string | null;
   lastSuccessfulAt?: string | null;
   lastError?: string | null;
@@ -58,6 +66,8 @@ export interface SourceInspectionResult {
   isOfficialDomain: boolean;
   sha256?: string | null;
   previousSha256?: string | null;
+  lastKnownValidVersion?: string | null;
+  lastKnownValidVersionType: ValidVersionType;
   contentLength?: number;
   isNewVersion: boolean;
   stagingRequired: boolean;
@@ -86,6 +96,8 @@ export interface TelemetryLogEntry {
   sourceState: OfficialSourceStatus;
   sha?: string | null;
   previousSha?: string | null;
+  lastValidVersion?: string | null;
+  lastValidVersionType?: ValidVersionType;
   recordCounts: {
     inserts: number;
     updates: number;
@@ -105,16 +117,24 @@ class OfficialSourceVersionStore {
   private knownVersions: Map<string, {
     sha256: string;
     versionTag: string;
+    versionType: ValidVersionType;
     updatedAt: string;
     metadata: Record<string, any>;
   }> = new Map();
 
   private telemetryLogs: TelemetryLogEntry[] = [];
 
-  setKnownVersion(sourceId: string, sha256: string, versionTag: string, metadata: Record<string, any> = {}) {
+  setKnownVersion(
+    sourceId: string,
+    sha256: string,
+    versionTag: string,
+    versionType: ValidVersionType = 'VALID_SAMPLE',
+    metadata: Record<string, any> = {}
+  ) {
     this.knownVersions.set(sourceId, {
       sha256,
       versionTag,
+      versionType,
       updatedAt: new Date().toISOString(),
       metadata
     });
@@ -198,11 +218,19 @@ export async function monitorOfficialSource(
     mockContent?: string | Buffer;
     mockHttpStatus?: number;
     dryRun?: boolean;
+    requireFullNationalDataset?: boolean;
+    datasetStats?: {
+      departmentsCount?: number;
+      municipalitiesCount?: number;
+      pollingPlacesCount?: number;
+      tablesCount?: number;
+    };
     censusComparisonData?: {
       totalElectores?: number;
       mesas?: number;
       puestos?: number;
       departamentos?: number;
+      isCompatible?: boolean;
     };
   }
 ): Promise<SourceInspectionResult> {
@@ -216,6 +244,8 @@ export async function monitorOfficialSource(
   const sourceUrl = sourceDef.sourceUrl || '';
   const previousVersion = sourceVersionStore.getKnownVersion(sourceId);
   const previousSha = previousVersion?.sha256 || null;
+  const lastValidTag = previousVersion?.versionTag || null;
+  const lastValidType: ValidVersionType = previousVersion?.versionType || 'NOT_AVAILABLE';
 
   // 1. Verificación de Dominio Autorizado
   if (!isAuthorizedRegistraduriaDomain(sourceUrl)) {
@@ -228,6 +258,8 @@ export async function monitorOfficialSource(
       httpStatus: 0,
       status: 'SOURCE_INVALID',
       isOfficialDomain: false,
+      lastKnownValidVersion: lastValidTag,
+      lastKnownValidVersionType: lastValidType,
       isNewVersion: false,
       stagingRequired: false,
       stagingValidated: false,
@@ -242,6 +274,8 @@ export async function monitorOfficialSource(
       timestamp: result.timestamp,
       httpStatus: 0,
       sourceState: 'SOURCE_INVALID',
+      lastValidVersion: lastValidTag,
+      lastValidVersionType: lastValidType,
       recordCounts: { inserts: 0, updates: 0, deletes: 0, truncates: 0 },
       validationState: 'DOMAIN_REJECTED',
       syncState: 'ABORTED',
@@ -296,6 +330,8 @@ export async function monitorOfficialSource(
       isOfficialDomain: true,
       sha256: null, // NUNCA calcular SHA de una respuesta WAF como oficial
       previousSha256: previousSha,
+      lastKnownValidVersion: lastValidTag,
+      lastKnownValidVersionType: lastValidType,
       contentLength: 0,
       isNewVersion: false,
       stagingRequired: false,
@@ -313,6 +349,8 @@ export async function monitorOfficialSource(
       sourceState: 'SOURCE_BLOCKED',
       sha: null,
       previousSha,
+      lastValidVersion: lastValidTag,
+      lastValidVersionType: lastValidType,
       recordCounts: { inserts: 0, updates: 0, deletes: 0, truncates: 0 },
       validationState: 'WAF_BLOCKED',
       syncState: 'NO_OP',
@@ -323,7 +361,7 @@ export async function monitorOfficialSource(
     return result;
   }
 
-  // Si falló la conexión por red caída
+  // Si falló la conexión por red caída o contenido vacío
   if (httpStatus !== 200 || !rawBody) {
     const duration = Date.now() - startTime;
     const result: SourceInspectionResult = {
@@ -336,6 +374,8 @@ export async function monitorOfficialSource(
       isOfficialDomain: true,
       sha256: null,
       previousSha256: previousSha,
+      lastKnownValidVersion: lastValidTag,
+      lastKnownValidVersionType: lastValidType,
       isNewVersion: false,
       stagingRequired: false,
       stagingValidated: false,
@@ -350,6 +390,8 @@ export async function monitorOfficialSource(
       timestamp: result.timestamp,
       httpStatus,
       sourceState: 'SOURCE_INVALID',
+      lastValidVersion: lastValidTag,
+      lastValidVersionType: lastValidType,
       recordCounts: { inserts: 0, updates: 0, deletes: 0, truncates: 0 },
       validationState: 'FETCH_FAILED',
       syncState: 'NO_OP',
@@ -378,6 +420,8 @@ export async function monitorOfficialSource(
         isOfficialDomain: true,
         sha256: null,
         previousSha256: previousSha,
+        lastKnownValidVersion: lastValidTag,
+        lastKnownValidVersionType: lastValidType,
         isNewVersion: false,
         stagingRequired: false,
         stagingValidated: false,
@@ -404,6 +448,8 @@ export async function monitorOfficialSource(
       isOfficialDomain: true,
       sha256: currentSha,
       previousSha256: previousSha,
+      lastKnownValidVersion: lastValidTag,
+      lastKnownValidVersionType: lastValidType,
       contentLength: Buffer.byteLength(rawBody),
       isNewVersion: false,
       stagingRequired: false,
@@ -421,6 +467,8 @@ export async function monitorOfficialSource(
       sourceState: 'SOURCE_UNCHANGED',
       sha: currentSha,
       previousSha,
+      lastValidVersion: lastValidTag,
+      lastValidVersionType: lastValidType,
       recordCounts: { inserts: 0, updates: 0, deletes: 0, truncates: 0 },
       validationState: 'IDEMPOTENT_MATCH',
       syncState: 'NO_OP',
@@ -433,6 +481,7 @@ export async function monitorOfficialSource(
   // 7. Pipeline de Staging y Validación de Nueva Versión
   let structuralPlausibility = true;
   let censusCrossValidation = true;
+  let isFullNationalDataset = false;
   let discrepancyReason: string | undefined = undefined;
 
   // Validación de Completitud Estructural (evitar archivos truncados)
@@ -442,20 +491,45 @@ export async function monitorOfficialSource(
     discrepancyReason = 'Archivo oficial truncado o incompleto (tamaño menor al umbral estructural mínimo).';
   }
 
-  // Validación cruzada con el Censo Oficial si se suministraron datos comparativos
+  // Validación de cobertura nacional vs muestra parcial
+  if (options?.datasetStats) {
+    const stats = options.datasetStats;
+    const depts = stats.departmentsCount ?? 0;
+    const munis = stats.municipalitiesCount ?? 0;
+    const places = stats.pollingPlacesCount ?? 0;
+
+    if (depts >= 30 && munis >= 1000 && places >= 10000) {
+      isFullNationalDataset = true;
+    } else {
+      isFullNationalDataset = false;
+      if (options?.requireFullNationalDataset) {
+        structuralPlausibility = false;
+        discrepancyReason = `El lote contiene solo ${depts} depts y ${places} puestos. No cumple el umbral nacional (33 depts / >10.000 puestos).`;
+      }
+    }
+  }
+
+  // Validación cruzada con el Censo Oficial
   if (options?.censusComparisonData) {
     const cData = options.censusComparisonData;
-    // Si el total de electores o puestos es anómalo (ej. 0 o negativo)
-    if (cData.totalElectores !== undefined && cData.totalElectores <= 0) {
+    if (cData.isCompatible === false || (cData.totalElectores !== undefined && cData.totalElectores <= 0)) {
       censusCrossValidation = false;
-      discrepancyReason = 'Inconsistencia con Censo Oficial: Cifra de electores nula o inválida.';
+      discrepancyReason = 'Inconsistencia con Censo Oficial: Discrepancia en cifras oficiales publicadas.';
     }
   }
 
   // Si falla la validación estructural o cruzada: ROLLBACK de Staging
   if (!structuralPlausibility || !censusCrossValidation) {
     const duration = Date.now() - startTime;
-    const failureStatus = !structuralPlausibility ? 'SOURCE_INCOMPLETE' : 'SOURCE_VALIDATION_FAILED';
+    let failureStatus: OfficialSourceStatus = 'SOURCE_VALIDATION_FAILED';
+    if (!structuralPlausibility && options?.requireFullNationalDataset && !isFullNationalDataset) {
+      failureStatus = 'OFFICIAL_FULL_FILE_REQUIRED';
+    } else if (!structuralPlausibility) {
+      failureStatus = 'SOURCE_INCOMPLETE';
+    } else if (!censusCrossValidation) {
+      failureStatus = 'CENSUS_VALIDATION_MISMATCH';
+    }
+
     const result: SourceInspectionResult = {
       sourceId,
       processId,
@@ -466,6 +540,8 @@ export async function monitorOfficialSource(
       isOfficialDomain: true,
       sha256: currentSha,
       previousSha256: previousSha,
+      lastKnownValidVersion: lastValidTag,
+      lastKnownValidVersionType: lastValidType,
       contentLength: byteLength,
       isNewVersion: true,
       stagingRequired: true,
@@ -478,7 +554,7 @@ export async function monitorOfficialSource(
       },
       metrics: { insertCount: 0, updateCount: 0, deleteCount: 0, truncateCount: 0 },
       lastKnownValidVersionPreserved: Boolean(previousVersion),
-      message: `Validación de staging fallida (${discrepancyReason}). Rollback automático aplicado: la versión anterior se mantiene intacta.`
+      message: `Validación de staging fallida (${discrepancyReason}). Rollback automático: versión anterior conservada.`
     };
 
     sourceVersionStore.recordTelemetry({
@@ -489,6 +565,8 @@ export async function monitorOfficialSource(
       sourceState: failureStatus,
       sha: currentSha,
       previousSha,
+      lastValidVersion: lastValidTag,
+      lastValidVersionType: lastValidType,
       recordCounts: { inserts: 0, updates: 0, deletes: 0, truncates: 0 },
       validationState: 'STAGING_VALIDATION_FAILED',
       syncState: 'ROLLBACK',
@@ -501,9 +579,13 @@ export async function monitorOfficialSource(
 
   // 8. Staging y DRY-RUN Exitoso -> Versión Lista para Actualización Atómica
   const duration = Date.now() - startTime;
-  sourceVersionStore.setKnownVersion(sourceId, currentSha, `v-${Date.now()}`, {
+  const newVersionType: ValidVersionType = isFullNationalDataset ? 'VALID_NATIONAL_OFFICIAL' : 'VALID_SAMPLE';
+  const newVersionTag = `v-${Date.now()}`;
+
+  sourceVersionStore.setKnownVersion(sourceId, currentSha, newVersionTag, newVersionType, {
     obtainedAt: new Date().toISOString(),
-    contentLength: byteLength
+    contentLength: byteLength,
+    isNational: isFullNationalDataset
   });
 
   const result: SourceInspectionResult = {
@@ -516,6 +598,8 @@ export async function monitorOfficialSource(
     isOfficialDomain: true,
     sha256: currentSha,
     previousSha256: previousSha,
+    lastKnownValidVersion: newVersionTag,
+    lastKnownValidVersionType: newVersionType,
     contentLength: byteLength,
     isNewVersion: true,
     stagingRequired: true,
@@ -538,6 +622,8 @@ export async function monitorOfficialSource(
     sourceState: 'SOURCE_CHANGED',
     sha: currentSha,
     previousSha,
+    lastValidVersion: newVersionTag,
+    lastValidVersionType: newVersionType,
     recordCounts: { inserts: 0, updates: 0, deletes: 0, truncates: 0 },
     validationState: 'STAGING_VALIDATED',
     syncState: options?.dryRun ? 'DRY_RUN_PASSED' : 'READY_FOR_ATOMIC_SYNC',
