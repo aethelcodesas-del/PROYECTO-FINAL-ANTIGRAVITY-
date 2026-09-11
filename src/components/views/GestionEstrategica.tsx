@@ -9,6 +9,8 @@ import { ProgramaGobiernoView } from './ProgramaGobiernoView';
 import { ComunicacionRedesView } from './ComunicacionRedesView';
 
 import { AgendaCalendarioView } from './AgendaCalendarioView';
+import { useModuleColorMode } from '../../utils/themeColorMode';
+import { ColorModeToggle } from '../common/ColorModeToggle';
 import { 
   Sparkles, 
   TrendingUp, 
@@ -132,6 +134,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
   // ── Datos de campaña desde contexto global (circunscripción real) ──────────
   const campaignCtx = useCampaignData();
   const geoCtx      = useCampaignGeo();
+  const { colorMode, isWhiteMode } = useModuleColorMode('gestion_estrategica');
   // ──────────────────────────────────────────────────────────────────────────
 
   // Navigation Tabs within Strategic Management Session
@@ -1663,7 +1666,36 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
   };
 
   return (
-    <div className="responsive-view min-h-[calc(100dvh-60px)] w-full min-w-0 bg-[#071927] text-slate-100 p-3 sm:p-4 md:p-8 space-y-4 sm:space-y-6 overflow-x-hidden">
+    <div 
+      className="module-theme-root responsive-view min-h-[calc(100dvh-60px)] w-full min-w-0 bg-[#071927] text-slate-100 p-3 sm:p-4 md:p-8 space-y-4 sm:space-y-6 overflow-x-hidden transition-colors duration-200"
+      data-module="gestion_estrategica"
+      data-color-mode={isWhiteMode ? 'white' : 'established'}
+    >
+      {/* Module Header with Logo, Title & Color Mode Toggle */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-cyan-500/20">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-950 to-slate-900 border border-amber-500/40 text-amber-400 flex items-center justify-center shrink-0 shadow-md shadow-amber-950/40">
+            <Sparkles className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="font-extrabold text-lg sm:text-xl text-white tracking-tight">
+                Gestión Estratégica & IA
+              </h2>
+              <span className="text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/40">
+                Módulo 2
+              </span>
+            </div>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Diagnóstico 360°, FODA inteligente, narrativa y agenda electoral
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 shrink-0">
+          <ColorModeToggle moduleId="gestion_estrategica" />
+        </div>
+      </div>
       
 
 

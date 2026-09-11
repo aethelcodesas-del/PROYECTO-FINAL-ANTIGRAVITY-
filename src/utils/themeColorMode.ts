@@ -1,39 +1,65 @@
 /**
- * SISTEMA DE ALTERNANCIA DE COLOR: COLOR ESTABLECIDO VS EFECTO BLANCO
+ * SISTEMA DE ALTERNANCIA DE COLOR AISLADO POR MÓDULO
  * Archivo: src/utils/themeColorMode.ts
  * 
  * Permite alternar visualmente entre:
  * 1. COLOR ESTABLECIDO (ESTABLISHED): Estilo cibernético nativo con acentos cian/azul.
- * 2. EFECTO BLANCO (WHITE): Efecto luminoso y acentos blancos puros sobre fondo oscuro de alto contraste.
+ * 2. EFECTO BLANCO (WHITE): Efecto claro luminoso de alto contraste con tarjetas y fondos blancos.
  * 
- * Garantías:
- * - Persistencia automática en localStorage ('app_color_mode').
- * - Sincronización en tiempo real entre componentes vía evento 'app-color-mode-changed'.
- * - Preservación 100% inalterada de colores funcionales (éxito, error, advertencia).
- * - Cero modificación de lógica de negocio, campañas, usuarios, Registraduría o datos.
+ * Alcance y Aislamiento:
+ * - Cada módulo gestiona y recuerda su propio estado de forma totalmente aislada:
+ *   1. Gestión Administrativa ('gestion_administrativa') -> 'app_color_mode_gestion_administrativa'
+ *   2. Gestión Estratégica ('gestion_estrategica') -> 'app_color_mode_gestion_estrategica'
+ *   3. Gestión Territorial ('gestion_territorial') -> 'app_color_mode_gestion_territorial'
+ *   4. Admin Global ('global_admin') -> 'app_color_mode_global_admin'
+ * 
+ * Inmunidad Garantizada:
+ * - La Landing Page y la pantalla "Seleccione el Módulo de Operación" NUNCA reciben el tema blanco.
+ * - Cero mutación global de document.documentElement para páginas públicas.
+ * - Preservación 100% de colores funcionales (éxito, error, advertencia, info).
+ * - Cero modificaciones a Supabase, campañas, usuarios, Registraduría ni datos.
  */
 
 import { useState, useEffect } from 'react';
 
 export type ColorMode = 'ESTABLISHED' | 'WHITE';
 
+export type ModuleThemeId = 
+  | 'global_admin' 
+  | 'gestion_administrativa' 
+  | 'gestion_estrategica' 
+  | 'gestion_territorial';
+
 export const COLOR_MODES = {
   ESTABLISHED: 'ESTABLISHED' as const,
   WHITE: 'WHITE' as const
 };
 
-export const COLOR_MODE_STORAGE_KEY = 'app_color_mode';
-export const THEME_STORAGE_KEY = COLOR_MODE_STORAGE_KEY;
-export const COLOR_MODE_CHANGE_EVENT = 'app-color-mode-changed';
+export const MODULE_STORAGE_KEYS: Record<ModuleThemeId, string> = {
+  global_admin: 'app_color_mode_global_admin',
+  gestion_administrativa: 'app_color_mode_gestion_administrativa',
+  gestion_estrategica: 'app_color_mode_gestion_estrategica',
+  gestion_territorial: 'app_color_mode_gestion_territorial'
+};
+
+export const LEGACY_COLOR_MODE_STORAGE_KEY = 'app_color_mode';
+export const THEME_STORAGE_KEY = LEGACY_COLOR_MODE_STORAGE_KEY;
+export const COLOR_MODE_CHANGE_EVENT = 'app-module-color-mode-changed';
 
 /**
- * Obtiene el modo de color actualmente guardado o el valor por defecto ('ESTABLISHED')
+ * Obtiene el modo de color guardado para un módulo específico
  */
-export function getColorMode(): ColorMode {
+export function getModuleColorMode(moduleId: ModuleThemeId = 'gestion_administrativa'): ColorMode {
   if (typeof window === 'undefined') return 'ESTABLISHED';
   try {
-    const saved = localStorage.getItem(COLOR_MODE_STORAGE_KEY);
+    const specificKey = MODULE_STORAGE_KEYS[moduleId] || `app_color_mode_${moduleId}`;
+    const saved = localStorage.getItem(specificKey);
     if (saved === 'WHITE' || saved === 'white') return 'WHITE';
+    if (saved === 'ESTABLISHED' || saved === 'established') return 'ESTABLISHED';
+
+    // Migración segura / fallback a clave legacy si no se ha configurado la específica
+    const legacy = localStorage.getItem(LEGACY_COLOR_MODE_STORAGE_KEY);
+    if (legacy === 'WHITE' || legacy === 'white') return 'WHITE';
     return 'ESTABLISHED';
   } catch {
     return 'ESTABLISHED';
@@ -41,50 +67,23 @@ export function getColorMode(): ColorMode {
 }
 
 /**
- * Aplica las clases y atributos correspondientes al elemento documentElement y body
+ * Guarda y despacha el nuevo modo de color para un módulo específico
  */
-export function applyColorModeToDocument(mode: ColorMode): void {
-  if (typeof document === 'undefined') return;
-  const root = document.documentElement;
-  const body = document.body;
-
-  if (mode === 'WHITE') {
-    root.setAttribute('data-color-mode', 'white');
-    root.classList.add('color-mode-white');
-    root.classList.remove('color-mode-established');
-    if (body) {
-      body.setAttribute('data-color-mode', 'white');
-      body.classList.add('color-mode-white');
-      body.classList.remove('color-mode-established');
-    }
-  } else {
-    root.setAttribute('data-color-mode', 'established');
-    root.classList.add('color-mode-established');
-    root.classList.remove('color-mode-white');
-    if (body) {
-      body.setAttribute('data-color-mode', 'established');
-      body.classList.add('color-mode-established');
-      body.classList.remove('color-mode-white');
-    }
-  }
-}
-
-/**
- * Guarda y aplica el nuevo modo de color, notificando a todos los escuchadores
- */
-export function setColorMode(mode: ColorMode): ColorMode {
+export function setModuleColorMode(
+  mode: ColorMode, 
+  moduleId: ModuleThemeId = 'gestion_administrativa'
+): ColorMode {
   if (typeof window === 'undefined') return mode;
   try {
-    localStorage.setItem(COLOR_MODE_STORAGE_KEY, mode);
+    const specificKey = MODULE_STORAGE_KEYS[moduleId] || `app_color_mode_${moduleId}`;
+    localStorage.setItem(specificKey, mode);
   } catch (e) {
-    console.warn('Error saving color mode preference:', e);
+    console.warn(`Error guardando preferencia de tema para ${moduleId}:`, e);
   }
-
-  applyColorModeToDocument(mode);
 
   if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
     window.dispatchEvent(
-      new CustomEvent(COLOR_MODE_CHANGE_EVENT, { detail: { mode } })
+      new CustomEvent(COLOR_MODE_CHANGE_EVENT, { detail: { mode, moduleId } })
     );
   }
 
@@ -92,42 +91,56 @@ export function setColorMode(mode: ColorMode): ColorMode {
 }
 
 /**
- * Alterna entre 'ESTABLISHED' y 'WHITE'
+ * Alterna el modo de color para un módulo específico
  */
-export function toggleColorMode(): ColorMode {
-  const current = getColorMode();
+export function toggleModuleColorMode(moduleId: ModuleThemeId = 'gestion_administrativa'): ColorMode {
+  const current = getModuleColorMode(moduleId);
   const next: ColorMode = current === 'WHITE' ? 'ESTABLISHED' : 'WHITE';
-  setColorMode(next);
+  setModuleColorMode(next, moduleId);
   return next;
 }
 
 /**
- * Inicializa el modo de color al cargar la página
+ * Métodos de compatibilidad histórica
  */
+export function getColorMode(): ColorMode {
+  return getModuleColorMode('gestion_administrativa');
+}
+
+export function setColorMode(mode: ColorMode): ColorMode {
+  return setModuleColorMode(mode, 'gestion_administrativa');
+}
+
+export function toggleColorMode(): ColorMode {
+  return toggleModuleColorMode('gestion_administrativa');
+}
+
+export function applyColorModeToDocument(mode: ColorMode): void {
+  // Función de compatibilidad no invasiva (no muta document.documentElement para proteger la Landing)
+}
+
 export function initColorMode(): ColorMode {
-  const mode = getColorMode();
-  applyColorModeToDocument(mode);
-  return mode;
+  return getColorMode();
 }
 
 /**
- * Hook de React para usar y reaccionar a cambios del modo de color
+ * Hook de React para acceder y reaccionar a cambios de tema dentro de un módulo
  */
-export function useColorMode() {
-  const [colorMode, setModeState] = useState<ColorMode>(() => getColorMode());
+export function useModuleColorMode(moduleId: ModuleThemeId = 'gestion_administrativa') {
+  const [colorMode, setModeState] = useState<ColorMode>(() => getModuleColorMode(moduleId));
 
   useEffect(() => {
-    // Sincronizar en montaje
-    const current = getColorMode();
+    const current = getModuleColorMode(moduleId);
     setModeState(current);
-    applyColorModeToDocument(current);
 
     const handleColorModeChange = (e: Event) => {
-      const customEvent = e as CustomEvent<{ mode: ColorMode }>;
-      if (customEvent.detail?.mode) {
-        setModeState(customEvent.detail.mode);
-      } else {
-        setModeState(getColorMode());
+      const customEvent = e as CustomEvent<{ mode: ColorMode; moduleId?: ModuleThemeId }>;
+      if (!customEvent.detail?.moduleId || customEvent.detail.moduleId === moduleId) {
+        if (customEvent.detail?.mode) {
+          setModeState(customEvent.detail.mode);
+        } else {
+          setModeState(getModuleColorMode(moduleId));
+        }
       }
     };
 
@@ -138,16 +151,17 @@ export function useColorMode() {
       window.removeEventListener(COLOR_MODE_CHANGE_EVENT, handleColorModeChange);
       window.removeEventListener('storage', handleColorModeChange);
     };
-  }, []);
+  }, [moduleId]);
 
   const setMode = (mode: ColorMode) => {
     setModeState(mode);
-    setColorMode(mode);
+    setModuleColorMode(mode, moduleId);
   };
 
   const toggle = () => {
-    const next = toggleColorMode();
-    setModeState(next);
+    const next: ColorMode = colorMode === 'WHITE' ? 'ESTABLISHED' : 'WHITE';
+    setMode(next);
+    return next;
   };
 
   return {
@@ -155,6 +169,11 @@ export function useColorMode() {
     setColorMode: setMode,
     toggleColorMode: toggle,
     isWhiteMode: colorMode === 'WHITE',
-    isEstablishedMode: colorMode === 'ESTABLISHED'
+    isEstablishedMode: colorMode === 'ESTABLISHED',
+    moduleId
   };
+}
+
+export function useColorMode(moduleId?: ModuleThemeId) {
+  return useModuleColorMode(moduleId || 'gestion_administrativa');
 }

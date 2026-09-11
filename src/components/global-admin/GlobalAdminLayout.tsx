@@ -14,6 +14,7 @@ import { GlobalAdminSystem } from './views/GlobalAdminSystem';
 import { GlobalAdminCommercial } from './views/GlobalAdminCommercial';
 import { GlobalAdminRegistraduria } from './views/GlobalAdminRegistraduria';
 import { ColorModeToggle } from '../common/ColorModeToggle';
+import { useModuleColorMode } from '../../utils/themeColorMode';
 import {
   ShieldAlert,
   LayoutDashboard,
@@ -139,8 +140,14 @@ export const GlobalAdminLayout: React.FC<GlobalAdminLayoutProps> = ({
     }
   };
 
+  const { isWhiteMode } = useModuleColorMode('global_admin');
+
   return (
-    <div className="global-admin-shell min-h-[100dvh] w-full min-w-0 bg-[#020617] text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-black">
+    <div 
+      className="module-theme-root global-admin-shell min-h-[100dvh] w-full min-w-0 bg-[#020617] text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-black transition-colors duration-200"
+      data-module="global_admin"
+      data-color-mode={isWhiteMode ? 'white' : 'established'}
+    >
       {/* Top Navbar */}
       <header className="sticky top-0 z-40 bg-slate-950/90 border-b border-slate-800/90 backdrop-blur-xl px-4 sm:px-6 py-3 flex items-center justify-between">
         <div className="flex items-center space-x-3">
@@ -176,7 +183,7 @@ export const GlobalAdminLayout: React.FC<GlobalAdminLayoutProps> = ({
         {/* Right Session & Actions */}
         <div className="flex items-center space-x-2 sm:space-x-3">
           {/* Visual Appearance Color Mode Toggle */}
-          <ColorModeToggle />
+          <ColorModeToggle moduleId="global_admin" />
 
           {/* Session Timer Pill */}
           <div className="hidden sm:flex items-center space-x-2 bg-slate-900/90 border border-slate-800 rounded-xl px-3 py-1.5 text-xs">

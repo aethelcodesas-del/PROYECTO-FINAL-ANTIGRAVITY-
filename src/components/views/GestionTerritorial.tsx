@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { CircleMarker, MapContainer, Popup, TileLayer, useMap } from 'react-leaflet';
 import { ViewMode, TerritorialZone, AuthUser } from '../../types';
 import { supabase } from '../../lib/supabase';
+import { useModuleColorMode } from '../../utils/themeColorMode';
+import { ColorModeToggle } from '../common/ColorModeToggle';
 const RegistroVotantesView = lazy(() => import('./RegistroVotantesView').then(module => ({ default: module.RegistroVotantesView })));
 import { 
   Search, 
@@ -60,6 +62,7 @@ export const GestionTerritorial: React.FC<GestionTerritorialProps> = ({
 }) => {
   // ── Datos de campaña desde contexto global (circunscripción real) ────────────
   const campaignCtx = useCampaignData();
+  const { colorMode, isWhiteMode } = useModuleColorMode('gestion_territorial');
   // ───────────────────────────────────────────────────────────────────────────
   const [sectorList, setSectorList] = useState<TerritorialZone[]>([]);
 
@@ -286,7 +289,37 @@ export const GestionTerritorial: React.FC<GestionTerritorialProps> = ({
   };
 
   return (
-    <div className="responsive-view min-h-[calc(100dvh-60px)] w-full min-w-0 bg-[#020712] text-white p-3 sm:p-4 md:p-6 space-y-4 overflow-x-hidden">
+    <div 
+      className="module-theme-root responsive-view min-h-[calc(100dvh-60px)] w-full min-w-0 bg-[#020712] text-white p-3 sm:p-4 md:p-6 space-y-4 overflow-x-hidden transition-colors duration-200"
+      data-module="gestion_territorial"
+      data-color-mode={isWhiteMode ? 'white' : 'established'}
+    >
+      {/* Module Header with Logo, Title & Color Mode Toggle */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-cyan-500/20">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-950 to-slate-900 border border-emerald-500/40 text-emerald-400 flex items-center justify-center shrink-0 shadow-md shadow-emerald-950/40">
+            <MapPin className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="font-extrabold text-lg sm:text-xl text-white tracking-tight">
+                Gestión Territorial & Censo
+              </h2>
+              <span className="text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/40">
+                Módulo 3
+              </span>
+            </div>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Despliegue en territorio, líderes, mapa de calor y testigos electorales
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 shrink-0">
+          <ColorModeToggle moduleId="gestion_territorial" />
+        </div>
+      </div>
+
       {activeSubTab === 'registro' ? (
         <Suspense fallback={<div className="min-h-[60vh] flex items-center justify-center"><div className="h-8 w-8 rounded-full border-2 border-cyan-500/30 border-t-cyan-400 animate-spin" /></div>}>
         <RegistroVotantesView onSelectView={onSelectView} authUser={authUser} />

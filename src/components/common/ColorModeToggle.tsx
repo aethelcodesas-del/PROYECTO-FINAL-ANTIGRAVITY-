@@ -1,19 +1,21 @@
 import React from 'react';
-import { useColorMode, ColorMode } from '../../utils/themeColorMode';
+import { useModuleColorMode, ModuleThemeId } from '../../utils/themeColorMode';
 import { Palette, Sparkles, Check } from 'lucide-react';
 
 interface ColorModeToggleProps {
   variant?: 'switch' | 'segmented' | 'cards';
   showLabel?: boolean;
   className?: string;
+  moduleId?: ModuleThemeId;
 }
 
 export const ColorModeToggle: React.FC<ColorModeToggleProps> = ({
   variant = 'segmented',
   showLabel = true,
-  className = ''
+  className = '',
+  moduleId = 'gestion_administrativa'
 }) => {
-  const { colorMode, setColorMode, isWhiteMode } = useColorMode();
+  const { colorMode, setColorMode, isWhiteMode } = useModuleColorMode(moduleId);
 
   if (variant === 'cards') {
     return (
@@ -93,7 +95,7 @@ export const ColorModeToggle: React.FC<ColorModeToggleProps> = ({
               </div>
             </div>
             <p className="text-[11px] text-slate-400 mt-2.5 leading-relaxed">
-              Aplica un efecto blanco brillante y sobrio a los acentos principales manteniendo la legibilidad.
+              Aplica un efecto blanco sobrio de alto contraste con tarjetas y fondos claros.
             </p>
           </button>
         </div>
@@ -148,11 +150,11 @@ export const ColorModeToggle: React.FC<ColorModeToggleProps> = ({
           onClick={() => setColorMode('WHITE')}
           className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all cursor-pointer ${
             isWhiteMode
-              ? 'bg-white text-slate-900 border border-slate-300 font-bold shadow-sm shadow-slate-200/50'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
+              ? 'bg-white text-slate-900 border border-slate-300 shadow-sm font-bold'
+              : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
           }`}
         >
-          <Sparkles className={`w-3 h-3 ${isWhiteMode ? 'text-blue-600' : 'text-slate-500'}`} />
+          <Sparkles className={`w-3 h-3 ${isWhiteMode ? 'text-amber-500' : 'text-slate-400'}`} />
           <span>Blanco</span>
         </button>
       </div>

@@ -10,6 +10,8 @@ import { PresupuestoContabilidad } from './PresupuestoContabilidad';
 import { GestionConfiguracionCampana } from './GestionConfiguracionCampana';
 import { GestionEncuestasSondeos } from './GestionEncuestasSondeos';
 import { GestionTestigos } from './GestionTestigos';
+import { useModuleColorMode } from '../../utils/themeColorMode';
+import { ColorModeToggle } from '../common/ColorModeToggle';
 import { 
   Building2, 
   Users, 
@@ -117,6 +119,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
   const campaignCtx = useCampaignData();
   const liveMetrics  = useCampaignLive();
   const geoCtx      = useCampaignGeo();
+  const { colorMode, isWhiteMode } = useModuleColorMode('gestion_administrativa');
   // ───────────────────────────────────────────────────────────────────────────
   const [internalTab, setInternalTab] = useState<AdminTabType>('inicio');
   const activeTab = (controlledActiveTab as AdminTabType) || internalTab;
@@ -2472,7 +2475,11 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
   }, [activeTab]);
 
   return (
-    <div className="responsive-view min-h-[calc(100dvh-60px)] w-full min-w-0 bg-[#030712] text-slate-100 relative overflow-x-hidden">
+    <div 
+      className="module-theme-root responsive-view min-h-[calc(100dvh-60px)] w-full min-w-0 bg-[#030712] text-slate-100 relative overflow-x-hidden transition-colors duration-200"
+      data-module="gestion_administrativa"
+      data-color-mode={isWhiteMode ? 'white' : 'established'}
+    >
       {/* Floating Success Toast - Compact & Auto-dismiss */}
       {actionSuccessMessage && (
         <div className="fixed top-16 sm:top-20 right-3 sm:right-6 z-50 transition-all duration-300 transform bg-[#022c22]/95 border border-emerald-500/40 backdrop-blur-md rounded-xl py-2 px-3.5 shadow-xl shadow-emerald-950/60 flex items-center gap-2.5 max-w-[340px] text-slate-100 animate-in fade-in slide-in-from-top-2">
@@ -2495,6 +2502,32 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
 
       {/* Main Container Content */}
       <main className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto">
+
+        {/* Module Header with Logo, Title & Color Mode Toggle */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-cyan-500/20">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-cyan-950 to-blue-950 border border-cyan-500/40 text-cyan-400 flex items-center justify-center shrink-0 shadow-md shadow-cyan-950/40">
+              <Building2 className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="font-extrabold text-lg sm:text-xl text-white tracking-tight">
+                  Gestión Administrativa
+                </h2>
+                <span className="text-[10px] font-mono font-bold bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded-full border border-cyan-500/40">
+                  Módulo 1
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Consola directiva, nómina, finanzas CNE y control de accesos RBAC
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 shrink-0">
+            <ColorModeToggle moduleId="gestion_administrativa" />
+          </div>
+        </div>
 
         {/* ---------------------------------------------------------------------- */}
         {/* TAB 1: INICIO (RESUMEN EJECUTIVO ADMINISTRATIVO) */}

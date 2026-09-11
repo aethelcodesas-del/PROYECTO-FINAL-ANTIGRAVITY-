@@ -15,6 +15,7 @@ import { getHashForRoute, parseRouteFromHash } from './utils/urlRouter';
 import { useAutoLogout } from './hooks/useAutoLogout';
 import { usePlatformRealtime } from './hooks/usePlatformRealtime';
 import { CampaignProvider } from './contexts/CampaignContext';
+import { useModuleColorMode, ModuleThemeId } from './utils/themeColorMode';
 
 // Global Navigation Components
 import { Header } from './components/Header';
@@ -198,6 +199,15 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
   const [unreadNotifications, setUnreadNotifications] = useState<number>(3);
   const mainContainerRef = useRef<HTMLElement | null>(null);
+
+  const activeModuleId: ModuleThemeId = (() => {
+    if (currentView === 'modulo_admin') return 'gestion_administrativa';
+    if (currentView === 'gestion_estrategica') return 'gestion_estrategica';
+    if (['gestion_territorial', 'testigo_campo', 'encuestas', 'jurado_campo'].includes(currentView)) return 'gestion_territorial';
+    if (currentView === 'global_admin') return 'global_admin';
+    return 'gestion_administrativa';
+  })();
+  const { isWhiteMode: isActiveModuleWhite } = useModuleColorMode(activeModuleId);
 
   // Logout handler - immediately cleans state and returns to landing
   const handleLogout = () => {
@@ -536,7 +546,11 @@ export default function App() {
   // Render Main Dashboard Layout Shell
   return (
     <CampaignProvider>
-    <div className="app-shell h-[100dvh] min-h-0 w-full min-w-0 overflow-hidden flex flex-col bg-[#030712] text-slate-100 selection:bg-cyan-500 selection:text-black">
+    <div 
+      className="app-shell h-[100dvh] min-h-0 w-full min-w-0 overflow-hidden flex flex-col bg-[#030712] text-slate-100 selection:bg-cyan-500 selection:text-black transition-colors duration-200"
+      data-module={activeModuleId}
+      data-color-mode={isActiveModuleWhite ? 'white' : 'established'}
+    >
       {/* Main Workspace: Sidebar + Dynamic View Content */}
       <div className="flex-1 flex h-full overflow-hidden relative">
         {/* Left Navigation Sidebar */}
