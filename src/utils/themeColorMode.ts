@@ -41,20 +41,31 @@ export function getColorMode(): ColorMode {
 }
 
 /**
- * Aplica las clases y atributos correspondientes al elemento documentElement
+ * Aplica las clases y atributos correspondientes al elemento documentElement y body
  */
 export function applyColorModeToDocument(mode: ColorMode): void {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
+  const body = document.body;
 
   if (mode === 'WHITE') {
     root.setAttribute('data-color-mode', 'white');
     root.classList.add('color-mode-white');
     root.classList.remove('color-mode-established');
+    if (body) {
+      body.setAttribute('data-color-mode', 'white');
+      body.classList.add('color-mode-white');
+      body.classList.remove('color-mode-established');
+    }
   } else {
     root.setAttribute('data-color-mode', 'established');
     root.classList.add('color-mode-established');
     root.classList.remove('color-mode-white');
+    if (body) {
+      body.setAttribute('data-color-mode', 'established');
+      body.classList.add('color-mode-established');
+      body.classList.remove('color-mode-white');
+    }
   }
 }
 

@@ -938,81 +938,171 @@ html.color-mode-white {
   --color-primary-border: rgba(255, 255, 255, 0.5);
 }
 
-/* White mode selection */
+/* ==========================================================================
+   COLOR MODE SYSTEM: ESTABLISHED VS WHITE
+   ========================================================================== */
+
+/* 1. Selection & Global Accents in White Mode */
 html.color-mode-white ::selection,
-html[data-color-mode="white"] ::selection {
+html[data-color-mode="white"] ::selection,
+body.color-mode-white ::selection {
   background-color: #ffffff !important;
-  color: #000000 !important;
+  color: #030712 !important;
 }
 
-/* White Mode: Primary highlight text */
-html.color-mode-white .text-cyan-400,
-html.color-mode-white .text-cyan-300,
-html[data-color-mode="white"] .text-cyan-400,
-html[data-color-mode="white"] .text-cyan-300 {
+/* 2. Text Accents & Glowing Highlights (Cyan/Teal/Sky -> Bright Pure White with Silver Aura) */
+html.color-mode-white [class*="text-cyan-"],
+html.color-mode-white [class*="text-teal-400"],
+html.color-mode-white [class*="text-teal-300"],
+html.color-mode-white [class*="text-sky-400"],
+html[data-color-mode="white"] [class*="text-cyan-"],
+html[data-color-mode="white"] [class*="text-teal-400"],
+html[data-color-mode="white"] [class*="text-teal-300"],
+html[data-color-mode="white"] [class*="text-sky-400"],
+body.color-mode-white [class*="text-cyan-"],
+body.color-mode-white [class*="text-teal-400"] {
   color: #ffffff !important;
-  text-shadow: 0 0 10px rgba(255, 255, 255, 0.35);
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.45);
 }
 
-/* White Mode: Primary accent borders */
-html.color-mode-white .border-cyan-500\/40,
-html.color-mode-white .border-cyan-500\/30,
-html.color-mode-white .border-cyan-500\/50,
-html.color-mode-white .border-cyan-500\/60,
-html.color-mode-white .hover\:border-cyan-500\/50:hover,
-html.color-mode-white .hover\:border-cyan-500\/60:hover,
-html[data-color-mode="white"] .border-cyan-500\/40,
-html[data-color-mode="white"] .border-cyan-500\/30,
-html[data-color-mode="white"] .border-cyan-500\/50,
-html[data-color-mode="white"] .border-cyan-500\/60 {
+/* 3. Primary Icons (Cyan/Teal/Sky) */
+html.color-mode-white svg[class*="text-cyan-"],
+html.color-mode-white svg[class*="text-teal-400"],
+html.color-mode-white [class*="text-cyan-"] > svg,
+html[data-color-mode="white"] svg[class*="text-cyan-"],
+html[data-color-mode="white"] [class*="text-cyan-"] > svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.5));
+}
+
+/* 4. Primary Call-to-Action & Active Buttons (Gradients -> Solid Glowing White with High Contrast Dark Text) */
+html.color-mode-white [class*="from-cyan-"][class*="to-blue-"],
+html.color-mode-white [class*="from-cyan-"][class*="to-teal-"],
+html.color-mode-white [class*="from-cyan-600"],
+html.color-mode-white [class*="from-cyan-500"],
+html.color-mode-white [class*="from-teal-700"][class*="to-emerald-700"],
+html[data-color-mode="white"] [class*="from-cyan-"][class*="to-blue-"],
+html[data-color-mode="white"] [class*="from-cyan-"][class*="to-teal-"],
+html[data-color-mode="white"] [class*="from-cyan-600"],
+html[data-color-mode="white"] [class*="from-cyan-500"],
+html[data-color-mode="white"] [class*="from-teal-700"][class*="to-emerald-700"] {
+  background-image: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%) !important;
+  background-color: #ffffff !important;
+  color: #030712 !important;
+  border-color: rgba(255, 255, 255, 0.9) !important;
+  box-shadow: 0 4px 20px -2px rgba(255, 255, 255, 0.4), 0 0 12px 1px rgba(255, 255, 255, 0.25) !important;
+}
+
+/* Ensure text and icons inside white action buttons have crisp dark contrast */
+html.color-mode-white [class*="from-cyan-"][class*="to-blue-"] *,
+html.color-mode-white [class*="from-cyan-"][class*="to-teal-"] *,
+html.color-mode-white [class*="from-cyan-600"] *,
+html.color-mode-white [class*="from-cyan-500"] *,
+html.color-mode-white [class*="from-teal-700"][class*="to-emerald-700"] *,
+html[data-color-mode="white"] [class*="from-cyan-"][class*="to-blue-"] *,
+html[data-color-mode="white"] [class*="from-cyan-"][class*="to-teal-"] *,
+html[data-color-mode="white"] [class*="from-cyan-600"] *,
+html[data-color-mode="white"] [class*="from-cyan-500"] * {
+  color: #030712 !important;
+  stroke: #030712 !important;
+  text-shadow: none !important;
+  font-weight: 800 !important;
+}
+
+/* 5. Solid Primary Buttons (bg-cyan-600, bg-cyan-500) */
+html.color-mode-white button[class*="bg-cyan-"],
+html.color-mode-white .bg-cyan-600,
+html.color-mode-white .bg-cyan-500,
+html[data-color-mode="white"] button[class*="bg-cyan-"],
+html[data-color-mode="white"] .bg-cyan-600,
+html[data-color-mode="white"] .bg-cyan-500 {
+  background-color: #ffffff !important;
+  color: #030712 !important;
+  box-shadow: 0 0 16px rgba(255, 255, 255, 0.35) !important;
+}
+
+html.color-mode-white button[class*="bg-cyan-"] *,
+html.color-mode-white .bg-cyan-600 *,
+html.color-mode-white .bg-cyan-500 * {
+  color: #030712 !important;
+  stroke: #030712 !important;
+}
+
+/* 6. Primary Accent Borders & Focus Rings */
+html.color-mode-white [class*="border-cyan-"],
+html.color-mode-white [class*="border-teal-400"],
+html.color-mode-white [class*="border-sky-400"],
+html[data-color-mode="white"] [class*="border-cyan-"],
+html[data-color-mode="white"] [class*="border-teal-400"],
+html[data-color-mode="white"] [class*="border-sky-400"],
+body.color-mode-white [class*="border-cyan-"] {
   border-color: rgba(255, 255, 255, 0.4) !important;
 }
 
-/* White Mode: Primary pill badges & containers */
-html.color-mode-white .bg-cyan-950,
-html.color-mode-white .bg-cyan-950\/80,
-html.color-mode-white .bg-cyan-950\/70,
-html.color-mode-white .bg-cyan-950\/60,
-html.color-mode-white .bg-cyan-950\/50,
-html.color-mode-white .bg-cyan-950\/40,
-html.color-mode-white .bg-cyan-950\/30,
-html[data-color-mode="white"] .bg-cyan-950,
-html[data-color-mode="white"] .bg-cyan-950\/80,
-html[data-color-mode="white"] .bg-cyan-950\/70,
-html[data-color-mode="white"] .bg-cyan-950\/60,
-html[data-color-mode="white"] .bg-cyan-950\/50,
-html[data-color-mode="white"] .bg-cyan-950\/40 {
-  background-color: rgba(255, 255, 255, 0.08) !important;
+html.color-mode-white [class*="ring-cyan-"],
+html[data-color-mode="white"] [class*="ring-cyan-"] {
+  --tw-ring-color: rgba(255, 255, 255, 0.6) !important;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.5) !important;
 }
 
-html.color-mode-white .bg-cyan-500\/20,
-html.color-mode-white .bg-cyan-500\/15,
-html.color-mode-white .bg-cyan-500\/10,
-html[data-color-mode="white"] .bg-cyan-500\/20,
-html[data-color-mode="white"] .bg-cyan-500\/15,
-html[data-color-mode="white"] .bg-cyan-500\/10 {
+/* 7. Primary Badges, Pills & Translucent Containers */
+html.color-mode-white [class*="bg-cyan-500/"],
+html.color-mode-white [class*="bg-cyan-400/"],
+html.color-mode-white [class*="bg-teal-500/"],
+html.color-mode-white [class*="bg-cyan-950"],
+html.color-mode-white [class*="bg-cyan-900"],
+html[data-color-mode="white"] [class*="bg-cyan-500/"],
+html[data-color-mode="white"] [class*="bg-cyan-400/"],
+html[data-color-mode="white"] [class*="bg-teal-500/"],
+html[data-color-mode="white"] [class*="bg-cyan-950"],
+html[data-color-mode="white"] [class*="bg-cyan-900"] {
   background-color: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
+  color: #ffffff !important;
+  backdrop-filter: blur(12px);
+}
+
+/* 8. Glowing Shadows */
+html.color-mode-white [class*="shadow-cyan-"],
+html[data-color-mode="white"] [class*="shadow-cyan-"] {
+  box-shadow: 0 8px 24px -4px rgba(255, 255, 255, 0.18) !important;
+}
+
+/* 9. Hover States in White Mode */
+html.color-mode-white [class*="hover:bg-cyan-"]:hover,
+html.color-mode-white [class*="hover:bg-teal-"]:hover,
+html[data-color-mode="white"] [class*="hover:bg-cyan-"]:hover,
+html[data-color-mode="white"] [class*="hover:bg-teal-"]:hover {
+  background-color: rgba(255, 255, 255, 0.18) !important;
   color: #ffffff !important;
 }
 
-/* White Mode: Gradients */
-html.color-mode-white .from-cyan-950,
-html[data-color-mode="white"] .from-cyan-950 {
-  --tw-gradient-from: rgba(255, 255, 255, 0.14) var(--tw-gradient-from-position) !important;
+html.color-mode-white [class*="hover:border-cyan-"]:hover,
+html[data-color-mode="white"] [class*="hover:border-cyan-"]:hover {
+  border-color: rgba(255, 255, 255, 0.8) !important;
 }
 
-html.color-mode-white .to-blue-950,
-html[data-color-mode="white"] .to-blue-950 {
-  --tw-gradient-to: rgba(255, 255, 255, 0.04) var(--tw-gradient-to-position) !important;
-}
-
-/* White Mode: Glow and Shadows */
-html.color-mode-white .shadow-cyan-950\/50,
-html.color-mode-white .shadow-cyan-950\/40,
-html.color-mode-white .shadow-cyan-950\/30,
-html[data-color-mode="white"] .shadow-cyan-950\/50,
-html[data-color-mode="white"] .shadow-cyan-950\/40,
-html[data-color-mode="white"] .shadow-cyan-950\/30 {
-  box-shadow: 0 10px 25px -5px rgba(255, 255, 255, 0.08) !important;
+/* 10. STRICT EXCLUSION: Preserve Functional Status Colors (Success, Error, Warning) */
+html.color-mode-white .text-emerald-400,
+html.color-mode-white .text-emerald-300,
+html.color-mode-white .text-emerald-500,
+html.color-mode-white .text-green-400,
+html.color-mode-white .text-green-500,
+html.color-mode-white .bg-emerald-500,
+html.color-mode-white [class*="bg-emerald-500/"],
+html.color-mode-white [class*="border-emerald-"],
+html.color-mode-white .text-rose-400,
+html.color-mode-white .text-rose-500,
+html.color-mode-white .text-red-400,
+html.color-mode-white .text-red-500,
+html.color-mode-white [class*="bg-rose-"],
+html.color-mode-white [class*="border-rose-"],
+html.color-mode-white .text-amber-400,
+html.color-mode-white .text-amber-300,
+html.color-mode-white .text-yellow-400,
+html.color-mode-white [class*="bg-amber-"],
+html.color-mode-white [class*="border-amber-"] {
+  /* Retain original functional colors unmodified */
 }
 
