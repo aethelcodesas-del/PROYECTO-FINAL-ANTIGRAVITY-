@@ -949,6 +949,12 @@ html.color-mode-white {
    Garantiza 100% de inmunidad a Landing Page y Selección de Módulos.
    ========================================================================== */
 
+/* ==========================================================================
+   SISTEMA DE DISEÑO PREMIUM ELECTORAL ENTERPRISE (MODO BLANCO) - FASE 9
+   Ámbito exclusivo: [data-color-mode="white"]
+   Paleta: Fondo #F6F9FC, Cards #FFFFFF, Bordes #D9E6F2, Texto #0B1F3A, Primario #0878D1
+   ========================================================================== */
+
 /* 1. Module Container & Shell Backgrounds in White Mode */
 [data-color-mode="white"].module-theme-root,
 [data-color-mode="white"].global-admin-shell,
@@ -956,53 +962,148 @@ html.color-mode-white {
 [data-color-mode="white"] .app-main,
 [data-color-mode="white"] .responsive-view,
 [data-color-mode="white"] > main {
-  background-color: #f8fafc !important;
-  background-image: none !important;
-  color: #0f172a !important;
+  background-color: #F6F9FC !important;
+  background-image: linear-gradient(180deg, #F8FBFF 0%, #F6F9FC 100%) !important;
+  color: #0B1F3A !important;
 }
 
-/* 2. Selection & Accents in White Mode */
+/* 2. Selection & Highlighting */
 [data-color-mode="white"] ::selection {
-  background-color: #0284c7 !important;
-  color: #ffffff !important;
+  background-color: #0878D1 !important;
+  color: #FFFFFF !important;
 }
 
 /* 3. Top Header & Navbars in White Mode */
 [data-color-mode="white"] header,
 [data-color-mode="white"] .global-admin-shell header {
-  background-color: rgba(255, 255, 255, 0.95) !important;
-  border-color: #e2e8f0 !important;
-  color: #0f172a !important;
-  box-shadow: 0 1px 4px 0 rgba(0, 0, 0, 0.05) !important;
+  background-color: #FFFFFF !important;
+  border-bottom: 1px solid #D9E6F2 !important;
+  color: #0B1F3A !important;
+  box-shadow: 0 1px 4px 0 rgba(16, 55, 90, 0.04) !important;
   backdrop-filter: blur(16px) !important;
 }
 
-/* 4. Sidebars & Lateral Drawers in White Mode */
+/* Header Subtitle & Title Hierarchy */
+[data-color-mode="white"] header h1,
+[data-color-mode="white"] header h2,
+[data-color-mode="white"] header .font-bold {
+  color: #0B1F3A !important;
+}
+
+[data-color-mode="white"] header p,
+[data-color-mode="white"] header .text-slate-400 {
+  color: #52657A !important;
+}
+
+/* Module Header Icon Container & Badges */
+[data-color-mode="white"] header .bg-cyan-500\/10,
+[data-color-mode="white"] header .bg-cyan-500\/20,
+[data-color-mode="white"] header [class*="bg-cyan-950"],
+[data-color-mode="white"] [data-module-icon="admin"],
+[data-color-mode="white"] header .rounded-2xl.bg-\[\#030d1f\] {
+  background-color: #EAF5FF !important;
+  border: 1px solid #B9DCF8 !important;
+  border-radius: 14px !important;
+  color: #0878D1 !important;
+  box-shadow: 0 2px 8px rgba(8, 120, 209, 0.08) !important;
+}
+
+[data-color-mode="white"] header .bg-cyan-500\/10 svg,
+[data-color-mode="white"] header .bg-cyan-500\/20 svg {
+  color: #0878D1 !important;
+}
+
+/* Badge Módulo 1 en Header */
+[data-color-mode="white"] header [class*="text-cyan-400"][class*="bg-cyan-950"],
+[data-color-mode="white"] header .badge-module-number {
+  background-color: #EAF5FF !important;
+  color: #0878D1 !important;
+  border: 1px solid #B9DCF8 !important;
+  font-weight: 700 !important;
+}
+
+/* 4. Selector de Tema (ColorModeToggle) */
+[data-color-mode="white"] [role="group"][aria-label*="modo de color"],
+[data-color-mode="white"] [class*="bg-[#030d1f]"][class*="rounded-xl"],
+[data-color-mode="white"] [class*="bg-[#030d1f]"][class*="rounded-2xl"] {
+  background-color: #F8FAFD !important;
+  border: 1px solid #D9E6F2 !important;
+  border-radius: 14px !important;
+}
+
+[data-color-mode="white"] button[aria-checked="true"],
+[data-color-mode="white"] .theme-toggle-active {
+  background-color: #FFFFFF !important;
+  color: #0B1F3A !important;
+  border: 1px solid #9CCEF5 !important;
+  box-shadow: 0 2px 6px rgba(16, 55, 90, 0.08) !important;
+  font-weight: 700 !important;
+}
+
+/* 5. Sidebars & Lateral Drawers in White Mode */
 [data-color-mode="white"] aside,
 [data-color-mode="white"] .global-admin-shell aside {
-  background-color: rgba(255, 255, 255, 0.98) !important;
-  border-color: #e2e8f0 !important;
-  color: #1e293b !important;
-  box-shadow: 1px 0 4px 0 rgba(0, 0, 0, 0.03) !important;
+  background-color: #FFFFFF !important;
+  border-right: 1px solid #D9E6F2 !important;
+  color: #23415F !important;
+  box-shadow: 1px 0 6px 0 rgba(16, 55, 90, 0.03) !important;
 }
 
-/* Sidebar & Header Navigation Buttons */
-[data-color-mode="white"] aside button:not([class*="from-"]):not([class*="bg-cyan-"]):not([class*="bg-teal-"]):not([class*="bg-emerald-"]):not([class*="bg-rose-"]):not([class*="bg-amber-"]) {
-  color: #475569 !important;
+/* Sidebar Menu Navigation Items */
+[data-color-mode="white"] aside button:not([class*="from-"]):not([class*="bg-gradient-"]):not([class*="bg-rose-"]):not([class*="bg-cyan-"]):not([class*="bg-teal-"]) {
+  color: #23415F !important;
+  border-radius: 12px !important;
+  font-weight: 600 !important;
+  transition: all 180ms ease !important;
 }
 
-[data-color-mode="white"] aside button:hover:not([class*="from-"]):not([class*="bg-cyan-"]):not([class*="bg-teal-"]):not([class*="bg-emerald-"]):not([class*="bg-rose-"]):not([class*="bg-amber-"]) {
-  background-color: #f1f5f9 !important;
-  color: #0f172a !important;
+[data-color-mode="white"] aside button:hover:not([class*="from-"]):not([class*="bg-gradient-"]):not([class*="bg-rose-"]):not([class*="bg-cyan-"]):not([class*="bg-teal-"]) {
+  background-color: #EEF6FF !important;
+  color: #0878D1 !important;
 }
 
-[data-color-mode="white"] header button:not([class*="from-"]):not([class*="bg-emerald-"]):not([class*="bg-rose-"]):not([class*="bg-amber-"]):not([class*="bg-cyan-"]) {
-  background-color: #f1f5f9 !important;
-  border-color: #e2e8f0 !important;
-  color: #1e293b !important;
+/* Sidebar Menu Active State */
+[data-color-mode="white"] aside [class*="from-cyan-500"],
+[data-color-mode="white"] aside [class*="from-cyan-600"],
+[data-color-mode="white"] aside [class*="bg-cyan-500"],
+[data-color-mode="white"] aside .sidebar-item-active {
+  background-image: linear-gradient(135deg, #0878D1, #08A9D6) !important;
+  color: #FFFFFF !important;
+  border-radius: 12px !important;
+  box-shadow: 0 6px 16px rgba(8, 120, 209, 0.18) !important;
 }
 
-/* 5. Cards, Panels, Widgets & Containers in White Mode */
+[data-color-mode="white"] aside [class*="from-cyan-500"] *,
+[data-color-mode="white"] aside [class*="from-cyan-600"] *,
+[data-color-mode="white"] aside [class*="bg-cyan-500"] * {
+  color: #FFFFFF !important;
+  stroke: #FFFFFF !important;
+}
+
+/* Sidebar User Profile Bottom Card */
+[data-color-mode="white"] aside .from-slate-900\/95,
+[data-color-mode="white"] aside [class*="from-slate-900"],
+[data-color-mode="white"] aside [class*="to-[#030d1e]"] {
+  background-image: none !important;
+  background-color: #F8FAFD !important;
+  border: 1px solid #D9E6F2 !important;
+  border-radius: 16px !important;
+  color: #0B1F3A !important;
+  box-shadow: 0 2px 8px rgba(16, 55, 90, 0.05) !important;
+}
+
+[data-color-mode="white"] aside .from-slate-900\/95 .text-slate-100 {
+  color: #0B1F3A !important;
+  font-weight: 700 !important;
+}
+
+[data-color-mode="white"] aside .from-slate-900\/95 .text-teal-400,
+[data-color-mode="white"] aside .from-slate-900\/95 .text-cyan-300\/70 {
+  color: #0878D1 !important;
+  font-weight: 600 !important;
+}
+
+/* 6. Cards, Panels, Widgets & Containers in White Mode */
 [data-color-mode="white"] .glass-panel-cyber,
 [data-color-mode="white"] .glass-panel-teal,
 [data-color-mode="white"] .glass-panel-cyan,
@@ -1062,14 +1163,16 @@ html.color-mode-white {
 [data-color-mode="white"] .bg-\[\#071426\],
 [data-color-mode="white"] .bg-\[\#041126\],
 [data-color-mode="white"] .bg-\[\#030b19\] {
-  background-color: #ffffff !important;
-  border-color: #e2e8f0 !important;
-  color: #0f172a !important;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05) !important;
+  background-color: #FFFFFF !important;
+  border: 1px solid #D9E6F2 !important;
+  color: #0B1F3A !important;
+  border-radius: 16px !important;
+  box-shadow: 0 4px 16px rgba(16, 55, 90, 0.06) !important;
+  transition: transform 180ms ease, box-shadow 180ms ease !important;
 }
 
 [data-color-mode="white"] .bg-circuit-pattern {
-  background-color: #f8fafc !important;
+  background-color: #F6F9FC !important;
   background-image: none !important;
 }
 
@@ -1091,68 +1194,88 @@ html.color-mode-white {
 [data-color-mode="white"] .bg-slate-800\/40,
 [data-color-mode="white"] .print-header-bar,
 [data-color-mode="white"] .print-badge {
-  background-color: #f1f5f9 !important;
-  border-color: #e2e8f0 !important;
-  color: #1e293b !important;
+  background-color: #F8FAFD !important;
+  border-color: #D9E6F2 !important;
+  color: #0B1F3A !important;
 }
 
-/* Sub-tab Containers & Pill Selectors */
+/* 7. Sub-tab Containers & Pill Selectors */
 [data-color-mode="white"] .bg-\[\#030d1f\].p-1\.5.rounded-2xl,
 [data-color-mode="white"] [class*="bg-[#030d1f]"][class*="p-1.5"] {
-  background-color: #f1f5f9 !important;
-  border-color: #e2e8f0 !important;
-  box-shadow: inset 0 1px 2px 0 rgba(0, 0, 0, 0.04) !important;
+  background-color: #F8FAFD !important;
+  border: 1px solid #D9E6F2 !important;
+  border-radius: 14px !important;
+  box-shadow: inset 0 1px 2px 0 rgba(16, 55, 90, 0.04) !important;
 }
 
-[data-color-mode="white"] [class*="bg-purple-500/20"],
-[data-color-mode="white"] [class*="bg-purple-950"] {
-  background-color: #faf5ff !important;
-  color: #7e22ce !important;
-  border-color: #d8b4fe !important;
+/* Subtab Active State (Votantes) */
+[data-color-mode="white"] [class*="bg-cyan-500/20"] {
+  background-color: #0878D1 !important;
+  color: #FFFFFF !important;
+  border: 1px solid #0878D1 !important;
+  box-shadow: 0 4px 12px rgba(8, 120, 209, 0.18) !important;
 }
 
-/* Sidebar Bottom User Profile Card */
-[data-color-mode="white"] aside .from-slate-900\/95,
-[data-color-mode="white"] aside [class*="from-slate-900"] {
-  background-image: none !important;
-  background-color: #f1f5f9 !important;
-  border-color: #e2e8f0 !important;
-  color: #0f172a !important;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05) !important;
+[data-color-mode="white"] [class*="bg-cyan-500/20"] * {
+  color: #FFFFFF !important;
+  stroke: #FFFFFF !important;
 }
 
-[data-color-mode="white"] aside .from-slate-900\/95 * {
-  color: #0f172a !important;
+/* Subtab Active State (Líderes) */
+[data-color-mode="white"] [class*="bg-purple-500/20"] {
+  background-color: #7654D6 !important;
+  color: #FFFFFF !important;
+  border: 1px solid #7654D6 !important;
+  box-shadow: 0 4px 12px rgba(118, 84, 214, 0.18) !important;
 }
 
-[data-color-mode="white"] aside .from-slate-900\/95 .text-teal-400,
-[data-color-mode="white"] aside .from-slate-900\/95 .text-cyan-300\/70 {
-  color: #0284c7 !important;
+[data-color-mode="white"] [class*="bg-purple-500/20"] * {
+  color: #FFFFFF !important;
+  stroke: #FFFFFF !important;
 }
 
-/* Module Role Counter Badges */
+/* 8. Module Role Counter Badges & Modifiers */
+/* Gestión Administrativa: Azul */
 [data-color-mode="white"] [class*="bg-cyan-400/10"] {
-  background-color: #f0f9ff !important;
-  border-color: #bae6fd !important;
+  background-color: #EAF5FF !important;
+  border: 1px solid #B9DCF8 !important;
 }
 
+[data-color-mode="white"] [class*="bg-cyan-400/10"] span.text-cyan-300 {
+  color: #0878D1 !important;
+  font-weight: 800 !important;
+}
+
+/* Gestión Estratégica: Naranja */
 [data-color-mode="white"] [class*="bg-amber-400/10"] {
-  background-color: #fffbeb !important;
-  border-color: #fde68a !important;
+  background-color: #FFF4DF !important;
+  border: 1px solid #FED7AA !important;
 }
 
+[data-color-mode="white"] [class*="bg-amber-400/10"] span.text-amber-300 {
+  color: #E88900 !important;
+  font-weight: 800 !important;
+}
+
+/* Gestión Territorial: Verde */
 [data-color-mode="white"] [class*="bg-emerald-400/10"] {
-  background-color: #f0fdf4 !important;
-  border-color: #bbf7d0 !important;
+  background-color: #E5F8F1 !important;
+  border: 1px solid #B8EBD8 !important;
+}
+
+[data-color-mode="white"] [class*="bg-emerald-400/10"] span.text-emerald-300 {
+  color: #00A878 !important;
+  font-weight: 800 !important;
 }
 
 [data-color-mode="white"] .text-cyan-100\/70,
 [data-color-mode="white"] .text-amber-100\/70,
 [data-color-mode="white"] .text-emerald-100\/70 {
-  color: #475569 !important;
+  color: #52657A !important;
+  font-weight: 700 !important;
 }
 
-/* Popovers, Dropdowns & Modals */
+/* 9. Popovers, Dropdowns & Modals */
 [data-color-mode="white"] .bg-slate-900.border.border-slate-700,
 [data-color-mode="white"] [role="dialog"],
 [data-color-mode="white"] [role="menu"],
@@ -1160,16 +1283,17 @@ html.color-mode-white {
 [data-color-mode="white"] .modal-content,
 [data-color-mode="white"] .popover-content,
 [data-color-mode="white"] .print-section {
-  background-color: #ffffff !important;
-  border-color: #cbd5e1 !important;
-  color: #0f172a !important;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+  background-color: #FFFFFF !important;
+  border: 1px solid #D9E6F2 !important;
+  color: #0B1F3A !important;
+  border-radius: 18px !important;
+  box-shadow: 0 20px 25px -5px rgba(16, 55, 90, 0.12), 0 8px 10px -6px rgba(16, 55, 90, 0.08) !important;
 }
 
 [data-color-mode="white"] #printable-dossier-root {
-  background-color: #f8fafc !important;
-  border-color: #e2e8f0 !important;
-  color: #1e293b !important;
+  background-color: #F8FAFD !important;
+  border-color: #D9E6F2 !important;
+  color: #0B1F3A !important;
 }
 
 /* Dark backdrop overlays for modals remain intact */
@@ -1185,228 +1309,317 @@ html.color-mode-white {
   backdrop-filter: blur(4px) !important;
 }
 
-/* 6. Typography & Text Hierarchy in White Mode */
+/* 10. Typography & Text Hierarchy in White Mode */
 [data-color-mode="white"] .text-white:not([class*="from-"]):not([class*="bg-gradient-"]):not([class*="bg-emerald-"]):not([class*="bg-rose-"]):not([class*="bg-amber-"]):not([class*="bg-cyan-"]):not([class*="bg-teal-"]):not([class*="bg-blue-"]):not([class*="bg-purple-"]),
 [data-color-mode="white"] .text-slate-100 {
-  color: #0f172a !important;
+  color: #0B1F3A !important;
+  font-weight: 700 !important;
 }
 
 [data-color-mode="white"] .text-slate-200 {
-  color: #1e293b !important;
+  color: #1A3353 !important;
+  font-weight: 600 !important;
 }
 
 [data-color-mode="white"] .text-slate-300 {
-  color: #334155 !important;
+  color: #2D4868 !important;
 }
 
 [data-color-mode="white"] .text-slate-400 {
-  color: #475569 !important;
+  color: #52657A !important;
 }
 
 [data-color-mode="white"] .text-slate-500 {
-  color: #64748b !important;
+  color: #71839A !important;
 }
 
 [data-color-mode="white"] .text-cyan-200\/90,
 [data-color-mode="white"] .text-cyan-200\/80,
 [data-color-mode="white"] .text-cyan-200\/70,
 [data-color-mode="white"] .text-cyan-200 {
-  color: #1e293b !important;
+  color: #0B1F3A !important;
+  font-weight: 600 !important;
 }
 
-/* 7. Primary Branding Cyan / Blue in White Mode */
+/* 11. Primary Branding Cyan / Blue in White Mode */
 [data-color-mode="white"] .text-cyan-400,
 [data-color-mode="white"] .text-cyan-300,
 [data-color-mode="white"] .text-cyan-500 {
-  color: #0284c7 !important;
+  color: #0878D1 !important;
 }
 
 [data-color-mode="white"] .text-teal-400,
 [data-color-mode="white"] .text-teal-300 {
-  color: #0d9488 !important;
+  color: #00A878 !important;
 }
 
 [data-color-mode="white"] .text-sky-400 {
-  color: #0284c7 !important;
+  color: #08A9D6 !important;
 }
 
 [data-color-mode="white"] .text-blue-400 {
-  color: #2563eb !important;
+  color: #0878D1 !important;
 }
 
-[data-color-mode="white"] [class*="bg-cyan-500/20"],
-[data-color-mode="white"] [class*="bg-cyan-500/15"],
-[data-color-mode="white"] [class*="bg-cyan-500/10"],
 [data-color-mode="white"] [class*="bg-cyan-950"] {
-  background-color: #e0f2fe !important;
-  color: #0369a1 !important;
-  border-color: #bae6fd !important;
+  background-color: #EAF5FF !important;
+  color: #0878D1 !important;
+  border-color: #B9DCF8 !important;
 }
 
-/* 8. Active Pills & Prominent Call to Action in White Mode */
+/* 12. Botones Premium (Principal, Secundario, Éxito, Peligro) */
+/* BOTÓN PRINCIPAL: Gradiente Azul #0878D1 -> #08A9D6 */
+[data-color-mode="white"] [class*="from-cyan-600"][class*="to-teal-600"],
 [data-color-mode="white"] [class*="from-cyan-600"][class*="to-blue-700"],
 [data-color-mode="white"] [class*="from-cyan-600"][class*="to-blue-600"],
-[data-color-mode="white"] [class*="from-teal-700"][class*="to-emerald-700"] {
-  background-image: linear-gradient(135deg, #0284c7 0%, #2563eb 100%) !important;
-  color: #ffffff !important;
-  border-color: #0284c7 !important;
-  box-shadow: 0 4px 14px -1px rgba(2, 132, 199, 0.35) !important;
+[data-color-mode="white"] [class*="from-teal-700"][class*="to-emerald-700"],
+[data-color-mode="white"] button.bg-cyan-500 {
+  background-image: linear-gradient(135deg, #0878D1 0%, #08A9D6 100%) !important;
+  color: #FFFFFF !important;
+  border: none !important;
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+  box-shadow: 0 5px 14px rgba(8, 120, 209, 0.20) !important;
+  transition: all 180ms ease !important;
 }
 
-[data-color-mode="white"] [class*="from-cyan-600"][class*="to-blue-700"] *,
-[data-color-mode="white"] [class*="from-cyan-600"][class*="to-blue-600"] *,
-[data-color-mode="white"] [class*="from-teal-700"][class*="to-emerald-700"] * {
-  color: #ffffff !important;
-  stroke: #ffffff !important;
+[data-color-mode="white"] [class*="from-cyan-600"][class*="to-teal-600"]:hover,
+[data-color-mode="white"] [class*="from-cyan-600"][class*="to-blue-700"]:hover,
+[data-color-mode="white"] [class*="from-cyan-600"][class*="to-blue-600"]:hover,
+[data-color-mode="white"] button.bg-cyan-500:hover {
+  background-image: linear-gradient(135deg, #0759A5 0%, #0878D1 100%) !important;
+  box-shadow: 0 7px 18px rgba(8, 120, 209, 0.25) !important;
 }
 
-/* 9. Borders in White Mode */
+[data-color-mode="white"] [class*="from-cyan-600"] *,
+[data-color-mode="white"] button.bg-cyan-500 * {
+  color: #FFFFFF !important;
+  stroke: #FFFFFF !important;
+}
+
+/* BOTÓN SECUNDARIO: Blanco con Borde #9CCEF5 y Texto #0878D1 */
+[data-color-mode="white"] button.bg-slate-800,
+[data-color-mode="white"] [class*="bg-slate-800"][class*="text-slate-300"] {
+  background-color: #FFFFFF !important;
+  color: #0878D1 !important;
+  border: 1px solid #9CCEF5 !important;
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+}
+
+[data-color-mode="white"] button.bg-slate-800:hover {
+  background-color: #EEF6FF !important;
+  color: #0759A5 !important;
+}
+
+/* BOTÓN ÉXITO: #00A878 */
+[data-color-mode="white"] button.bg-emerald-500,
+[data-color-mode="white"] [class*="bg-emerald-500"][class*="text-slate-950"] {
+  background-color: #00A878 !important;
+  color: #FFFFFF !important;
+  border: none !important;
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+  box-shadow: 0 5px 14px rgba(0, 168, 120, 0.18) !important;
+}
+
+[data-color-mode="white"] button.bg-emerald-500:hover {
+  background-color: #008F68 !important;
+}
+
+[data-color-mode="white"] button.bg-emerald-500 * {
+  color: #FFFFFF !important;
+  stroke: #FFFFFF !important;
+}
+
+/* BOTÓN PELIGRO: Blanco con Borde #F5B8BB y Texto #E5484D */
+[data-color-mode="white"] button[class*="bg-rose-950"],
+[data-color-mode="white"] button[class*="text-rose-300"] {
+  background-color: #FFFFFF !important;
+  color: #E5484D !important;
+  border: 1px solid #F5B8BB !important;
+  border-radius: 10px !important;
+  font-weight: 600 !important;
+}
+
+[data-color-mode="white"] button[class*="bg-rose-950"]:hover {
+  background-color: #FFF0F1 !important;
+}
+
+/* 13. Borders in White Mode */
 [data-color-mode="white"] [class*="border-slate-800"],
 [data-color-mode="white"] [class*="border-slate-750"],
 [data-color-mode="white"] [class*="border-slate-700"],
 [data-color-mode="white"] [class*="border-slate-600"] {
-  border-color: #e2e8f0 !important;
+  border-color: #D9E6F2 !important;
 }
 
 [data-color-mode="white"] [class*="border-cyan-500/"],
 [data-color-mode="white"] [class*="border-cyan-400/"] {
-  border-color: #bae6fd !important;
+  border-color: #D9E6F2 !important;
 }
 
 [data-color-mode="white"] [class*="border-purple-500/"] {
-  border-color: #e9d5ff !important;
+  border-color: #DDD6FE !important;
 }
 
-/* 10. Inputs, Selects & Forms in White Mode */
+/* 14. Inputs, Selects & Forms in White Mode */
 [data-color-mode="white"] input,
 [data-color-mode="white"] select,
 [data-color-mode="white"] textarea {
-  background-color: #ffffff !important;
-  color: #0f172a !important;
-  border-color: #cbd5e1 !important;
+  background-color: #FFFFFF !important;
+  color: #0B1F3A !important;
+  border: 1px solid #C9D9E8 !important;
+  border-radius: 10px !important;
 }
 
 [data-color-mode="white"] input::placeholder,
 [data-color-mode="white"] textarea::placeholder {
-  color: #94a3b8 !important;
+  color: #8192A5 !important;
 }
 
 [data-color-mode="white"] input:focus,
 [data-color-mode="white"] select:focus,
 [data-color-mode="white"] textarea:focus {
-  border-color: #0284c7 !important;
-  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2) !important;
+  border-color: #0878D1 !important;
+  box-shadow: 0 0 0 3px rgba(8, 120, 209, 0.10) !important;
 }
 
-/* 11. Tables in White Mode */
+/* 15. Tables in White Mode */
 [data-color-mode="white"] table {
-  background-color: #ffffff !important;
-  color: #0f172a !important;
-  border-color: #e2e8f0 !important;
+  background-color: #FFFFFF !important;
+  color: #0B1F3A !important;
+  border-color: #D9E6F2 !important;
 }
 
 [data-color-mode="white"] table thead,
 [data-color-mode="white"] table th {
-  background-color: #f8fafc !important;
-  color: #334155 !important;
-  border-color: #e2e8f0 !important;
+  background-color: #F3F7FB !important;
+  color: #28445F !important;
+  border-bottom: 1px solid #D9E6F2 !important;
+  font-weight: 700 !important;
 }
 
 [data-color-mode="white"] table tr {
-  background-color: #ffffff !important;
-  border-color: #e2e8f0 !important;
-  color: #0f172a !important;
-}
-
-[data-color-mode="white"] table tr:nth-child(even) {
-  background-color: #f8fafc !important;
+  background-color: #FFFFFF !important;
+  border-bottom: 1px solid #E7EEF5 !important;
+  color: #0B1F3A !important;
 }
 
 [data-color-mode="white"] table tr:hover {
-  background-color: #f1f5f9 !important;
+  background-color: #F7FBFF !important;
 }
 
 [data-color-mode="white"] table td {
-  border-color: #e2e8f0 !important;
-  color: #1e293b !important;
+  border-color: #E7EEF5 !important;
+  color: #0B1F3A !important;
 }
 
-/* 12. STRICT PRESERVATION: Functional Status Colors (Success, Error, Warning, Info) */
-/* ÉXITO: Verde / Emerald */
+/* 16. Estados y Badges Semánticos */
+/* ACTIVO / HABILITADO: Verde #00A878 */
 [data-color-mode="white"] .text-emerald-400,
 [data-color-mode="white"] .text-emerald-300,
 [data-color-mode="white"] .text-emerald-500,
 [data-color-mode="white"] .text-green-400,
 [data-color-mode="white"] .text-green-500 {
-  color: #16a34a !important;
+  color: #008F68 !important;
 }
 
 [data-color-mode="white"] .bg-emerald-950,
 [data-color-mode="white"] .bg-emerald-950\/60,
 [data-color-mode="white"] .bg-emerald-950\/50,
 [data-color-mode="white"] [class*="bg-emerald-500/"] {
-  background-color: #dcfce7 !important;
-  color: #15803d !important;
-  border-color: #bbf7d0 !important;
+  background-color: #E5F8F1 !important;
+  color: #008F68 !important;
+  border: 1px solid #B8EBD8 !important;
 }
 
-/* ERROR: Rojo / Rose */
+/* ERROR / ELIMINACIÓN: Rojo #E5484D */
 [data-color-mode="white"] .text-rose-400,
 [data-color-mode="white"] .text-rose-300,
 [data-color-mode="white"] .text-rose-500,
 [data-color-mode="white"] .text-red-400,
 [data-color-mode="white"] .text-red-500 {
-  color: #e11d48 !important;
+  color: #C7353A !important;
 }
 
 [data-color-mode="white"] .bg-rose-950,
 [data-color-mode="white"] .bg-rose-950\/70,
 [data-color-mode="white"] .bg-rose-950\/50,
 [data-color-mode="white"] [class*="bg-rose-500/"] {
-  background-color: #ffe4e6 !important;
-  color: #be123c !important;
-  border-color: #fecdd3 !important;
+  background-color: #FFF0F1 !important;
+  color: #C7353A !important;
+  border: 1px solid #FECDD3 !important;
 }
 
-/* ADVERTENCIA: Ámbar / Amarillo */
+/* ADVERTENCIA: Ámbar #F2A900 */
 [data-color-mode="white"] .text-amber-400,
 [data-color-mode="white"] .text-amber-300,
 [data-color-mode="white"] .text-amber-500,
 [data-color-mode="white"] .text-yellow-400 {
-  color: #d97706 !important;
+  color: #A66A00 !important;
 }
 
 [data-color-mode="white"] .bg-amber-950,
 [data-color-mode="white"] .bg-amber-950\/60,
 [data-color-mode="white"] .bg-amber-950\/50,
 [data-color-mode="white"] [class*="bg-amber-500/"] {
-  background-color: #fef3c7 !important;
-  color: #b45309 !important;
-  border-color: #fde68a !important;
+  background-color: #FFF5D6 !important;
+  color: #A66A00 !important;
+  border: 1px solid #FDE68A !important;
 }
 
-/* INFORMACIÓN: Azul */
+/* INFORMACIÓN / CAMPO DEL SISTEMA: Azul #0878D1 */
 [data-color-mode="white"] .text-blue-400,
 [data-color-mode="white"] .text-blue-500 {
-  color: #2563eb !important;
+  color: #0878D1 !important;
 }
 
-/* 13. Scrollbar & UI Accents in White Mode */
+/* BADGES ESPECÍFICOS DE FORMULARIO DE VOTANTES */
+/* Campo del sistema */
+[data-color-mode="white"] span[class*="bg-cyan-500/20"],
+[data-color-mode="white"] span.badge-system-field {
+  background-color: #EAF5FF !important;
+  color: #0878D1 !important;
+  border: 1px solid #B9DCF8 !important;
+  font-weight: 700 !important;
+}
+
+/* Obligatorio */
+[data-color-mode="white"] span[class*="border-cyan-500/30"],
+[data-color-mode="white"] span.badge-mandatory {
+  background-color: #FFFFFF !important;
+  color: #0878D1 !important;
+  border: 1px solid #9CCEF5 !important;
+  font-weight: 700 !important;
+}
+
+/* Opcional */
+[data-color-mode="white"] button[class*="bg-slate-800"][class*="text-slate-400"],
+[data-color-mode="white"] span.badge-optional {
+  background-color: #F8FAFD !important;
+  color: #52657A !important;
+  border: 1px solid #D9E6F2 !important;
+  font-weight: 600 !important;
+}
+
+/* 17. Scrollbar Premium */
 [data-color-mode="white"] .custom-scrollbar {
-  scrollbar-color: #cbd5e1 #f1f5f9 !important;
+  scrollbar-color: #C9D9E8 #F8FAFD !important;
 }
 
 [data-color-mode="white"] .custom-scrollbar::-webkit-scrollbar-track {
-  background: #f1f5f9;
+  background: #F8FAFD !important;
 }
 
 [data-color-mode="white"] .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 9999px;
+  background: #C9D9E8 !important;
+  border-radius: 9999px !important;
 }
 
 [data-color-mode="white"] .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: #9CCEF5 !important;
 }
+
 
 
