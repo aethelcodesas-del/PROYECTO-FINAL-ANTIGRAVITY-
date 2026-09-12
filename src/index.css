@@ -1803,32 +1803,122 @@ html.color-mode-white {
   color: #0878D1 !important;
 }
 
-/* BADGES ESPECÍFICOS DE FORMULARIO DE VOTANTES */
-/* Campo del sistema */
+/* BADGES ESPECÍFICOS DE FORMULARIO DE VOTANTES & CONFIGURADOR DE CAMPOS */
+/* Encabezado del configurador de campos de votante */
+[data-color-mode="white"] .overflow-hidden.rounded-xl.border.bg-\[\#030d1f\],
+[data-color-mode="white"] [class*="border-cyan-500/30"].bg-\[\#030d1f\] {
+  background-color: #FFFFFF !important;
+  border: 1px solid #D9E6F2 !important;
+  border-radius: 16px !important;
+  box-shadow: 0 4px 16px rgba(16, 55, 90, 0.06) !important;
+}
+
+[data-color-mode="white"] .overflow-hidden.rounded-xl.border.bg-\[\#030d1f\] button[aria-expanded] {
+  background-color: #F8FAFD !important;
+  border-bottom: 1px solid #D9E6F2 !important;
+  color: #0B1F3A !important;
+}
+
+[data-color-mode="white"] .overflow-hidden.rounded-xl.border.bg-\[\#030d1f\] button[aria-expanded]:hover {
+  background-color: #EEF6FF !important;
+}
+
+[data-color-mode="white"] .overflow-hidden.rounded-xl.border.bg-\[\#030d1f\] button[aria-expanded] h4 {
+  color: #0B1F3A !important;
+  font-weight: 800 !important;
+}
+
+[data-color-mode="white"] .overflow-hidden.rounded-xl.border.bg-\[\#030d1f\] button[aria-expanded] p {
+  color: #52657A !important;
+  font-weight: 600 !important;
+}
+
+[data-color-mode="white"] .overflow-hidden.rounded-xl.border.bg-\[\#030d1f\] button[aria-expanded] svg {
+  color: #0878D1 !important;
+}
+
+/* Filas de campos individuales */
+[data-color-mode="white"] .overflow-hidden.rounded-xl.border-cyan-500\/20 > div,
+[data-color-mode="white"] .overflow-hidden.rounded-xl.border > div[class*="bg-\[\#041733\]"],
+[data-color-mode="white"] .overflow-hidden.rounded-xl.border > div[class*="bg-slate-900"] {
+  background-color: #FFFFFF !important;
+  border-color: #E7EEF5 !important;
+}
+
+[data-color-mode="white"] .overflow-hidden.rounded-xl.border-cyan-500\/20 > div:hover {
+  background-color: #F7FBFF !important;
+}
+
+/* Nombres de campo principales */
+[data-color-mode="white"] .overflow-hidden.rounded-xl.border-cyan-500\/20 .text-white {
+  color: #0B1F3A !important;
+  font-weight: 700 !important;
+}
+
+/* Subtítulos de categoría y tipo de datos (Alta Legibilidad) */
+[data-color-mode="white"] .text-cyan-300\/70,
+[data-color-mode="white"] .text-cyan-400\/70,
+[data-color-mode="white"] .font-mono.text-cyan-300\/70,
+[data-color-mode="white"] .overflow-hidden.rounded-xl.border-cyan-500\/20 .font-mono {
+  color: #52657A !important;
+  font-weight: 600 !important;
+}
+
+/* Badge: Campo del sistema */
 [data-color-mode="white"] span[class*="bg-cyan-500/20"],
 [data-color-mode="white"] span.badge-system-field {
   background-color: #EAF5FF !important;
   color: #0878D1 !important;
   border: 1px solid #B9DCF8 !important;
   font-weight: 700 !important;
+  border-radius: 6px !important;
 }
 
-/* Obligatorio */
+/* Badge: Obligatorio (Sistema) */
 [data-color-mode="white"] span[class*="border-cyan-500/30"],
 [data-color-mode="white"] span.badge-mandatory {
   background-color: #FFFFFF !important;
   color: #0878D1 !important;
   border: 1px solid #9CCEF5 !important;
   font-weight: 700 !important;
+  border-radius: 6px !important;
 }
 
-/* Opcional */
+/* Botón: Obligatorio (Personalizado Activo) */
+[data-color-mode="white"] button[class*="bg-amber-500/20"],
+[data-color-mode="white"] button[class*="border-amber-500"] {
+  background-color: #FFF5D6 !important;
+  color: #A66A00 !important;
+  border: 1px solid #FDE68A !important;
+  font-weight: 700 !important;
+  border-radius: 6px !important;
+}
+
+/* Botón: Opcional */
 [data-color-mode="white"] button[class*="bg-slate-800"][class*="text-slate-400"],
 [data-color-mode="white"] span.badge-optional {
   background-color: #F8FAFD !important;
   color: #52657A !important;
   border: 1px solid #D9E6F2 !important;
   font-weight: 600 !important;
+  border-radius: 6px !important;
+}
+
+/* Botón: Habilitado (Verde) */
+[data-color-mode="white"] button[class*="bg-emerald-500/20"],
+[data-color-mode="white"] button[class*="border-emerald-500"] {
+  background-color: #E5F8F1 !important;
+  color: #008F68 !important;
+  border: 1px solid #B8EBD8 !important;
+  font-weight: 700 !important;
+  border-radius: 6px !important;
+}
+
+/* Botón: Habilitar (Inactivo) */
+[data-color-mode="white"] button[class*="bg-slate-800"][class*="text-slate-400"]:hover {
+  background-color: #EEF6FF !important;
+  color: #0878D1 !important;
+  border-color: #B9DCF8 !important;
 }
 
 /* 18. Scrollbar Premium */
