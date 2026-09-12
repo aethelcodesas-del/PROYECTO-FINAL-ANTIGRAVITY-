@@ -1001,16 +1001,18 @@ html.color-mode-white {
 [data-color-mode="white"] header [class*="bg-cyan-950"],
 [data-color-mode="white"] [data-module-icon="admin"],
 [data-color-mode="white"] header .rounded-2xl.bg-\[\#030d1f\] {
-  background-color: #EAF5FF !important;
-  border: 1px solid #B9DCF8 !important;
+  background: linear-gradient(135deg, #072B54 0%, #0B1F3A 100%) !important;
+  border: 1px solid #1A3353 !important;
   border-radius: 14px !important;
-  color: #0878D1 !important;
-  box-shadow: 0 2px 8px rgba(8, 120, 209, 0.08) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 12px rgba(11, 31, 58, 0.15) !important;
 }
 
 [data-color-mode="white"] header .bg-cyan-500\/10 svg,
-[data-color-mode="white"] header .bg-cyan-500\/20 svg {
-  color: #0878D1 !important;
+[data-color-mode="white"] header .bg-cyan-500\/20 svg,
+[data-color-mode="white"] header [class*="bg-cyan-950"] svg,
+[data-color-mode="white"] header .rounded-2xl.bg-\[\#030d1f\] svg {
+  color: #FFFFFF !important;
 }
 
 /* Badge Módulo 1 en Header */
@@ -1020,6 +1022,7 @@ html.color-mode-white {
   color: #0878D1 !important;
   border: 1px solid #B9DCF8 !important;
   font-weight: 700 !important;
+  border-radius: 9999px !important;
 }
 
 /* 4. Selector de Tema (ColorModeToggle) */
@@ -1040,6 +1043,16 @@ html.color-mode-white {
   font-weight: 700 !important;
 }
 
+[data-color-mode="white"] button[aria-checked="true"] svg.text-amber-400,
+[data-color-mode="white"] button[aria-checked="true"] svg.text-yellow-400,
+[data-color-mode="white"] .theme-toggle-active svg {
+  color: #F2A900 !important;
+}
+
+[data-color-mode="white"] button[aria-checked="false"] {
+  color: #52657A !important;
+}
+
 /* 5. Sidebars & Lateral Drawers in White Mode */
 [data-color-mode="white"] aside,
 [data-color-mode="white"] .global-admin-shell aside {
@@ -1047,6 +1060,14 @@ html.color-mode-white {
   border-right: 1px solid #D9E6F2 !important;
   color: #23415F !important;
   box-shadow: 1px 0 6px 0 rgba(16, 55, 90, 0.03) !important;
+}
+
+/* Sidebar Section Headers */
+[data-color-mode="white"] aside p[class*="text-cyan-400"],
+[data-color-mode="white"] aside p[class*="text-teal-400"],
+[data-color-mode="white"] aside p[class*="text-amber-400"] {
+  color: #0878D1 !important;
+  font-weight: 800 !important;
 }
 
 /* Sidebar Menu Navigation Items */
@@ -1057,22 +1078,29 @@ html.color-mode-white {
   transition: all 180ms ease !important;
 }
 
+[data-color-mode="white"] aside button:not([class*="from-"]):not([class*="bg-gradient-"]):not([class*="bg-rose-"]):not([class*="bg-cyan-"]):not([class*="bg-teal-"]) svg {
+  color: #0878D1 !important;
+}
+
 [data-color-mode="white"] aside button:hover:not([class*="from-"]):not([class*="bg-gradient-"]):not([class*="bg-rose-"]):not([class*="bg-cyan-"]):not([class*="bg-teal-"]) {
   background-color: #EEF6FF !important;
   color: #0878D1 !important;
 }
 
 /* Sidebar Menu Active State */
+[data-color-mode="white"] aside [class*="from-cyan-600"][class*="to-blue-700"],
 [data-color-mode="white"] aside [class*="from-cyan-500"],
 [data-color-mode="white"] aside [class*="from-cyan-600"],
 [data-color-mode="white"] aside [class*="bg-cyan-500"],
 [data-color-mode="white"] aside .sidebar-item-active {
   background-image: linear-gradient(135deg, #0878D1, #08A9D6) !important;
   color: #FFFFFF !important;
+  border: none !important;
   border-radius: 12px !important;
-  box-shadow: 0 6px 16px rgba(8, 120, 209, 0.18) !important;
+  box-shadow: 0 6px 16px rgba(8, 120, 209, 0.22) !important;
 }
 
+[data-color-mode="white"] aside [class*="from-cyan-600"][class*="to-blue-700"] *,
 [data-color-mode="white"] aside [class*="from-cyan-500"] *,
 [data-color-mode="white"] aside [class*="from-cyan-600"] *,
 [data-color-mode="white"] aside [class*="bg-cyan-500"] * {
@@ -1080,27 +1108,50 @@ html.color-mode-white {
   stroke: #FFFFFF !important;
 }
 
-/* Sidebar User Profile Bottom Card */
+/* Sidebar User Profile Bottom Card - Executive Dark Navy Container */
 [data-color-mode="white"] aside .from-slate-900\/95,
 [data-color-mode="white"] aside [class*="from-slate-900"],
 [data-color-mode="white"] aside [class*="to-[#030d1e]"] {
   background-image: none !important;
-  background-color: #F8FAFD !important;
-  border: 1px solid #D9E6F2 !important;
+  background-color: #0B1F3A !important;
+  border: 1px solid #1A3353 !important;
   border-radius: 16px !important;
-  color: #0B1F3A !important;
-  box-shadow: 0 2px 8px rgba(16, 55, 90, 0.05) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 12px rgba(11, 31, 58, 0.15) !important;
 }
 
 [data-color-mode="white"] aside .from-slate-900\/95 .text-slate-100 {
+  color: #FFFFFF !important;
+  font-weight: 700 !important;
+}
+
+[data-color-mode="white"] aside .from-slate-900\/95 .text-teal-400 {
+  color: #08A9D6 !important;
+  font-weight: 600 !important;
+}
+
+[data-color-mode="white"] aside .from-slate-900\/95 .text-cyan-300\/70 {
+  color: #71839A !important;
+  font-weight: 500 !important;
+}
+
+[data-color-mode="white"] aside .from-slate-900\/95 button,
+[data-color-mode="white"] aside [class*="from-slate-900"] button[title*="Cerrar sesión"] {
+  background-color: #F8FAFD !important;
+  border: 1px solid #D9E6F2 !important;
+  border-radius: 10px !important;
   color: #0B1F3A !important;
   font-weight: 700 !important;
 }
 
-[data-color-mode="white"] aside .from-slate-900\/95 .text-teal-400,
-[data-color-mode="white"] aside .from-slate-900\/95 .text-cyan-300\/70 {
-  color: #0878D1 !important;
-  font-weight: 600 !important;
+[data-color-mode="white"] aside .from-slate-900\/95 button svg,
+[data-color-mode="white"] aside [class*="from-slate-900"] button[title*="Cerrar sesión"] svg {
+  color: #E5484D !important;
+}
+
+[data-color-mode="white"] aside .from-slate-900\/95 button:hover {
+  background-color: #FFFFFF !important;
+  box-shadow: 0 2px 6px rgba(16, 55, 90, 0.08) !important;
 }
 
 /* 6. Cards, Panels, Widgets & Containers in White Mode */
@@ -1234,11 +1285,19 @@ html.color-mode-white {
   stroke: #FFFFFF !important;
 }
 
-/* 8. Module Role Counter Badges & Modifiers */
+/* 8. Module Role Subcards & Counter Badges in Gestión de Roles */
 /* Gestión Administrativa: Azul */
+[data-color-mode="white"] .grid-cols-1.md\:grid-cols-3 > div:nth-child(1),
+[data-color-mode="white"] .grid-cols-1.md\:grid-cols-4 > div:nth-child(1) {
+  background-color: #FFFFFF !important;
+  border: 1px solid #B9DCF8 !important;
+  border-radius: 16px !important;
+}
+
 [data-color-mode="white"] [class*="bg-cyan-400/10"] {
   background-color: #EAF5FF !important;
   border: 1px solid #B9DCF8 !important;
+  border-radius: 12px !important;
 }
 
 [data-color-mode="white"] [class*="bg-cyan-400/10"] span.text-cyan-300 {
@@ -1247,9 +1306,17 @@ html.color-mode-white {
 }
 
 /* Gestión Estratégica: Naranja */
+[data-color-mode="white"] .grid-cols-1.md\:grid-cols-3 > div:nth-child(2),
+[data-color-mode="white"] .grid-cols-1.md\:grid-cols-4 > div:nth-child(2) {
+  background-color: #FFFFFF !important;
+  border: 1px solid #FED7AA !important;
+  border-radius: 16px !important;
+}
+
 [data-color-mode="white"] [class*="bg-amber-400/10"] {
   background-color: #FFF4DF !important;
   border: 1px solid #FED7AA !important;
+  border-radius: 12px !important;
 }
 
 [data-color-mode="white"] [class*="bg-amber-400/10"] span.text-amber-300 {
@@ -1258,9 +1325,17 @@ html.color-mode-white {
 }
 
 /* Gestión Territorial: Verde */
+[data-color-mode="white"] .grid-cols-1.md\:grid-cols-3 > div:nth-child(3),
+[data-color-mode="white"] .grid-cols-1.md\:grid-cols-4 > div:nth-child(3) {
+  background-color: #FFFFFF !important;
+  border: 1px solid #B8EBD8 !important;
+  border-radius: 16px !important;
+}
+
 [data-color-mode="white"] [class*="bg-emerald-400/10"] {
   background-color: #E5F8F1 !important;
   border: 1px solid #B8EBD8 !important;
+  border-radius: 12px !important;
 }
 
 [data-color-mode="white"] [class*="bg-emerald-400/10"] span.text-emerald-300 {
@@ -1268,14 +1343,123 @@ html.color-mode-white {
   font-weight: 800 !important;
 }
 
-[data-color-mode="white"] .text-cyan-100\/70,
-[data-color-mode="white"] .text-amber-100\/70,
-[data-color-mode="white"] .text-emerald-100\/70 {
-  color: #52657A !important;
+/* Global Admin: Morado */
+[data-color-mode="white"] .grid-cols-1.md\:grid-cols-4 > div:nth-child(4) {
+  background-color: #FFFFFF !important;
+  border: 1px solid #DDD0FF !important;
+  border-radius: 16px !important;
+}
+
+[data-color-mode="white"] .text-cyan-100\/70 {
+  color: #0878D1 !important;
   font-weight: 700 !important;
 }
 
-/* 9. Popovers, Dropdowns & Modals */
+[data-color-mode="white"] .text-amber-100\/70 {
+  color: #E88900 !important;
+  font-weight: 700 !important;
+}
+
+[data-color-mode="white"] .text-emerald-100\/70 {
+  color: #00A878 !important;
+  font-weight: 700 !important;
+}
+
+/* 9. User Assignment List Rows & Controls */
+[data-color-mode="white"] .space-y-2 > .rounded-xl.border {
+  background-color: #FFFFFF !important;
+  border: 1px solid #D9E6F2 !important;
+  border-radius: 14px !important;
+  box-shadow: 0 2px 8px rgba(16, 55, 90, 0.04) !important;
+}
+
+[data-color-mode="white"] .space-y-2 > .rounded-xl.border .text-slate-100 {
+  color: #0B1F3A !important;
+  font-weight: 700 !important;
+}
+
+[data-color-mode="white"] .space-y-2 > .rounded-xl.border .text-slate-400 {
+  color: #52657A !important;
+}
+
+/* User Role Select Dropdown in Table */
+[data-color-mode="white"] .space-y-2 select {
+  background-color: #FFFFFF !important;
+  color: #0B1F3A !important;
+  border: 1px solid #D9E6F2 !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+}
+
+/* User Role Badges in Table */
+[data-color-mode="white"] .space-y-2 span[class*="text-cyan-400"][class*="bg-cyan-950"] {
+  background-color: #EAF5FF !important;
+  color: #0878D1 !important;
+  border: 1px solid #B9DCF8 !important;
+  font-weight: 700 !important;
+  border-radius: 9999px !important;
+}
+
+[data-color-mode="white"] .space-y-2 span[class*="text-amber-400"][class*="bg-amber-950"] {
+  background-color: #FFF4DF !important;
+  color: #E88900 !important;
+  border: 1px solid #FED7AA !important;
+  font-weight: 700 !important;
+  border-radius: 9999px !important;
+}
+
+[data-color-mode="white"] .space-y-2 span[class*="text-emerald-400"][class*="bg-emerald-950"] {
+  background-color: #E5F8F1 !important;
+  color: #008F68 !important;
+  border: 1px solid #B8EBD8 !important;
+  font-weight: 700 !important;
+  border-radius: 9999px !important;
+}
+
+/* Status Button (Activo) */
+[data-color-mode="white"] .space-y-2 button[class*="bg-emerald-500/15"] {
+  background-color: #E5F8F1 !important;
+  color: #008F68 !important;
+  border: 1px solid #B8EBD8 !important;
+  border-radius: 9999px !important;
+  font-weight: 700 !important;
+}
+
+/* Permisos Button */
+[data-color-mode="white"] .space-y-2 button[class*="bg-cyan-500/10"] {
+  background-color: #FFFFFF !important;
+  color: #0878D1 !important;
+  border: 1px solid #9CCEF5 !important;
+  border-radius: 8px !important;
+  font-weight: 700 !important;
+}
+
+[data-color-mode="white"] .space-y-2 button[class*="bg-cyan-500/10"] svg {
+  color: #0878D1 !important;
+}
+
+[data-color-mode="white"] .space-y-2 button[class*="bg-cyan-500/10"]:hover {
+  background-color: #EEF6FF !important;
+}
+
+/* Delete Button */
+[data-color-mode="white"] .space-y-2 button[class*="bg-rose-500/10"] {
+  background-color: #FFFFFF !important;
+  color: #E5484D !important;
+  border: 1px solid #F5B8BB !important;
+  border-radius: 8px !important;
+  font-weight: 700 !important;
+}
+
+[data-color-mode="white"] .space-y-2 button[class*="bg-rose-500/10"] svg {
+  color: #E5484D !important;
+}
+
+[data-color-mode="white"] .space-y-2 button[class*="bg-rose-500/10"]:hover {
+  background-color: #FFF0F1 !important;
+}
+
+/* 10. Popovers, Dropdowns & Modals */
 [data-color-mode="white"] .bg-slate-900.border.border-slate-700,
 [data-color-mode="white"] [role="dialog"],
 [data-color-mode="white"] [role="menu"],
@@ -1309,7 +1493,7 @@ html.color-mode-white {
   backdrop-filter: blur(4px) !important;
 }
 
-/* 10. Typography & Text Hierarchy in White Mode */
+/* 11. Typography & Text Hierarchy in White Mode */
 [data-color-mode="white"] .text-white:not([class*="from-"]):not([class*="bg-gradient-"]):not([class*="bg-emerald-"]):not([class*="bg-rose-"]):not([class*="bg-amber-"]):not([class*="bg-cyan-"]):not([class*="bg-teal-"]):not([class*="bg-blue-"]):not([class*="bg-purple-"]),
 [data-color-mode="white"] .text-slate-100 {
   color: #0B1F3A !important;
@@ -1341,7 +1525,7 @@ html.color-mode-white {
   font-weight: 600 !important;
 }
 
-/* 11. Primary Branding Cyan / Blue in White Mode */
+/* 12. Primary Branding Cyan / Blue in White Mode */
 [data-color-mode="white"] .text-cyan-400,
 [data-color-mode="white"] .text-cyan-300,
 [data-color-mode="white"] .text-cyan-500 {
@@ -1367,13 +1551,14 @@ html.color-mode-white {
   border-color: #B9DCF8 !important;
 }
 
-/* 12. Botones Premium (Principal, Secundario, Éxito, Peligro) */
+/* 13. Botones Premium (Principal, Secundario, Éxito, Peligro) */
 /* BOTÓN PRINCIPAL: Gradiente Azul #0878D1 -> #08A9D6 */
 [data-color-mode="white"] [class*="from-cyan-600"][class*="to-teal-600"],
 [data-color-mode="white"] [class*="from-cyan-600"][class*="to-blue-700"],
 [data-color-mode="white"] [class*="from-cyan-600"][class*="to-blue-600"],
 [data-color-mode="white"] [class*="from-teal-700"][class*="to-emerald-700"],
-[data-color-mode="white"] button.bg-cyan-500 {
+[data-color-mode="white"] button.bg-cyan-500,
+[data-color-mode="white"] button[class*="bg-cyan-500"] {
   background-image: linear-gradient(135deg, #0878D1 0%, #08A9D6 100%) !important;
   color: #FFFFFF !important;
   border: none !important;
@@ -1386,13 +1571,15 @@ html.color-mode-white {
 [data-color-mode="white"] [class*="from-cyan-600"][class*="to-teal-600"]:hover,
 [data-color-mode="white"] [class*="from-cyan-600"][class*="to-blue-700"]:hover,
 [data-color-mode="white"] [class*="from-cyan-600"][class*="to-blue-600"]:hover,
-[data-color-mode="white"] button.bg-cyan-500:hover {
+[data-color-mode="white"] button.bg-cyan-500:hover,
+[data-color-mode="white"] button[class*="bg-cyan-500"]:hover {
   background-image: linear-gradient(135deg, #0759A5 0%, #0878D1 100%) !important;
   box-shadow: 0 7px 18px rgba(8, 120, 209, 0.25) !important;
 }
 
 [data-color-mode="white"] [class*="from-cyan-600"] *,
-[data-color-mode="white"] button.bg-cyan-500 * {
+[data-color-mode="white"] button.bg-cyan-500 *,
+[data-color-mode="white"] button[class*="bg-cyan-500"] * {
   color: #FFFFFF !important;
   stroke: #FFFFFF !important;
 }
@@ -1446,7 +1633,7 @@ html.color-mode-white {
   background-color: #FFF0F1 !important;
 }
 
-/* 13. Borders in White Mode */
+/* 14. Borders in White Mode */
 [data-color-mode="white"] [class*="border-slate-800"],
 [data-color-mode="white"] [class*="border-slate-750"],
 [data-color-mode="white"] [class*="border-slate-700"],
@@ -1463,7 +1650,7 @@ html.color-mode-white {
   border-color: #DDD6FE !important;
 }
 
-/* 14. Inputs, Selects & Forms in White Mode */
+/* 15. Inputs, Selects & Forms in White Mode */
 [data-color-mode="white"] input,
 [data-color-mode="white"] select,
 [data-color-mode="white"] textarea {
@@ -1485,7 +1672,7 @@ html.color-mode-white {
   box-shadow: 0 0 0 3px rgba(8, 120, 209, 0.10) !important;
 }
 
-/* 15. Tables in White Mode */
+/* 16. Tables in White Mode */
 [data-color-mode="white"] table {
   background-color: #FFFFFF !important;
   color: #0B1F3A !important;
@@ -1515,7 +1702,7 @@ html.color-mode-white {
   color: #0B1F3A !important;
 }
 
-/* 16. Estados y Badges Semánticos */
+/* 17. Estados y Badges Semánticos */
 /* ACTIVO / HABILITADO: Verde #00A878 */
 [data-color-mode="white"] .text-emerald-400,
 [data-color-mode="white"] .text-emerald-300,
@@ -1603,7 +1790,7 @@ html.color-mode-white {
   font-weight: 600 !important;
 }
 
-/* 17. Scrollbar Premium */
+/* 18. Scrollbar Premium */
 [data-color-mode="white"] .custom-scrollbar {
   scrollbar-color: #C9D9E8 #F8FAFD !important;
 }
