@@ -1007,35 +1007,61 @@ html.color-mode-white {
 [data-color-mode="white"] .glass-panel-teal,
 [data-color-mode="white"] .glass-panel-cyan,
 [data-color-mode="white"] .functional-card,
-[data-color-mode="white"] [class*="bg-slate-900"],
 [data-color-mode="white"] [class*="bg-slate-950"],
+[data-color-mode="white"] [class*="bg-slate-900"],
+[data-color-mode="white"] [class*="bg-slate-850"],
+[data-color-mode="white"] [class*="bg-slate-800"],
 [data-color-mode="white"] [class*="bg-[#020617]"],
-[data-color-mode="white"] [class*="bg-[#030712]"],
-[data-color-mode="white"] [class*="bg-[#040e21]"],
-[data-color-mode="white"] [class*="bg-[#07172e]"],
-[data-color-mode="white"] [class*="bg-[#030e1f]"],
-[data-color-mode="white"] [class*="bg-[#041226]"],
-[data-color-mode="white"] [class*="bg-[#051329]"],
+[data-color-mode="white"] [class*="bg-[#020712]"],
 [data-color-mode="white"] [class*="bg-[#020a17]"],
+[data-color-mode="white"] [class*="bg-[#020b17]"],
+[data-color-mode="white"] [class*="bg-[#030614]"],
+[data-color-mode="white"] [class*="bg-[#030712]"],
+[data-color-mode="white"] [class*="bg-[#030b19]"],
 [data-color-mode="white"] [class*="bg-[#030d1d]"],
 [data-color-mode="white"] [class*="bg-[#030d1e]"],
-[data-color-mode="white"] [class*="bg-[#0b1b36]"],
-[data-color-mode="white"] [class*="bg-[#041733]"],
-[data-color-mode="white"] [class*="bg-[#05162a]"],
-[data-color-mode="white"] [class*="bg-[#081d38]"],
-[data-color-mode="white"] [class*="bg-[#081e36]"],
-[data-color-mode="white"] [class*="bg-[#0b2747]"],
-[data-color-mode="white"] [class*="bg-[#06172b]"],
-[data-color-mode="white"] [class*="bg-[#071927]"],
+[data-color-mode="white"] [class*="bg-[#030d1f]"],
+[data-color-mode="white"] [class*="bg-[#030e1c]"],
+[data-color-mode="white"] [class*="bg-[#030e1f]"],
 [data-color-mode="white"] [class*="bg-[#030e21]"],
 [data-color-mode="white"] [class*="bg-[#030f24]"],
-[data-color-mode="white"] [class*="bg-[#051833]"],
+[data-color-mode="white"] [class*="bg-[#040e21]"],
 [data-color-mode="white"] [class*="bg-[#041021]"],
-[data-color-mode="white"] [class*="bg-[#030e1c]"],
-[data-color-mode="white"] [class*="bg-[#071426]"],
 [data-color-mode="white"] [class*="bg-[#041126]"],
-[data-color-mode="white"] [class*="bg-[#030b19]"],
-[data-color-mode="white"] [class*="bg-[#081f3d]"] {
+[data-color-mode="white"] [class*="bg-[#041226]"],
+[data-color-mode="white"] [class*="bg-[#041733]"],
+[data-color-mode="white"] [class*="bg-[#051329]"],
+[data-color-mode="white"] [class*="bg-[#05162a]"],
+[data-color-mode="white"] [class*="bg-[#051833]"],
+[data-color-mode="white"] [class*="bg-[#06172b]"],
+[data-color-mode="white"] [class*="bg-[#071426]"],
+[data-color-mode="white"] [class*="bg-[#07172e]"],
+[data-color-mode="white"] [class*="bg-[#071927]"],
+[data-color-mode="white"] [class*="bg-[#081d38]"],
+[data-color-mode="white"] [class*="bg-[#081e36]"],
+[data-color-mode="white"] [class*="bg-[#081f3d]"],
+[data-color-mode="white"] [class*="bg-[#0b1b36]"],
+[data-color-mode="white"] [class*="bg-[#0b1d38]"],
+[data-color-mode="white"] [class*="bg-[#0b2747]"],
+[data-color-mode="white"] [class*="bg-[#0d2a4a]"],
+[data-color-mode="white"] .bg-\[\#030d1f\],
+[data-color-mode="white"] .bg-\[\#030d1f\]\/60,
+[data-color-mode="white"] .bg-\[\#030d1f\]\/40,
+[data-color-mode="white"] .bg-\[\#020712\],
+[data-color-mode="white"] .bg-\[\#020712\]\/60,
+[data-color-mode="white"] .bg-\[\#020712\]\/40,
+[data-color-mode="white"] .bg-\[\#041733\],
+[data-color-mode="white"] .bg-\[\#041733\]\/90,
+[data-color-mode="white"] .bg-\[\#041733\]\/50,
+[data-color-mode="white"] .bg-\[\#030d1d\],
+[data-color-mode="white"] .bg-\[\#030e21\],
+[data-color-mode="white"] .bg-\[\#030f24\],
+[data-color-mode="white"] .bg-\[\#051833\],
+[data-color-mode="white"] .bg-\[\#041021\],
+[data-color-mode="white"] .bg-\[\#030e1c\],
+[data-color-mode="white"] .bg-\[\#071426\],
+[data-color-mode="white"] .bg-\[\#041126\],
+[data-color-mode="white"] .bg-\[\#030b19\] {
   background-color: #ffffff !important;
   border-color: #e2e8f0 !important;
   color: #0f172a !important;
@@ -1070,6 +1096,62 @@ html.color-mode-white {
   color: #1e293b !important;
 }
 
+/* Sub-tab Containers & Pill Selectors */
+[data-color-mode="white"] .bg-\[\#030d1f\].p-1\.5.rounded-2xl,
+[data-color-mode="white"] [class*="bg-[#030d1f]"][class*="p-1.5"] {
+  background-color: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: inset 0 1px 2px 0 rgba(0, 0, 0, 0.04) !important;
+}
+
+[data-color-mode="white"] [class*="bg-purple-500/20"],
+[data-color-mode="white"] [class*="bg-purple-950"] {
+  background-color: #faf5ff !important;
+  color: #7e22ce !important;
+  border-color: #d8b4fe !important;
+}
+
+/* Sidebar Bottom User Profile Card */
+[data-color-mode="white"] aside .from-slate-900\/95,
+[data-color-mode="white"] aside [class*="from-slate-900"] {
+  background-image: none !important;
+  background-color: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05) !important;
+}
+
+[data-color-mode="white"] aside .from-slate-900\/95 * {
+  color: #0f172a !important;
+}
+
+[data-color-mode="white"] aside .from-slate-900\/95 .text-teal-400,
+[data-color-mode="white"] aside .from-slate-900\/95 .text-cyan-300\/70 {
+  color: #0284c7 !important;
+}
+
+/* Module Role Counter Badges */
+[data-color-mode="white"] [class*="bg-cyan-400/10"] {
+  background-color: #f0f9ff !important;
+  border-color: #bae6fd !important;
+}
+
+[data-color-mode="white"] [class*="bg-amber-400/10"] {
+  background-color: #fffbeb !important;
+  border-color: #fde68a !important;
+}
+
+[data-color-mode="white"] [class*="bg-emerald-400/10"] {
+  background-color: #f0fdf4 !important;
+  border-color: #bbf7d0 !important;
+}
+
+[data-color-mode="white"] .text-cyan-100\/70,
+[data-color-mode="white"] .text-amber-100\/70,
+[data-color-mode="white"] .text-emerald-100\/70 {
+  color: #475569 !important;
+}
+
 /* Popovers, Dropdowns & Modals */
 [data-color-mode="white"] .bg-slate-900.border.border-slate-700,
 [data-color-mode="white"] [role="dialog"],
@@ -1097,13 +1179,14 @@ html.color-mode-white {
 [data-color-mode="white"] .fixed.inset-0.bg-black\/80,
 [data-color-mode="white"] .fixed.inset-0.bg-black\/85,
 [data-color-mode="white"] [class*="fixed inset-0"][class*="bg-slate-950/"],
-[data-color-mode="white"] [class*="fixed inset-0"][class*="bg-black/"] {
+[data-color-mode="white"] [class*="fixed inset-0"][class*="bg-black/"],
+[data-color-mode="white"] [class*="fixed inset-0"][class*="bg-[#000]/"] {
   background-color: rgba(2, 6, 23, 0.8) !important;
   backdrop-filter: blur(4px) !important;
 }
 
 /* 6. Typography & Text Hierarchy in White Mode */
-[data-color-mode="white"] .text-white:not([class*="from-"]):not([class*="bg-gradient-"]):not([class*="bg-emerald-"]):not([class*="bg-rose-"]):not([class*="bg-amber-"]):not([class*="bg-cyan-"]):not([class*="bg-teal-"]):not([class*="bg-blue-"]),
+[data-color-mode="white"] .text-white:not([class*="from-"]):not([class*="bg-gradient-"]):not([class*="bg-emerald-"]):not([class*="bg-rose-"]):not([class*="bg-amber-"]):not([class*="bg-cyan-"]):not([class*="bg-teal-"]):not([class*="bg-blue-"]):not([class*="bg-purple-"]),
 [data-color-mode="white"] .text-slate-100 {
   color: #0f172a !important;
 }
@@ -1122,6 +1205,13 @@ html.color-mode-white {
 
 [data-color-mode="white"] .text-slate-500 {
   color: #64748b !important;
+}
+
+[data-color-mode="white"] .text-cyan-200\/90,
+[data-color-mode="white"] .text-cyan-200\/80,
+[data-color-mode="white"] .text-cyan-200\/70,
+[data-color-mode="white"] .text-cyan-200 {
+  color: #1e293b !important;
 }
 
 /* 7. Primary Branding Cyan / Blue in White Mode */
@@ -1181,6 +1271,10 @@ html.color-mode-white {
 [data-color-mode="white"] [class*="border-cyan-500/"],
 [data-color-mode="white"] [class*="border-cyan-400/"] {
   border-color: #bae6fd !important;
+}
+
+[data-color-mode="white"] [class*="border-purple-500/"] {
+  border-color: #e9d5ff !important;
 }
 
 /* 10. Inputs, Selects & Forms in White Mode */
@@ -1314,4 +1408,5 @@ html.color-mode-white {
 [data-color-mode="white"] .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
 
