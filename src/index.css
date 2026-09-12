@@ -1065,45 +1065,86 @@ html.color-mode-white {
 /* Sidebar Section Headers */
 [data-color-mode="white"] aside p[class*="text-cyan-400"],
 [data-color-mode="white"] aside p[class*="text-teal-400"],
+[data-color-mode="white"] aside p[class*="text-emerald-400"],
 [data-color-mode="white"] aside p[class*="text-amber-400"] {
   color: #0878D1 !important;
   font-weight: 800 !important;
 }
 
-/* Sidebar Menu Navigation Items */
-[data-color-mode="white"] aside button:not([class*="from-"]):not([class*="bg-gradient-"]):not([class*="bg-rose-"]):not([class*="bg-cyan-"]):not([class*="bg-teal-"]) {
+/* Sidebar Navigation Items - INACTIVE STATE (clean transparent background with dark navy text) */
+[data-color-mode="white"] aside nav button:not(.bg-gradient-to-r):not([class*="from-cyan-600"][class*="to-blue-700"]):not([class*="from-emerald-600"][class*="to-teal-700"]):not([class*="from-teal-700"][class*="to-emerald-700"]),
+[data-color-mode="white"] aside div.space-y-1 button:not(.bg-gradient-to-r):not([class*="from-cyan-600"][class*="to-blue-700"]):not([class*="from-emerald-600"][class*="to-teal-700"]):not([class*="from-teal-700"][class*="to-emerald-700"]),
+[data-color-mode="white"] aside .space-y-4 button:not(.bg-gradient-to-r):not([class*="from-cyan-600"][class*="to-blue-700"]):not([class*="from-emerald-600"][class*="to-teal-700"]):not([class*="from-teal-700"][class*="to-emerald-700"]):not([title*="Cerrar sesión"]) {
+  background-color: transparent !important;
+  background-image: none !important;
   color: #23415F !important;
+  border: 1px solid transparent !important;
   border-radius: 12px !important;
+  box-shadow: none !important;
   font-weight: 600 !important;
   transition: all 180ms ease !important;
 }
 
-[data-color-mode="white"] aside button:not([class*="from-"]):not([class*="bg-gradient-"]):not([class*="bg-rose-"]):not([class*="bg-cyan-"]):not([class*="bg-teal-"]) svg {
+[data-color-mode="white"] aside nav button:not(.bg-gradient-to-r) svg,
+[data-color-mode="white"] aside div.space-y-1 button:not(.bg-gradient-to-r) svg,
+[data-color-mode="white"] aside .space-y-4 button:not(.bg-gradient-to-r):not([title*="Cerrar sesión"]) svg {
   color: #0878D1 !important;
 }
 
-[data-color-mode="white"] aside button:hover:not([class*="from-"]):not([class*="bg-gradient-"]):not([class*="bg-rose-"]):not([class*="bg-cyan-"]):not([class*="bg-teal-"]) {
+[data-color-mode="white"] aside nav button:not(.bg-gradient-to-r) span,
+[data-color-mode="white"] aside nav button:not(.bg-gradient-to-r) div,
+[data-color-mode="white"] aside div.space-y-1 button:not(.bg-gradient-to-r) span,
+[data-color-mode="white"] aside div.space-y-1 button:not(.bg-gradient-to-r) div,
+[data-color-mode="white"] aside .space-y-4 button:not(.bg-gradient-to-r):not([title*="Cerrar sesión"]) span,
+[data-color-mode="white"] aside .space-y-4 button:not(.bg-gradient-to-r):not([title*="Cerrar sesión"]) div {
+  color: #23415F !important;
+}
+
+/* Sidebar Navigation Items - HOVER STATE on Inactive */
+[data-color-mode="white"] aside nav button:not(.bg-gradient-to-r):hover,
+[data-color-mode="white"] aside div.space-y-1 button:not(.bg-gradient-to-r):hover,
+[data-color-mode="white"] aside .space-y-4 button:not(.bg-gradient-to-r):not([title*="Cerrar sesión"]):hover {
   background-color: #EEF6FF !important;
+  background-image: none !important;
   color: #0878D1 !important;
 }
 
-/* Sidebar Menu Active State */
-[data-color-mode="white"] aside [class*="from-cyan-600"][class*="to-blue-700"],
-[data-color-mode="white"] aside [class*="from-cyan-500"],
-[data-color-mode="white"] aside [class*="from-cyan-600"],
-[data-color-mode="white"] aside [class*="bg-cyan-500"],
+[data-color-mode="white"] aside nav button:not(.bg-gradient-to-r):hover svg,
+[data-color-mode="white"] aside nav button:not(.bg-gradient-to-r):hover span,
+[data-color-mode="white"] aside nav button:not(.bg-gradient-to-r):hover div,
+[data-color-mode="white"] aside div.space-y-1 button:not(.bg-gradient-to-r):hover svg,
+[data-color-mode="white"] aside div.space-y-1 button:not(.bg-gradient-to-r):hover span,
+[data-color-mode="white"] aside div.space-y-1 button:not(.bg-gradient-to-r):hover div,
+[data-color-mode="white"] aside .space-y-4 button:not(.bg-gradient-to-r):not([title*="Cerrar sesión"]):hover svg,
+[data-color-mode="white"] aside .space-y-4 button:not(.bg-gradient-to-r):not([title*="Cerrar sesión"]):hover span,
+[data-color-mode="white"] aside .space-y-4 button:not(.bg-gradient-to-r):not([title*="Cerrar sesión"]):hover div {
+  color: #0878D1 !important;
+}
+
+/* Sidebar Menu ACTIVE STATE (Strictly applies ONLY to selected button with .bg-gradient-to-r) */
+[data-color-mode="white"] aside nav button.bg-gradient-to-r,
+[data-color-mode="white"] aside div.space-y-1 button.bg-gradient-to-r,
+[data-color-mode="white"] aside .space-y-4 button.bg-gradient-to-r,
+[data-color-mode="white"] aside button[class*="from-cyan-600"][class*="to-blue-700"],
+[data-color-mode="white"] aside button[class*="from-emerald-600"][class*="to-teal-700"],
+[data-color-mode="white"] aside button[class*="from-teal-700"][class*="to-emerald-700"],
 [data-color-mode="white"] aside .sidebar-item-active {
-  background-image: linear-gradient(135deg, #0878D1, #08A9D6) !important;
+  background-image: linear-gradient(135deg, #0878D1 0%, #08A9D6 100%) !important;
+  background-color: #0878D1 !important;
   color: #FFFFFF !important;
   border: none !important;
   border-radius: 12px !important;
   box-shadow: 0 6px 16px rgba(8, 120, 209, 0.22) !important;
+  font-weight: 700 !important;
 }
 
-[data-color-mode="white"] aside [class*="from-cyan-600"][class*="to-blue-700"] *,
-[data-color-mode="white"] aside [class*="from-cyan-500"] *,
-[data-color-mode="white"] aside [class*="from-cyan-600"] *,
-[data-color-mode="white"] aside [class*="bg-cyan-500"] * {
+[data-color-mode="white"] aside nav button.bg-gradient-to-r *,
+[data-color-mode="white"] aside div.space-y-1 button.bg-gradient-to-r *,
+[data-color-mode="white"] aside .space-y-4 button.bg-gradient-to-r *,
+[data-color-mode="white"] aside button[class*="from-cyan-600"][class*="to-blue-700"] *,
+[data-color-mode="white"] aside button[class*="from-emerald-600"][class*="to-teal-700"] *,
+[data-color-mode="white"] aside button[class*="from-teal-700"][class*="to-emerald-700"] *,
+[data-color-mode="white"] aside .sidebar-item-active * {
   color: #FFFFFF !important;
   stroke: #FFFFFF !important;
 }
