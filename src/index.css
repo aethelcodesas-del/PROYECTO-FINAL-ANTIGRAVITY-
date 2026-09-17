@@ -1326,6 +1326,57 @@ html.color-mode-white {
   stroke: #FFFFFF !important;
 }
 
+/* 7.1. Inicio (Resumen Ejecutivo) - Tarjetas KPIs y Accesos Rápidos */
+[data-color-mode="white"] .grid-cols-1.sm\:grid-cols-2.lg\:grid-cols-4 > div {
+  background-color: #FFFFFF !important;
+  border: 1px solid #D9E6F2 !important;
+  border-radius: 16px !important;
+  box-shadow: 0 4px 16px rgba(16, 55, 90, 0.05) !important;
+  transition: transform 180ms ease, box-shadow 180ms ease !important;
+}
+
+[data-color-mode="white"] .grid-cols-1.sm\:grid-cols-2.lg\:grid-cols-4 > div:hover {
+  box-shadow: 0 8px 22px rgba(16, 55, 90, 0.09) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Título de sección en Inicio */
+[data-color-mode="white"] h3.uppercase.tracking-wider {
+  color: #0B1F3A !important;
+  font-weight: 800 !important;
+}
+
+/* Tarjetas de Acceso Rápido a las 7 Sub-funciones */
+[data-color-mode="white"] .grid-cols-1.sm\:grid-cols-2.lg\:grid-cols-3 > button {
+  background-color: #FFFFFF !important;
+  border: 1px solid #D9E6F2 !important;
+  border-radius: 16px !important;
+  box-shadow: 0 4px 16px rgba(16, 55, 90, 0.05) !important;
+  transition: all 180ms ease !important;
+}
+
+[data-color-mode="white"] .grid-cols-1.sm\:grid-cols-2.lg\:grid-cols-3 > button:hover {
+  background-color: #F8FAFD !important;
+  border-color: #9CCEF5 !important;
+  box-shadow: 0 8px 24px rgba(16, 55, 90, 0.10) !important;
+  transform: translateY(-2px) !important;
+}
+
+[data-color-mode="white"] .grid-cols-1.sm\:grid-cols-2.lg\:grid-cols-3 > button h4 {
+  color: #0B1F3A !important;
+  font-weight: 800 !important;
+}
+
+[data-color-mode="white"] .grid-cols-1.sm\:grid-cols-2.lg\:grid-cols-3 > button:hover h4 {
+  color: #0878D1 !important;
+}
+
+[data-color-mode="white"] .grid-cols-1.sm\:grid-cols-2.lg\:grid-cols-3 > button p {
+  color: #52657A !important;
+  font-weight: 500 !important;
+  line-height: 1.45 !important;
+}
+
 /* 8. Module Role Subcards & Counter Badges in Gestión de Roles */
 /* Gestión Administrativa: Azul */
 [data-color-mode="white"] .grid-cols-1.md\:grid-cols-3 > div:nth-child(1),
