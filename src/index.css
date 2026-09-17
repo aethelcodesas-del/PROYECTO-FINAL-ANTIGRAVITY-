@@ -1751,15 +1751,23 @@ html.color-mode-white {
 [data-color-mode="white"] .text-green-400,
 [data-color-mode="white"] .text-green-500 {
   color: #008F68 !important;
+  font-weight: 700 !important;
 }
 
 [data-color-mode="white"] .bg-emerald-950,
 [data-color-mode="white"] .bg-emerald-950\/60,
 [data-color-mode="white"] .bg-emerald-950\/50,
-[data-color-mode="white"] [class*="bg-emerald-500/"] {
+[data-color-mode="white"] [class*="bg-emerald-500/"],
+[data-color-mode="white"] [class*="bg-emerald-600/"] {
   background-color: #E5F8F1 !important;
   color: #008F68 !important;
-  border: 1px solid #B8EBD8 !important;
+  border-color: #B8EBD8 !important;
+}
+
+[data-color-mode="white"] [class*="bg-emerald-500/"] *,
+[data-color-mode="white"] [class*="bg-emerald-600/"] * {
+  color: #008F68 !important;
+  stroke: #008F68 !important;
 }
 
 /* ERROR / ELIMINACIÓN: Rojo #E5484D */
@@ -1769,38 +1777,144 @@ html.color-mode-white {
 [data-color-mode="white"] .text-red-400,
 [data-color-mode="white"] .text-red-500 {
   color: #C7353A !important;
+  font-weight: 700 !important;
 }
 
 [data-color-mode="white"] .bg-rose-950,
 [data-color-mode="white"] .bg-rose-950\/70,
 [data-color-mode="white"] .bg-rose-950\/50,
-[data-color-mode="white"] [class*="bg-rose-500/"] {
+[data-color-mode="white"] [class*="bg-rose-500/"],
+[data-color-mode="white"] [class*="bg-rose-600/"],
+[data-color-mode="white"] [class*="bg-red-500/"] {
   background-color: #FFF0F1 !important;
   color: #C7353A !important;
-  border: 1px solid #FECDD3 !important;
+  border-color: #FECDD3 !important;
 }
 
-/* ADVERTENCIA: Ámbar #F2A900 */
+[data-color-mode="white"] [class*="bg-rose-500/"] *,
+[data-color-mode="white"] [class*="bg-rose-600/"] * {
+  color: #C7353A !important;
+  stroke: #C7353A !important;
+}
+
+/* ADVERTENCIA: Ámbar / Naranja #F2A900 */
 [data-color-mode="white"] .text-amber-400,
 [data-color-mode="white"] .text-amber-300,
 [data-color-mode="white"] .text-amber-500,
-[data-color-mode="white"] .text-yellow-400 {
+[data-color-mode="white"] .text-yellow-400,
+[data-color-mode="white"] .text-yellow-300,
+[data-color-mode="white"] .text-orange-400,
+[data-color-mode="white"] .text-orange-300 {
   color: #A66A00 !important;
+  font-weight: 700 !important;
 }
 
 [data-color-mode="white"] .bg-amber-950,
 [data-color-mode="white"] .bg-amber-950\/60,
 [data-color-mode="white"] .bg-amber-950\/50,
-[data-color-mode="white"] [class*="bg-amber-500/"] {
+[data-color-mode="white"] [class*="bg-amber-500/"],
+[data-color-mode="white"] [class*="bg-amber-600/"],
+[data-color-mode="white"] [class*="bg-yellow-500/"],
+[data-color-mode="white"] [class*="bg-orange-500/"] {
   background-color: #FFF5D6 !important;
   color: #A66A00 !important;
-  border: 1px solid #FDE68A !important;
+  border-color: #FDE68A !important;
+}
+
+[data-color-mode="white"] [class*="bg-amber-500/"] *,
+[data-color-mode="white"] [class*="bg-amber-600/"] * {
+  color: #A66A00 !important;
+  stroke: #A66A00 !important;
+}
+
+/* MORADO / INDIGO / CLIMA ELECTORAL & IA / ADMINISTRACIÓN */
+[data-color-mode="white"] .text-indigo-400,
+[data-color-mode="white"] .text-indigo-300,
+[data-color-mode="white"] .text-indigo-200,
+[data-color-mode="white"] .text-indigo-500,
+[data-color-mode="white"] .text-purple-400,
+[data-color-mode="white"] .text-purple-300,
+[data-color-mode="white"] .text-purple-500,
+[data-color-mode="white"] .text-violet-400,
+[data-color-mode="white"] .text-violet-300 {
+  color: #5B3CC4 !important;
+  font-weight: 700 !important;
+}
+
+[data-color-mode="white"] .bg-indigo-950,
+[data-color-mode="white"] .bg-indigo-950\/80,
+[data-color-mode="white"] .bg-purple-950,
+[data-color-mode="white"] .bg-violet-950,
+[data-color-mode="white"] [class*="bg-indigo-500/"],
+[data-color-mode="white"] [class*="bg-indigo-600/"]:not([class*="from-"]),
+[data-color-mode="white"] [class*="bg-purple-500/"]:not([class*="from-"]):not([role="tab"]),
+[data-color-mode="white"] [class*="bg-violet-500/"] {
+  background-color: #F1EDFF !important;
+  color: #5B3CC4 !important;
+  border-color: #DDD0FF !important;
+}
+
+[data-color-mode="white"] [class*="bg-indigo-500/"] *,
+[data-color-mode="white"] [class*="bg-indigo-600/"]:not([class*="from-"]) *,
+[data-color-mode="white"] [class*="bg-purple-500/"]:not([class*="from-"]):not([role="tab"]) * {
+  color: #5B3CC4 !important;
+  stroke: #5B3CC4 !important;
+}
+
+[data-color-mode="white"] [class*="border-indigo-500/"],
+[data-color-mode="white"] [class*="border-indigo-400/"],
+[data-color-mode="white"] [class*="border-indigo-700"],
+[data-color-mode="white"] [class*="border-purple-500/"],
+[data-color-mode="white"] [class*="border-violet-500/"] {
+  border-color: #DDD0FF !important;
+}
+
+/* TEAL / VERDE AZULADO */
+[data-color-mode="white"] .text-teal-400,
+[data-color-mode="white"] .text-teal-300,
+[data-color-mode="white"] .text-teal-500 {
+  color: #008F68 !important;
+  font-weight: 700 !important;
+}
+
+[data-color-mode="white"] .bg-teal-950,
+[data-color-mode="white"] [class*="bg-teal-500/"],
+[data-color-mode="white"] [class*="bg-teal-600/"] {
+  background-color: #E5F8F1 !important;
+  color: #008F68 !important;
+  border-color: #B8EBD8 !important;
+}
+
+[data-color-mode="white"] [class*="bg-teal-500/"] *,
+[data-color-mode="white"] [class*="bg-teal-600/"] * {
+  color: #008F68 !important;
+  stroke: #008F68 !important;
+}
+
+[data-color-mode="white"] [class*="border-teal-500/"],
+[data-color-mode="white"] [class*="border-teal-400/"] {
+  border-color: #B8EBD8 !important;
 }
 
 /* INFORMACIÓN / CAMPO DEL SISTEMA: Azul #0878D1 */
 [data-color-mode="white"] .text-blue-400,
-[data-color-mode="white"] .text-blue-500 {
+[data-color-mode="white"] .text-blue-500,
+[data-color-mode="white"] .text-blue-300 {
   color: #0878D1 !important;
+  font-weight: 700 !important;
+}
+
+[data-color-mode="white"] [class*="bg-blue-500/"],
+[data-color-mode="white"] [class*="bg-blue-600/"]:not([class*="from-"]) {
+  background-color: #EAF5FF !important;
+  color: #0878D1 !important;
+  border-color: #B9DCF8 !important;
+}
+
+[data-color-mode="white"] [class*="bg-blue-500/"] *,
+[data-color-mode="white"] [class*="bg-blue-600/"]:not([class*="from-"]) * {
+  color: #0878D1 !important;
+  stroke: #0878D1 !important;
 }
 
 /* BADGES ESPECÍFICOS DE FORMULARIO DE VOTANTES & CONFIGURADOR DE CAMPOS */
