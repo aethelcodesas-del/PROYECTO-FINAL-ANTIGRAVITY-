@@ -1756,7 +1756,7 @@ html.color-mode-white {
 }
 
 /* 13. Botones Premium (Principal, Secundario, Éxito, Peligro) */
-/* BOTÓN PRINCIPAL: Gradiente Azul #0878D1 -> #08A9D6 */
+/* BOTÓN PRINCIPAL: Azul Premium #1E40AF -> #2563EB */
 [data-color-mode="white"] [class*="from-cyan-600"][class*="to-teal-600"],
 [data-color-mode="white"] [class*="from-cyan-600"][class*="to-blue-700"],
 [data-color-mode="white"] [class*="from-cyan-600"][class*="to-blue-600"],
@@ -1765,12 +1765,13 @@ html.color-mode-white {
 [data-color-mode="white"] button[class~="bg-cyan-500"],
 [data-color-mode="white"] button.bg-cyan-600,
 [data-color-mode="white"] button[class~="bg-cyan-600"] {
-  background-image: linear-gradient(135deg, #0878D1 0%, #08A9D6 100%) !important;
+  background-image: linear-gradient(135deg, #1E40AF 0%, #2563EB 100%) !important;
+  background-color: #1E40AF !important;
   color: #FFFFFF !important;
   border: none !important;
-  border-radius: 10px !important;
-  font-weight: 600 !important;
-  box-shadow: 0 5px 14px rgba(8, 120, 209, 0.20) !important;
+  border-radius: 12px !important;
+  font-weight: 700 !important;
+  box-shadow: 0 4px 14px rgba(30, 64, 175, 0.25) !important;
   transition: all 180ms ease !important;
 }
 
@@ -1781,8 +1782,9 @@ html.color-mode-white {
 [data-color-mode="white"] button[class~="bg-cyan-500"]:hover,
 [data-color-mode="white"] button.bg-cyan-600:hover,
 [data-color-mode="white"] button[class~="bg-cyan-600"]:hover {
-  background-image: linear-gradient(135deg, #0759A5 0%, #0878D1 100%) !important;
-  box-shadow: 0 7px 18px rgba(8, 120, 209, 0.25) !important;
+  background-image: linear-gradient(135deg, #1E3A8A 0%, #1D4ED8 100%) !important;
+  box-shadow: 0 6px 18px rgba(30, 64, 175, 0.35) !important;
+  transform: translateY(-1px) !important;
 }
 
 [data-color-mode="white"] [class*="from-cyan-600"] *,
