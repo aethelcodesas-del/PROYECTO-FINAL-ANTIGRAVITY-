@@ -1300,30 +1300,29 @@ html.color-mode-white {
   box-shadow: inset 0 1px 2px 0 rgba(16, 55, 90, 0.04) !important;
 }
 
-/* Subtab Active State (Votantes) */
-[data-color-mode="white"] [class*="bg-cyan-500/20"] {
-  background-color: #0878D1 !important;
-  color: #FFFFFF !important;
-  border: 1px solid #0878D1 !important;
-  box-shadow: 0 4px 12px rgba(8, 120, 209, 0.18) !important;
+/* Subtab Active State (Votantes & Líderes) */
+[data-color-mode="white"] button[class*="bg-cyan-500/20"] {
+  background-color: #FFFFFF !important;
+  color: #0878D1 !important;
+  border: 1px solid #9CCEF5 !important;
+  box-shadow: 0 2px 8px rgba(8, 120, 209, 0.12) !important;
 }
 
-[data-color-mode="white"] [class*="bg-cyan-500/20"] * {
-  color: #FFFFFF !important;
-  stroke: #FFFFFF !important;
+[data-color-mode="white"] button[class*="bg-cyan-500/20"] * {
+  color: #0878D1 !important;
+  stroke: #0878D1 !important;
 }
 
-/* Subtab Active State (Líderes) */
-[data-color-mode="white"] [class*="bg-purple-500/20"] {
-  background-color: #7654D6 !important;
-  color: #FFFFFF !important;
-  border: 1px solid #7654D6 !important;
-  box-shadow: 0 4px 12px rgba(118, 84, 214, 0.18) !important;
+[data-color-mode="white"] button[class*="bg-purple-500/20"] {
+  background-color: #FFFFFF !important;
+  color: #5B3CC4 !important;
+  border: 1px solid #C7B9F8 !important;
+  box-shadow: 0 2px 8px rgba(91, 60, 196, 0.12) !important;
 }
 
-[data-color-mode="white"] [class*="bg-purple-500/20"] * {
-  color: #FFFFFF !important;
-  stroke: #FFFFFF !important;
+[data-color-mode="white"] button[class*="bg-purple-500/20"] * {
+  color: #5B3CC4 !important;
+  stroke: #5B3CC4 !important;
 }
 
 /* 7.1. Inicio (Resumen Ejecutivo) - Tarjetas KPIs y Accesos Rápidos */
@@ -2082,37 +2081,51 @@ html.color-mode-white {
 }
 
 /* BADGES ESPECÍFICOS DE FORMULARIO DE VOTANTES & CONFIGURADOR DE CAMPOS */
-/* Encabezado del configurador de campos de votante */
-[data-color-mode="white"] .overflow-hidden.rounded-xl.border.bg-\[\#030d1f\],
-[data-color-mode="white"] [class*="border-cyan-500/30"].bg-\[\#030d1f\] {
+/* Encabezado del configurador de campos (Votantes & Líderes) */
+[data-color-mode="white"] div.overflow-hidden.rounded-xl[class*="border-cyan-500"],
+[data-color-mode="white"] div.overflow-hidden.rounded-xl[class*="border-purple-500"],
+[data-color-mode="white"] div.overflow-hidden.rounded-xl[class*="bg-[#030d1f]"] {
   background-color: #FFFFFF !important;
   border: 1px solid #D9E6F2 !important;
   border-radius: 16px !important;
   box-shadow: 0 4px 16px rgba(16, 55, 90, 0.06) !important;
 }
 
-[data-color-mode="white"] .overflow-hidden.rounded-xl.border.bg-\[\#030d1f\] button[aria-expanded] {
-  background-color: #F8FAFD !important;
-  border-bottom: 1px solid #D9E6F2 !important;
+[data-color-mode="white"] div.overflow-hidden.rounded-xl[class*="border-cyan-500"] > button,
+[data-color-mode="white"] div.overflow-hidden.rounded-xl[class*="border-purple-500"] > button,
+[data-color-mode="white"] div.overflow-hidden.rounded-xl[class*="bg-[#030d1f]"] > button {
+  background-color: #FFFFFF !important;
   color: #0B1F3A !important;
 }
 
-[data-color-mode="white"] .overflow-hidden.rounded-xl.border.bg-\[\#030d1f\] button[aria-expanded]:hover {
-  background-color: #EEF6FF !important;
+[data-color-mode="white"] div.overflow-hidden.rounded-xl[class*="border-cyan-500"] > button:hover,
+[data-color-mode="white"] div.overflow-hidden.rounded-xl[class*="border-purple-500"] > button:hover,
+[data-color-mode="white"] div.overflow-hidden.rounded-xl[class*="bg-[#030d1f]"] > button:hover {
+  background-color: #F8FAFD !important;
 }
 
-[data-color-mode="white"] .overflow-hidden.rounded-xl.border.bg-\[\#030d1f\] button[aria-expanded] h4 {
+[data-color-mode="white"] div.overflow-hidden.rounded-xl[class*="border-cyan-500"] > button h4,
+[data-color-mode="white"] div.overflow-hidden.rounded-xl[class*="border-purple-500"] > button h4,
+[data-color-mode="white"] div.overflow-hidden.rounded-xl[class*="bg-[#030d1f]"] > button h4 {
   color: #0B1F3A !important;
   font-weight: 800 !important;
 }
 
-[data-color-mode="white"] .overflow-hidden.rounded-xl.border.bg-\[\#030d1f\] button[aria-expanded] p {
+[data-color-mode="white"] div.overflow-hidden.rounded-xl[class*="border-cyan-500"] > button p,
+[data-color-mode="white"] div.overflow-hidden.rounded-xl[class*="border-purple-500"] > button p,
+[data-color-mode="white"] div.overflow-hidden.rounded-xl[class*="bg-[#030d1f]"] > button p {
   color: #52657A !important;
-  font-weight: 600 !important;
+  font-weight: 500 !important;
 }
 
-[data-color-mode="white"] .overflow-hidden.rounded-xl.border.bg-\[\#030d1f\] button[aria-expanded] svg {
+[data-color-mode="white"] div.overflow-hidden.rounded-xl[class*="border-cyan-500"] > button svg {
   color: #0878D1 !important;
+  stroke: #0878D1 !important;
+}
+
+[data-color-mode="white"] div.overflow-hidden.rounded-xl[class*="border-purple-500"] > button svg {
+  color: #5B3CC4 !important;
+  stroke: #5B3CC4 !important;
 }
 
 /* Filas de campos individuales */
