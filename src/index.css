@@ -2217,5 +2217,324 @@ html.color-mode-white {
   background: #9CCEF5 !important;
 }
 
+/* ==========================================================================
+   FASE 10 — MÓDULO LÍDERES / VOTANTES (CRM ELECTORAL & ESQUEMAS DE CAMPOS)
+   ========================================================================== */
 
+/* 1. Sub-tab Selector for Form Types (Votantes / Líderes) */
+[data-color-mode="white"] .flex.flex-col.sm\:flex-row.items-stretch.sm\:items-center.gap-2.bg-\[\#030d1f\],
+[data-color-mode="white"] div[class*="bg-[#030d1f]"].p-1\.5.rounded-2xl {
+  background-color: #EDF4FA !important;
+  border: 1px solid #D9E6F2 !important;
+  box-shadow: inset 0 2px 4px rgba(16, 55, 90, 0.04) !important;
+}
 
+[data-color-mode="white"] button.flex-1.py-2\.5[class*="bg-cyan-500/20"] {
+  background-color: #FFFFFF !important;
+  color: #0878D1 !important;
+  border: 1px solid #9CCEF5 !important;
+  box-shadow: 0 2px 8px rgba(8, 120, 209, 0.12) !important;
+}
+
+[data-color-mode="white"] button.flex-1.py-2\.5[class*="bg-purple-500/20"] {
+  background-color: #FFFFFF !important;
+  color: #5B3CC4 !important;
+  border: 1px solid #C7B9F8 !important;
+  box-shadow: 0 2px 8px rgba(91, 60, 196, 0.12) !important;
+}
+
+[data-color-mode="white"] button.flex-1.py-2\.5.text-slate-400 {
+  color: #52657A !important;
+  background-color: transparent !important;
+}
+
+[data-color-mode="white"] button.flex-1.py-2\.5.text-slate-400:hover {
+  color: #0B1F3A !important;
+  background-color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* 2. Main Containers for Sub-tabs */
+[data-color-mode="white"] div[class*="bg-[#041733]"].rounded-2xl.border {
+  background-color: #FFFFFF !important;
+  border-color: #D9E6F2 !important;
+  box-shadow: 0 4px 20px rgba(16, 55, 90, 0.05) !important;
+}
+
+[data-color-mode="white"] div[class*="bg-[#041733]"] h3.font-bold {
+  color: #0B1F3A !important;
+}
+
+/* 3. Form Containers (Empadronamiento & Líderes) */
+[data-color-mode="white"] form[class*="bg-[#030d1f]"],
+[data-color-mode="white"] form[class*="bg-[#030d1d]"] {
+  background-color: #F8FAFD !important;
+  border: 1px solid #C9D9E8 !important;
+  box-shadow: 0 8px 24px rgba(16, 55, 90, 0.08) !important;
+}
+
+[data-color-mode="white"] form[class*="bg-[#030d1f]"] div.font-extrabold,
+[data-color-mode="white"] form[class*="bg-[#030d1d]"] div.font-extrabold {
+  color: #0B1F3A !important;
+}
+
+[data-color-mode="white"] form[class*="bg-[#030d1f]"] label,
+[data-color-mode="white"] form[class*="bg-[#030d1d]"] label {
+  color: #0B1F3A !important;
+  font-weight: 700 !important;
+}
+
+[data-color-mode="white"] form[class*="bg-[#030d1f]"] input,
+[data-color-mode="white"] form[class*="bg-[#030d1f]"] select,
+[data-color-mode="white"] form[class*="bg-[#030d1f]"] textarea,
+[data-color-mode="white"] form[class*="bg-[#030d1d]"] input,
+[data-color-mode="white"] form[class*="bg-[#030d1d]"] select,
+[data-color-mode="white"] form[class*="bg-[#030d1d]"] textarea {
+  background-color: #FFFFFF !important;
+  border: 1px solid #C9D9E8 !important;
+  color: #0B1F3A !important;
+}
+
+[data-color-mode="white"] form[class*="bg-[#030d1f]"] input::placeholder,
+[data-color-mode="white"] form[class*="bg-[#030d1f]"] textarea::placeholder,
+[data-color-mode="white"] form[class*="bg-[#030d1d]"] input::placeholder,
+[data-color-mode="white"] form[class*="bg-[#030d1d]"] textarea::placeholder {
+  color: #8C9EA8 !important;
+}
+
+[data-color-mode="white"] form[class*="bg-[#030d1f]"] input:focus,
+[data-color-mode="white"] form[class*="bg-[#030d1f]"] select:focus,
+[data-color-mode="white"] form[class*="bg-[#030d1f]"] textarea:focus,
+[data-color-mode="white"] form[class*="bg-[#030d1d]"] input:focus,
+[data-color-mode="white"] form[class*="bg-[#030d1d]"] select:focus,
+[data-color-mode="white"] form[class*="bg-[#030d1d]"] textarea:focus {
+  border-color: #0878D1 !important;
+  box-shadow: 0 0 0 3px rgba(8, 120, 209, 0.15) !important;
+}
+
+/* 4. Anti-Duplicate Box & Tools */
+[data-color-mode="white"] div[class*="bg-[#030d1f]"].p-4.border {
+  background-color: #F8FAFD !important;
+  border: 1px solid #D9E6F2 !important;
+}
+
+[data-color-mode="white"] div[class*="bg-[#030d1f]"].p-4.border h4 {
+  color: #0878D1 !important;
+  font-weight: 800 !important;
+}
+
+[data-color-mode="white"] div[class*="bg-[#030d1f]"].p-4.border input[type="text"] {
+  background-color: #FFFFFF !important;
+  border: 1px solid #C9D9E8 !important;
+  color: #0B1F3A !important;
+}
+
+[data-color-mode="white"] div[class*="bg-[#030d1f]"].p-4.border input[type="text"]::placeholder {
+  color: #8C9EA8 !important;
+}
+
+/* Duplicate Check Notification Badges & Alerts */
+[data-color-mode="white"] div[class*="bg-emerald-500/20"][class*="border-emerald-400/50"] {
+  background-color: #DEF7EC !important;
+  border: 1px solid #84E1BC !important;
+  color: #03543F !important;
+}
+
+[data-color-mode="white"] div[class*="bg-emerald-500/20"][class*="border-emerald-400/50"] * {
+  color: #03543F !important;
+}
+
+[data-color-mode="white"] div[class*="bg-rose-500/20"][class*="border-rose-400/40"] {
+  background-color: #FDF2F2 !important;
+  border: 1px solid #F8B4B4 !important;
+  color: #9B1C1C !important;
+}
+
+[data-color-mode="white"] div[class*="bg-rose-500/20"][class*="border-rose-400/40"] p {
+  color: #9B1C1C !important;
+}
+
+[data-color-mode="white"] div[class*="bg-rose-500/20"][class*="border-rose-400/40"] button {
+  background-color: #FDE8E8 !important;
+  color: #9B1C1C !important;
+  border: 1px solid #F8B4B4 !important;
+}
+
+[data-color-mode="white"] div[class*="bg-rose-500/20"][class*="border-rose-400/40"] button:hover {
+  background-color: #FCD2D2 !important;
+}
+
+/* Consultation Result Card */
+[data-color-mode="white"] div[class*="bg-[#041733]"].border-emerald-500\/40 {
+  background-color: #F0FAF6 !important;
+  border: 1px solid #A7E3D0 !important;
+  color: #007A55 !important;
+}
+
+[data-color-mode="white"] div[class*="bg-[#041733]"].border-emerald-500\/40 .text-white {
+  color: #0B1F3A !important;
+  font-weight: 800 !important;
+}
+
+[data-color-mode="white"] div[class*="bg-[#041733]"].border-emerald-500\/40 .bg-\[\#020712\] {
+  background-color: #FFFFFF !important;
+  border: 1px solid #D9E6F2 !important;
+}
+
+[data-color-mode="white"] div[class*="bg-[#041733]"].border-emerald-500\/40 .text-cyan-200\/70 {
+  color: #52657A !important;
+}
+
+/* 5. Data Tables (Voters & Leaders) */
+[data-color-mode="white"] div.overflow-x-auto[class*="bg-[#030d1d]"],
+[data-color-mode="white"] div.overflow-x-auto[class*="border-cyan-500/20"],
+[data-color-mode="white"] div.overflow-x-auto[class*="border-purple-500/20"] {
+  background-color: #FFFFFF !important;
+  border: 1px solid #D9E6F2 !important;
+  box-shadow: 0 4px 16px rgba(16, 55, 90, 0.05) !important;
+}
+
+[data-color-mode="white"] thead[class*="bg-cyan-950"],
+[data-color-mode="white"] thead[class*="bg-purple-950"] {
+  background-color: #F3F7FB !important;
+  border-bottom: 2px solid #D9E6F2 !important;
+}
+
+[data-color-mode="white"] thead[class*="bg-cyan-950"] th,
+[data-color-mode="white"] thead[class*="bg-purple-950"] th {
+  color: #0B1F3A !important;
+  font-weight: 800 !important;
+  font-size: 11px !important;
+  letter-spacing: 0.03em !important;
+}
+
+[data-color-mode="white"] tbody tr[class*="hover:bg-cyan-950"],
+[data-color-mode="white"] tbody tr[class*="hover:bg-purple-950"] {
+  border-bottom: 1px solid #E7EEF5 !important;
+}
+
+[data-color-mode="white"] tbody tr[class*="hover:bg-cyan-950"]:hover {
+  background-color: #F3F8FD !important;
+}
+
+[data-color-mode="white"] tbody tr[class*="hover:bg-purple-950"]:hover {
+  background-color: #F6F3FE !important;
+}
+
+[data-color-mode="white"] tbody tr td {
+  color: #33475B !important;
+}
+
+[data-color-mode="white"] tbody tr td .text-white {
+  color: #0B1F3A !important;
+  font-weight: 700 !important;
+}
+
+[data-color-mode="white"] tbody tr td .text-cyan-300 {
+  color: #0878D1 !important;
+  font-weight: 700 !important;
+}
+
+[data-color-mode="white"] tbody tr td .text-purple-300 {
+  color: #5B3CC4 !important;
+  font-weight: 700 !important;
+}
+
+[data-color-mode="white"] tbody tr td .text-slate-300,
+[data-color-mode="white"] tbody tr td .text-slate-400 {
+  color: #52657A !important;
+}
+
+[data-color-mode="white"] span[class*="bg-purple-900/60"] {
+  background-color: #F3EEFF !important;
+  color: #5B3CC4 !important;
+  border: 1px solid #D6C4FC !important;
+}
+
+[data-color-mode="white"] span[class*="bg-amber-950/60"] {
+  background-color: #FFF5D6 !important;
+  color: #A66A00 !important;
+  border: 1px solid #FDE68A !important;
+}
+
+/* Action Buttons in Table */
+[data-color-mode="white"] button[class*="bg-purple-900/40"] {
+  background-color: #F3EEFF !important;
+  color: #5B3CC4 !important;
+  border: 1px solid #D6C4FC !important;
+}
+
+[data-color-mode="white"] button[class*="bg-purple-900/40"]:hover {
+  background-color: #EAE2FD !important;
+}
+
+[data-color-mode="white"] button[class*="bg-amber-950/60"] {
+  background-color: #FFF5D6 !important;
+  color: #A66A00 !important;
+  border: 1px solid #FDE68A !important;
+}
+
+[data-color-mode="white"] button[class*="bg-amber-950/60"]:hover {
+  background-color: #FEEBC8 !important;
+}
+
+[data-color-mode="white"] button[class*="bg-rose-950/60"] {
+  background-color: #FDE8E8 !important;
+  color: #C7353A !important;
+  border: 1px solid #F8B4B4 !important;
+}
+
+[data-color-mode="white"] button[class*="bg-rose-950/60"]:hover {
+  background-color: #FCD2D2 !important;
+}
+
+/* 6. Modals (Expediente Líder & Ficha Votante) */
+[data-color-mode="white"] div.fixed.inset-0[class*="bg-slate-950"] {
+  background-color: rgba(11, 31, 58, 0.45) !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+[data-color-mode="white"] div.fixed.inset-0 div[class*="bg-[#030d1d]"].max-w-lg {
+  background-color: #FFFFFF !important;
+  border: 1px solid #D9E6F2 !important;
+  box-shadow: 0 24px 60px rgba(11, 31, 58, 0.2) !important;
+}
+
+[data-color-mode="white"] div.fixed.inset-0 div[class*="bg-[#030d1d]"].max-w-lg h4 {
+  color: #0B1F3A !important;
+  font-weight: 800 !important;
+}
+
+[data-color-mode="white"] div.fixed.inset-0 div[class*="bg-[#030d1d]"].max-w-lg div[class*="bg-[#020712]"] {
+  background-color: #F8FAFD !important;
+  border: 1px solid #E2ECF5 !important;
+}
+
+[data-color-mode="white"] div.fixed.inset-0 div[class*="bg-[#030d1d]"].max-w-lg div[class*="bg-[#020712]"] .text-slate-400 {
+  color: #52657A !important;
+  font-weight: 700 !important;
+}
+
+[data-color-mode="white"] div.fixed.inset-0 div[class*="bg-[#030d1d]"].max-w-lg div[class*="bg-[#020712]"] .text-white {
+  color: #0B1F3A !important;
+  font-weight: 700 !important;
+}
+
+[data-color-mode="white"] div.fixed.inset-0 div[class*="bg-[#030d1d]"].max-w-lg div[class*="bg-[#020712]"] .text-slate-200,
+[data-color-mode="white"] div.fixed.inset-0 div[class*="bg-[#030d1d]"].max-w-lg div[class*="bg-[#020712]"] .text-slate-300 {
+  color: #33475B !important;
+}
+
+[data-color-mode="white"] div.fixed.inset-0 div[class*="bg-[#030d1d]"].max-w-lg div[class*="bg-cyan-950/40"] {
+  background-color: #F0F7FF !important;
+  border: 1px solid #B9DCF8 !important;
+}
+
+[data-color-mode="white"] div.fixed.inset-0 div[class*="bg-[#030d1d]"].max-w-lg div[class*="bg-cyan-950/40"] p {
+  color: #0B1F3A !important;
+}
+
+[data-color-mode="white"] div.fixed.inset-0 button[class*="bg-purple-700"] {
+  background: linear-gradient(135deg, #5B3CC4, #7C3AED) !important;
+  color: #FFFFFF !important;
+  font-weight: 800 !important;
+}
