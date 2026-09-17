@@ -2561,3 +2561,375 @@ html.color-mode-white {
   color: #FFFFFF !important;
   font-weight: 800 !important;
 }
+
+/* ==========================================================================
+   PRESUPUESTO / CNE MODULE (White Mode Adaptation)
+   ========================================================================== */
+
+/* 1. Main View Container & Base Surfaces */
+[data-color-mode="white"] .presupuesto-cne-view {
+  background-color: #F6F9FC !important;
+  color: #0B1F3A !important;
+}
+
+[data-color-mode="white"] .presupuesto-cne-view .bg-\[\#030d1d\],
+[data-color-mode="white"] .presupuesto-cne-view div[class*="bg-[#030d1d]"] {
+  background-color: #FFFFFF !important;
+  border-color: #D9E6F2 !important;
+  box-shadow: 0 4px 20px rgba(16, 55, 90, 0.05) !important;
+  color: #0B1F3A !important;
+}
+
+[data-color-mode="white"] .presupuesto-cne-view .bg-\[\#020712\],
+[data-color-mode="white"] .presupuesto-cne-view div[class*="bg-[#020712]"] {
+  background-color: #FFFFFF !important;
+  border-color: #D9E6F2 !important;
+}
+
+/* 2. Toast Notifications & Alerts */
+[data-color-mode="white"] .presupuesto-cne-view div[class*="bg-emerald-950"] {
+  background-color: #DEF7EC !important;
+  border-color: #31C48D !important;
+  color: #03543F !important;
+}
+
+[data-color-mode="white"] .presupuesto-cne-view div[class*="bg-rose-950"] {
+  background-color: #FDE8E8 !important;
+  border-color: #F8B4B4 !important;
+  color: #9B1C1C !important;
+}
+
+[data-color-mode="white"] .presupuesto-cne-view div[class*="bg-cyan-950"] {
+  background-color: #E1EFFE !important;
+  border-color: #A4CAFE !important;
+  color: #1E429F !important;
+}
+
+/* 3. Header & Navigation Pills */
+[data-color-mode="white"] .presupuesto-cne-view h2,
+[data-color-mode="white"] .presupuesto-cne-view h3,
+[data-color-mode="white"] .presupuesto-cne-view h4 {
+  color: #0B1F3A !important;
+  font-weight: 800 !important;
+}
+
+[data-color-mode="white"] .presupuesto-cne-view .border-slate-800,
+[data-color-mode="white"] .presupuesto-cne-view .border-slate-800\/80 {
+  border-color: #E2ECF5 !important;
+}
+
+/* Sub-Tab Navigation Pills */
+[data-color-mode="white"] .presupuesto-cne-view button[class*="from-indigo-600"] {
+  background: linear-gradient(135deg, #1E40AF 0%, #2563EB 100%) !important;
+  color: #FFFFFF !important;
+  border: 1px solid #1D4ED8 !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3) !important;
+}
+
+[data-color-mode="white"] .presupuesto-cne-view button[class*="from-indigo-600"] span {
+  color: #FFFFFF !important;
+}
+
+[data-color-mode="white"] .presupuesto-cne-view button[class*="bg-[#020712]"] {
+  background-color: #F8FAFD !important;
+  color: #52657A !important;
+  border: 1px solid #D9E6F2 !important;
+}
+
+[data-color-mode="white"] .presupuesto-cne-view button[class*="bg-[#020712]"]:hover {
+  background-color: #EDF4FA !important;
+  color: #0B1F3A !important;
+  border-color: #C9D9E8 !important;
+}
+
+[data-color-mode="white"] .presupuesto-cne-view button[class*="bg-slate-900"] {
+  background-color: #F8FAFD !important;
+  color: #33475B !important;
+  border: 1px solid #CBD5E1 !important;
+}
+
+[data-color-mode="white"] .presupuesto-cne-view button[class*="bg-slate-900"]:hover {
+  background-color: #EDF4FA !important;
+  color: #1E40AF !important;
+}
+
+/* 4. KPI Meter Cards */
+[data-color-mode="white"] .presupuesto-cne-view .text-slate-400,
+[data-color-mode="white"] .presupuesto-cne-view .text-slate-300 {
+  color: #52657A !important;
+}
+
+[data-color-mode="white"] .presupuesto-cne-view .text-white {
+  color: #0B1F3A !important;
+}
+
+[data-color-mode="white"] .presupuesto-cne-view .text-emerald-400 {
+  color: #008F68 !important;
+}
+
+[data-color-mode="white"] .presupuesto-cne-view .text-cyan-400 {
+  color: #1E40AF !important;
+}
+
+[data-color-mode="white"] .presupuesto-cne-view .text-amber-300,
+[data-color-mode="white"] .presupuesto-cne-view .text-amber-400 {
+  color: #A66A00 !important;
+}
+
+[data-color-mode="white"] .presupuesto-cne-view .text-purple-300,
+[data-color-mode="white"] .presupuesto-cne-view .text-purple-400 {
+  color: #5B3CC4 !important;
+}
+
+/* Progress bar */
+[data-color-mode="white"] .presupuesto-cne-view .bg-slate-800 {
+  background-color: #E2E8F0 !important;
+}
+
+/* Badges */
+[data-color-mode="white"] .presupuesto-cne-view span[class*="bg-amber-950"] {
+  background-color: #FEF3C7 !important;
+  color: #92400E !important;
+  border: 1px solid #FDE68A !important;
+}
+
+[data-color-mode="white"] .presupuesto-cne-view span[class*="bg-emerald-950"] {
+  background-color: #DEF7EC !important;
+  color: #03543F !important;
+  border: 1px solid #31C48D !important;
+}
+
+[data-color-mode="white"] .presupuesto-cne-view span[class*="bg-rose-950"] {
+  background-color: #FDE8E8 !important;
+  color: #9B1C1C !important;
+  border: 1px solid #F8B4B4 !important;
+}
+
+[data-color-mode="white"] .presupuesto-cne-view span[class*="bg-cyan-950"],
+[data-color-mode="white"] .presupuesto-cne-view span[class*="bg-teal-950"] {
+  background-color: #E1EFFE !important;
+  color: #1E429F !important;
+  border: 1px solid #A4CAFE !important;
+}
+
+[data-color-mode="white"] .presupuesto-cne-view span[class*="bg-purple-950"] {
+  background-color: #F3EEFF !important;
+  color: #5B3CC4 !important;
+  border: 1px solid #D6C4FC !important;
+}
+
+/* 5. Tables in Presupuesto */
+[data-color-mode="white"] .presupuesto-cne-view table {
+  background-color: #FFFFFF !important;
+}
+
+[data-color-mode="white"] .presupuesto-cne-view table thead tr {
+  background-color: #F3F7FB !important;
+  border-bottom: 1px solid #D9E6F2 !important;
+}
+
+[data-color-mode="white"] .presupuesto-cne-view table thead th {
+  color: #0B1F3A !important;
+  font-weight: 800 !important;
+  background-color: #F3F7FB !important;
+}
+
+[data-color-mode="white"] .presupuesto-cne-view table tbody tr {
+  background-color: #FFFFFF !important;
+  border-bottom: 1px solid #E7EEF5 !important;
+}
+
+[data-color-mode="white"] .presupuesto-cne-view table tbody tr:hover {
+  background-color: #F3F8FD !important;
+}
+
+[data-color-mode="white"] .presupuesto-cne-view table tbody td {
+  color: #0B1F3A !important;
+}
+
+[data-color-mode="white"] .presupuesto-cne-view table tbody td .text-slate-400,
+[data-color-mode="white"] .presupuesto-cne-view table tbody td .text-slate-500 {
+  color: #52657A !important;
+}
+
+/* Action Buttons & Badges in Tables */
+[data-color-mode="white"] .presupuesto-cne-view button[class*="bg-slate-800"] {
+  background-color: #F1F5F9 !important;
+  color: #33475B !important;
+  border: 1px solid #CBD5E1 !important;
+}
+
+[data-color-mode="white"] .presupuesto-cne-view button[class*="bg-slate-800"]:hover {
+  background-color: #E2E8F0 !important;
+  color: #0B1F3A !important;
+}
+
+[data-color-mode="white"] .presupuesto-cne-view button[class*="bg-rose-950"] {
+  background-color: #FDE8E8 !important;
+  color: #9B1C1C !important;
+  border: 1px solid #F8B4B4 !important;
+}
+
+[data-color-mode="white"] .presupuesto-cne-view button[class*="bg-rose-950"]:hover {
+  background-color: #FCD2D2 !important;
+}
+
+[data-color-mode="white"] .presupuesto-cne-view button[class*="bg-emerald-600"] {
+  background: linear-gradient(135deg, #059669 0%, #10B981 100%) !important;
+  color: #FFFFFF !important;
+  border: 1px solid #047857 !important;
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.25) !important;
+}
+
+[data-color-mode="white"] .presupuesto-cne-view button[class*="bg-purple-700"] {
+  background: linear-gradient(135deg, #5B3CC4 0%, #7C3AED 100%) !important;
+  color: #FFFFFF !important;
+  border: 1px solid #4C1D95 !important;
+  box-shadow: 0 2px 8px rgba(91, 60, 196, 0.25) !important;
+}
+
+[data-color-mode="white"] .presupuesto-cne-view button[class*="bg-amber-600"] {
+  background: linear-gradient(135deg, #1E40AF 0%, #2563EB 100%) !important;
+  color: #FFFFFF !important;
+  border: 1px solid #1D4ED8 !important;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25) !important;
+}
+
+/* 6. Filter Controls & Form Inputs */
+[data-color-mode="white"] .presupuesto-cne-view .grid.bg-\[\#020712\],
+[data-color-mode="white"] .presupuesto-cne-view div[class*="bg-[#020712]"].p-3,
+[data-color-mode="white"] .presupuesto-cne-view div[class*="bg-[#020712]"].p-4 {
+  background-color: #F8FAFD !important;
+  border: 1px solid #E2ECF5 !important;
+}
+
+[data-color-mode="white"] .presupuesto-cne-view input,
+[data-color-mode="white"] .presupuesto-cne-view select {
+  background-color: #FFFFFF !important;
+  border: 1px solid #CBD5E1 !important;
+  color: #0B1F3A !important;
+}
+
+[data-color-mode="white"] .presupuesto-cne-view input::placeholder {
+  color: #94A3B8 !important;
+}
+
+[data-color-mode="white"] .presupuesto-cne-view input:focus,
+[data-color-mode="white"] .presupuesto-cne-view select:focus {
+  border-color: #2563EB !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+}
+
+/* 7. Simulator Scenarios & Sliders */
+[data-color-mode="white"] .presupuesto-cne-view button[class*="bg-purple-600"] {
+  background: linear-gradient(135deg, #1E40AF 0%, #2563EB 100%) !important;
+  color: #FFFFFF !important;
+  border: 1px solid #1D4ED8 !important;
+}
+
+[data-color-mode="white"] .presupuesto-cne-view input[type="range"] {
+  accent-color: #2563EB !important;
+}
+
+/* 8. OCR Scanner Dropzone & Result Preview */
+[data-color-mode="white"] .presupuesto-cne-view div[class*="border-dashed"] {
+  background-color: #F8FAFD !important;
+  border-color: #9CCEF5 !important;
+}
+
+[data-color-mode="white"] .presupuesto-cne-view div[class*="border-dashed"]:hover {
+  background-color: #EDF6FD !important;
+  border-color: #2563EB !important;
+}
+
+[data-color-mode="white"] .presupuesto-cne-view .bg-\[\#041733\] {
+  background-color: #F8FAFD !important;
+  border-color: #31C48D !important;
+}
+
+[data-color-mode="white"] .presupuesto-cne-view .bg-\[\#041733\] .bg-slate-950\/80 {
+  background-color: #FFFFFF !important;
+  border-color: #D9E6F2 !important;
+}
+
+[data-color-mode="white"] .presupuesto-cne-view label[class*="bg-indigo-600"] {
+  background: linear-gradient(135deg, #1E40AF 0%, #2563EB 100%) !important;
+  color: #FFFFFF !important;
+}
+
+/* 9. Modals (Crear/Editar Ítem & Firma Digital CNE) */
+[data-color-mode="white"] .presupuesto-item-modal-backdrop,
+[data-color-mode="white"] .presupuesto-sign-modal-backdrop {
+  background-color: rgba(11, 31, 58, 0.45) !important;
+  backdrop-filter: blur(6px) !important;
+}
+
+[data-color-mode="white"] .presupuesto-item-modal-box,
+[data-color-mode="white"] .presupuesto-sign-modal-box {
+  background: #FFFFFF !important;
+  border: 1px solid #D9E6F2 !important;
+  box-shadow: 0 24px 60px rgba(11, 31, 58, 0.2) !important;
+  color: #0B1F3A !important;
+}
+
+[data-color-mode="white"] .presupuesto-item-modal-box h4,
+[data-color-mode="white"] .presupuesto-sign-modal-box h4 {
+  color: #0B1F3A !important;
+  font-weight: 800 !important;
+}
+
+[data-color-mode="white"] .presupuesto-item-modal-box label,
+[data-color-mode="white"] .presupuesto-sign-modal-box label {
+  color: #0B1F3A !important;
+  font-weight: 700 !important;
+}
+
+[data-color-mode="white"] .presupuesto-item-modal-box input,
+[data-color-mode="white"] .presupuesto-item-modal-box select {
+  background-color: #FFFFFF !important;
+  border: 1px solid #CBD5E1 !important;
+  color: #0B1F3A !important;
+}
+
+[data-color-mode="white"] .presupuesto-item-modal-box input:focus,
+[data-color-mode="white"] .presupuesto-item-modal-box select:focus {
+  border-color: #2563EB !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+}
+
+[data-color-mode="white"] .presupuesto-item-modal-box div[class*="bg-slate-900/40"] {
+  background-color: #F8FAFD !important;
+  border-color: #E2ECF5 !important;
+}
+
+[data-color-mode="white"] .presupuesto-sign-modal-box div[class*="bg-[#020712]"] {
+  background-color: #F8FAFD !important;
+  border-color: #E2ECF5 !important;
+}
+
+[data-color-mode="white"] .presupuesto-sign-modal-box div[class*="bg-amber-950/40"] {
+  background-color: #FFF5D6 !important;
+  border-color: #FDE68A !important;
+  color: #92400E !important;
+}
+
+[data-color-mode="white"] .presupuesto-item-modal-box button[class*="bg-slate-800"],
+[data-color-mode="white"] .presupuesto-sign-modal-box button[class*="bg-slate-800"] {
+  background-color: #F1F5F9 !important;
+  color: #33475B !important;
+  border: 1px solid #CBD5E1 !important;
+}
+
+[data-color-mode="white"] .presupuesto-item-modal-box button[type="submit"] {
+  background: linear-gradient(135deg, #1E40AF 0%, #2563EB 100%) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3) !important;
+}
+
+[data-color-mode="white"] .presupuesto-sign-modal-box button[class*="bg-amber-500"] {
+  background: linear-gradient(135deg, #059669 0%, #10B981 100%) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.3) !important;
+}
+

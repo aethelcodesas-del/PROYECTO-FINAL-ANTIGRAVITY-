@@ -912,7 +912,7 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
   });
 
   return (
-    <div className="min-h-[calc(100vh-60px)] bg-[#020712] text-slate-200 p-4 md:p-8 space-y-6 animate-fadeIn">
+    <div className="presupuesto-cne-view min-h-[calc(100vh-60px)] bg-[#020712] text-slate-200 p-4 md:p-8 space-y-6 animate-fadeIn">
       
       {/* Toast Notification */}
       {notificationMsg && (
@@ -1733,8 +1733,8 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
       {/* MODAL: CREAR / EDITAR ÍTEM DE PRESUPUESTO */}
       {/* ---------------------------------------------------------------------- */}
       {showItemModal && (
-        <div className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-fadeIn">
-          <div className="bg-gradient-to-b from-[#061329] to-[#020712] rounded-3xl max-w-lg w-full p-6 space-y-5 shadow-2xl border border-slate-700/70 ring-1 ring-emerald-500/20">
+        <div className="presupuesto-item-modal-backdrop fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-fadeIn">
+          <div className="presupuesto-item-modal-box bg-gradient-to-b from-[#061329] to-[#020712] rounded-3xl max-w-lg w-full p-6 space-y-5 shadow-2xl border border-slate-700/70 ring-1 ring-emerald-500/20">
             {/* Header */}
             <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
               <div className="flex items-center gap-3">
@@ -1979,8 +1979,8 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
       {/* MODAL: FIRMA DIGITAL & CERTIFICACIÓN CNE */}
       {/* ---------------------------------------------------------------------- */}
       {showSignModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
-          <div className="bg-[#030d1d] rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl border border-amber-500/40">
+        <div className="presupuesto-sign-modal-backdrop fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
+          <div className="presupuesto-sign-modal-box bg-[#030d1d] rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl border border-amber-500/40">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2">
                 <div className="p-2 bg-amber-500/20 text-amber-400 border border-amber-500/40 rounded-xl">
