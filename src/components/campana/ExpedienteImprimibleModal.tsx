@@ -75,7 +75,7 @@ export const ExpedienteImprimibleModal: React.FC<ExpedienteImprimibleModalProps>
     : `Municipio de ${formatData(dossier.municipio)} (${formatData(dossier.departamento)})`;
 
   return (
-    <div className="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-2 sm:p-4 animate-fadeIn">
+    <div className="expediente-modal-backdrop fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-2 sm:p-4 animate-fadeIn">
       {/* Print Styles for clean, high-contrast, official paper/PDF rendering */}
       <style>{`
         @media print {
@@ -98,12 +98,29 @@ export const ExpedienteImprimibleModal: React.FC<ExpedienteImprimibleModalProps>
             padding: 0;
             background: #ffffff !important;
             color: #0f172a !important;
+            border: none !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
             font-size: 9.5pt !important;
             line-height: 1.35 !important;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
           }
           .no-print {
             display: none !important;
+          }
+          .page-break-before {
+            page-break-before: always;
+            break-before: page;
+          }
+          .page-break-inside-avoid {
+            page-break-inside: avoid;
+            break-inside: avoid;
+          }
+          .print-card {
+            background: #ffffff !important;
+            border: 1px solid #cbd5e1 !important;
+            color: #0f172a !important;
+            box-shadow: none !important;
           }
           .print-section {
             background: #ffffff !important;
@@ -143,12 +160,13 @@ export const ExpedienteImprimibleModal: React.FC<ExpedienteImprimibleModalProps>
           }
           .print-table th {
             background: #f8fafc !important;
-            color: #1e293b !important;
+            color: #0f172a !important;
+            font-weight: bold !important;
           }
         }
       `}</style>
 
-      <div className="bg-[#030e21] rounded-2xl max-w-4xl w-full p-4 sm:p-6 shadow-2xl border border-cyan-500/40 space-y-5 text-white max-h-[92vh] overflow-y-auto">
+      <div className="expediente-modal-box bg-[#030e21] rounded-2xl sm:rounded-3xl max-w-4xl w-full p-4 sm:p-6 shadow-2xl border border-cyan-500/40 space-y-5 text-white max-h-[92vh] overflow-y-auto">
         
         {/* Top Floating Action Bar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-cyan-500/20 pb-4 no-print">

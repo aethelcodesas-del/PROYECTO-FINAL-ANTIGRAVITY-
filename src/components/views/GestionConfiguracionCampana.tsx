@@ -802,7 +802,7 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
   const selectedAliada = (activeDossier.campanasAliadas || []).find(a => a.id === selectedAliadaId);
 
   return (
-    <div className={`space-y-6 ${standalone ? 'min-h-[calc(100vh-60px)] bg-slate-100 p-4 md:p-8' : ''}`}>
+    <div className={`gestion-campana-view space-y-6 ${standalone ? 'min-h-[calc(100vh-60px)] bg-slate-100 p-4 md:p-8' : ''}`}>
       
       {/* ========================================================================= */}
       {/* HEADER BANNER - CANDIDATO PRINCIPAL */}
@@ -2192,8 +2192,8 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
       {/* MODAL: CREATE NEW ALLIED LIST */}
       {/* ========================================================================= */}
       {showAddAliadaModal && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fadeIn">
-          <div className="bg-[#051325] rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-cyan-500/40 space-y-5 text-white max-h-[90vh] overflow-y-auto">
+        <div className="campana-add-aliada-modal-backdrop fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fadeIn">
+          <div className="campana-add-aliada-modal-box bg-[#051325] rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-cyan-500/40 space-y-5 text-white max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-cyan-500/20 pb-3">
               <div className="flex items-center gap-2">
                 <Users className="w-5 h-5 text-emerald-400" />
@@ -2329,8 +2329,8 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
       {/* RESET TO ZERO CONFIRMATION MODAL */}
       {/* ========================================================================= */}
       {showResetModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#030e21] border border-rose-500/40 rounded-3xl w-full max-w-lg p-6 shadow-2xl space-y-5 animate-fadeIn">
+        <div className="campana-reset-modal-backdrop fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="campana-reset-modal-box bg-[#030e21] border border-rose-500/40 rounded-3xl w-full max-w-lg p-6 shadow-2xl space-y-5 animate-fadeIn">
             <div className="flex items-center gap-3 border-b border-rose-500/20 pb-4">
               <div className="w-12 h-12 rounded-2xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-center shrink-0">
                 <AlertTriangle className="w-6 h-6 text-rose-400" />

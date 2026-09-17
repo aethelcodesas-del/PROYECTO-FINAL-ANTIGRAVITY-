@@ -2975,4 +2975,509 @@ html.color-mode-white {
   }
 }
 
+/* ==========================================================================
+   11. GESTIÓN DE CAMPAÑA - EXECUTIVE WHITE THEME (data-color-mode="white")
+   ========================================================================== */
 
+/* Main Container */
+[data-color-mode="white"] .gestion-campana-view {
+  color: #0B1F3A !important;
+}
+
+/* Header Banner - Candidato Principal */
+[data-color-mode="white"] .gestion-campana-view > div:first-child,
+[data-color-mode="white"] .gestion-campana-view .bg-\[\#040e21\] {
+  background-color: #FFFFFF !important;
+  border: 1px solid #D9E6F2 !important;
+  color: #0B1F3A !important;
+  box-shadow: 0 4px 20px rgba(16, 55, 90, 0.05) !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view h2 {
+  color: #0B1F3A !important;
+  font-weight: 800 !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view h3 {
+  color: #0B1F3A !important;
+  font-weight: 800 !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view h4 {
+  color: #0B1F3A !important;
+  font-weight: 700 !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view span.bg-cyan-500\/15 {
+  background-color: #EEF6FF !important;
+  border-color: #B9DCF8 !important;
+  color: #0878D1 !important;
+}
+
+/* Top Quick Action Buttons */
+[data-color-mode="white"] .gestion-campana-view button[title*="Auditoría"] {
+  background-color: #FFFFFF !important;
+  border: 1px solid #B8EBD8 !important;
+  color: #008F68 !important;
+  box-shadow: 0 2px 6px rgba(0, 168, 120, 0.08) !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view button[title*="Auditoría"]:hover {
+  background-color: #E5F8F1 !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view button[title*="Auditoría"] svg {
+  color: #00A878 !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view button[title*="informe"] {
+  background-color: #FFFFFF !important;
+  border: 1px solid #9CCEF5 !important;
+  color: #0878D1 !important;
+  box-shadow: 0 2px 6px rgba(8, 120, 209, 0.08) !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view button[title*="informe"]:hover {
+  background-color: #EEF6FF !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view button[title*="informe"] svg {
+  color: #0878D1 !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view button.bg-emerald-500 {
+  background: linear-gradient(135deg, #059669 0%, #10B981 100%) !important;
+  color: #FFFFFF !important;
+  border: none !important;
+  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.25) !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view button.bg-emerald-500:hover {
+  background: linear-gradient(135deg, #047857 0%, #059669 100%) !important;
+  box-shadow: 0 6px 18px rgba(5, 150, 105, 0.35) !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view button.bg-emerald-500 * {
+  color: #FFFFFF !important;
+}
+
+/* Campaign Active Summary Strip */
+[data-color-mode="white"] .gestion-campana-view div[class*="bg-[#020712]"].p-3 {
+  background-color: #F8FAFD !important;
+  border: 1px solid #E2ECF5 !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view div[class*="bg-[#020712]"].p-3 .text-slate-500 {
+  color: #52657A !important;
+  font-weight: 700 !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view div[class*="bg-[#020712]"].p-3 .text-amber-300 {
+  color: #D97706 !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view div[class*="bg-[#020712]"].p-3 .text-white {
+  color: #0B1F3A !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view div[class*="bg-[#020712]"].p-3 .text-emerald-400 {
+  color: #059669 !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view div[class*="bg-[#020712]"].p-3 .text-cyan-300 {
+  color: #2563EB !important;
+}
+
+/* Sub-tab Navigation Bar */
+[data-color-mode="white"] .gestion-campana-view .border-t.border-cyan-500\/15 {
+  border-color: #E2ECF5 !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view .border-t button {
+  border-radius: 12px !important;
+  font-weight: 700 !important;
+}
+
+/* Inactive subtab buttons */
+[data-color-mode="white"] .gestion-campana-view .border-t button.bg-\[\#030d1f\] {
+  background-color: #F8FAFD !important;
+  border: 1px solid #D9E6F2 !important;
+  color: #52657A !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view .border-t button.bg-\[\#030d1f\]:hover {
+  background-color: #EEF6FF !important;
+  border-color: #9CCEF5 !important;
+  color: #0878D1 !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view .border-t button.bg-\[\#030d1f\] svg {
+  color: #71839A !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view .border-t button.bg-\[\#030d1f\]:hover svg {
+  color: #0878D1 !important;
+}
+
+/* Active subtab button */
+[data-color-mode="white"] .gestion-campana-view .border-t button.bg-\[\#092244\] {
+  background: linear-gradient(135deg, #1E40AF 0%, #2563EB 100%) !important;
+  color: #FFFFFF !important;
+  border: 1px solid #1D4ED8 !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25) !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view .border-t button.bg-\[\#092244\] svg,
+[data-color-mode="white"] .gestion-campana-view .border-t button.bg-\[\#092244\] span {
+  color: #FFFFFF !important;
+}
+
+/* Section Containers (Steps 1, 2, 3, 4, 5, 6) */
+[data-color-mode="white"] .gestion-campana-view .bg-\[\#041733\]\/90,
+[data-color-mode="white"] .gestion-campana-view .bg-\[\#051325\]\/90 {
+  background-color: #FFFFFF !important;
+  border: 1px solid #D9E6F2 !important;
+  color: #0B1F3A !important;
+  box-shadow: 0 4px 20px rgba(16, 55, 90, 0.05) !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view .border-b.border-cyan-500\/20 {
+  border-color: #E2ECF5 !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view .border-t.border-cyan-500\/20 {
+  border-color: #E2ECF5 !important;
+}
+
+/* Step badges */
+[data-color-mode="white"] .gestion-campana-view [class*="bg-cyan-500/20"],
+[data-color-mode="white"] .gestion-campana-view [class*="bg-purple-500/20"],
+[data-color-mode="white"] .gestion-campana-view [class*="bg-amber-500/20"],
+[data-color-mode="white"] .gestion-campana-view [class*="bg-blue-500/20"],
+[data-color-mode="white"] .gestion-campana-view [class*="bg-emerald-500/20"] {
+  border-radius: 8px !important;
+}
+
+/* Inner field cards */
+[data-color-mode="white"] .gestion-campana-view .bg-\[\#030d1f\],
+[data-color-mode="white"] .gestion-campana-view .bg-\[\#051833\],
+[data-color-mode="white"] .gestion-campana-view .bg-\[\#020b18\] {
+  background-color: #F8FAFD !important;
+  border: 1px solid #E2ECF5 !important;
+  color: #0B1F3A !important;
+}
+
+/* Form Labels & Texts */
+[data-color-mode="white"] .gestion-campana-view label {
+  color: #0B1F3A !important;
+  font-weight: 700 !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view .text-cyan-200,
+[data-color-mode="white"] .gestion-campana-view .text-cyan-300,
+[data-color-mode="white"] .gestion-campana-view .text-purple-200,
+[data-color-mode="white"] .gestion-campana-view .text-purple-300,
+[data-color-mode="white"] .gestion-campana-view .text-amber-200,
+[data-color-mode="white"] .gestion-campana-view .text-amber-300,
+[data-color-mode="white"] .gestion-campana-view .text-emerald-200,
+[data-color-mode="white"] .gestion-campana-view .text-emerald-300 {
+  color: #0B1F3A !important;
+  font-weight: 700 !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view p.text-slate-400,
+[data-color-mode="white"] .gestion-campana-view span.text-slate-400,
+[data-color-mode="white"] .gestion-campana-view .text-slate-400 {
+  color: #52657A !important;
+}
+
+/* Inputs, Selects, and Textareas */
+[data-color-mode="white"] .gestion-campana-view input:not([type="checkbox"]):not([type="radio"]),
+[data-color-mode="white"] .gestion-campana-view select,
+[data-color-mode="white"] .gestion-campana-view textarea {
+  background-color: #FFFFFF !important;
+  border: 1px solid #CBD5E1 !important;
+  color: #0B1F3A !important;
+  border-radius: 10px !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view select option {
+  background-color: #FFFFFF !important;
+  color: #0B1F3A !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view input::placeholder,
+[data-color-mode="white"] .gestion-campana-view textarea::placeholder {
+  color: #94A3B8 !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view input:focus,
+[data-color-mode="white"] .gestion-campana-view select:focus,
+[data-color-mode="white"] .gestion-campana-view textarea:focus {
+  border-color: #2563EB !important;
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+}
+
+/* Election Mode Pills (Ordinaria / Atípica) */
+[data-color-mode="white"] .gestion-campana-view button.bg-\[\#092244\].text-white {
+  background: #EEF6FF !important;
+  border: 1.5px solid #2563EB !important;
+  color: #1E40AF !important;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.12) !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view button.bg-\[\#291705\].text-amber-300 {
+  background: #FFF7ED !important;
+  border: 1.5px solid #EA580C !important;
+  color: #C2410C !important;
+  box-shadow: 0 2px 8px rgba(234, 88, 12, 0.12) !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view button.bg-\[\#051833\].text-slate-300 {
+  background: #FFFFFF !important;
+  border: 1px solid #CBD5E1 !important;
+  color: #475569 !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view button.bg-\[\#051833\].text-slate-300:hover {
+  background: #F1F5F9 !important;
+  color: #0B1F3A !important;
+}
+
+/* Informative Notice Cards */
+[data-color-mode="white"] .gestion-campana-view .bg-amber-950\/20 {
+  background-color: #FFF7ED !important;
+  border: 1px solid #FED7AA !important;
+  color: #9A3412 !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view .bg-amber-950\/20 .text-slate-300,
+[data-color-mode="white"] .gestion-campana-view .bg-amber-950\/20 .text-slate-400 {
+  color: #7C2D12 !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view .bg-cyan-950\/20 {
+  background-color: #EEF6FF !important;
+  border: 1px solid #B9DCF8 !important;
+  color: #1E40AF !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view .bg-cyan-950\/20 .text-slate-300,
+[data-color-mode="white"] .gestion-campana-view .bg-cyan-950\/20 .text-slate-400 {
+  color: #1E3A8A !important;
+}
+
+/* Photo Dropzone & Preview */
+[data-color-mode="white"] .gestion-campana-view div[class*="border-dashed"] {
+  background-color: #F8FAFD !important;
+  border-color: #9CCEF5 !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view div[class*="border-dashed"]:hover {
+  background-color: #EDF6FD !important;
+  border-color: #2563EB !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view label[for="tarjeton-photo-upload"] {
+  background: #FFFFFF !important;
+  border: 1px solid #CBD5E1 !important;
+  color: #0878D1 !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view label[for="tarjeton-photo-upload"]:hover {
+  background: #EEF6FF !important;
+}
+
+/* Aval Selector Tabs (Partido / Firmas / Coalición) */
+[data-color-mode="white"] .gestion-campana-view .bg-\[\#081f3d\].border-emerald-400 {
+  background: #EEF6FF !important;
+  border: 1.5px solid #2563EB !important;
+  color: #1E40AF !important;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.12) !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view .bg-\[\#081f3d\].border-emerald-400 .font-extrabold {
+  color: #1E40AF !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view .bg-\[\#081f3d\].border-emerald-400 .opacity-80 {
+  color: #3B82F6 !important;
+  opacity: 1 !important;
+}
+
+/* Multi-party Coalition Pills */
+[data-color-mode="white"] .gestion-campana-view .grid-cols-3 button.bg-emerald-500\/20,
+[data-color-mode="white"] .gestion-campana-view .max-h-44 button.bg-emerald-500\/20 {
+  background-color: #E5F8F1 !important;
+  border: 1.5px solid #10B981 !important;
+  color: #065F46 !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view .max-h-44 button.bg-\[\#030d1f\] {
+  background-color: #FFFFFF !important;
+  border: 1px solid #E2ECF5 !important;
+  color: #475569 !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view .max-h-44 button.bg-\[\#030d1f\]:hover {
+  background-color: #F8FAFD !important;
+  border-color: #CBD5E1 !important;
+  color: #0B1F3A !important;
+}
+
+/* Allied Campaign Cards (Step 6) */
+[data-color-mode="white"] .gestion-campana-view .grid-cols-1.md\:grid-cols-2.lg\:grid-cols-4 > div {
+  background-color: #FFFFFF !important;
+  border: 1px solid #D9E6F2 !important;
+  color: #0B1F3A !important;
+  box-shadow: 0 4px 14px rgba(16, 55, 90, 0.05) !important;
+  transition: all 180ms ease !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view .grid-cols-1.md\:grid-cols-2.lg\:grid-cols-4 > div:hover {
+  background-color: #F8FAFD !important;
+  border-color: #9CCEF5 !important;
+  box-shadow: 0 8px 20px rgba(16, 55, 90, 0.10) !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view .grid-cols-1.md\:grid-cols-2.lg\:grid-cols-4 > div.bg-\[\#081f3d\].border-emerald-400 {
+  background-color: #FFFFFF !important;
+  border: 2px solid #2563EB !important;
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.18) !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view .grid-cols-1.md\:grid-cols-2.lg\:grid-cols-4 > div h4 {
+  color: #0B1F3A !important;
+  font-weight: 800 !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view .grid-cols-1.md\:grid-cols-2.lg\:grid-cols-4 > div .bg-\[\#020712\] {
+  background-color: #F8FAFD !important;
+  border: 1px solid #E2ECF5 !important;
+}
+
+/* Candidate Table in Allied List */
+[data-color-mode="white"] .gestion-campana-view table {
+  background-color: #FFFFFF !important;
+  border: 1px solid #D9E6F2 !important;
+  color: #0B1F3A !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view table thead {
+  background-color: #F3F7FB !important;
+  border-bottom: 1px solid #D9E6F2 !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view table th {
+  color: #28445F !important;
+  font-weight: 700 !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view table tbody tr {
+  background-color: #FFFFFF !important;
+  border-bottom: 1px solid #E2ECF5 !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view table tbody tr:hover {
+  background-color: #F8FBFF !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view table td {
+  color: #0B1F3A !important;
+}
+
+[data-color-mode="white"] .gestion-campana-view table td.bg-\[\#020712\]\/40 {
+  background-color: #EEF6FF !important;
+  color: #1E40AF !important;
+}
+
+/* Modals in Gestión de Campaña */
+[data-color-mode="white"] .campana-add-aliada-modal-backdrop,
+[data-color-mode="white"] .campana-reset-modal-backdrop,
+[data-color-mode="white"] .checklist-cne-modal-backdrop,
+[data-color-mode="white"] .expediente-modal-backdrop {
+  background-color: rgba(11, 31, 58, 0.45) !important;
+  backdrop-filter: blur(6px) !important;
+}
+
+[data-color-mode="white"] .campana-add-aliada-modal-box,
+[data-color-mode="white"] .campana-reset-modal-box,
+[data-color-mode="white"] .checklist-cne-modal-box,
+[data-color-mode="white"] .expediente-modal-box {
+  background: #FFFFFF !important;
+  border: 1px solid #D9E6F2 !important;
+  box-shadow: 0 24px 60px rgba(11, 31, 58, 0.2) !important;
+  color: #0B1F3A !important;
+}
+
+[data-color-mode="white"] .campana-add-aliada-modal-box h3,
+[data-color-mode="white"] .campana-reset-modal-box h3,
+[data-color-mode="white"] .checklist-cne-modal-box h3,
+[data-color-mode="white"] .expediente-modal-box h3 {
+  color: #0B1F3A !important;
+  font-weight: 800 !important;
+}
+
+[data-color-mode="white"] .campana-add-aliada-modal-box label,
+[data-color-mode="white"] .checklist-cne-modal-box label {
+  color: #0B1F3A !important;
+  font-weight: 700 !important;
+}
+
+[data-color-mode="white"] .campana-add-aliada-modal-box input,
+[data-color-mode="white"] .campana-add-aliada-modal-box select {
+  background-color: #FFFFFF !important;
+  border: 1px solid #CBD5E1 !important;
+  color: #0B1F3A !important;
+}
+
+[data-color-mode="white"] .campana-add-aliada-modal-box select option {
+  background-color: #FFFFFF !important;
+  color: #0B1F3A !important;
+}
+
+/* Checklist CNE Modal Items */
+[data-color-mode="white"] .checklist-cne-modal-box .bg-\[\#020712\] {
+  background-color: #F8FAFD !important;
+  border: 1px solid #E2ECF5 !important;
+}
+
+[data-color-mode="white"] .checklist-cne-modal-box .bg-\[\#031c38\]\/60 {
+  background-color: #F0FDF4 !important;
+  border: 1px solid #BBF7D0 !important;
+  color: #166534 !important;
+}
+
+[data-color-mode="white"] .checklist-cne-modal-box .bg-\[\#031c38\]\/60 .text-white {
+  color: #14532D !important;
+  font-weight: 700 !important;
+}
+
+[data-color-mode="white"] .checklist-cne-modal-box .bg-\[\#1a0f0a\]\/60 {
+  background-color: #FFFBEB !important;
+  border: 1px solid #FDE68A !important;
+  color: #92400E !important;
+}
+
+[data-color-mode="white"] .checklist-cne-modal-box .bg-\[\#1a0f0a\]\/60 .text-white {
+  color: #78350F !important;
+  font-weight: 700 !important;
+}
+
+[data-color-mode="white"] .checklist-cne-modal-box .bg-slate-800 {
+  background-color: #E2E8F0 !important;
+  border: 1px solid #CBD5E1 !important;
+}
+
+/* Reset Modal Box Elements */
+[data-color-mode="white"] .campana-reset-modal-box .bg-\[\#020712\] {
+  background-color: #F8FAFD !important;
+  border: 1px solid #E2ECF5 !important;
+}
+
+[data-color-mode="white"] .campana-reset-modal-box .bg-slate-800 {
+  background-color: #F1F5F9 !important;
+  color: #33475B !important;
+  border: 1px solid #CBD5E1 !important;
+}

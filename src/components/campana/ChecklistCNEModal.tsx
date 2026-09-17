@@ -101,8 +101,8 @@ export const ChecklistCNEModal: React.FC<ChecklistCNEModalProps> = ({
   const percentage = Math.round((completedCount / items.length) * 100);
 
   return (
-    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fadeIn">
-      <div className="bg-[#041226] rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-cyan-500/40 space-y-5 text-white max-h-[90vh] overflow-y-auto">
+    <div className="checklist-cne-modal-backdrop fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-4 animate-fadeIn">
+      <div className="checklist-cne-modal-box bg-[#041226] rounded-2xl sm:rounded-3xl max-w-2xl w-full p-4 sm:p-6 shadow-2xl border border-cyan-500/40 space-y-4 sm:space-y-5 text-white max-h-[90vh] overflow-y-auto">
         
         {/* Modal Header */}
         <div className="flex items-center justify-between border-b border-cyan-500/20 pb-3">
