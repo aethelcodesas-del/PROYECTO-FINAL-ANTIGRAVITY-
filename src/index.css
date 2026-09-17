@@ -1500,6 +1500,101 @@ html.color-mode-white {
   background-color: #FFF0F1 !important;
 }
 
+/* 9.1. Inline Custom Permissions Drawer & Checkbox Matrices */
+[data-color-mode="white"] [class*="bg-cyan-950/20"],
+[data-color-mode="white"] .animate-slideDown {
+  background-color: #F8FAFD !important;
+  border: 1px solid #D9E6F2 !important;
+  border-radius: 16px !important;
+  box-shadow: inset 0 2px 4px 0 rgba(16, 55, 90, 0.03) !important;
+}
+
+[data-color-mode="white"] [class*="bg-cyan-950/20"] .border-cyan-500\/10,
+[data-color-mode="white"] [class*="bg-cyan-950/20"] .border-cyan-500\/20,
+[data-color-mode="white"] .animate-slideDown .border-cyan-500\/10,
+[data-color-mode="white"] .animate-slideDown .border-cyan-500\/20 {
+  border-color: #D9E6F2 !important;
+}
+
+/* Header Text in Permissions Drawer */
+[data-color-mode="white"] [class*="bg-cyan-950/20"] span.text-cyan-300,
+[data-color-mode="white"] .animate-slideDown span.text-cyan-300 {
+  color: #0878D1 !important;
+  font-weight: 800 !important;
+}
+
+[data-color-mode="white"] [class*="bg-cyan-950/20"] .text-slate-400,
+[data-color-mode="white"] .animate-slideDown .text-slate-400 {
+  color: #52657A !important;
+}
+
+/* Checked Permission Pill (High Contrast Dark Navy on Soft Cyan/Blue) */
+[data-color-mode="white"] label[class*="bg-cyan-500/10"],
+[data-color-mode="white"] label[class*="border-cyan-500/35"],
+[data-color-mode="white"] label[class*="border-cyan-500/40"] {
+  background-color: #EEF6FF !important;
+  border: 1.5px solid #9CCEF5 !important;
+  color: #0B1F3A !important;
+  border-radius: 10px !important;
+  box-shadow: 0 2px 6px rgba(8, 120, 209, 0.08) !important;
+}
+
+[data-color-mode="white"] label[class*="bg-cyan-500/10"] span,
+[data-color-mode="white"] label[class*="bg-cyan-500/10"] div,
+[data-color-mode="white"] label[class*="border-cyan-500/35"] span,
+[data-color-mode="white"] label[class*="border-cyan-500/35"] div,
+[data-color-mode="white"] label[class*="border-cyan-500/40"] span,
+[data-color-mode="white"] label[class*="border-cyan-500/40"] div {
+  color: #0B1F3A !important;
+  font-weight: 700 !important;
+}
+
+/* Unchecked Permission Pill */
+[data-color-mode="white"] label[class*="bg-[#030d1f]"],
+[data-color-mode="white"] label[class*="border-cyan-500/10"] {
+  background-color: #FFFFFF !important;
+  border: 1px solid #D9E6F2 !important;
+  color: #52657A !important;
+  border-radius: 10px !important;
+}
+
+[data-color-mode="white"] label[class*="bg-[#030d1f]"] span,
+[data-color-mode="white"] label[class*="bg-[#030d1f]"] div,
+[data-color-mode="white"] label[class*="border-cyan-500/10"] span,
+[data-color-mode="white"] label[class*="border-cyan-500/10"] div {
+  color: #52657A !important;
+  font-weight: 600 !important;
+}
+
+[data-color-mode="white"] label[class*="bg-[#030d1f]"]:hover,
+[data-color-mode="white"] label[class*="border-cyan-500/10"]:hover {
+  background-color: #F8FAFD !important;
+  border-color: #9CCEF5 !important;
+}
+
+/* Checkbox inputs */
+[data-color-mode="white"] input[type="checkbox"].accent-cyan-500,
+[data-color-mode="white"] input[type="checkbox"] {
+  accent-color: #0878D1 !important;
+}
+
+/* Actualizar Funciones button inside drawer */
+[data-color-mode="white"] [class*="bg-cyan-950/20"] button.bg-cyan-500,
+[data-color-mode="white"] .animate-slideDown button.bg-cyan-500 {
+  background-image: linear-gradient(135deg, #0878D1 0%, #08A9D6 100%) !important;
+  color: #FFFFFF !important;
+  border: none !important;
+  border-radius: 10px !important;
+  box-shadow: 0 5px 14px rgba(8, 120, 209, 0.22) !important;
+  font-weight: 700 !important;
+}
+
+[data-color-mode="white"] [class*="bg-cyan-950/20"] button.bg-cyan-500 *,
+[data-color-mode="white"] .animate-slideDown button.bg-cyan-500 * {
+  color: #FFFFFF !important;
+  stroke: #FFFFFF !important;
+}
+
 /* 10. Popovers, Dropdowns & Modals */
 [data-color-mode="white"] .bg-slate-900.border.border-slate-700,
 [data-color-mode="white"] [role="dialog"],
