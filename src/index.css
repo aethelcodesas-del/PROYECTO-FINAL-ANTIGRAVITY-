@@ -2858,11 +2858,11 @@ html.color-mode-white {
   color: #FFFFFF !important;
 }
 
-/* 9. Modals (Crear/Editar Ítem & Firma Digital CNE) */
 [data-color-mode="white"] .presupuesto-item-modal-backdrop,
 [data-color-mode="white"] .presupuesto-sign-modal-backdrop {
   background-color: rgba(11, 31, 58, 0.45) !important;
   backdrop-filter: blur(6px) !important;
+  padding: clamp(0.5rem, 2vw, 1.5rem) !important;
 }
 
 [data-color-mode="white"] .presupuesto-item-modal-box,
@@ -2871,18 +2871,23 @@ html.color-mode-white {
   border: 1px solid #D9E6F2 !important;
   box-shadow: 0 24px 60px rgba(11, 31, 58, 0.2) !important;
   color: #0B1F3A !important;
+  width: 100% !important;
+  max-width: min(96vw, 38rem) !important;
+  max-height: min(92dvh, 880px) !important;
 }
 
 [data-color-mode="white"] .presupuesto-item-modal-box h4,
 [data-color-mode="white"] .presupuesto-sign-modal-box h4 {
   color: #0B1F3A !important;
   font-weight: 800 !important;
+  font-size: clamp(0.875rem, 1.5vw + 0.5rem, 1.125rem) !important;
 }
 
 [data-color-mode="white"] .presupuesto-item-modal-box label,
 [data-color-mode="white"] .presupuesto-sign-modal-box label {
   color: #0B1F3A !important;
   font-weight: 700 !important;
+  font-size: clamp(0.6875rem, 0.8vw + 0.4rem, 0.8125rem) !important;
 }
 
 [data-color-mode="white"] .presupuesto-item-modal-box input,
@@ -2890,6 +2895,13 @@ html.color-mode-white {
   background-color: #FFFFFF !important;
   border: 1px solid #CBD5E1 !important;
   color: #0B1F3A !important;
+  font-size: clamp(0.75rem, 0.9vw + 0.45rem, 0.875rem) !important;
+}
+
+[data-color-mode="white"] .presupuesto-item-modal-box select option {
+  background-color: #FFFFFF !important;
+  color: #0B1F3A !important;
+  font-weight: 600 !important;
 }
 
 [data-color-mode="white"] .presupuesto-item-modal-box input:focus,
@@ -2932,4 +2944,35 @@ html.color-mode-white {
   color: #FFFFFF !important;
   box-shadow: 0 4px 14px rgba(5, 150, 105, 0.3) !important;
 }
+
+/* 10. Responsive Screen Breakpoint Tweaks for Presupuesto */
+@media (max-width: 640px) {
+  .presupuesto-cne-view {
+    padding: 0.75rem !important;
+    gap: 0.75rem !important;
+  }
+
+  .presupuesto-item-modal-box,
+  .presupuesto-sign-modal-box {
+    padding: 1rem !important;
+    border-radius: 1rem !important;
+    max-height: 94dvh !important;
+  }
+
+  .presupuesto-cne-view .grid-cols-4,
+  .presupuesto-cne-view .lg\:grid-cols-4 {
+    grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  .presupuesto-cne-view {
+    padding: 1.25rem !important;
+  }
+
+  .presupuesto-cne-view .lg\:grid-cols-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
 
