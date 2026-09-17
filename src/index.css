@@ -81,6 +81,20 @@ input, select, textarea, button {
   max-width: 100%;
 }
 
+/* Utilities to completely hide scrollbars while preserving touch/wheel scrolling */
+.no-scrollbar::-webkit-scrollbar,
+.scrollbar-none::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.no-scrollbar,
+.scrollbar-none {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+
 @media (max-width: 767px) {
   html, body {
     min-width: 0;

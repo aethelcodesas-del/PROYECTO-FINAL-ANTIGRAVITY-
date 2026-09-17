@@ -892,7 +892,7 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
         )}
 
         {/* Section Navigation Tabs */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-t border-cyan-500/15 pt-3 text-xs custom-scrollbar" style={{scrollbarWidth:'thin'}}>
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-t border-cyan-500/15 pt-3 text-xs no-scrollbar scrollbar-none scroll-smooth">
           {[
             { id: 'territorio', label: '1. Territorio & Elección', icon: MapPin },
             { id: 'candidato', label: '2. Candidato', icon: User },
@@ -907,7 +907,14 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
               <button
                 key={tab.id}
                 type="button"
-                onClick={() => setActiveTab(tab.id as TabType)}
+                onClick={(e) => {
+                  setActiveTab(tab.id as TabType);
+                  e.currentTarget.scrollIntoView({
+                    behavior: 'smooth',
+                    inline: 'center',
+                    block: 'nearest'
+                  });
+                }}
                 className={`px-3 py-2 rounded-xl font-bold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
                   isCurrent
                     ? 'bg-[#092244] text-emerald-300 border border-emerald-400 shadow-sm'
