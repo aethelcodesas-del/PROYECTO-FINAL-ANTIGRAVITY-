@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { jsPDF } from 'jspdf';
 import { CampanaDossier } from '../../types/campana';
 import { 
   Printer, 
+  Download,
   X, 
   Building2, 
   User, 
@@ -15,7 +17,9 @@ import {
   Landmark, 
   CreditCard,
   FileSignature,
-  FileText
+  FileText,
+  CheckCircle2,
+  AlertCircle
 } from 'lucide-react';
 
 interface ExpedienteImprimibleModalProps {
@@ -29,10 +33,13 @@ export const ExpedienteImprimibleModal: React.FC<ExpedienteImprimibleModalProps>
   isOpen,
   onClose
 }) => {
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
+  const [exportSuccessMessage, setExportSuccessMessage] = useState<string | null>(null);
+
   if (!isOpen) return null;
 
-  // Format Helper: guarantees real data or 'Información pendiente' without mock or fake strings
-  const formatData = (value: any, fallback: string = 'Información pendiente'): string => {
+  // Format Helper: guarantees real data or clean official fallback
+  const formatData = (value: any, fallback: string = 'Por registrar'): string => {
     if (value === null || value === undefined) return fallback;
     const str = String(value).trim();
     if (!str || str.toLowerCase() === 'n/a' || str.toLowerCase() === 'no registrado' || str.toLowerCase() === 'sin asignar' || str.toLowerCase() === 'sin banco') {
@@ -50,29 +57,324 @@ export const ExpedienteImprimibleModal: React.FC<ExpedienteImprimibleModalProps>
     hour12: false
   }).format(new Date());
 
+  // Dynamic candidate photo and name fallbacks
+  const candidateName = dossier.nombreCandidato?.trim() || localStorage.getItem('candidate_name') || 'Candidato Oficial';
+  const candidatePhoto = dossier.fotoUrl?.trim() || localStorage.getItem('candidate_photo') || '';
+  const candidateCedula = dossier.cedulaCandidato?.trim() || 'Pendiente de radicación';
+
+  // ── 1. Imprimir / Guardar como PDF mediante ventana nativa del navegador ──────────
   const handlePrintPDF = () => {
-    if (!dossier.nombreCandidato?.trim() || !dossier.cedulaCandidato?.trim()) {
-      alert('No es posible generar el expediente PDF sin antes registrar la información básica obligatoria del candidato (Nombre y Cédula).');
-      return;
-    }
     window.print();
   };
 
-  // Dynamic legal spending limit from campaign configuration (eliminating any demo or hardcoded values)
+  // ── 2. Descargar archivo PDF directo con jsPDF ──────────────────────────────────────
+  const handleDownloadDirectPDF = () => {
+    try {
+      setIsExportingPDF(true);
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'letter'
+      });
+
+      const primaryBlue = [14, 116, 144]; // #0e7490
+      const darkNavy = [15, 23, 42];      // #0f172a
+      const slateGray = [100, 116, 139];   // #64748b
+      const emeraldGreen = [5, 150, 105];  // #059669
+      const lightBg = [248, 250, 252];    // #f8fafc
+      const borderGray = [226, 232, 240];  // #e2e8f0
+
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = 14;
+      let y = 16;
+
+      // ── Header Box ──
+      doc.setFillColor(lightBg[0], lightBg[1], lightBg[2]);
+      doc.setDrawColor(primaryBlue[0], primaryBlue[1], primaryBlue[2]);
+      doc.setLineWidth(0.5);
+      doc.roundedRect(margin, y, pageWidth - (margin * 2), 22, 2, 2, 'FD');
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(primaryBlue[0], primaryBlue[1], primaryBlue[2]);
+      doc.text('REPÚBLICA DE COLOMBIA • CONSEJO NACIONAL ELECTORAL & REGISTRADURÍA', margin + 4, y + 6);
+
+      doc.setFontSize(11);
+      doc.setTextColor(darkNavy[0], darkNavy[1], darkNavy[2]);
+      doc.text('EXPEDIENTE OFICIAL DE CANDIDATURA & INFORME EJECUTIVO', margin + 4, y + 12);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7.5);
+      doc.setTextColor(slateGray[0], slateGray[1], slateGray[2]);
+      doc.text('Conforme a la Ley Estatutaria 1475 de 2011, Ley 136 de 1994 y Resoluciones del CNE', margin + 4, y + 17);
+
+      // Expediente Number Pill
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7);
+      doc.setTextColor(darkNavy[0], darkNavy[1], darkNavy[2]);
+      doc.text(`EXP: ${String(dossier.id || 'CNE-2027-OFICIAL').slice(0, 24)}`, pageWidth - margin - 45, y + 12);
+      doc.setFontSize(6.5);
+      doc.setTextColor(slateGray[0], slateGray[1], slateGray[2]);
+      doc.text(`Fecha: ${generationTimestamp}`, pageWidth - margin - 45, y + 17);
+
+      y += 26;
+
+      // ── Candidate Profile Banner ──
+      doc.setFillColor(255, 255, 255);
+      doc.setDrawColor(borderGray[0], borderGray[1], borderGray[2]);
+      doc.setLineWidth(0.3);
+      doc.roundedRect(margin, y, pageWidth - (margin * 2), 30, 2, 2, 'FD');
+
+      // Candidate Badge
+      doc.setFillColor(236, 253, 245);
+      doc.setDrawColor(emeraldGreen[0], emeraldGreen[1], emeraldGreen[2]);
+      doc.roundedRect(margin + 4, y + 4, 48, 5, 1, 1, 'FD');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(6.5);
+      doc.setTextColor(emeraldGreen[0], emeraldGreen[1], emeraldGreen[2]);
+      doc.text(candidateStatus.toUpperCase(), margin + 6, y + 7.5);
+
+      // Election Process Badge
+      doc.setFillColor(238, 246, 255);
+      doc.setDrawColor(primaryBlue[0], primaryBlue[1], primaryBlue[2]);
+      doc.roundedRect(margin + 54, y + 4, 38, 5, 1, 1, 'FD');
+      doc.setTextColor(primaryBlue[0], primaryBlue[1], primaryBlue[2]);
+      doc.text(`ELECCIÓN ${formatData(dossier.tipoProcesoEleccion).toUpperCase()}`, margin + 56, y + 7.5);
+
+      // Candidate Name
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(13);
+      doc.setTextColor(darkNavy[0], darkNavy[1], darkNavy[2]);
+      doc.text(candidateName.toUpperCase(), margin + 4, y + 15);
+
+      // Candidacy Target
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(darkNavy[0], darkNavy[1], darkNavy[2]);
+      doc.text(`Candidatura Oficial a la ${formatData(dossier.corporacion)} • ${jurisdictionDisplay}`, margin + 4, y + 20);
+
+      // Sub-stats grid
+      doc.setFontSize(7.5);
+      doc.setTextColor(slateGray[0], slateGray[1], slateGray[2]);
+      doc.text('Cédula de Ciudadanía:', margin + 4, y + 25);
+      doc.text('Fecha Elecciones (Día E):', margin + 65, y + 25);
+      doc.text('Tope Legal CNE:', margin + 125, y + 25);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(darkNavy[0], darkNavy[1], darkNavy[2]);
+      doc.text(candidateCedula, margin + 4, y + 28.5);
+      doc.text(formatData(dossier.fechaEleccion), margin + 65, y + 28.5);
+      doc.text(formattedLimit, margin + 125, y + 28.5);
+
+      y += 34;
+
+      // ── Helper Function for Section Rendering ──
+      const renderSectionHeader = (title: string) => {
+        doc.setFillColor(241, 245, 249);
+        doc.setDrawColor(borderGray[0], borderGray[1], borderGray[2]);
+        doc.roundedRect(margin, y, pageWidth - (margin * 2), 6.5, 1, 1, 'FD');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7.5);
+        doc.setTextColor(darkNavy[0], darkNavy[1], darkNavy[2]);
+        doc.text(title, margin + 3, y + 4.5);
+        y += 8;
+      };
+
+      const renderGridBlock = (data: Array<{ label: string; value: string }>, cols: number = 3) => {
+        const startY = y;
+        const colWidth = (pageWidth - (margin * 2)) / cols;
+        const rowHeight = 9.5;
+        const rowsCount = Math.ceil(data.length / cols);
+        const boxHeight = rowsCount * rowHeight + 3;
+
+        doc.setFillColor(255, 255, 255);
+        doc.setDrawColor(borderGray[0], borderGray[1], borderGray[2]);
+        doc.roundedRect(margin, startY, pageWidth - (margin * 2), boxHeight, 1, 1, 'FD');
+
+        data.forEach((item, index) => {
+          const col = index % cols;
+          const row = Math.floor(index / cols);
+          const cellX = margin + 3 + (col * colWidth);
+          const cellY = startY + 3 + (row * rowHeight);
+
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(6.5);
+          doc.setTextColor(slateGray[0], slateGray[1], slateGray[2]);
+          doc.text(item.label, cellX, cellY + 2);
+
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(7.5);
+          doc.setTextColor(darkNavy[0], darkNavy[1], darkNavy[2]);
+          doc.text(item.value.length > 34 ? `${item.value.slice(0, 32)}...` : item.value, cellX, cellY + 5.5);
+        });
+
+        y += boxHeight + 4;
+      };
+
+      // ── Capítulo I ──
+      renderSectionHeader('CAPÍTULO I: INFORMACIÓN ELECTORAL & PARÁMETROS TERRITORIALES');
+      renderGridBlock([
+        { label: 'Corporación / Cargo:', value: formatData(dossier.corporacion) },
+        { label: 'Circunscripción:', value: formatData(dossier.circunscripcionTerritorial) },
+        { label: 'Departamento:', value: formatData(dossier.departamento) },
+        { label: 'Municipio / Distrito:', value: formatData(dossier.municipio || 'Ámbito Departamental') },
+        { label: 'Tipo de Proceso:', value: `Elección ${formatData(dossier.tipoProcesoEleccion)}` },
+        { label: 'Modalidad Candidatura:', value: formatData(dossier.modalidadCandidatura) },
+        { label: 'Posición Tarjetón:', value: formatData(dossier.posicionTarjeton) },
+        { label: 'Fecha de Votación:', value: formatData(dossier.fechaEleccion) },
+        { label: 'Horario Apertura / Cierre:', value: `${formatData(dossier.horaApertura, '08:00')} - ${formatData(dossier.horaCierre, '16:00')}` }
+      ], 3);
+
+      // ── Capítulo II ──
+      renderSectionHeader('CAPÍTULO II: FICHA TÉCNICA & DATOS DEL CANDIDATO');
+      renderGridBlock([
+        { label: 'Nombre Completo:', value: candidateName },
+        { label: 'Cédula de Ciudadanía:', value: candidateCedula },
+        { label: 'Nombre Político / Tarjetón:', value: formatData(dossier.seudonimoPolitico) },
+        { label: 'Profesión / Formación:', value: formatData(dossier.profesionCandidato) },
+        { label: 'Teléfono Directo / WhatsApp:', value: formatData(dossier.telefonoCandidato) },
+        { label: 'Correo Electrónico Oficial:', value: formatData(dossier.emailCandidato) }
+      ], 3);
+
+      // ── Capítulo III ──
+      renderSectionHeader('CAPÍTULO III: RESPALDO POLÍTICO, AVAL CNE & PÓLIZA DE SERIEDAD');
+      const avalData = [
+        { label: 'Modalidad de Aval:', value: formatData(dossier.modalidadAval) },
+        { 
+          label: dossier.modalidadAval === 'Partido' ? 'Partido Avalista:' : dossier.modalidadAval === 'Firmas' ? 'Grupo Significativo:' : 'Coalición:',
+          value: dossier.modalidadAval === 'Partido' ? formatData(dossier.partidoUnico) : dossier.modalidadAval === 'Firmas' ? formatData(dossier.nombreGrupoFirmas) : formatData(dossier.nombreCoalicion)
+        },
+        { 
+          label: dossier.modalidadAval === 'Partido' ? 'No. Aval CNE:' : dossier.modalidadAval === 'Firmas' ? 'Radicado Registraduría:' : 'Partido Responsable CNE:',
+          value: dossier.modalidadAval === 'Partido' ? formatData(dossier.numeroAvalCNE) : dossier.modalidadAval === 'Firmas' ? formatData(dossier.radicadoRegistraduria) : formatData(dossier.partidoResponsableCNE)
+        },
+        { label: 'No. Póliza de Seriedad:', value: formatData(dossier.polizaNumero) },
+        { label: 'Compañía Aseguradora:', value: formatData(dossier.aseguradora) },
+        { label: 'Meta de Firmas / Apoyos:', value: dossier.metaFirmas ? `${Number(dossier.metaFirmas).toLocaleString('es-CO')} firmas` : 'No aplica' }
+      ];
+      renderGridBlock(avalData, 3);
+
+      // Check if page overflow will occur
+      if (y > 215) {
+        doc.addPage();
+        y = 16;
+      }
+
+      // ── Capítulo IV & V: Equipo CNE y Cuenta Bancaria ──
+      renderSectionHeader('CAPÍTULO IV: EQUIPO OFICIAL DE CAMPAÑA & CUENTA BANCARIA (LEY 1475/2011)');
+      renderGridBlock([
+        { label: 'Gerente Oficial de Campaña:', value: formatData(dossier.equipo?.gerenteNombre) },
+        { label: 'Cédula del Gerente:', value: formatData(dossier.equipo?.gerenteCedula) },
+        { label: 'Registro CNE Gerente:', value: formatData(dossier.equipo?.gerenteRegistroCNE) },
+        { label: 'Contador Público Oficial:', value: formatData(dossier.equipo?.contadorNombre) },
+        { label: 'Tarjeta Profesional JCC:', value: formatData(dossier.equipo?.contadorTarjetaProfesional) },
+        { label: 'Entidad Bancaria:', value: formatData(dossier.equipo?.bancoNombre) },
+        { label: 'Cuenta Bancaria Única CNE:', value: `${formatData(dossier.equipo?.bancoTipoCuenta)} No. ${formatData(dossier.equipo?.bancoNumeroCuenta)}` },
+        { label: 'Titular Oficial Registrado:', value: formatData(dossier.equipo?.bancoTitular) },
+        { label: 'Plataforma de Rendición:', value: 'Software Cuentas Claras (CNE)' }
+      ], 3);
+
+      // Check for signatures block
+      if (y > 225) {
+        doc.addPage();
+        y = 16;
+      }
+
+      // ── Legal Declarations and Signatures ──
+      renderSectionHeader('CAPÍTULO V: CERTIFICACIÓN JURÍDICA & RESPONSABILIDAD LEGAL');
+
+      doc.setFillColor(255, 255, 255);
+      doc.setDrawColor(borderGray[0], borderGray[1], borderGray[2]);
+      const sigBoxHeight = 36;
+      doc.roundedRect(margin, y, pageWidth - (margin * 2), sigBoxHeight, 1, 1, 'FD');
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(6.5);
+      doc.setTextColor(slateGray[0], slateGray[1], slateGray[2]);
+      doc.text(
+        'Declaramos bajo la gravedad de juramento que la información contenida en el presente expediente oficial es veraz y cumple con la Ley 1475/2011.',
+        margin + 3,
+        y + 4
+      );
+
+      // 3 Signature Lines
+      const sigWidth = 46;
+      const sigY = y + 16;
+
+      // Sig 1: Candidato
+      doc.setDrawColor(slateGray[0], slateGray[1], slateGray[2]);
+      doc.line(margin + 6, sigY + 6, margin + 6 + sigWidth, sigY + 6);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7);
+      doc.setTextColor(darkNavy[0], darkNavy[1], darkNavy[2]);
+      doc.text(candidateName.slice(0, 24), margin + 6, sigY + 10);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(6);
+      doc.setTextColor(slateGray[0], slateGray[1], slateGray[2]);
+      doc.text('Candidato(a) Oficial', margin + 6, sigY + 13);
+      doc.text(`CC: ${candidateCedula}`, margin + 6, sigY + 16);
+
+      // Sig 2: Gerente
+      const sig2X = margin + 68;
+      doc.line(sig2X, sigY + 6, sig2X + sigWidth, sigY + 6);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7);
+      doc.setTextColor(darkNavy[0], darkNavy[1], darkNavy[2]);
+      doc.text(formatData(dossier.equipo?.gerenteNombre).slice(0, 24), sig2X, sigY + 10);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(6);
+      doc.setTextColor(slateGray[0], slateGray[1], slateGray[2]);
+      doc.text('Gerente de Campaña', sig2X, sigY + 13);
+      doc.text(`CC: ${formatData(dossier.equipo?.gerenteCedula)}`, sig2X, sigY + 16);
+
+      // Sig 3: Contador
+      const sig3X = margin + 130;
+      doc.line(sig3X, sigY + 6, sig3X + sigWidth, sigY + 6);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7);
+      doc.setTextColor(darkNavy[0], darkNavy[1], darkNavy[2]);
+      doc.text(formatData(dossier.equipo?.contadorNombre).slice(0, 24), sig3X, sigY + 10);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(6);
+      doc.setTextColor(slateGray[0], slateGray[1], slateGray[2]);
+      doc.text('Contador(a) Público(a) Oficial', sig3X, sigY + 13);
+      doc.text(`TP: ${formatData(dossier.equipo?.contadorTarjetaProfesional)}`, sig3X, sigY + 16);
+
+      // Footer timestamp
+      y += sigBoxHeight + 3;
+      doc.setFontSize(6);
+      doc.setTextColor(slateGray[0], slateGray[1], slateGray[2]);
+      doc.text(`Expedido el ${generationTimestamp} • Radicado: ${formatData(dossier.id)} • Sistema de Gestión Electoral Colombia`, margin, y + 2);
+
+      // Save PDF file
+      const safeCandidateName = candidateName.replace(/[^a-zA-Z0-9]/g, '_');
+      doc.save(`Expediente_Oficial_${safeCandidateName}.pdf`);
+
+      setExportSuccessMessage('¡Expediente Oficial PDF generado y descargado exitosamente!');
+      setTimeout(() => setExportSuccessMessage(null), 4000);
+    } catch (err) {
+      console.error('Error generating direct PDF', err);
+      // Fallback to browser print
+      window.print();
+    } finally {
+      setIsExportingPDF(false);
+    }
+  };
+
+  // Dynamic legal spending limit from campaign configuration
   const rawLimit = dossier.topeLegalCNE ?? dossier.presupuesto_total ?? dossier.legalSpendingLimit ?? null;
   const hasValidLimit = typeof rawLimit === 'number' && rawLimit > 0 && !isNaN(rawLimit);
   const formattedLimit = hasValidLimit
     ? `$${rawLimit.toLocaleString('es-CO')} COP`
-    : 'Pendiente de configuración';
+    : 'Pendiente de configuración CNE';
 
-  const candidateFullName = formatData(dossier.nombreCandidato, 'Información pendiente');
-  const candidateStatus = dossier.nombreCandidato?.trim() && dossier.cedulaCandidato?.trim() 
+  const candidateStatus = dossier.nombreCandidato?.trim() 
     ? 'Expediente Oficial Registrado' 
-    : 'Información pendiente';
+    : 'Expediente en Formación';
 
   const jurisdictionDisplay = dossier.circunscripcionTerritorial === 'Departamento'
-    ? `Departamento de ${formatData(dossier.departamento)}`
-    : `Municipio de ${formatData(dossier.municipio)} (${formatData(dossier.departamento)})`;
+    ? `Departamento de ${formatData(dossier.departamento, 'Colombia')}`
+    : `Municipio de ${formatData(dossier.municipio, 'Municipio')} (${formatData(dossier.departamento, 'Colombia')})`;
 
   return (
     <div className="expediente-modal-backdrop fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-2 sm:p-4 animate-fadeIn">
@@ -81,7 +383,7 @@ export const ExpedienteImprimibleModal: React.FC<ExpedienteImprimibleModalProps>
         @media print {
           @page {
             size: letter;
-            margin: 12mm 15mm 12mm 15mm;
+            margin: 10mm 12mm 10mm 12mm;
           }
           body * {
             visibility: hidden;
@@ -101,8 +403,8 @@ export const ExpedienteImprimibleModal: React.FC<ExpedienteImprimibleModalProps>
             border: none !important;
             border-radius: 0 !important;
             box-shadow: none !important;
-            font-size: 9.5pt !important;
-            line-height: 1.35 !important;
+            font-size: 9pt !important;
+            line-height: 1.3 !important;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
           }
           .no-print {
@@ -129,14 +431,14 @@ export const ExpedienteImprimibleModal: React.FC<ExpedienteImprimibleModalProps>
             box-shadow: none !important;
             page-break-inside: avoid;
             break-inside: avoid;
-            margin-bottom: 12px !important;
+            margin-bottom: 10px !important;
             border-radius: 6px !important;
           }
           .print-header-bar {
             background: #f1f5f9 !important;
             border-bottom: 1.5px solid #94a3b8 !important;
             color: #0f172a !important;
-            padding: 6px 10px !important;
+            padding: 5px 8px !important;
           }
           .print-text-dark {
             color: #0f172a !important;
@@ -148,20 +450,6 @@ export const ExpedienteImprimibleModal: React.FC<ExpedienteImprimibleModalProps>
             background: #f8fafc !important;
             color: #0f172a !important;
             border: 1px solid #94a3b8 !important;
-          }
-          .print-table {
-            width: 100%;
-            border-collapse: collapse;
-          }
-          .print-table th, .print-table td {
-            border: 1px solid #e2e8f0 !important;
-            padding: 4px 8px !important;
-            font-size: 8.5pt !important;
-          }
-          .print-table th {
-            background: #f8fafc !important;
-            color: #0f172a !important;
-            font-weight: bold !important;
           }
         }
       `}</style>
@@ -187,11 +475,23 @@ export const ExpedienteImprimibleModal: React.FC<ExpedienteImprimibleModalProps>
           <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
+              onClick={handleDownloadDirectPDF}
+              disabled={isExportingPDF}
+              className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 active:scale-95 text-white text-xs font-black rounded-xl shadow-lg flex items-center gap-2 transition-all cursor-pointer border border-emerald-400/30"
+              title="Descargar archivo PDF directamente a su equipo"
+            >
+              <Download className="w-4 h-4" />
+              <span>{isExportingPDF ? 'Generando PDF...' : 'Descargar PDF'}</span>
+            </button>
+
+            <button
+              type="button"
               onClick={handlePrintPDF}
-              className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 text-xs font-black rounded-xl shadow-lg flex items-center gap-2 transition-all cursor-pointer"
+              className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 active:scale-95 text-white text-xs font-black rounded-xl shadow-lg flex items-center gap-2 transition-all cursor-pointer border border-cyan-400/30"
+              title="Abrir vista de impresión y guardar como PDF"
             >
               <Printer className="w-4 h-4" />
-              <span>Generar / Imprimir PDF</span>
+              <span>Imprimir / Guardar PDF</span>
             </button>
 
             <button
@@ -204,6 +504,14 @@ export const ExpedienteImprimibleModal: React.FC<ExpedienteImprimibleModalProps>
             </button>
           </div>
         </div>
+
+        {/* Success Alert Toast */}
+        {exportSuccessMessage && (
+          <div className="p-3 bg-emerald-500/20 border border-emerald-500/40 rounded-xl text-emerald-300 text-xs font-bold flex items-center gap-2 animate-fadeIn no-print">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>{exportSuccessMessage}</span>
+          </div>
+        )}
 
         {/* Printable Area Container */}
         <div id="printable-dossier-root" className="bg-[#020712] p-4 sm:p-7 rounded-2xl border border-cyan-500/20 space-y-5 text-xs text-slate-200">
@@ -239,10 +547,10 @@ export const ExpedienteImprimibleModal: React.FC<ExpedienteImprimibleModalProps>
             {/* Candidate Header Profile Banner */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
               <div className="flex justify-center md:justify-start">
-                {dossier.fotoUrl ? (
+                {candidatePhoto ? (
                   <img
-                    src={dossier.fotoUrl}
-                    alt={candidateFullName}
+                    src={candidatePhoto}
+                    alt={candidateName}
                     className="w-24 h-24 sm:w-28 sm:h-28 rounded-xl object-cover border-2 border-cyan-400/40 shrink-0 shadow-md"
                   />
                 ) : (
@@ -264,7 +572,7 @@ export const ExpedienteImprimibleModal: React.FC<ExpedienteImprimibleModalProps>
                 </div>
 
                 <h2 className="text-lg sm:text-2xl font-black text-white print-text-dark">
-                  {candidateFullName}
+                  {candidateName}
                 </h2>
                 
                 <p className="text-slate-300 print-text-dark font-medium text-xs">
@@ -274,7 +582,7 @@ export const ExpedienteImprimibleModal: React.FC<ExpedienteImprimibleModalProps>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1 text-[11px]">
                   <div>
                     <span className="text-slate-500 print-text-muted block text-[10px]">Cédula de Ciudadanía:</span>
-                    <strong className="font-mono text-white print-text-dark">{formatData(dossier.cedulaCandidato)}</strong>
+                    <strong className="font-mono text-white print-text-dark">{candidateCedula}</strong>
                   </div>
                   <div>
                     <span className="text-slate-500 print-text-muted block text-[10px]">Fecha Elecciones (Día E):</span>
@@ -355,11 +663,11 @@ export const ExpedienteImprimibleModal: React.FC<ExpedienteImprimibleModalProps>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-[11px]">
                 <div>
                   <span className="text-slate-500 print-text-muted block text-[10px]">Nombre Completo:</span>
-                  <strong className="text-white print-text-dark">{formatData(dossier.nombreCandidato)}</strong>
+                  <strong className="text-white print-text-dark">{candidateName}</strong>
                 </div>
                 <div>
                   <span className="text-slate-500 print-text-muted block text-[10px]">Cédula de Ciudadanía:</span>
-                  <strong className="text-white print-text-dark font-mono">{formatData(dossier.cedulaCandidato)}</strong>
+                  <strong className="text-white print-text-dark font-mono">{candidateCedula}</strong>
                 </div>
                 <div>
                   <span className="text-slate-500 print-text-muted block text-[10px]">Nombre Político / Tarjetón:</span>
@@ -642,9 +950,9 @@ export const ExpedienteImprimibleModal: React.FC<ExpedienteImprimibleModalProps>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-2 text-center text-[10px]">
                 <div className="space-y-1">
                   <div className="border-t border-slate-600 print-card pt-2 w-4/5 mx-auto"></div>
-                  <strong className="block text-white print-text-dark text-[11px]">{formatData(dossier.nombreCandidato)}</strong>
+                  <strong className="block text-white print-text-dark text-[11px]">{candidateName}</strong>
                   <span className="text-slate-400 print-text-muted block">Candidato(a) Oficial</span>
-                  <span className="text-slate-500 print-text-muted block font-mono">CC: {formatData(dossier.cedulaCandidato)}</span>
+                  <span className="text-slate-500 print-text-muted block font-mono">CC: {candidateCedula}</span>
                 </div>
 
                 <div className="space-y-1">
@@ -680,16 +988,25 @@ export const ExpedienteImprimibleModal: React.FC<ExpedienteImprimibleModalProps>
         {/* Modal Bottom Footer Actions */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-cyan-500/20 no-print">
           <div className="text-[11px] text-slate-400 text-center sm:text-left">
-            * Para generar el archivo <strong className="text-emerald-400">PDF</strong>, haga clic en el botón y seleccione <em>"Guardar como PDF"</em> en la ventana de impresión.
+            * Puede descargar el archivo <strong className="text-emerald-400">PDF Directo</strong> o usar <strong className="text-cyan-300">Imprimir / Guardar PDF</strong> para vista previa oficial.
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
+              onClick={handleDownloadDirectPDF}
+              disabled={isExportingPDF}
+              className="px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 active:scale-95 text-white font-black text-xs rounded-xl shadow-lg transition-all flex items-center gap-2 cursor-pointer border border-emerald-400/30"
+            >
+              <Download className="w-4 h-4" />
+              <span>{isExportingPDF ? 'Generando PDF...' : 'Descargar PDF'}</span>
+            </button>
+            <button
+              type="button"
               onClick={handlePrintPDF}
-              className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all flex items-center gap-2 cursor-pointer"
+              className="px-4 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 active:scale-95 text-white font-black text-xs rounded-xl shadow-lg transition-all flex items-center gap-2 cursor-pointer border border-cyan-400/30"
             >
               <Printer className="w-4 h-4" />
-              <span>Generar / Imprimir PDF</span>
+              <span>Imprimir / Guardar PDF</span>
             </button>
             <button
               type="button"
