@@ -4334,8 +4334,8 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
         {activeTab === 'jurados_electorales' && (
           <div className="space-y-6 animate-fadeIn">
             {jurorError && (
-              <div className="rounded-xl border p-3 text-xs font-bold flex items-center gap-2 bg-rose-950/70 border-rose-500/50 text-rose-200">
-                <AlertTriangle className="w-4 h-4 shrink-0" />
+              <div className="rounded-xl border p-3.5 text-xs font-bold flex items-center gap-2.5 bg-rose-50 border-rose-200 text-rose-800 shadow-sm">
+                <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
                 <span>Error de sincronización: {jurorError}</span>
               </div>
             )}
@@ -4348,17 +4348,20 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
               onChange={handleAttachResolutionFile}
             />
 
-            <div className="bg-[#041733]/90 rounded-2xl p-6 border border-cyan-500/30 shadow-xl space-y-6">
+            <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-6">
               {/* Header Top Row: Title, Description & '+ Postular Jurado' Button */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-cyan-500/20 pb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 pb-4">
                 <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 rounded-xl shrink-0">
+                  <div className="p-2.5 bg-blue-50 text-blue-600 border border-blue-200 rounded-2xl shrink-0">
                     <Vote className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="font-extrabold text-white text-lg flex items-center gap-2">
+                    <h3 className="font-extrabold text-slate-900 text-lg flex items-center gap-2">
                       Listas de Jurados para Registraduría & Confrontación de Resolución
                     </h3>
+                    <p className="text-xs text-slate-500 font-medium">
+                      Control integral de candidatos postulados, cruce OCR con resoluciones oficiales y asignaciones de mesa.
+                    </p>
                   </div>
                 </div>
 
@@ -4370,7 +4373,11 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                       resetJuradoForm();
                       setShowJuradoForm(!showJuradoForm);
                     }}
-                    className="w-full sm:w-auto px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2 border border-emerald-400"
+                    className={`w-full sm:w-auto px-5 py-2.5 font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                      showJuradoForm
+                        ? 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-300'
+                        : 'bg-blue-600 hover:bg-blue-700 text-white'
+                    }`}
                   >
                     <UserPlus className="w-4 h-4" />
                     <span>{showJuradoForm ? 'Cancelar' : '+ Postular Jurado'}</span>
@@ -4379,9 +4386,9 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
               </div>
 
               {/* Header Bottom Row: Action Buttons for Export, Annex Resolution, and Confrontation */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-[#030d1f] p-3 rounded-2xl border border-cyan-500/30">
-                <div className="text-xs font-bold text-cyan-300 flex items-center gap-2 px-1 shrink-0">
-                  <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shrink-0"></span>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80">
+                <div className="text-xs font-bold text-slate-700 flex items-center gap-2 px-1 shrink-0">
+                  <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse shrink-0"></span>
                   <span className="whitespace-nowrap">Acciones de Resolución y Exportación:</span>
                 </div>
 
@@ -4390,10 +4397,10 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                   <button
                     type="button"
                     onClick={handleExportJuradosExcel}
-                    className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-xl shadow-sm transition-all cursor-pointer flex items-center gap-2 border border-emerald-400"
+                    className="px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer flex items-center gap-2 border border-emerald-300"
                     title="Exportar archivo CSV/Excel listo para enviar a la Registraduría"
                   >
-                    <FileSpreadsheet className="w-4 h-4 text-slate-950" />
+                    <FileSpreadsheet className="w-4 h-4 text-emerald-700" />
                     <span>Exportar Lista Excel Registraduría</span>
                   </button>
 
@@ -4402,13 +4409,13 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                     type="button"
                     onClick={() => resolutionFileInputRef.current?.click()}
                     disabled={isReadingResolution}
-                    className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-black text-xs rounded-xl shadow-sm transition-all cursor-pointer flex items-center gap-2 border border-cyan-400 disabled:opacity-50"
+                    className="px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-800 font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer flex items-center gap-2 border border-blue-300 disabled:opacity-50"
                     title="Anexar documento de Resolución emitida por la Registraduría (PDF/Excel) para lectura"
                   >
                     {isReadingResolution ? (
-                      <RefreshCw className="w-4 h-4 text-cyan-200 animate-spin" />
+                      <RefreshCw className="w-4 h-4 text-blue-600 animate-spin" />
                     ) : (
-                      <FileUp className="w-4 h-4 text-cyan-200" />
+                      <FileUp className="w-4 h-4 text-blue-600" />
                     )}
                     <span>{isReadingResolution ? 'Leyendo Resolución...' : 'Anexar Resolución PDF/Excel'}</span>
                   </button>
@@ -4417,10 +4424,10 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                   <button
                     type="button"
                     onClick={() => setShowConfrontationModal(!showConfrontationModal)}
-                    className="px-4 py-2 bg-[#051833] hover:bg-slate-800 text-cyan-300 font-black text-xs rounded-xl shadow-sm transition-all cursor-pointer flex items-center gap-2 border border-cyan-500/40"
+                    className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer flex items-center gap-2"
                     title="Cargar y confrontar resolución oficial de sorteo emitida por la Registraduría"
                   >
-                    <Scale className="w-4 h-4 text-cyan-400" />
+                    <Scale className="w-4 h-4 text-blue-300" />
                     <span>Confrontar Resolución Sorteo</span>
                   </button>
                 </div>
@@ -4428,54 +4435,54 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
 
               {/* KPI Summary Metrics Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="p-4 bg-[#030d1f] rounded-2xl border border-cyan-500/30 space-y-1">
-                  <div className="flex items-center justify-between text-xs text-cyan-300 font-bold">
-                    <span>Total Candidates Postulados</span>
-                    <Users className="w-4 h-4 text-cyan-400" />
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-1">
+                  <div className="flex items-center justify-between text-xs text-slate-600 font-bold">
+                    <span>Total Candidatos Postulados</span>
+                    <Users className="w-4 h-4 text-blue-600" />
                   </div>
-                  <div className="text-2xl font-black text-white">{jurados.length}</div>
-                  <div className="text-[10px] text-cyan-200/70 font-medium">
+                  <div className="text-2xl font-black text-slate-900">{jurados.length}</div>
+                  <div className="text-[10px] text-slate-500 font-medium">
                     Listas para Sorteo Registraduría
                   </div>
                 </div>
 
-                <div className="p-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/40 space-y-1">
-                  <div className="flex items-center justify-between text-xs text-emerald-300 font-bold">
+                <div className="p-4 bg-emerald-50/70 rounded-2xl border border-emerald-200 space-y-1">
+                  <div className="flex items-center justify-between text-xs text-emerald-800 font-bold">
                     <span>Seleccionados en Resolución</span>
-                    <CheckCircle className="w-4 h-4 text-emerald-400" />
+                    <CheckCircle className="w-4 h-4 text-emerald-600" />
                   </div>
-                  <div className="text-2xl font-black text-emerald-300">
+                  <div className="text-2xl font-black text-emerald-700">
                     {jurados.filter(j => j.estadoSorteo.includes('Seleccionado')).length}
                   </div>
-                  <div className="text-[10px] text-emerald-200/80 font-bold">
+                  <div className="text-[10px] text-emerald-700 font-bold">
                     Designados como Jurados Oficiales
                   </div>
                 </div>
 
-                <div className="p-4 bg-[#030d1f] rounded-2xl border border-slate-700 space-y-1">
-                  <div className="flex items-center justify-between text-xs text-slate-300 font-bold">
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-1">
+                  <div className="flex items-center justify-between text-xs text-slate-600 font-bold">
                     <span>No Seleccionados en Sorteo</span>
                     <XCircle className="w-4 h-4 text-slate-400" />
                   </div>
-                  <div className="text-2xl font-black text-slate-200">
+                  <div className="text-2xl font-black text-slate-700">
                     {jurados.filter(j => j.estadoSorteo === 'No Seleccionado').length}
                   </div>
-                  <div className="text-[10px] text-slate-400 font-medium">
+                  <div className="text-[10px] text-slate-500 font-medium">
                     Postulaciones Sin Asignación
                   </div>
                 </div>
 
-                <div className="p-4 bg-cyan-500/10 rounded-2xl border border-cyan-500/40 space-y-1">
-                  <div className="flex items-center justify-between text-xs text-cyan-300 font-bold">
+                <div className="p-4 bg-blue-50/70 rounded-2xl border border-blue-200 space-y-1">
+                  <div className="flex items-center justify-between text-xs text-blue-800 font-bold">
                     <span>Tasa Efectividad en Sorteo</span>
-                    <Award className="w-4 h-4 text-cyan-400" />
+                    <Award className="w-4 h-4 text-blue-600" />
                   </div>
-                  <div className="text-2xl font-black text-cyan-200">
+                  <div className="text-2xl font-black text-blue-700">
                     {jurados.length > 0 
                       ? `${Math.round((jurados.filter(j => j.estadoSorteo.includes('Seleccionado')).length / jurados.length) * 100)}%` 
                       : '0%'}
                   </div>
-                  <div className="text-[10px] text-cyan-300 font-bold">
+                  <div className="text-[10px] text-blue-700 font-bold">
                     Proporción de Éxito Político
                   </div>
                 </div>
@@ -4483,42 +4490,42 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
 
               {/* Panel de Confrontación de Resolución Registraduría (Expandible / Modal) */}
               {(showConfrontationModal || isConfronting) && (
-                <div className="bg-[#030d1f] text-white rounded-2xl p-5 border border-cyan-500/40 shadow-xl space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-cyan-500/20 pb-3">
+                <div className="bg-slate-50 text-slate-900 rounded-2xl p-5 border border-slate-200 shadow-md space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-3">
                     <div className="flex items-center gap-3">
-                      <div className="p-2.5 bg-cyan-500/20 border border-cyan-400/40 rounded-xl text-cyan-300">
-                        <Scale className="w-6 h-6 text-cyan-300" />
+                      <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-xl text-blue-600">
+                        <Scale className="w-6 h-6 text-blue-600" />
                       </div>
                       <div>
-                        <h4 className="text-sm font-black text-white tracking-wide uppercase">
+                        <h4 className="text-sm font-black text-slate-900 tracking-wide uppercase">
                           Módulo de Lector & Confrontación de Resolución de Jurados
                         </h4>
-                        <p className="text-xs text-cyan-200/80 mt-0.5">
+                        <p className="text-xs text-slate-600 mt-0.5">
                           Lectura automatizada por OCR/Texto de la resolución expedida por la Registraduría Nacional / CNE y confrontación de cédulas.
                         </p>
                       </div>
                     </div>
 
-                    <span className="px-3 py-1 bg-[#051833] text-cyan-300 font-mono text-xs font-bold rounded-xl border border-cyan-500/40 shrink-0">
+                    <span className="px-3 py-1 bg-white text-blue-700 font-mono text-xs font-bold rounded-xl border border-slate-200 shadow-sm shrink-0">
                       {resolutionFile.resolutionNumber}
                     </span>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-                    <div className="md:col-span-8 space-y-3 bg-[#051833] p-4 rounded-xl border border-cyan-500/20">
+                    <div className="md:col-span-8 space-y-3 bg-white p-4 rounded-xl border border-slate-200">
                       <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-                        <span className="font-bold text-cyan-300 flex items-center gap-1.5">
-                          <FileText className="w-4 h-4 text-cyan-400" />
+                        <span className="font-bold text-slate-800 flex items-center gap-1.5">
+                          <FileText className="w-4 h-4 text-blue-600" />
                           <span>Resolución Oficial Anexada:</span>
                         </span>
                         <div className="flex items-center gap-2">
-                          <span className="font-mono text-emerald-400 font-bold bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-700/50">
+                          <span className="font-mono text-emerald-800 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-300">
                             {resolutionFile.name} ({resolutionFile.size})
                           </span>
                           <button
                             type="button"
                             onClick={() => resolutionFileInputRef.current?.click()}
-                            className="px-2.5 py-1 bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-[10px] rounded-lg border border-cyan-400 flex items-center gap-1 cursor-pointer transition-all"
+                            className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white font-bold text-[10px] rounded-lg flex items-center gap-1 cursor-pointer transition-all shadow-sm"
                             title="Seleccionar y anexar otro archivo de resolución"
                           >
                             <FileUp className="w-3 h-3" />
@@ -4527,46 +4534,46 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                         </div>
                       </div>
 
-                      <div className="bg-slate-950 p-3 rounded-lg border border-cyan-500/30 space-y-1.5 text-xs text-slate-300">
+                      <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-1.5 text-xs text-slate-700">
                         <div className="flex items-center justify-between font-mono text-[11px]">
-                          <span className="text-slate-400">Estado de Lectura OCR:</span>
-                          <span className="text-emerald-400 font-bold flex items-center gap-1">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                          <span className="text-slate-500">Estado de Lectura OCR:</span>
+                          <span className="text-emerald-700 font-bold flex items-center gap-1">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                             <span>{resolutionFile.status}</span>
                           </span>
                         </div>
                         <div className="flex items-center justify-between font-mono text-[11px]">
-                          <span className="text-slate-400">Registros y Cédulas Identificadas:</span>
-                          <span className="text-cyan-200 font-bold">{resolutionFile.numRecordsExtracted} Jurados Registrados</span>
+                          <span className="text-slate-500">Registros y Cédulas Identificadas:</span>
+                          <span className="text-slate-900 font-bold">{resolutionFile.numRecordsExtracted} Jurados Registrados</span>
                         </div>
-                        <p className="text-[11px] text-slate-400 pt-1 leading-relaxed border-t border-slate-800">
+                        <p className="text-[11px] text-slate-500 pt-1 leading-relaxed border-t border-slate-200">
                           Este proceso ejecuta un algoritmo de cruce directo entre el documento anexado de la Registraduría y el listado de postulados del partido para determinar quiénes quedaron asignados como Jurados Oficiales, en qué puesto, mesa y rol.
                         </p>
                       </div>
 
                       {/* Distribution breakdown by designated roles */}
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-[11px]">
-                        <div className="bg-slate-950 p-2 rounded-lg border border-cyan-500/20 text-center">
-                          <span className="text-slate-400 block text-[10px]">Presidentes</span>
-                          <strong className="text-cyan-300 font-black text-sm">
+                        <div className="bg-white p-2 rounded-lg border border-slate-200 text-center">
+                          <span className="text-slate-500 block text-[10px]">Presidentes</span>
+                          <strong className="text-blue-700 font-black text-sm">
                             {jurados.filter(j => j.rolDesignado === 'Presidente de Mesa').length}
                           </strong>
                         </div>
-                        <div className="bg-slate-950 p-2 rounded-lg border border-cyan-500/20 text-center">
-                          <span className="text-slate-400 block text-[10px]">Vocales 1 y 2</span>
-                          <strong className="text-emerald-300 font-black text-sm">
+                        <div className="bg-white p-2 rounded-lg border border-slate-200 text-center">
+                          <span className="text-slate-500 block text-[10px]">Vocales 1 y 2</span>
+                          <strong className="text-emerald-700 font-black text-sm">
                             {jurados.filter(j => j.rolDesignado.includes('Vocal')).length}
                           </strong>
                         </div>
-                        <div className="bg-slate-950 p-2 rounded-lg border border-cyan-500/20 text-center">
-                          <span className="text-slate-400 block text-[10px]">Remanentes</span>
-                          <strong className="text-amber-300 font-black text-sm">
+                        <div className="bg-white p-2 rounded-lg border border-slate-200 text-center">
+                          <span className="text-slate-500 block text-[10px]">Remanentes</span>
+                          <strong className="text-amber-700 font-black text-sm">
                             {jurados.filter(j => j.rolDesignado === 'Jurado Remanente').length}
                           </strong>
                         </div>
-                        <div className="bg-slate-950 p-2 rounded-lg border border-cyan-500/20 text-center">
-                          <span className="text-slate-400 block text-[10px]">No Designados</span>
-                          <strong className="text-slate-400 font-black text-sm">
+                        <div className="bg-white p-2 rounded-lg border border-slate-200 text-center">
+                          <span className="text-slate-500 block text-[10px]">No Designados</span>
+                          <strong className="text-slate-500 font-black text-sm">
                             {jurados.filter(j => j.rolDesignado === 'No Designado' || j.rolDesignado === 'Pendiente').length}
                           </strong>
                         </div>
@@ -4578,7 +4585,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                         type="button"
                         onClick={handleRunResolutionConfrontation}
                         disabled={isConfronting || isReadingResolution}
-                        className="w-full py-3 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2 border border-emerald-400"
+                        className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
                       >
                         {isConfronting ? (
                           <>
@@ -4597,16 +4604,16 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                         type="button"
                         onClick={() => resolutionFileInputRef.current?.click()}
                         disabled={isReadingResolution}
-                        className="w-full py-2.5 bg-[#051833] hover:bg-slate-800 text-cyan-200 font-bold text-xs rounded-xl border border-cyan-500/30 flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                        className="w-full py-2.5 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl border border-slate-300 flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm"
                       >
-                        <FileUp className="w-4 h-4 text-cyan-300" />
+                        <FileUp className="w-4 h-4 text-blue-600" />
                         <span>Anexar Nueva Resolución (PDF)</span>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => setShowConfrontationModal(false)}
-                        className="w-full py-2 bg-slate-900 hover:bg-slate-800 text-slate-400 font-bold text-xs rounded-xl border border-slate-700 transition-colors"
+                        className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs rounded-xl border border-slate-200 transition-colors cursor-pointer"
                       >
                         Ocultar Panel Confrontación
                       </button>
@@ -4617,16 +4624,16 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
 
               {/* Formulario de Postulación de Jurado */}
               {showJuradoForm && (
-                <form onSubmit={handleSaveJuradoCandidate} className="bg-[#030d1f] border border-cyan-500/30 rounded-2xl p-5 space-y-4 animate-fadeIn">
-                  <div className="flex items-center justify-between border-b border-cyan-500/20 pb-3">
-                    <h4 className="font-extrabold text-white text-sm flex items-center gap-2">
-                      <UserPlus className="w-4 h-4 text-emerald-400" />
+                <form onSubmit={handleSaveJuradoCandidate} className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4 animate-fadeIn">
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                    <h4 className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
+                      <UserPlus className="w-4 h-4 text-blue-600" />
                       <span>{editingJuradoId ? 'Editar Postulante a Jurado de Votación' : 'Postular Nuevo Candidato a Jurado (Lista para Registraduría)'}</span>
                     </h4>
                     <button
                       type="button"
                       onClick={() => setShowJuradoForm(false)}
-                      className="p-1 text-slate-400 hover:text-white rounded-lg"
+                      className="p-1 text-slate-400 hover:text-slate-700 rounded-lg cursor-pointer"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -4634,59 +4641,59 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
                     <div>
-                      <label className="block font-bold text-cyan-200 mb-1">Nombre Completo *</label>
+                      <label className="block font-bold text-slate-700 mb-1">Nombre Completo *</label>
                       <input
                         type="text"
                         required
                         placeholder="Ej: Laura Gómez Pérez"
                         value={jurNombre}
                         onChange={(e) => setJurNombre(e.target.value)}
-                        className="w-full p-2.5 bg-[#051833] border border-cyan-500/30 rounded-xl focus:outline-none focus:border-cyan-400 font-medium text-white"
+                        className="w-full p-2.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium text-slate-900 placeholder:text-slate-400 shadow-sm"
                       />
                     </div>
 
                     <div>
-                      <label className="block font-bold text-cyan-200 mb-1">Cédula de Ciudadanía *</label>
+                      <label className="block font-bold text-slate-700 mb-1">Cédula de Ciudadanía *</label>
                       <input
                         type="text"
                         required
                         placeholder="Ej: 1017889900"
                         value={jurCc}
                         onChange={(e) => setJurCc(e.target.value)}
-                        className="w-full p-2.5 bg-[#051833] border border-cyan-500/30 rounded-xl focus:outline-none focus:border-cyan-400 font-mono font-bold text-white"
+                        className="w-full p-2.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-mono font-bold text-slate-900 placeholder:text-slate-400 shadow-sm"
                       />
                     </div>
 
                     <div>
-                      <label className="block font-bold text-cyan-200 mb-1">Teléfono Móvil *</label>
+                      <label className="block font-bold text-slate-700 mb-1">Teléfono Móvil *</label>
                       <input
                         type="text"
                         required
                         placeholder="Ej: +57 300 123 4567"
                         value={jurTelefono}
                         onChange={(e) => setJurTelefono(e.target.value)}
-                        className="w-full p-2.5 bg-[#051833] border border-cyan-500/30 rounded-xl focus:outline-none focus:border-cyan-400 font-medium text-white"
+                        className="w-full p-2.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium text-slate-900 placeholder:text-slate-400 shadow-sm"
                       />
                     </div>
 
                     <div>
-                      <label className="block font-bold text-cyan-200 mb-1">Correo Electrónico *</label>
+                      <label className="block font-bold text-slate-700 mb-1">Correo Electrónico *</label>
                       <input
                         type="email"
                         required
                         placeholder="Ej: laura.gomez@gmail.com"
                         value={jurEmail}
                         onChange={(e) => setJurEmail(e.target.value)}
-                        className="w-full p-2.5 bg-[#051833] border border-cyan-500/30 rounded-xl focus:outline-none focus:border-cyan-400 font-medium text-white"
+                        className="w-full p-2.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium text-slate-900 placeholder:text-slate-400 shadow-sm"
                       />
                     </div>
 
                     <div>
-                      <label className="block font-bold text-cyan-200 mb-1">Partido Político / Movimiento</label>
+                      <label className="block font-bold text-slate-700 mb-1">Partido Político / Movimiento</label>
                       <select
                         value={jurPartido}
                         onChange={(e) => setJurPartido(e.target.value)}
-                        className="w-full p-2.5 bg-[#051833] border border-cyan-500/30 rounded-xl focus:outline-none focus:border-cyan-400 font-bold text-white"
+                        className="w-full p-2.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold text-slate-900 shadow-sm"
                       >
                         <option value="">Seleccione el partido / movimiento</option>
                         {partidosPoliticosOpt.map((p, idx) => (
@@ -4696,18 +4703,18 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                     </div>
 
                     <div>
-                      <label className="block font-bold text-cyan-200 mb-1">Ocupación / Empresa / Sector</label>
+                      <label className="block font-bold text-slate-700 mb-1">Ocupación / Empresa / Sector</label>
                       <input
                         type="text"
                         placeholder="Ej: Docente / Ingeniero / Sector Público"
                         value={jurOcupacion}
                         onChange={(e) => setJurOcupacion(e.target.value)}
-                        className="w-full p-2.5 bg-[#051833] border border-cyan-500/30 rounded-xl focus:outline-none focus:border-cyan-400 font-medium text-white"
+                        className="w-full p-2.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium text-slate-900 placeholder:text-slate-400 shadow-sm"
                       />
                     </div>
 
                     <div>
-                      <label className="block font-bold text-cyan-200 mb-1">Municipio / Distrito</label>
+                      <label className="block font-bold text-slate-700 mb-1">Municipio / Distrito</label>
                       <select
                         value={jurMunicipio}
                         onChange={(e) => {
@@ -4715,7 +4722,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                           setJurPuestoPreferente('');
                         }}
                         required
-                        className="w-full p-2.5 bg-[#051833] border border-cyan-500/30 rounded-xl focus:outline-none focus:border-cyan-400 font-medium text-white"
+                        className="w-full p-2.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium text-slate-900 shadow-sm"
                       >
                         <option value="">Seleccione el municipio / distrito</option>
                         {jurMunicipioOptions.map(municipality => (
@@ -4725,13 +4732,13 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                     </div>
 
                     <div>
-                      <label className="block font-bold text-cyan-200 mb-1">Puesto Preferente de Votación</label>
+                      <label className="block font-bold text-slate-700 mb-1">Puesto Preferente de Votación</label>
                       <select
                         value={jurPuestoPreferente}
                         onChange={(e) => setJurPuestoPreferente(e.target.value)}
                         disabled={!jurMunicipio || jurPuestoOptions.length === 0}
                         required
-                        className="w-full p-2.5 bg-[#051833] border border-cyan-500/30 rounded-xl focus:outline-none focus:border-cyan-400 font-bold text-white"
+                        className="w-full p-2.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold text-slate-900 shadow-sm disabled:opacity-50"
                       >
                         <option value="">Seleccione el puesto</option>
                         {jurPuestoOptions.map((pst, idx) => (
@@ -4741,17 +4748,17 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-cyan-500/20">
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200">
                     <button
                       type="button"
                       onClick={() => setShowJuradoForm(false)}
-                      className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl cursor-pointer"
+                      className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl border border-slate-300 cursor-pointer"
                     >
                       Cancelar
                     </button>
                     <button
                       type="submit"
-                      className="px-5 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all cursor-pointer"
+                      className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer"
                     >
                       {editingJuradoId ? 'Guardar Cambios' : 'Postular a Lista de Sorteo'}
                     </button>
@@ -4764,13 +4771,13 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                 <div className="flex flex-wrap items-center gap-2 flex-1">
                   {/* Búsqueda */}
                   <div className="relative flex-1 min-w-[200px]">
-                    <Search className="w-4 h-4 text-cyan-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
                       placeholder="Buscar por candidato, cédula o puesto..."
                       value={juradoSearchQuery}
                       onChange={(e) => setJuradoSearchQuery(e.target.value)}
-                      className="w-full pl-9 pr-3 py-2 bg-[#030d1f] border border-cyan-500/30 rounded-xl text-xs font-medium text-white focus:outline-none focus:border-cyan-400 placeholder-slate-400"
+                      className="w-full pl-9 pr-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder-slate-400 shadow-sm"
                     />
                   </div>
 
@@ -4778,7 +4785,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                   <select
                     value={juradoPartidoFilter}
                     onChange={(e) => setJuradoPartidoFilter(e.target.value)}
-                    className="p-2 min-w-[160px] bg-[#030d1f] border border-cyan-500/30 rounded-xl text-xs font-bold text-cyan-200 focus:outline-none focus:border-cyan-400"
+                    className="p-2 min-w-[160px] bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500 shadow-sm"
                   >
                     <option value="Todos">Todos los Partidos</option>
                     {partidosPoliticosOpt.map((p, idx) => (
@@ -4790,7 +4797,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                   <select
                     value={juradoSorteoFilter}
                     onChange={(e) => setJuradoSorteoFilter(e.target.value)}
-                    className="p-2 min-w-[200px] bg-[#030d1f] border border-cyan-500/30 rounded-xl text-xs font-bold text-cyan-200 focus:outline-none focus:border-cyan-400"
+                    className="p-2 min-w-[200px] bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500 shadow-sm"
                   >
                     <option value="Todos">Todos los Estados de Sorteo</option>
                     <option value="Seleccionado en Resolución">Seleccionados en Resolución ✅</option>
@@ -4799,8 +4806,8 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                   </select>
                 </div>
 
-                <div className="text-xs text-cyan-200/80 font-semibold self-center">
-                  Mostrando: <strong className="text-cyan-300 font-extrabold">{
+                <div className="text-xs text-slate-500 font-semibold self-center">
+                  Mostrando: <strong className="text-slate-900 font-extrabold">{
                     jurados.filter(j => {
                       if (juradoPartidoFilter !== 'Todos' && j.partido !== juradoPartidoFilter) return false;
                       if (juradoSorteoFilter !== 'Todos' && j.estadoSorteo !== juradoSorteoFilter) return false;
@@ -4815,20 +4822,20 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
               </div>
 
               {/* Tabla Principal de Postulados y Confrontación */}
-              <div className="overflow-x-auto border border-cyan-500/30 rounded-xl">
+              <div className="overflow-x-auto border border-slate-200/80 rounded-2xl bg-white shadow-sm">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr className="bg-[#030d1f] text-cyan-300 font-bold border-b border-cyan-500/30">
-                      <th className="p-3 whitespace-nowrap">Candidato a Jurado</th>
-                      <th className="p-3 whitespace-nowrap">Partido Político</th>
-                      <th className="p-3 whitespace-nowrap">Ocupación / Profesión</th>
-                      <th className="p-3 whitespace-nowrap">Puesto Preferente</th>
-                      <th className="p-3 whitespace-nowrap">Resultado Sorteo</th>
-                      <th className="p-3 whitespace-nowrap">Asignación Órgano Electoral</th>
-                      <th className="p-3 text-right whitespace-nowrap">Acciones</th>
+                    <tr className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
+                      <th className="p-3.5 whitespace-nowrap">Candidato a Jurado</th>
+                      <th className="p-3.5 whitespace-nowrap">Partido Político</th>
+                      <th className="p-3.5 whitespace-nowrap">Ocupación / Profesión</th>
+                      <th className="p-3.5 whitespace-nowrap">Puesto Preferente</th>
+                      <th className="p-3.5 whitespace-nowrap">Resultado Sorteo</th>
+                      <th className="p-3.5 whitespace-nowrap">Asignación Órgano Electoral</th>
+                      <th className="p-3.5 text-right whitespace-nowrap">Acciones</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-cyan-500/15 font-medium bg-[#041733]">
+                  <tbody className="divide-y divide-slate-100 font-medium bg-white">
                     {jurados
                       .filter(j => {
                         if (juradoPartidoFilter !== 'Todos' && j.partido !== juradoPartidoFilter) return false;
@@ -4840,71 +4847,71 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                         return true;
                       })
                       .map((j) => (
-                        <tr key={j.id} className="hover:bg-[#051833] transition-colors">
-                          <td className="p-3">
-                            <div className="font-bold text-white">{j.nombre}</div>
-                            <div className="text-[10px] text-cyan-300 font-mono">CC: {j.cc}</div>
-                            <div className="text-[10px] text-slate-400">{j.telefono} | {j.email}</div>
+                        <tr key={j.id} className="hover:bg-slate-50/80 transition-colors">
+                          <td className="p-3.5">
+                            <div className="font-bold text-slate-900">{j.nombre}</div>
+                            <div className="text-[10px] text-blue-600 font-mono font-bold">CC: {j.cc}</div>
+                            <div className="text-[10px] text-slate-500">{j.telefono} | {j.email}</div>
                           </td>
 
-                          <td className="p-3">
-                            <span className="px-2.5 py-0.5 bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold text-[10px] rounded-md block w-fit">
+                          <td className="p-3.5">
+                            <span className="px-2.5 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 font-bold text-[10px] rounded-md block w-fit">
                               {j.partido}
                             </span>
                           </td>
 
-                          <td className="p-3 text-slate-200 font-medium">
+                          <td className="p-3.5 text-slate-700 font-medium">
                             {j.ocupacion}
                           </td>
 
-                          <td className="p-3">
-                            <div className="font-bold text-white">{j.puestoPreferente}</div>
-                            <div className="text-[10px] text-slate-400">{j.municipio}</div>
+                          <td className="p-3.5">
+                            <div className="font-bold text-slate-900">{j.puestoPreferente}</div>
+                            <div className="text-[10px] text-slate-500">{j.municipio}</div>
                           </td>
 
-                          <td className="p-3">
+                          <td className="p-3.5">
                             {j.estadoSorteo.includes('Seleccionado') ? (
-                              <span className="px-2.5 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-black text-[10px] rounded-md inline-flex items-center gap-1 shadow-sm">
-                                <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                              <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-[10px] rounded-md inline-flex items-center gap-1 shadow-sm">
+                                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                                 <span>SELECCIONADO EN RESOLUCIÓN</span>
                               </span>
                             ) : j.estadoSorteo === 'No Seleccionado' ? (
-                              <span className="px-2.5 py-0.5 bg-slate-800 text-slate-400 border border-slate-700 font-bold text-[10px] rounded-md inline-flex items-center gap-1">
+                              <span className="px-2.5 py-0.5 bg-slate-100 text-slate-600 border border-slate-200 font-medium text-[10px] rounded-md inline-flex items-center gap-1">
                                 <XCircle className="w-3 h-3 text-slate-400" />
                                 <span>NO SELECCIONADO</span>
                               </span>
                             ) : (
-                              <span className="px-2.5 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold text-[10px] rounded-md inline-flex items-center gap-1">
-                                <Clock className="w-3 h-3 text-amber-400" />
+                              <span className="px-2.5 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 font-bold text-[10px] rounded-md inline-flex items-center gap-1">
+                                <Clock className="w-3 h-3 text-amber-600" />
                                 <span>PENDIENTE SORTEO</span>
                               </span>
                             )}
                           </td>
 
-                          <td className="p-3">
+                          <td className="p-3.5">
                             {j.estadoSorteo.includes('Seleccionado') ? (
                               <div>
-                                <div className="font-extrabold text-white text-xs">{j.rolDesignado}</div>
-                                <div className="text-[10px] text-cyan-200 font-bold">{j.puestoDesignado} ({j.mesaDesignada})</div>
-                                <div className="text-[9px] text-cyan-400 font-mono mt-0.5">{j.resolucion}</div>
+                                <div className="font-extrabold text-slate-900 text-xs">{j.rolDesignado}</div>
+                                <div className="text-[10px] text-blue-700 font-bold">{j.puestoDesignado} ({j.mesaDesignada})</div>
+                                <div className="text-[9px] text-slate-500 font-mono mt-0.5">{j.resolucion}</div>
                               </div>
                             ) : (
                               <span className="text-[11px] text-slate-400 italic">Sin designación oficial</span>
                             )}
                           </td>
 
-                          <td className="p-3 text-right">
-                            <div className="flex items-center justify-end gap-1">
+                          <td className="p-3.5 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
                               <button
                                 onClick={() => handleStartEditJurado(j)}
-                                className="p-1.5 bg-[#051833] hover:bg-slate-800 text-cyan-300 border border-cyan-500/30 rounded-lg transition-colors cursor-pointer"
+                                className="p-1.5 bg-slate-50 hover:bg-slate-100 text-blue-700 border border-slate-200 rounded-lg transition-colors cursor-pointer"
                                 title="Editar información del candidato a jurado"
                               >
                                 <Edit3 className="w-3.5 h-3.5" />
                               </button>
                               <button
                                 onClick={() => handleDeleteJurado(j.id)}
-                                className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg transition-colors cursor-pointer"
+                                className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg transition-colors cursor-pointer"
                                 title="Eliminar de la lista de postulados"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />

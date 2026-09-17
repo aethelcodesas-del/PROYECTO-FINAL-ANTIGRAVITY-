@@ -825,7 +825,7 @@ export const GestionEncuestasSondeos: React.FC<GestionEncuestasSondeosProps> = (
     : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="gestion-encuestas-sondeos-view space-y-6">
       {realDataError && (
         <div className="rounded-xl border border-rose-500/40 bg-rose-950/30 px-4 py-3 text-sm text-rose-200 flex items-center justify-between gap-3">
           <span>{realDataError}</span>
@@ -933,13 +933,13 @@ export const GestionEncuestasSondeos: React.FC<GestionEncuestasSondeosProps> = (
       </div>
 
       {/* Navigation Sub-Tabs */}
-      <div className="flex items-center gap-2 border-b border-cyan-500/20 pb-2 overflow-x-auto whitespace-nowrap scrollbar-hide">
+      <div className="encuestas-subtabs-nav flex items-center gap-2 border-b border-cyan-500/20 pb-2 overflow-x-auto whitespace-nowrap scrollbar-hide">
         <button
           onClick={() => setActiveSubTab('estudios')}
           className={`flex-shrink-0 flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             activeSubTab === 'estudios'
-              ? 'bg-cyan-500 text-slate-950 shadow-md font-extrabold'
-              : 'bg-[#06182c] text-cyan-200/80 hover:text-white hover:bg-cyan-500/10 border border-cyan-500/20'
+              ? 'encuestas-subtab-active bg-cyan-500 text-slate-950 shadow-md font-extrabold'
+              : 'encuestas-subtab-inactive bg-[#06182c] text-cyan-200/80 hover:text-white hover:bg-cyan-500/10 border border-cyan-500/20'
           }`}
         >
           <BarChart3 className="w-4 h-4" />
@@ -950,8 +950,8 @@ export const GestionEncuestasSondeos: React.FC<GestionEncuestasSondeosProps> = (
           onClick={() => setActiveSubTab('encuestadores')}
           className={`flex-shrink-0 flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             activeSubTab === 'encuestadores'
-              ? 'bg-cyan-500 text-slate-950 shadow-md font-extrabold'
-              : 'bg-[#06182c] text-cyan-200/80 hover:text-white hover:bg-cyan-500/10 border border-cyan-500/20'
+              ? 'encuestas-subtab-active bg-cyan-500 text-slate-950 shadow-md font-extrabold'
+              : 'encuestas-subtab-inactive bg-[#06182c] text-cyan-200/80 hover:text-white hover:bg-cyan-500/10 border border-cyan-500/20'
           }`}
         >
           <Users className="w-4 h-4 text-emerald-400" />
@@ -962,8 +962,8 @@ export const GestionEncuestasSondeos: React.FC<GestionEncuestasSondeosProps> = (
           onClick={() => setActiveSubTab('georreferenciacion')}
           className={`flex-shrink-0 flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             activeSubTab === 'georreferenciacion'
-              ? 'bg-cyan-500 text-slate-950 shadow-md font-extrabold'
-              : 'bg-[#06182c] text-cyan-200/80 hover:text-white hover:bg-cyan-500/10 border border-cyan-500/20'
+              ? 'encuestas-subtab-active bg-cyan-500 text-slate-950 shadow-md font-extrabold'
+              : 'encuestas-subtab-inactive bg-[#06182c] text-cyan-200/80 hover:text-white hover:bg-cyan-500/10 border border-cyan-500/20'
           }`}
         >
           <MapPin className="w-4 h-4 text-amber-400" />
@@ -974,8 +974,8 @@ export const GestionEncuestasSondeos: React.FC<GestionEncuestasSondeosProps> = (
           onClick={() => setActiveSubTab('crear')}
           className={`flex-shrink-0 flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             activeSubTab === 'crear'
-              ? 'bg-cyan-500 text-slate-950 shadow-md font-extrabold'
-              : 'bg-[#06182c] text-cyan-200/80 hover:text-white hover:bg-cyan-500/10 border border-cyan-500/20'
+              ? 'encuestas-subtab-active bg-cyan-500 text-slate-950 shadow-md font-extrabold'
+              : 'encuestas-subtab-inactive bg-[#06182c] text-cyan-200/80 hover:text-white hover:bg-cyan-500/10 border border-cyan-500/20'
           }`}
         >
           <Plus className="w-4 h-4" />
@@ -986,8 +986,8 @@ export const GestionEncuestasSondeos: React.FC<GestionEncuestasSondeosProps> = (
           onClick={() => setActiveSubTab('calculadora')}
           className={`flex-shrink-0 flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             activeSubTab === 'calculadora'
-              ? 'bg-cyan-500 text-slate-950 shadow-md font-extrabold'
-              : 'bg-[#06182c] text-cyan-200/80 hover:text-white hover:bg-cyan-500/10 border border-cyan-500/20'
+              ? 'encuestas-subtab-active bg-cyan-500 text-slate-950 shadow-md font-extrabold'
+              : 'encuestas-subtab-inactive bg-[#06182c] text-cyan-200/80 hover:text-white hover:bg-cyan-500/10 border border-cyan-500/20'
           }`}
         >
           <Calculator className="w-4 h-4" />
@@ -998,8 +998,8 @@ export const GestionEncuestasSondeos: React.FC<GestionEncuestasSondeosProps> = (
           onClick={() => setActiveSubTab('resultados')}
           className={`flex-shrink-0 flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             activeSubTab === 'resultados'
-              ? 'bg-cyan-500 text-slate-950 shadow-md font-extrabold'
-              : 'bg-[#06182c] text-cyan-200/80 hover:text-white hover:bg-cyan-500/10 border border-cyan-500/20'
+              ? 'encuestas-subtab-active bg-cyan-500 text-slate-950 shadow-md font-extrabold'
+              : 'encuestas-subtab-inactive bg-[#06182c] text-cyan-200/80 hover:text-white hover:bg-cyan-500/10 border border-cyan-500/20'
           }`}
         >
           <PieChart className="w-4 h-4" />

@@ -1,3 +1,4 @@
+
 @import "tailwindcss";
 @import "leaflet/dist/leaflet.css";
 
@@ -954,7 +955,8 @@ html.color-mode-white {
   --color-primary-border: rgba(255, 255, 255, 0.5);
 }
 
-/* ==========================================================================
+/* =========================================================
+=================
    COLOR MODE SYSTEM: ESTABLISHED (DARK CYBER) VS WHITE (COMPLETE LIGHT THEME)
    ========================================================================== */
 
@@ -1165,50 +1167,96 @@ html.color-mode-white {
   stroke: #FFFFFF !important;
 }
 
-/* Sidebar User Profile Bottom Card - Executive Dark Navy Container */
+/* Sidebar User Profile Bottom Card - Premium Executive Blue Container */
+[data-color-mode="white"] aside .user-profile-card,
 [data-color-mode="white"] aside .from-slate-900\/95,
 [data-color-mode="white"] aside [class*="from-slate-900"],
-[data-color-mode="white"] aside [class*="to-[#030d1e]"] {
+[data-color-mode="white"] aside [class*="to-[#030d1e]"],
+[data-color-mode="white"] aside [class*="from-blue-700"] {
+  background-image: linear-gradient(135deg, #0A58CA 0%, #084298 50%, #063A7D 100%) !important;
+  background-color: #084298 !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  border-radius: 18px !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 8px 24px rgba(8, 66, 152, 0.28) !important;
+}
+
+[data-color-mode="white"] aside .user-profile-card .user-avatar-initials,
+[data-color-mode="white"] aside .from-slate-900\/95 .user-avatar-initials,
+[data-color-mode="white"] aside [class*="from-blue-700"] .user-avatar-initials {
   background-image: none !important;
-  background-color: #0B1F3A !important;
-  border: 1px solid #1A3353 !important;
-  border-radius: 16px !important;
+  background-color: rgba(255, 255, 255, 0.2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.35) !important;
   color: #FFFFFF !important;
-  box-shadow: 0 4px 12px rgba(11, 31, 58, 0.15) !important;
+  font-weight: 900 !important;
 }
 
-[data-color-mode="white"] aside .from-slate-900\/95 .text-slate-100 {
+[data-color-mode="white"] aside .from-slate-900\/95 .text-slate-100,
+[data-color-mode="white"] aside [class*="from-blue-700"] .text-white,
+[data-color-mode="white"] aside .user-profile-card .user-name {
   color: #FFFFFF !important;
-  font-weight: 700 !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.01em !important;
 }
 
-[data-color-mode="white"] aside .from-slate-900\/95 .text-teal-400 {
-  color: #08A9D6 !important;
+[data-color-mode="white"] aside .from-slate-900\/95 .text-teal-400,
+[data-color-mode="white"] aside [class*="from-blue-700"] .text-sky-200,
+[data-color-mode="white"] aside .user-profile-card .user-role {
+  color: #BAE6FD !important;
   font-weight: 600 !important;
 }
 
-[data-color-mode="white"] aside .from-slate-900\/95 .text-cyan-300\/70 {
-  color: #71839A !important;
+[data-color-mode="white"] aside .from-slate-900\/95 .text-cyan-300\/70,
+[data-color-mode="white"] aside [class*="from-blue-700"] .text-blue-100\/90,
+[data-color-mode="white"] aside .user-profile-card .user-territory {
+  color: #E0F2FE !important;
   font-weight: 500 !important;
 }
 
 [data-color-mode="white"] aside .from-slate-900\/95 button,
-[data-color-mode="white"] aside [class*="from-slate-900"] button[title*="Cerrar sesión"] {
-  background-color: #F8FAFD !important;
-  border: 1px solid #D9E6F2 !important;
-  border-radius: 10px !important;
-  color: #0B1F3A !important;
+[data-color-mode="white"] aside [class*="from-slate-900"] button[title*="Cerrar sesión"],
+[data-color-mode="white"] aside [class*="from-blue-700"] button[title*="Cerrar sesión"],
+[data-color-mode="white"] aside .user-profile-card button {
+  background-color: #FFFFFF !important;
+  background-image: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.8) !important;
+  border-radius: 12px !important;
+  color: #DC2626 !important;
+  font-weight: 700 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+[data-color-mode="white"] aside .from-slate-900\/95 button span,
+[data-color-mode="white"] aside [class*="from-slate-900"] button[title*="Cerrar sesión"] span,
+[data-color-mode="white"] aside [class*="from-blue-700"] button[title*="Cerrar sesión"] span,
+[data-color-mode="white"] aside .user-profile-card button span {
+  color: #DC2626 !important;
   font-weight: 700 !important;
 }
 
 [data-color-mode="white"] aside .from-slate-900\/95 button svg,
-[data-color-mode="white"] aside [class*="from-slate-900"] button[title*="Cerrar sesión"] svg {
-  color: #E5484D !important;
+[data-color-mode="white"] aside [class*="from-slate-900"] button[title*="Cerrar sesión"] svg,
+[data-color-mode="white"] aside [class*="from-blue-700"] button[title*="Cerrar sesión"] svg,
+[data-color-mode="white"] aside .user-profile-card button svg {
+  color: #DC2626 !important;
 }
 
-[data-color-mode="white"] aside .from-slate-900\/95 button:hover {
-  background-color: #FFFFFF !important;
-  box-shadow: 0 2px 6px rgba(16, 55, 90, 0.08) !important;
+[data-color-mode="white"] aside .from-slate-900\/95 button:hover,
+[data-color-mode="white"] aside [class*="from-slate-900"] button[title*="Cerrar sesión"]:hover,
+[data-color-mode="white"] aside [class*="from-blue-700"] button[title*="Cerrar sesión"]:hover,
+[data-color-mode="white"] aside .user-profile-card button:hover {
+  background-color: #F8FAFC !important;
+  color: #B91C1C !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.14) !important;
+}
+
+[data-color-mode="white"] aside .from-slate-900\/95 button:hover svg,
+[data-color-mode="white"] aside .from-slate-900\/95 button:hover span,
+[data-color-mode="white"] aside [class*="from-blue-700"] button:hover svg,
+[data-color-mode="white"] aside [class*="from-blue-700"] button:hover span,
+[data-color-mode="white"] aside .user-profile-card button:hover svg,
+[data-color-mode="white"] aside .user-profile-card button:hover span {
+  color: #B91C1C !important;
 }
 
 /* 6. Cards, Panels, Widgets & Containers in White Mode */
@@ -1243,12 +1291,16 @@ html.color-mode-white {
 [data-color-mode="white"] [class*="bg-[#05162a]"],
 [data-color-mode="white"] [class*="bg-[#051833]"],
 [data-color-mode="white"] [class*="bg-[#06172b]"],
+[data-color-mode="white"] [class*="bg-[#06182c]"],
 [data-color-mode="white"] [class*="bg-[#071426]"],
 [data-color-mode="white"] [class*="bg-[#07172e]"],
 [data-color-mode="white"] [class*="bg-[#071927]"],
 [data-color-mode="white"] [class*="bg-[#081d38]"],
 [data-color-mode="white"] [class*="bg-[#081e36]"],
 [data-color-mode="white"] [class*="bg-[#081f3d]"],
+[data-color-mode="white"] [class*="bg-[#09223f]"],
+[data-color-mode="white"] [class*="bg-[#092842]"],
+[data-color-mode="white"] [class*="bg-[#041122]"],
 [data-color-mode="white"] [class*="bg-[#0b1b36]"],
 [data-color-mode="white"] [class*="bg-[#0b1d38]"],
 [data-color-mode="white"] [class*="bg-[#0b2747]"],
@@ -1266,10 +1318,14 @@ html.color-mode-white {
 [data-color-mode="white"] .bg-\[\#030e21\],
 [data-color-mode="white"] .bg-\[\#030f24\],
 [data-color-mode="white"] .bg-\[\#051833\],
+[data-color-mode="white"] .bg-\[\#06182c\],
 [data-color-mode="white"] .bg-\[\#041021\],
 [data-color-mode="white"] .bg-\[\#030e1c\],
 [data-color-mode="white"] .bg-\[\#071426\],
 [data-color-mode="white"] .bg-\[\#041126\],
+[data-color-mode="white"] .bg-\[\#041122\],
+[data-color-mode="white"] .bg-\[\#09223f\],
+[data-color-mode="white"] .bg-\[\#092842\],
 [data-color-mode="white"] .bg-\[\#030b19\] {
   background-color: #FFFFFF !important;
   border: 1px solid #D9E6F2 !important;
@@ -3562,3 +3618,499 @@ html.color-mode-white {
   color: #33475B !important;
   border: 1px solid #CBD5E1 !important;
 }
+
+/* ==========================================================================
+   SISTEMA DE TEMA BLANCO: GESTIÓN DE ENCUESTAS Y SONDEOS & ENCUESTAS DE CAMPO
+   ========================================================================== */
+
+/* 1. Header Banner & Container Cards */
+[data-color-mode="white"] .gestion-encuestas-sondeos-view .bg-\[\#05162a\],
+[data-color-mode="white"] .gestion-encuestas-sondeos-view div[class*="bg-[#05162a]"],
+[data-color-mode="white"] .gestion-encuestas-sondeos-view .bg-\[\#030d1f\],
+[data-color-mode="white"] .gestion-encuestas-sondeos-view div[class*="bg-[#030d1f]"],
+[data-color-mode="white"] .gestion-encuestas-sondeos-view .bg-\[\#041122\],
+[data-color-mode="white"] .gestion-encuestas-sondeos-view div[class*="bg-[#041122]"],
+[data-color-mode="white"] .gestion-encuestas-sondeos-view .bg-slate-900\/60,
+[data-color-mode="white"] .gestion-encuestas-sondeos-view .bg-slate-900\/80,
+[data-color-mode="white"] .gestion-encuestas-sondeos-view .bg-slate-900 {
+  background-color: #FFFFFF !important;
+  border: 1px solid #D9E6F2 !important;
+  color: #0B1F3A !important;
+  box-shadow: 0 4px 16px rgba(16, 55, 90, 0.05) !important;
+}
+
+/* Inner Panels & Sub-Cards */
+[data-color-mode="white"] .gestion-encuestas-sondeos-view .bg-\[\#081d38\],
+[data-color-mode="white"] .gestion-encuestas-sondeos-view div[class*="bg-[#081d38]"],
+[data-color-mode="white"] .gestion-encuestas-sondeos-view .bg-\[\#041733\],
+[data-color-mode="white"] .gestion-encuestas-sondeos-view div[class*="bg-[#041733]"],
+[data-color-mode="white"] .gestion-encuestas-sondeos-view .bg-\[\#020712\],
+[data-color-mode="white"] .gestion-encuestas-sondeos-view div[class*="bg-[#020712]"],
+[data-color-mode="white"] .gestion-encuestas-sondeos-view .bg-slate-950\/60,
+[data-color-mode="white"] .gestion-encuestas-sondeos-view .bg-slate-950\/80 {
+  background-color: #F8FAFD !important;
+  border: 1px solid #E2ECF5 !important;
+  color: #0B1F3A !important;
+}
+
+/* 2. Top Global Statistics Summary (5 KPI Cards) */
+[data-color-mode="white"] .gestion-encuestas-sondeos-view .grid-cols-2.sm\:grid-cols-3.lg\:grid-cols-5 > div,
+[data-color-mode="white"] .gestion-encuestas-sondeos-view .grid-cols-2.sm\:grid-cols-3.lg\:grid-cols-5 .bg-\[\#081d38\] {
+  background-color: #F8FAFD !important;
+  border: 1px solid #D9E6F2 !important;
+  box-shadow: 0 2px 8px rgba(16, 55, 90, 0.04) !important;
+}
+
+[data-color-mode="white"] .gestion-encuestas-sondeos-view .grid-cols-2.sm\:grid-cols-3.lg\:grid-cols-5 span[class*="text-cyan-300"],
+[data-color-mode="white"] .gestion-encuestas-sondeos-view .grid-cols-2.sm\:grid-cols-3.lg\:grid-cols-5 span.text-cyan-300\/80 {
+  color: #486581 !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.04em !important;
+}
+
+[data-color-mode="white"] .gestion-encuestas-sondeos-view .grid-cols-2.sm\:grid-cols-3.lg\:grid-cols-5 .text-white {
+  color: #0B1F3A !important;
+  font-weight: 900 !important;
+}
+
+[data-color-mode="white"] .gestion-encuestas-sondeos-view .grid-cols-2.sm\:grid-cols-3.lg\:grid-cols-5 .text-cyan-300 {
+  color: #0878D1 !important;
+  font-weight: 900 !important;
+}
+
+[data-color-mode="white"] .gestion-encuestas-sondeos-view .grid-cols-2.sm\:grid-cols-3.lg\:grid-cols-5 .bg-emerald-500\/10 {
+  background-color: #ECFDF5 !important;
+  color: #047857 !important;
+  border: 1px solid #A7F3D0 !important;
+  font-weight: 700 !important;
+}
+
+[data-color-mode="white"] .gestion-encuestas-sondeos-view .grid-cols-2.sm\:grid-cols-3.lg\:grid-cols-5 .text-slate-400 {
+  color: #627D98 !important;
+  font-weight: 600 !important;
+}
+
+/* 3. Titles & Typography */
+[data-color-mode="white"] .gestion-encuestas-sondeos-view h2,
+[data-color-mode="white"] .gestion-encuestas-sondeos-view h3,
+[data-color-mode="white"] .gestion-encuestas-sondeos-view h4,
+[data-color-mode="white"] .gestion-encuestas-sondeos-view .text-white {
+  color: #0B1F3A !important;
+}
+
+[data-color-mode="white"] .gestion-encuestas-sondeos-view p,
+[data-color-mode="white"] .gestion-encuestas-sondeos-view .text-slate-400,
+[data-color-mode="white"] .gestion-encuestas-sondeos-view .text-slate-300 {
+  color: #52657A !important;
+}
+
+[data-color-mode="white"] .gestion-encuestas-sondeos-view .text-cyan-400,
+[data-color-mode="white"] .gestion-encuestas-sondeos-view .text-cyan-300,
+[data-color-mode="white"] .gestion-encuestas-sondeos-view .text-cyan-200 {
+  color: #0878D1 !important;
+}
+
+[data-color-mode="white"] .gestion-encuestas-sondeos-view .text-emerald-400,
+[data-color-mode="white"] .gestion-encuestas-sondeos-view .text-emerald-300 {
+  color: #047857 !important;
+}
+
+[data-color-mode="white"] .gestion-encuestas-sondeos-view .text-amber-400,
+[data-color-mode="white"] .gestion-encuestas-sondeos-view .text-amber-300 {
+  color: #B45309 !important;
+}
+
+/* 4. Action Buttons in Top Banner */
+[data-color-mode="white"] .gestion-encuestas-sondeos-view button.bg-emerald-500,
+[data-color-mode="white"] .gestion-encuestas-sondeos-view button[class*="bg-emerald-500"] {
+  background: linear-gradient(135deg, #0A58CA 0%, #084298 100%) !important;
+  color: #FFFFFF !important;
+  border: 1px solid #063A7D !important;
+  box-shadow: 0 4px 12px rgba(10, 88, 202, 0.25) !important;
+  font-weight: 800 !important;
+}
+
+[data-color-mode="white"] .gestion-encuestas-sondeos-view button.bg-emerald-500 *,
+[data-color-mode="white"] .gestion-encuestas-sondeos-view button[class*="bg-emerald-500"] * {
+  color: #FFFFFF !important;
+}
+
+[data-color-mode="white"] .gestion-encuestas-sondeos-view button.bg-emerald-500:hover,
+[data-color-mode="white"] .gestion-encuestas-sondeos-view button[class*="bg-emerald-500"]:hover {
+  background: linear-gradient(135deg, #084298 0%, #063A7D 100%) !important;
+}
+
+[data-color-mode="white"] .gestion-encuestas-sondeos-view button.bg-\[\#0a2342\],
+[data-color-mode="white"] .gestion-encuestas-sondeos-view button[class*="bg-[#0a2342]"] {
+  background-color: #FFFFFF !important;
+  border: 1px solid #CBD5E1 !important;
+  color: #0878D1 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+  font-weight: 700 !important;
+}
+
+[data-color-mode="white"] .gestion-encuestas-sondeos-view button.bg-\[\#0a2342\]:hover,
+[data-color-mode="white"] .gestion-encuestas-sondeos-view button[class*="bg-[#0a2342]"]:hover {
+  background-color: #EEF6FF !important;
+  border-color: #9CCEF5 !important;
+  color: #0A58CA !important;
+}
+
+[data-color-mode="white"] .gestion-encuestas-sondeos-view button.bg-\[\#0a2342\] svg,
+[data-color-mode="white"] .gestion-encuestas-sondeos-view button[class*="bg-[#0a2342]"] svg {
+  color: #0878D1 !important;
+}
+
+/* 5. Sub-Tab Navigation Bar */
+[data-color-mode="white"] .encuestas-subtabs-nav,
+[data-color-mode="white"] .gestion-encuestas-sondeos-view div.border-b {
+  border-color: #D9E6F2 !important;
+}
+
+/* Subtab Active Button */
+[data-color-mode="white"] .encuestas-subtab-active,
+[data-color-mode="white"] .gestion-encuestas-sondeos-view .encuestas-subtab-active {
+  background: linear-gradient(135deg, #0A58CA 0%, #084298 100%) !important;
+  background-color: #084298 !important;
+  color: #FFFFFF !important;
+  border: 1px solid #063A7D !important;
+  box-shadow: 0 4px 14px rgba(10, 88, 202, 0.28) !important;
+  font-weight: 800 !important;
+}
+
+[data-color-mode="white"] .encuestas-subtab-active *,
+[data-color-mode="white"] .gestion-encuestas-sondeos-view .encuestas-subtab-active * {
+  color: #FFFFFF !important;
+  stroke: #FFFFFF !important;
+}
+
+/* Subtab Inactive Buttons */
+[data-color-mode="white"] .encuestas-subtab-inactive,
+[data-color-mode="white"] .gestion-encuestas-sondeos-view .encuestas-subtab-inactive {
+  background-color: #FFFFFF !important;
+  background-image: none !important;
+  background: #FFFFFF !important;
+  color: #28445F !important;
+  border: 1px solid #D9E6F2 !important;
+  box-shadow: 0 1px 3px rgba(16, 55, 90, 0.04) !important;
+  font-weight: 700 !important;
+  transition: all 180ms ease !important;
+}
+
+[data-color-mode="white"] .encuestas-subtab-inactive:hover,
+[data-color-mode="white"] .gestion-encuestas-sondeos-view .encuestas-subtab-inactive:hover {
+  background-color: #EEF6FF !important;
+  background-image: none !important;
+  background: #EEF6FF !important;
+  border-color: #9CCEF5 !important;
+  color: #0878D1 !important;
+}
+
+[data-color-mode="white"] .encuestas-subtab-inactive span,
+[data-color-mode="white"] .gestion-encuestas-sondeos-view .encuestas-subtab-inactive span {
+  color: #28445F !important;
+}
+
+[data-color-mode="white"] .encuestas-subtab-inactive:hover span,
+[data-color-mode="white"] .gestion-encuestas-sondeos-view .encuestas-subtab-inactive:hover span {
+  color: #0878D1 !important;
+}
+
+[data-color-mode="white"] .encuestas-subtab-inactive svg,
+[data-color-mode="white"] .gestion-encuestas-sondeos-view .encuestas-subtab-inactive svg {
+  color: #0878D1 !important;
+}
+
+/* 6. Filter & Search Bar */
+[data-color-mode="white"] .gestion-encuestas-sondeos-view button[class*="from-purple-600"] {
+  background: linear-gradient(135deg, #F3E8FF 0%, #EDE9FE 100%) !important;
+  border: 1px solid #C4B5FD !important;
+  color: #6B21A8 !important;
+  font-weight: 700 !important;
+  box-shadow: 0 2px 6px rgba(107, 33, 168, 0.1) !important;
+}
+
+[data-color-mode="white"] .gestion-encuestas-sondeos-view button[class*="from-purple-600"] * {
+  color: #6B21A8 !important;
+}
+
+[data-color-mode="white"] .gestion-encuestas-sondeos-view button[class*="from-purple-600"] svg {
+  color: #7C3AED !important;
+}
+
+[data-color-mode="white"] .gestion-encuestas-sondeos-view .relative input {
+  background-color: #F8FAFD !important;
+  border: 1px solid #CBD5E1 !important;
+  color: #0B1F3A !important;
+}
+
+[data-color-mode="white"] .gestion-encuestas-sondeos-view .relative input::placeholder {
+  color: #94A3B8 !important;
+}
+
+[data-color-mode="white"] .gestion-encuestas-sondeos-view .relative svg {
+  color: #0878D1 !important;
+}
+
+/* 7. Study Cards & Pollster Cards in Listings */
+[data-color-mode="white"] .gestion-encuestas-sondeos-view .grid > div.bg-\[\#05162a\],
+[data-color-mode="white"] .gestion-encuestas-sondeos-view .grid > div[class*="bg-[#05162a]"] {
+  background-color: #FFFFFF !important;
+  border: 1px solid #D9E6F2 !important;
+  color: #0B1F3A !important;
+  box-shadow: 0 4px 16px rgba(16, 55, 90, 0.05) !important;
+}
+
+[data-color-mode="white"] .gestion-encuestas-sondeos-view span[class*="bg-cyan-500\/20"] {
+  background-color: #EAF5FF !important;
+  border: 1px solid #B9DCF8 !important;
+  color: #0878D1 !important;
+  font-weight: 700 !important;
+}
+
+[data-color-mode="white"] .gestion-encuestas-sondeos-view span[class*="bg-blue-500\/20"] {
+  background-color: #F0F4F8 !important;
+  color: #334E68 !important;
+  font-weight: 700 !important;
+}
+
+[data-color-mode="white"] .gestion-encuestas-sondeos-view .bg-slate-800 {
+  background-color: #E2E8F0 !important;
+}
+
+[data-color-mode="white"] .gestion-encuestas-sondeos-view button.bg-slate-800 {
+  background-color: #F1F5F9 !important;
+  color: #28445F !important;
+  border: 1px solid #CBD5E1 !important;
+  font-weight: 700 !important;
+}
+
+[data-color-mode="white"] .gestion-encuestas-sondeos-view button.bg-slate-800:hover {
+  background-color: #E2E8F0 !important;
+  color: #0B1F3A !important;
+}
+
+[data-color-mode="white"] .gestion-encuestas-sondeos-view button.bg-cyan-500\/20 {
+  background-color: #EAF5FF !important;
+  color: #0878D1 !important;
+  border: 1px solid #9CCEF5 !important;
+  font-weight: 700 !important;
+}
+
+[data-color-mode="white"] .gestion-encuestas-sondeos-view button.bg-cyan-500\/20:hover {
+  background-color: #D9EDFE !important;
+  color: #0A58CA !important;
+}
+
+[data-color-mode="white"] .gestion-encuestas-sondeos-view button.bg-rose-500\/20 {
+  background-color: #FEF2F2 !important;
+  color: #DC2626 !important;
+  border: 1px solid #FECACA !important;
+}
+
+[data-color-mode="white"] .gestion-encuestas-sondeos-view button.bg-emerald-500\/20 {
+  background-color: #ECFDF5 !important;
+  color: #047857 !important;
+  border: 1px solid #A7F3D0 !important;
+  font-weight: 700 !important;
+}
+
+/* 8. GPS Map & Telemetry Controls */
+[data-color-mode="white"] .gestion-encuestas-sondeos-view .md\:col-span-8.bg-\[\#041122\] {
+  background-color: #FFFFFF !important;
+  border: 1px solid #D9E6F2 !important;
+  box-shadow: 0 4px 16px rgba(16, 55, 90, 0.06) !important;
+}
+
+[data-color-mode="white"] .gestion-encuestas-sondeos-view .bg-\[\#05162a\]\/95 {
+  background-color: #FFFFFF !important;
+  border: 1px solid #D9E6F2 !important;
+  color: #0B1F3A !important;
+}
+
+/* 9. Inputs, Selects & Form Fields */
+[data-color-mode="white"] .gestion-encuestas-sondeos-view input,
+[data-color-mode="white"] .gestion-encuestas-sondeos-view select,
+[data-color-mode="white"] .gestion-encuestas-sondeos-view textarea {
+  background-color: #FFFFFF !important;
+  border: 1px solid #CBD5E1 !important;
+  color: #0B1F3A !important;
+}
+
+[data-color-mode="white"] .gestion-encuestas-sondeos-view input::placeholder,
+[data-color-mode="white"] .gestion-encuestas-sondeos-view textarea::placeholder {
+  color: #94A3B8 !important;
+}
+
+[data-color-mode="white"] .gestion-encuestas-sondeos-view select option {
+  background-color: #FFFFFF !important;
+  color: #0B1F3A !important;
+}
+
+/* 10. Modals in Gestión de Encuestas */
+[data-color-mode="white"] .gestion-encuestas-sondeos-view div.fixed.inset-0 {
+  background-color: rgba(11, 31, 58, 0.45) !important;
+  backdrop-filter: blur(6px) !important;
+}
+
+[data-color-mode="white"] .gestion-encuestas-sondeos-view div.fixed.inset-0 > div,
+[data-color-mode="white"] .gestion-encuestas-sondeos-view div.fixed.inset-0 .bg-\[\#05162a\] {
+  background-color: #FFFFFF !important;
+  border: 1px solid #D9E6F2 !important;
+  color: #0B1F3A !important;
+  box-shadow: 0 24px 60px rgba(11, 31, 58, 0.2) !important;
+}
+
+/* 11. EncuestasView (Encuestas de Campo) White Theme */
+[data-color-mode="white"] .encuestas-campo-view {
+  background-color: #F6F9FC !important;
+  color: #0B1F3A !important;
+}
+
+[data-color-mode="white"] .encuestas-campo-view .bg-\[\#05162a\],
+[data-color-mode="white"] .encuestas-campo-view .bg-\[\#030d1f\],
+[data-color-mode="white"] .encuestas-campo-view .bg-slate-900,
+[data-color-mode="white"] .encuestas-campo-view .bg-slate-900\/60,
+[data-color-mode="white"] .encuestas-campo-view form {
+  background-color: #FFFFFF !important;
+  border: 1px solid #D9E6F2 !important;
+  color: #0B1F3A !important;
+  box-shadow: 0 4px 14px rgba(16, 55, 90, 0.05) !important;
+}
+
+[data-color-mode="white"] .encuestas-campo-view .bg-\[\#041733\],
+[data-color-mode="white"] .encuestas-campo-view div[class*="bg-[#041733]"] {
+  background-color: #F8FAFD !important;
+  border: 1px solid #E2ECF5 !important;
+  color: #0B1F3A !important;
+}
+
+[data-color-mode="white"] .encuestas-campo-view input,
+[data-color-mode="white"] .encuestas-campo-view select,
+[data-color-mode="white"] .encuestas-campo-view textarea {
+  background-color: #FFFFFF !important;
+  border: 1px solid #CBD5E1 !important;
+  color: #0B1F3A !important;
+}
+
+[data-color-mode="white"] .encuestas-campo-view input::placeholder {
+  color: #94A3B8 !important;
+}
+
+[data-color-mode="white"] .encuestas-campo-view select option {
+  background-color: #FFFFFF !important;
+  color: #0B1F3A !important;
+}
+
+/* ==========================================================================
+   SIDEBAR USER PROFILE CARD - DUAL THEME (DARK CYBER & WHITE EXECUTIVE)
+   ========================================================================== */
+
+/* 1. Default Theme (Dark Cyber / Color Establecido) */
+aside .user-profile-card {
+  background: linear-gradient(135deg, #072B54 0%, #0B1F3A 50%, #051329 100%) !important;
+  border: 1px solid rgba(6, 182, 212, 0.35) !important;
+  box-shadow: 0 4px 16px rgba(3, 11, 25, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+  border-radius: 16px !important;
+}
+
+aside .user-profile-card .user-avatar-initials {
+  background-color: rgba(6, 182, 212, 0.2) !important;
+  border: 1px solid rgba(6, 182, 212, 0.45) !important;
+  color: #67E8F9 !important;
+  font-weight: 900 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
+}
+
+aside .user-profile-card .user-name {
+  color: #FFFFFF !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.03em !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7) !important;
+}
+
+aside .user-profile-card .user-role {
+  color: #38BDF8 !important;
+  font-weight: 600 !important;
+}
+
+aside .user-profile-card .user-territory {
+  color: #94A3B8 !important;
+  font-weight: 500 !important;
+}
+
+aside .user-profile-card .user-logout-btn {
+  background-color: rgba(244, 63, 94, 0.12) !important;
+  border: 1px solid rgba(244, 63, 94, 0.3) !important;
+  color: #FDA4AF !important;
+  font-weight: 700 !important;
+}
+
+aside .user-profile-card .user-logout-btn svg {
+  color: #FB7185 !important;
+}
+
+aside .user-profile-card .user-logout-btn:hover {
+  background-color: rgba(244, 63, 94, 0.25) !important;
+  border-color: rgba(244, 63, 94, 0.5) !important;
+  color: #FFFFFF !important;
+}
+
+aside .user-profile-card .user-logout-btn:hover svg {
+  color: #FFFFFF !important;
+}
+
+/* 2. White Theme (Blanco / Executive Mode) */
+[data-color-mode="white"] aside .user-profile-card {
+  background-image: linear-gradient(135deg, #0A58CA 0%, #084298 50%, #063A7D 100%) !important;
+  background-color: #084298 !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 8px 24px rgba(8, 66, 152, 0.25) !important;
+}
+
+[data-color-mode="white"] aside .user-profile-card .user-avatar-initials {
+  background-color: rgba(255, 255, 255, 0.22) !important;
+  border: 1px solid rgba(255, 255, 255, 0.35) !important;
+  color: #FFFFFF !important;
+  font-weight: 900 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4) !important;
+}
+
+[data-color-mode="white"] aside .user-profile-card .user-name {
+  color: #FFFFFF !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.03em !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5) !important;
+}
+
+[data-color-mode="white"] aside .user-profile-card .user-role {
+  color: #BAE6FD !important;
+  font-weight: 600 !important;
+}
+
+[data-color-mode="white"] aside .user-profile-card .user-territory {
+  color: #E0F2FE !important;
+  font-weight: 500 !important;
+}
+
+[data-color-mode="white"] aside .user-profile-card .user-logout-btn {
+  background-color: #FFFFFF !important;
+  background-image: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.8) !important;
+  color: #DC2626 !important;
+  font-weight: 700 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+[data-color-mode="white"] aside .user-profile-card .user-logout-btn svg {
+  color: #DC2626 !important;
+}
+
+[data-color-mode="white"] aside .user-profile-card .user-logout-btn:hover {
+  background-color: #F8FAFC !important;
+  color: #B91C1C !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.14) !important;
+}
+
+

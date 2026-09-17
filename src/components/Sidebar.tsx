@@ -375,8 +375,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       </div>
 
-      {/* User Profile Footer Card - Professional Executive UI */}
-      <div className="shrink-0 mx-2.5 mt-2.5 mb-[max(0.625rem,env(safe-area-inset-bottom))] p-3 rounded-2xl bg-gradient-to-b from-slate-900/95 to-[#030d1e] border border-slate-700/90 shadow-lg shadow-black/40">
+      {/* User Profile Footer Card - Dual Theme Responsive */}
+      <div className="user-profile-card shrink-0 mx-2.5 mt-2.5 mb-[max(0.625rem,env(safe-area-inset-bottom))] p-3.5 rounded-2xl transition-all">
         <div className="flex items-start gap-3">
           <div className="flex items-center gap-3 min-w-0 flex-1">
             {/* Avatar with Status Indicator */}
@@ -385,42 +385,46 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <img
                   src={authUser.avatar}
                   alt={userDisplayName}
-                  className="w-9 h-9 rounded-xl border border-emerald-500/40 object-cover shadow-sm"
+                  className="w-10 h-10 rounded-xl border border-white/30 object-cover shadow-sm"
                 />
               ) : authUser?.role === 'candidato' && candidatePhoto ? (
                 <img
                   src={candidatePhoto}
                   alt={userDisplayName}
-                  className="w-9 h-9 rounded-xl border border-emerald-500/40 object-cover shadow-sm"
+                  className="w-10 h-10 rounded-xl border border-white/30 object-cover shadow-sm"
                 />
               ) : (
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-900/90 via-teal-900/80 to-slate-900 border border-cyan-500/30 text-cyan-200 flex items-center justify-center font-bold text-xs shadow-inner">
+                <div 
+                  className="user-avatar-initials w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs shadow-inner"
+                >
                   {getInitials(userDisplayName)}
                 </div>
               )}
               {/* Online pulse dot */}
               <span className="absolute -bottom-0.5 -right-0.5 flex h-2.5 w-2.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 border-2 border-[#020b17]"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400 border-2 border-[#051329]"></span>
               </span>
             </div>
 
             {/* Name & Role */}
             <div className="text-left min-w-0 flex-1">
               <div
-                className="font-semibold text-slate-100 text-xs leading-4 tracking-tight break-words line-clamp-2"
+                className="user-name font-black text-xs sm:text-[13px] leading-4 tracking-wider break-words line-clamp-2 uppercase drop-shadow-md"
                 title={userDisplayName}
               >
                 {userDisplayName}
               </div>
               <div 
-                className="text-[11px] text-teal-400 font-normal truncate mt-0.5"
+                className="user-role text-[11px] font-semibold truncate mt-0.5"
                 title={userRoleDisplay}
               >
                 {userRoleDisplay}
               </div>
               {campaignTerritory && (
-                <div className="text-[10px] text-cyan-300/70 font-semibold truncate mt-0.5 flex items-center gap-1">
+                <div 
+                  className="user-territory text-[10px] font-medium truncate mt-0.5 flex items-center gap-1"
+                >
                   <span>📍</span>
                   <span className="truncate">{campaignTerritory}</span>
                 </div>
@@ -435,7 +439,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onClick={onLogout}
             title="Cerrar sesión"
             aria-label="Cerrar sesión"
-            className="mt-3 w-full min-h-10 px-3 py-2 rounded-xl text-rose-200 bg-rose-500/10 hover:bg-rose-500/20 active:bg-rose-500/25 border border-rose-500/30 transition-all cursor-pointer flex items-center justify-center gap-2 text-xs font-bold shadow-sm"
+            className="user-logout-btn mt-3 w-full min-h-10 px-3 py-2 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 text-xs font-bold"
           >
             <LogOut className="w-4 h-4 shrink-0" />
             <span>Cerrar sesión</span>
