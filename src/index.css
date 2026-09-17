@@ -1458,11 +1458,29 @@ html.color-mode-white {
 }
 
 /* 9. User Assignment List Rows & Controls */
+[data-color-mode="white"] .space-y-2 > .hidden.sm\:grid {
+  background-color: #F3F7FB !important;
+  color: #28445F !important;
+  border-bottom: 1px solid #D9E6F2 !important;
+  border-radius: 10px !important;
+  font-weight: 700 !important;
+}
+
+[data-color-mode="white"] .space-y-2 > .hidden.sm\:grid > div {
+  color: #28445F !important;
+  font-weight: 700 !important;
+}
+
 [data-color-mode="white"] .space-y-2 > .rounded-xl.border {
   background-color: #FFFFFF !important;
   border: 1px solid #D9E6F2 !important;
   border-radius: 14px !important;
   box-shadow: 0 2px 8px rgba(16, 55, 90, 0.04) !important;
+}
+
+[data-color-mode="white"] .space-y-2 > .rounded-xl.border:hover {
+  background-color: #F8FBFF !important;
+  border-color: #9CCEF5 !important;
 }
 
 [data-color-mode="white"] .space-y-2 > .rounded-xl.border .text-slate-100 {
