@@ -294,28 +294,50 @@ export const GestionTerritorial: React.FC<GestionTerritorialProps> = ({
       data-module="gestion_territorial"
       data-color-mode={isWhiteMode ? 'white' : 'established'}
     >
-      {/* Module Header with Logo, Title & Color Mode Toggle */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-cyan-500/20">
+      {/* Module Header with Logo, Title, SubTab Switcher & Color Mode Toggle */}
+      <div className="gestion-territorial-header flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-cyan-500/20">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-950 to-slate-900 border border-emerald-500/40 text-emerald-400 flex items-center justify-center shrink-0 shadow-md shadow-emerald-950/40">
+          <div className="gestion-territorial-icon-box w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-950 to-slate-900 border border-emerald-500/40 text-emerald-400 flex items-center justify-center shrink-0 shadow-md shadow-emerald-950/40">
             <MapPin className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="font-extrabold text-lg sm:text-xl text-white tracking-tight">
+              <h2 className="gestion-territorial-title font-extrabold text-lg sm:text-xl text-white tracking-tight">
                 Gestión Territorial & Censo
               </h2>
-              <span className="text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/40">
+              <span className="gestion-territorial-badge text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/40">
                 Módulo 3
               </span>
             </div>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="gestion-territorial-subtitle text-xs text-slate-400 mt-0.5">
               Despliegue en territorio, líderes, mapa de calor y testigos electorales
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex flex-wrap items-center gap-3 shrink-0">
+          <div className="gestion-territorial-subtabs flex items-center gap-1.5 bg-slate-900/90 p-1 rounded-xl border border-slate-800">
+            <button
+              onClick={() => handleSubTabSelect('registro')}
+              className={`gestion-territorial-subtab-btn px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                activeSubTab === 'registro'
+                  ? 'gestion-territorial-subtab-active bg-gradient-to-r from-teal-600 to-emerald-600 text-white shadow'
+                  : 'gestion-territorial-subtab-inactive text-slate-400 hover:text-white'
+              }`}
+            >
+              Registro de Votantes
+            </button>
+            <button
+              onClick={() => handleSubTabSelect('mapa')}
+              className={`gestion-territorial-subtab-btn px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                activeSubTab === 'mapa'
+                  ? 'gestion-territorial-subtab-active bg-gradient-to-r from-teal-600 to-emerald-600 text-white shadow'
+                  : 'gestion-territorial-subtab-inactive text-slate-400 hover:text-white'
+              }`}
+            >
+              Mapa & Cobertura
+            </button>
+          </div>
           <ColorModeToggle moduleId="gestion_territorial" />
         </div>
       </div>
@@ -330,11 +352,11 @@ export const GestionTerritorial: React.FC<GestionTerritorialProps> = ({
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         
         {/* LEFT SIDEBAR: Stats & Indicators (Navy Cards) */}
-        <div className="functional-grid lg:col-span-4 space-y-4">
+        <div className="functional-grid gestion-territorial-sidebar lg:col-span-4 space-y-4">
           
           {/* Card 1: Líderes y Votantes */}
-          <div className="functional-card bg-[#0b1b36] text-white rounded-2xl p-4 border border-slate-800 shadow-lg space-y-3">
-            <h3 className="text-sm font-bold tracking-wide text-white border-b border-slate-700/60 pb-2 flex items-center justify-between">
+          <div className="functional-card gestion-territorial-kpi-card bg-[#0b1b36] text-white rounded-2xl p-4 border border-slate-800 shadow-lg space-y-3">
+            <h3 className="gestion-territorial-kpi-title text-sm font-bold tracking-wide text-white border-b border-slate-700/60 pb-2 flex items-center justify-between">
               <span>Líderes y Votantes</span>
               <Users className="w-4 h-4 text-teal-400" />
             </h3>
@@ -362,8 +384,8 @@ export const GestionTerritorial: React.FC<GestionTerritorialProps> = ({
           </div>
 
           {/* Card 2: Operación Electoral */}
-          <div className="functional-card bg-[#0b1b36] text-white rounded-2xl p-4 border border-slate-800 shadow-lg space-y-3">
-            <h3 className="text-sm font-bold tracking-wide text-white border-b border-slate-700/60 pb-2">
+          <div className="functional-card gestion-territorial-kpi-card bg-[#0b1b36] text-white rounded-2xl p-4 border border-slate-800 shadow-lg space-y-3">
+            <h3 className="gestion-territorial-kpi-title text-sm font-bold tracking-wide text-white border-b border-slate-700/60 pb-2">
               Operación Electoral
             </h3>
 
@@ -406,8 +428,8 @@ export const GestionTerritorial: React.FC<GestionTerritorialProps> = ({
           </div>
 
           {/* Card 3: Investigación Electoral */}
-          <div className="functional-card bg-[#0b1b36] text-white rounded-2xl p-4 border border-slate-800 shadow-lg space-y-3">
-            <h3 className="text-sm font-bold tracking-wide text-white border-b border-slate-700/60 pb-2">
+          <div className="functional-card gestion-territorial-kpi-card bg-[#0b1b36] text-white rounded-2xl p-4 border border-slate-800 shadow-lg space-y-3">
+            <h3 className="gestion-territorial-kpi-title text-sm font-bold tracking-wide text-white border-b border-slate-700/60 pb-2">
               Investigación Electoral
             </h3>
 
@@ -426,7 +448,7 @@ export const GestionTerritorial: React.FC<GestionTerritorialProps> = ({
             {/* Avance Semanal mini chart */}
             <div>
               <p className="text-[10px] text-slate-400 font-semibold mb-1">Avance Semanal</p>
-              <div className="h-10 flex items-end justify-between gap-1 bg-slate-900/80 p-1.5 rounded-lg border border-slate-700/50">
+              <div className="gestion-territorial-bar-chart h-10 flex items-end justify-between gap-1 bg-slate-900/80 p-1.5 rounded-lg border border-slate-700/50">
                 {[0, 0, 0, 0, 0, realStats.completedSurveys ? 100 : 0].map((h, i) => (
                   <div
                     key={i}
@@ -441,7 +463,7 @@ export const GestionTerritorial: React.FC<GestionTerritorialProps> = ({
           {/* Floating Green Button matching Image 4 bottom left */}
           <button
             onClick={onOpenFieldRegistrationModal}
-            className="w-full bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-black px-4 py-3 rounded-2xl shadow-xl shadow-emerald-500/20 flex items-center justify-between transition-all cursor-pointer"
+            className="gestion-territorial-btn-field-reg w-full bg-emerald-400 hover:bg-emerald-300 text-slate-950 font-black px-4 py-3 rounded-2xl shadow-xl shadow-emerald-500/20 flex items-center justify-between transition-all cursor-pointer"
           >
             <div className="flex items-center gap-2">
               <Plus className="w-5 h-5" />
@@ -453,17 +475,17 @@ export const GestionTerritorial: React.FC<GestionTerritorialProps> = ({
         </div>
 
         {/* RIGHT MAIN AREA: Interactive Heatmap Stage */}
-        <div className="lg:col-span-8 bg-[#030d1d] rounded-3xl border border-cyan-500/20 p-4 shadow-xl relative flex flex-col justify-between min-h-[520px] overflow-hidden">
+        <div className="gestion-territorial-map-card lg:col-span-8 bg-[#030d1d] rounded-3xl border border-cyan-500/20 p-4 shadow-xl relative flex flex-col justify-between min-h-[520px] overflow-hidden">
           
           {/* Map Title Overlay */}
-          <div className="flex items-center justify-between pb-3 border-b border-slate-800 z-10">
+          <div className="gestion-territorial-map-header flex items-center justify-between pb-3 border-b border-slate-800 z-10">
             <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
               <Globe className="w-4 h-4 text-teal-400" />
               Mapa de Calor de Intención de Voto - Cobertura Territorial
             </h3>
           </div>
 
-          <div className="relative flex-1 my-3 min-h-[420px] rounded-2xl border border-slate-800 overflow-hidden shadow-inner">
+          <div className="gestion-territorial-map-box relative flex-1 my-3 min-h-[420px] rounded-2xl border border-slate-800 overflow-hidden shadow-inner">
             <MapContainer
               center={[4.5709, -74.2973]}
               zoom={5}
@@ -498,7 +520,7 @@ export const GestionTerritorial: React.FC<GestionTerritorialProps> = ({
 
           {/* Selected Zone Quick Detail Bar */}
           {selectedZone && (
-            <div className="bg-slate-900 text-white rounded-2xl p-3.5 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-md z-10">
+            <div className="gestion-territorial-selected-zone-bar bg-slate-900 text-white rounded-2xl p-3.5 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-md z-10">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-xl bg-teal-500/20 border border-teal-400/40 flex items-center justify-center text-teal-300">
                   <MapPin className="w-5 h-5" />
@@ -524,8 +546,8 @@ export const GestionTerritorial: React.FC<GestionTerritorialProps> = ({
       </div>
 
       {/* Sectores derived from real campaign records */}
-      <div className="bg-[#0b1b36] border border-slate-800/90 text-white rounded-3xl p-5 md:p-6 shadow-xl space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+      <div className="gestion-territorial-sectors-card bg-[#0b1b36] border border-slate-800/90 text-white rounded-3xl p-5 md:p-6 shadow-xl space-y-5">
+        <div className="gestion-territorial-sectors-header flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
           <div>
             <h3 className="text-base font-black text-white tracking-tight flex items-center gap-2">
               <Target className="w-5 h-5 text-teal-400" />
@@ -548,7 +570,7 @@ export const GestionTerritorial: React.FC<GestionTerritorialProps> = ({
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.25, delay: idx * 0.04 }}
-                className={`bg-[#051325] border ${
+                className={`gestion-territorial-sector-card bg-[#051325] border ${
                   isSelected ? 'border-teal-500/70 ring-1 ring-teal-500/30' : 'border-slate-800 hover:border-slate-700'
                 } rounded-2xl p-4 flex flex-col justify-between space-y-4 transition-all shadow-md group`}
               >
@@ -566,7 +588,7 @@ export const GestionTerritorial: React.FC<GestionTerritorialProps> = ({
                 </div>
 
                 {/* Progress Bar Meta de Votos */}
-                <div className="bg-[#081b33] border border-slate-800/80 p-3 rounded-xl space-y-2">
+                <div className="gestion-territorial-meta-box bg-[#081b33] border border-slate-800/80 p-3 rounded-xl space-y-2">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-slate-300 font-semibold flex items-center gap-1">
                       <Target className="w-3.5 h-3.5 text-amber-400" /> Meta de Votos:
@@ -599,7 +621,7 @@ export const GestionTerritorial: React.FC<GestionTerritorialProps> = ({
 
                 {/* Métricas secundarias */}
                 <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div className="bg-[#08192e] p-2.5 rounded-xl border border-slate-800/80 flex items-center gap-2">
+                  <div className="gestion-territorial-mini-stat bg-[#08192e] p-2.5 rounded-xl border border-slate-800/80 flex items-center gap-2">
                     <Users className="w-4 h-4 text-sky-400 shrink-0" />
                     <div>
                       <p className="text-[10px] text-slate-400">Líderes</p>
@@ -607,7 +629,7 @@ export const GestionTerritorial: React.FC<GestionTerritorialProps> = ({
                     </div>
                   </div>
 
-                  <div className="bg-[#08192e] p-2.5 rounded-xl border border-slate-800/80 flex items-center gap-2">
+                  <div className="gestion-territorial-mini-stat bg-[#08192e] p-2.5 rounded-xl border border-slate-800/80 flex items-center gap-2">
                     <Award className="w-4 h-4 text-emerald-400 shrink-0" />
                     <div>
                       <p className="text-[10px] text-slate-400">Cobertura</p>
@@ -622,7 +644,7 @@ export const GestionTerritorial: React.FC<GestionTerritorialProps> = ({
                   whileHover={{ scale: 1.01 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => setSelectedZone(sector)}
-                  className={`w-full py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                  className={`gestion-territorial-sector-btn w-full py-2 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
                     isSelected
                       ? 'bg-teal-500/20 text-teal-300 border-teal-500/50'
                       : 'bg-[#081d38] hover:bg-slate-800 text-slate-300 border-slate-800'
@@ -657,9 +679,9 @@ export const GestionTerritorial: React.FC<GestionTerritorialProps> = ({
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.92, opacity: 0, y: 15 }}
               transition={{ type: 'spring', stiffness: 350, damping: 28 }}
-              className="bg-[#05162a] border border-teal-500/40 rounded-3xl p-6 max-w-md w-full space-y-5 text-xs shadow-2xl"
+              className="gestion-territorial-modal-dialog bg-[#05162a] border border-teal-500/40 rounded-3xl p-6 max-w-md w-full space-y-5 text-xs shadow-2xl"
             >
-              <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+              <div className="gestion-territorial-modal-header flex justify-between items-center border-b border-slate-800 pb-3">
                 <div className="flex items-center gap-2.5">
                   <div className="p-2 bg-teal-500/20 border border-teal-500/40 rounded-xl text-teal-300">
                     <Edit3 className="w-5 h-5" />
@@ -687,7 +709,7 @@ export const GestionTerritorial: React.FC<GestionTerritorialProps> = ({
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
                     placeholder="Ej: Zona Norte / Santa Ana"
-                    className="w-full bg-[#081f3b] border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-teal-500"
+                    className="gestion-territorial-modal-input w-full bg-[#081f3b] border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-teal-500"
                   />
                 </div>
 
@@ -703,7 +725,7 @@ export const GestionTerritorial: React.FC<GestionTerritorialProps> = ({
                     value={editMetaVotos}
                     onChange={(e) => setEditMetaVotos(e.target.value === '' ? '' : Number(e.target.value))}
                     placeholder="Ej: 100000"
-                    className="w-full bg-[#081f3b] border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs text-amber-300 font-bold placeholder-slate-500 focus:outline-none focus:border-teal-500"
+                    className="gestion-territorial-modal-input w-full bg-[#081f3b] border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs text-amber-300 font-bold placeholder-slate-500 focus:outline-none focus:border-teal-500"
                   />
                   <p className="text-[10px] text-slate-400 mt-1">
                     Permite reajustar el techo u objetivo proyectado de votos en este sector territorial.
@@ -719,7 +741,7 @@ export const GestionTerritorial: React.FC<GestionTerritorialProps> = ({
                       type="number"
                       value={editLideres}
                       onChange={(e) => setEditLideres(e.target.value === '' ? '' : Number(e.target.value))}
-                      className="w-full bg-[#081f3b] border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-teal-500"
+                      className="gestion-territorial-modal-input w-full bg-[#081f3b] border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-teal-500"
                     />
                   </div>
 
@@ -731,7 +753,7 @@ export const GestionTerritorial: React.FC<GestionTerritorialProps> = ({
                       type="number"
                       value={editVotantes}
                       onChange={(e) => setEditVotantes(e.target.value === '' ? '' : Number(e.target.value))}
-                      className="w-full bg-[#081f3b] border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-teal-500"
+                      className="gestion-territorial-modal-input w-full bg-[#081f3b] border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-teal-500"
                     />
                   </div>
                 </div>
@@ -741,7 +763,7 @@ export const GestionTerritorial: React.FC<GestionTerritorialProps> = ({
                 <button
                   type="button"
                   onClick={() => handleDeleteSector(editingSector.id)}
-                  className="py-2.5 px-3 bg-rose-950/60 hover:bg-rose-900 border border-rose-500/40 text-rose-300 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                  className="gestion-territorial-modal-btn-delete py-2.5 px-3 bg-rose-950/60 hover:bg-rose-900 border border-rose-500/40 text-rose-300 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5"
                   title="Eliminar Sector"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
@@ -752,14 +774,14 @@ export const GestionTerritorial: React.FC<GestionTerritorialProps> = ({
                   <button
                     type="button"
                     onClick={() => setEditingSector(null)}
-                    className="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold cursor-pointer"
+                    className="gestion-territorial-modal-btn-cancel py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold cursor-pointer"
                   >
                     Cancelar
                   </button>
                   <button
                     type="button"
                     onClick={handleSaveSector}
-                    className="py-2.5 px-4 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 font-black rounded-xl shadow-lg cursor-pointer"
+                    className="gestion-territorial-modal-btn-save py-2.5 px-4 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 font-black rounded-xl shadow-lg cursor-pointer"
                   >
                     Guardar Cambios
                   </button>
@@ -784,9 +806,9 @@ export const GestionTerritorial: React.FC<GestionTerritorialProps> = ({
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.92, opacity: 0, y: 15 }}
               transition={{ type: 'spring', stiffness: 350, damping: 28 }}
-              className="bg-[#05162a] border border-teal-500/40 rounded-3xl p-6 max-w-md w-full space-y-5 text-xs shadow-2xl"
+              className="gestion-territorial-modal-dialog bg-[#05162a] border border-teal-500/40 rounded-3xl p-6 max-w-md w-full space-y-5 text-xs shadow-2xl"
             >
-              <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+              <div className="gestion-territorial-modal-header flex justify-between items-center border-b border-slate-800 pb-3">
                 <div className="flex items-center gap-2.5">
                   <div className="p-2 bg-teal-500/20 border border-teal-500/40 rounded-xl text-teal-300">
                     <Plus className="w-5 h-5" />
@@ -812,7 +834,7 @@ export const GestionTerritorial: React.FC<GestionTerritorialProps> = ({
                     value={newSectorName}
                     onChange={(e) => setNewSectorName(e.target.value)}
                     placeholder="Ej: Comuna 13 / San Javier"
-                    className="w-full bg-[#081f3b] border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-teal-500"
+                    className="gestion-territorial-modal-input w-full bg-[#081f3b] border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-teal-500"
                   />
                 </div>
 
@@ -823,7 +845,7 @@ export const GestionTerritorial: React.FC<GestionTerritorialProps> = ({
                     value={newSectorMetaVotos}
                     onChange={(e) => setNewSectorMetaVotos(e.target.value === '' ? '' : Number(e.target.value))}
                     placeholder="Ej: 50000"
-                    className="w-full bg-[#081f3b] border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs text-amber-300 font-bold focus:outline-none focus:border-teal-500"
+                    className="gestion-territorial-modal-input w-full bg-[#081f3b] border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs text-amber-300 font-bold focus:outline-none focus:border-teal-500"
                   />
                 </div>
               </div>
@@ -832,14 +854,14 @@ export const GestionTerritorial: React.FC<GestionTerritorialProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowAddSectorModal(false)}
-                  className="flex-1 py-2.5 bg-slate-800 text-slate-300 rounded-xl font-bold cursor-pointer"
+                  className="gestion-territorial-modal-btn-cancel flex-1 py-2.5 bg-slate-800 text-slate-300 rounded-xl font-bold cursor-pointer"
                 >
                   Cancelar
                 </button>
                 <button
                   type="button"
                   onClick={handleAddSectorSubmit}
-                  className="flex-1 py-2.5 bg-teal-500 hover:bg-teal-400 text-slate-950 font-black rounded-xl shadow-lg cursor-pointer"
+                  className="gestion-territorial-modal-btn-save flex-1 py-2.5 bg-teal-500 hover:bg-teal-400 text-slate-950 font-black rounded-xl shadow-lg cursor-pointer"
                 >
                   Crear Sector
                 </button>

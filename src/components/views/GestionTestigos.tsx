@@ -849,7 +849,7 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
       {/* ========================================================================= */}
       {/* MAIN CONTAINER */}
       {/* ========================================================================= */}
-      <div className="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200/80 shadow-sm space-y-6">
+      <div className="gestion-testigos-container bg-white rounded-2xl p-4 sm:p-6 border border-slate-200/80 shadow-sm space-y-6">
         
         {/* ========================================================================= */}
         {/* TOP ACTION BUTTONS BAR (ONLY BUTTONS) */}
@@ -968,7 +968,7 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
           {/* Solo se muestra el resumen de partidos que ya tienen testigos reales registrados. */}
           {registeredWitnessParties.length > 0 && <div className="space-y-2 pt-1">
             <div className="flex items-center justify-between">
-              <h4 className="text-xs font-bold text-cyan-300 uppercase tracking-wider flex items-center gap-1.5">
+              <h4 className="text-xs font-bold text-cyan-300 uppercase tracking-wider flex items-center gap-1.5 gestion-testigos-parties-heading">
                 <Users className="w-4 h-4 text-cyan-400" />
                 <span>Resumen de Testigos por Partido Político / Aval de Campaña</span>
               </h4>
@@ -994,7 +994,7 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
                   <div 
                     key={partido}
                     onClick={() => setWitnessPartidoFilter(isSelected ? 'Todos' : partido)}
-                    className={`p-3.5 rounded-xl border transition-all cursor-pointer flex flex-col justify-between space-y-2 ${
+                    className={`gestion-testigos-party-card p-3.5 rounded-xl border transition-all cursor-pointer flex flex-col justify-between space-y-2 ${
                       isSelected 
                         ? 'bg-cyan-950/80 border-cyan-400 shadow-md ring-2 ring-cyan-500/50' 
                         : 'bg-[#030d1f] hover:bg-[#071b38] border-cyan-500/30'
@@ -1022,7 +1022,7 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
           {/* ========================================================================= */}
           {/* GEOFENCING & RADAR GPS PANEL */}
           {/* ========================================================================= */}
-          <div className="rounded-2xl border border-indigo-500/30 bg-[#04142b] p-6 text-center">
+          <div className="gestion-testigos-geofence-card rounded-2xl border border-indigo-500/30 bg-[#04142b] p-6 text-center">
             <Locate className="mx-auto mb-3 h-8 w-8 text-slate-600" />
             <h4 className="font-extrabold text-white">Sin reportes GPS reales</h4>
             <p className="mt-2 text-xs text-slate-400">

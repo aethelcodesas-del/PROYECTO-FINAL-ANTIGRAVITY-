@@ -404,7 +404,7 @@ export const AgendaCalendarioView: React.FC<{
   };
 
   return (
-    <div className="p-4 sm:p-6 md:p-8 space-y-6 max-w-7xl mx-auto text-slate-100">
+    <div className="p-4 sm:p-6 md:p-8 space-y-6 max-w-7xl mx-auto text-slate-100 agenda-calendario-view">
       
       {/* Toast */}
       <AnimatePresence>
@@ -413,7 +413,7 @@ export const AgendaCalendarioView: React.FC<{
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="fixed top-24 right-6 z-[100] bg-gradient-to-r from-emerald-600 to-teal-700 text-white px-5 py-3 rounded-2xl shadow-2xl border border-emerald-400/40 text-xs font-extrabold flex items-center gap-2"
+            className="fixed top-24 right-6 z-[100] bg-gradient-to-r from-emerald-600 to-teal-700 text-white px-5 py-3 rounded-2xl shadow-2xl border border-emerald-400/40 text-xs font-extrabold flex items-center gap-2 agenda-toast"
           >
             <Sparkles className="w-4 h-4 text-emerald-200 animate-spin" />
             <span>{toastMessage}</span>
@@ -422,30 +422,30 @@ export const AgendaCalendarioView: React.FC<{
       </AnimatePresence>
 
       {/* HEADER BANNER WITH COUNTDOWN TIMER */}
-      <div className="bg-gradient-to-r from-[#05182d] via-[#08223f] to-[#041224] border border-cyan-500/30 p-6 rounded-3xl shadow-2xl relative overflow-hidden space-y-6">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="bg-gradient-to-r from-[#05182d] via-[#08223f] to-[#041224] border border-cyan-500/30 p-6 rounded-3xl shadow-2xl relative overflow-hidden space-y-6 agenda-header-banner">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none agenda-header-glow" />
 
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
           <div className="space-y-2 max-w-2xl">
-            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-              Agenda Estratégica & <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-emerald-300 to-cyan-400">Calendario Electoral</span>
+            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight agenda-header-title">
+              Agenda Estratégica & <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-emerald-300 to-cyan-400 agenda-header-highlight">Calendario Electoral</span>
             </h1>
           </div>
 
           {/* COUNTDOWN BOX TO DÍA E */}
-          <CountdownWidget targetDateStr={electionDate ? `${electionDate}T08:00:00` : ''} variant="card" className="shrink-0 lg:w-80" />
+          <CountdownWidget targetDateStr={electionDate ? `${electionDate}T08:00:00` : ''} variant="card" className="shrink-0 lg:w-80 agenda-countdown-widget" />
         </div>
 
         {/* TOP ACTIONS & VIEW TABS */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-cyan-500/20 relative z-10">
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-cyan-500/20 relative z-10 agenda-header-actions">
           
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 agenda-view-tabs">
             
             <button
               onClick={() => setViewMode('timeline')}
-              className={`px-4 py-2 rounded-2xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-2 ${
+              className={`px-4 py-2 rounded-2xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-2 agenda-view-tab-btn agenda-tab-timeline ${
                 viewMode === 'timeline'
-                  ? 'bg-gradient-to-r from-amber-500 to-emerald-600 text-slate-950 shadow-lg font-black'
+                  ? 'active bg-gradient-to-r from-amber-500 to-emerald-600 text-slate-950 shadow-lg font-black'
                   : 'bg-[#030e1c] text-slate-300 hover:text-white hover:bg-slate-800'
               }`}
             >
@@ -455,9 +455,9 @@ export const AgendaCalendarioView: React.FC<{
 
             <button
               onClick={() => setViewMode('month')}
-              className={`px-4 py-2 rounded-2xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-2 ${
+              className={`px-4 py-2 rounded-2xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-2 agenda-view-tab-btn agenda-tab-month ${
                 viewMode === 'month'
-                  ? 'bg-gradient-to-r from-amber-500 to-emerald-600 text-slate-950 shadow-lg font-black'
+                  ? 'active bg-gradient-to-r from-amber-500 to-emerald-600 text-slate-950 shadow-lg font-black'
                   : 'bg-[#030e1c] text-slate-300 hover:text-white hover:bg-slate-800'
               }`}
             >
@@ -467,9 +467,9 @@ export const AgendaCalendarioView: React.FC<{
 
             <button
               onClick={() => setViewMode('official_cne')}
-              className={`px-4 py-2 rounded-2xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-2 ${
+              className={`px-4 py-2 rounded-2xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-2 agenda-view-tab-btn agenda-tab-cne ${
                 viewMode === 'official_cne'
-                  ? 'bg-gradient-to-r from-rose-600 to-amber-600 text-white shadow-lg font-black'
+                  ? 'active bg-gradient-to-r from-rose-600 to-amber-600 text-white shadow-lg font-black'
                   : 'bg-[#030e1c] text-slate-300 hover:text-white hover:bg-slate-800'
               }`}
             >
@@ -479,10 +479,10 @@ export const AgendaCalendarioView: React.FC<{
 
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 agenda-action-buttons">
             <button
               onClick={() => setShowAddModal(true)}
-              className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs rounded-xl shadow-lg flex items-center gap-1.5 cursor-pointer transition-all"
+              className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs rounded-xl shadow-lg flex items-center gap-1.5 cursor-pointer transition-all agenda-btn-new-event"
             >
               <Plus className="w-4 h-4" />
               <span>Programar Evento</span>
@@ -490,7 +490,7 @@ export const AgendaCalendarioView: React.FC<{
 
             <button
               onClick={exportCalendar}
-              className="px-3.5 py-2 bg-[#030e1c] hover:bg-slate-800 text-slate-200 border border-cyan-500/30 font-bold text-xs rounded-xl flex items-center gap-1.5 cursor-pointer transition-all"
+              className="px-3.5 py-2 bg-[#030e1c] hover:bg-slate-800 text-slate-200 border border-cyan-500/30 font-bold text-xs rounded-xl flex items-center gap-1.5 cursor-pointer transition-all agenda-btn-export"
             >
               <Share2 className="w-4 h-4 text-cyan-400" />
               <span className="hidden sm:inline">Exportar a Google Calendar (.ics)</span>
@@ -502,29 +502,29 @@ export const AgendaCalendarioView: React.FC<{
       </div>
 
       {/* FILTER & SEARCH BAR */}
-      <div className="bg-[#05162a] border border-cyan-500/30 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl">
+      <div className="bg-[#05162a] border border-cyan-500/30 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl agenda-filter-bar">
         
         {/* Search */}
-        <div className="relative w-full md:w-80">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+        <div className="relative w-full md:w-80 agenda-search-box">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3 agenda-search-icon" />
           <input
             type="text"
             placeholder="Buscar por evento, lugar o comuna..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-[#030e1c] border border-cyan-500/20 text-xs text-white rounded-xl pl-9 pr-4 py-2.5 outline-none focus:border-cyan-400 transition-all placeholder:text-slate-500"
+            className="w-full bg-[#030e1c] border border-cyan-500/20 text-xs text-white rounded-xl pl-9 pr-4 py-2.5 outline-none focus:border-cyan-400 transition-all placeholder:text-slate-500 agenda-search-input"
           />
         </div>
 
         {/* Category Filter */}
-        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-          <span className="text-[11px] text-slate-400 font-bold flex items-center gap-1">
+        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto agenda-filter-controls">
+          <span className="text-[11px] text-slate-400 font-bold flex items-center gap-1 agenda-filter-label">
             <Filter className="w-3.5 h-3.5 text-cyan-400" /> Categoría:
           </span>
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="bg-[#030e1c] border border-cyan-500/30 text-xs text-white rounded-xl px-3 py-2 outline-none font-semibold cursor-pointer"
+            className="bg-[#030e1c] border border-cyan-500/30 text-xs text-white rounded-xl px-3 py-2 outline-none font-semibold cursor-pointer agenda-filter-select"
           >
             <option value="Todos">Todas las Categorías</option>
             <option value="CNE_Registraduria">Oficial Registraduría / CNE</option>
@@ -538,7 +538,7 @@ export const AgendaCalendarioView: React.FC<{
           <select
             value={selectedPriority}
             onChange={(e) => setSelectedPriority(e.target.value)}
-            className="bg-[#030e1c] border border-cyan-500/30 text-xs text-white rounded-xl px-3 py-2 outline-none font-semibold cursor-pointer"
+            className="bg-[#030e1c] border border-cyan-500/30 text-xs text-white rounded-xl px-3 py-2 outline-none font-semibold cursor-pointer agenda-filter-select"
           >
             <option value="Todos">Todas las Prioridades</option>
             <option value="Critica">Prioridad Crítica</option>
@@ -546,7 +546,7 @@ export const AgendaCalendarioView: React.FC<{
             <option value="Media">Prioridad Media</option>
           </select>
 
-          <span className="text-xs font-mono font-bold text-cyan-300 bg-cyan-950 px-3 py-1 rounded-full border border-cyan-500/30">
+          <span className="text-xs font-mono font-bold text-cyan-300 bg-cyan-950 px-3 py-1 rounded-full border border-cyan-500/30 agenda-count-badge">
             {filteredEvents.length} Eventos
           </span>
         </div>
@@ -555,16 +555,16 @@ export const AgendaCalendarioView: React.FC<{
 
       {/* VIEW 1: TIMELINE / CRONOGRAMA LIST */}
       {viewMode === 'timeline' && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="font-extrabold text-white text-base flex items-center gap-2">
+        <div className="space-y-4 agenda-timeline-section">
+          <div className="flex items-center justify-between agenda-timeline-header">
+            <h3 className="font-extrabold text-white text-base flex items-center gap-2 agenda-timeline-title">
               <ListFilter className="w-5 h-5 text-amber-400" />
               Línea de Tiempo Cronológica de la Campaña
             </h3>
-            <span className="text-xs text-slate-400">Ordenado por proximidad de fecha</span>
+            <span className="text-xs text-slate-400 agenda-timeline-subtitle">Ordenado por proximidad de fecha</span>
           </div>
 
-          <div className="relative border-l-2 border-cyan-500/30 ml-4 pl-6 space-y-6">
+          <div className="relative border-l-2 border-cyan-500/30 ml-4 pl-6 space-y-6 agenda-timeline-track">
             {filteredEvents.map((evt) => {
               const isPast = new Date(`${evt.date}T23:59:59`) < new Date();
               return (
@@ -572,19 +572,19 @@ export const AgendaCalendarioView: React.FC<{
                   key={evt.id}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className={`relative p-5 rounded-2xl border transition-all ${
+                  className={`relative p-5 rounded-2xl border transition-all agenda-timeline-card ${
                     evt.isOfficialDeadline
-                      ? 'bg-gradient-to-r from-[#0d1f33] to-[#121a29] border-rose-500/40 hover:border-rose-400'
+                      ? 'bg-gradient-to-r from-[#0d1f33] to-[#121a29] border-rose-500/40 hover:border-rose-400 agenda-card-deadline'
                       : 'bg-[#05162a] border-cyan-500/20 hover:border-cyan-400/50'
-                  } ${evt.status === 'Completado' ? 'opacity-70' : ''}`}
+                  } ${evt.status === 'Completado' ? 'opacity-70 agenda-card-completed' : ''}`}
                 >
                   {/* Timeline Node Dot */}
-                  <div className={`absolute -left-[31px] top-6 w-4 h-4 rounded-full border-2 ${
+                  <div className={`absolute -left-[31px] top-6 w-4 h-4 rounded-full border-2 agenda-timeline-dot ${
                     evt.status === 'Completado'
-                      ? 'bg-emerald-500 border-emerald-300'
+                      ? 'bg-emerald-500 border-emerald-300 dot-completed'
                       : evt.isOfficialDeadline
-                      ? 'bg-rose-500 border-rose-300 animate-ping'
-                      : 'bg-amber-400 border-amber-200'
+                      ? 'bg-rose-500 border-rose-300 animate-ping dot-deadline'
+                      : 'bg-amber-400 border-amber-200 dot-normal'
                   }`} />
 
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -592,33 +592,33 @@ export const AgendaCalendarioView: React.FC<{
                     <div className="space-y-2 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         {getCategoryBadge(evt.category)}
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold border ${getPriorityColor(evt.priority)}`}>
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold border agenda-priority-badge ${getPriorityColor(evt.priority)}`}>
                           Prioridad {evt.priority}
                         </span>
                         {evt.isOfficialDeadline && (
-                          <span className="px-2 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-500/40 text-[10px] font-extrabold uppercase">
+                          <span className="px-2 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-500/40 text-[10px] font-extrabold uppercase agenda-deadline-pill">
                             Hito Legal CNE
                           </span>
                         )}
-                        <span className="text-xs font-mono font-bold text-slate-400">
+                        <span className="text-xs font-mono font-bold text-slate-400 agenda-card-datetime">
                           {evt.date} • {evt.time} HS
                         </span>
                       </div>
 
-                      <h4 className="text-base font-black text-white flex items-center gap-2">
+                      <h4 className="text-base font-black text-white flex items-center gap-2 agenda-card-title">
                         {evt.title}
                       </h4>
 
-                      <p className="text-xs text-slate-300 leading-relaxed">
+                      <p className="text-xs text-slate-300 leading-relaxed agenda-card-desc">
                         {evt.description}
                       </p>
 
-                      <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400 font-medium pt-1">
+                      <div className="flex flex-wrap items-center gap-4 text-xs text-slate-400 font-medium pt-1 agenda-card-meta">
                         <span className="flex items-center gap-1">
                           <MapPin className="w-3.5 h-3.5 text-cyan-400" /> {evt.location}
                         </span>
                         {evt.comunaSector && (
-                          <span className="flex items-center gap-1 text-emerald-300 font-bold">
+                          <span className="flex items-center gap-1 text-emerald-300 font-bold agenda-meta-comuna">
                             <Building2 className="w-3.5 h-3.5 text-emerald-400" /> {evt.comunaSector}
                           </span>
                         )}
@@ -626,7 +626,7 @@ export const AgendaCalendarioView: React.FC<{
                           <Users className="w-3.5 h-3.5 text-amber-400" /> Org: {evt.organizer}
                         </span>
                         {evt.attendeesCount && (
-                          <span className="flex items-center gap-1 text-cyan-300 font-mono font-bold">
+                          <span className="flex items-center gap-1 text-cyan-300 font-mono font-bold agenda-meta-attendees">
                             ~{evt.attendeesCount.toLocaleString()} Asistentes
                           </span>
                         )}
@@ -637,10 +637,10 @@ export const AgendaCalendarioView: React.FC<{
                     <div className="flex items-center gap-2 shrink-0">
                       <button
                         onClick={() => handleToggleStatus(evt.id)}
-                        className={`px-3.5 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 cursor-pointer transition-all ${
+                        className={`px-3.5 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 cursor-pointer transition-all agenda-card-status-btn ${
                           evt.status === 'Completado'
-                            ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/40'
-                            : 'bg-slate-800 hover:bg-slate-700 text-white border border-cyan-500/30'
+                            ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/40 status-completed'
+                            : 'bg-slate-800 hover:bg-slate-700 text-white border border-cyan-500/30 status-pending'
                         }`}
                       >
                         {evt.status === 'Completado' ? (
@@ -661,91 +661,99 @@ export const AgendaCalendarioView: React.FC<{
                 </motion.div>
               );
             })}
-            {filteredEvents.length === 0 && <p className="text-xs text-slate-400">No hay eventos registrados para los filtros seleccionados.</p>}
+            {filteredEvents.length === 0 && <p className="text-xs text-slate-400 agenda-empty-msg">No hay eventos registrados para los filtros seleccionados.</p>}
           </div>
         </div>
       )}
 
       {/* VIEW 2: MONTHLY GRID */}
       {viewMode === 'month' && (
-        <div className="bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 space-y-4 shadow-xl">
+        <div className="bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 space-y-4 shadow-xl agenda-month-card">
           
-          <div className="flex items-center justify-between border-b border-cyan-500/20 pb-3">
+          <div className="flex items-center justify-between border-b border-cyan-500/20 pb-3 agenda-month-header">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setCurrentMonthDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}
-                className="p-2 bg-[#030e1c] hover:bg-slate-800 rounded-xl border border-cyan-500/30 text-white cursor-pointer"
+                className="p-2 bg-[#030e1c] hover:bg-slate-800 rounded-xl border border-cyan-500/30 text-white cursor-pointer agenda-month-nav-btn"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              <h3 className="font-extrabold text-white text-lg font-mono">
+              <h3 className="font-extrabold text-white text-lg font-mono agenda-month-title">
                 {currentMonthDate.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' }).toUpperCase()}
               </h3>
               <button
                 onClick={() => setCurrentMonthDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}
-                className="p-2 bg-[#030e1c] hover:bg-slate-800 rounded-xl border border-cyan-500/30 text-white cursor-pointer"
+                className="p-2 bg-[#030e1c] hover:bg-slate-800 rounded-xl border border-cyan-500/30 text-white cursor-pointer agenda-month-nav-btn"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
 
-            <span className="text-xs text-slate-400 font-mono">
+            <span className="text-xs text-slate-400 font-mono agenda-month-election-label">
               {electionDate ? `Elección configurada: ${electionDate}` : 'Sin fecha electoral configurada'}
             </span>
           </div>
 
           {/* DAYS OF WEEK HEADER */}
-          <div className="grid grid-cols-7 gap-2 text-center text-xs font-black text-cyan-300 uppercase tracking-wider py-2 bg-[#030e1c] rounded-xl border border-cyan-500/20">
-            <div>Lun</div>
-            <div>Mar</div>
-            <div>Mié</div>
-            <div>Jue</div>
-            <div>Vie</div>
-            <div className="text-amber-400">Sáb</div>
-            <div className="text-rose-400">Dom</div>
+          <div className="grid grid-cols-7 gap-2 text-center text-xs font-black text-cyan-300 uppercase tracking-wider py-2 bg-[#030e1c] rounded-xl border border-cyan-500/20 agenda-weekday-header">
+            <div className="agenda-weekday-col">Lun</div>
+            <div className="agenda-weekday-col">Mar</div>
+            <div className="agenda-weekday-col">Mié</div>
+            <div className="agenda-weekday-col">Jue</div>
+            <div className="agenda-weekday-col">Vie</div>
+            <div className="agenda-weekday-col text-amber-400 col-sat">Sáb</div>
+            <div className="agenda-weekday-col text-rose-400 col-sun">Dom</div>
           </div>
 
           {/* CALENDAR GRID */}
-          <div className="grid grid-cols-7 gap-2">
+          <div className="grid grid-cols-7 gap-2 agenda-grid-container">
             {Array.from({ length: new Date(currentMonthDate.getFullYear(), currentMonthDate.getMonth() + 1, 0).getDate() }, (_, i) => {
               const dayNumber = i + 1;
               const dateStr = `${currentMonthDate.getFullYear()}-${String(currentMonthDate.getMonth() + 1).padStart(2, '0')}-${String(dayNumber).padStart(2, '0')}`;
               const dayEvents = events.filter(e => e.date === dateStr);
               const isDiaE = Boolean(electionDate && dateStr === electionDate);
+              const isToday = new Date().toISOString().slice(0, 10) === dateStr;
 
               return (
                 <div
                   key={dayNumber}
-                  className={`min-h-[100px] p-2 rounded-2xl border flex flex-col justify-between transition-all ${
+                  className={`min-h-[100px] p-2 rounded-2xl border flex flex-col justify-between transition-all agenda-day-cell ${
                     isDiaE
-                      ? 'bg-gradient-to-b from-rose-950 via-[#1e0a12] to-[#0a0306] border-rose-500 shadow-xl'
+                      ? 'bg-gradient-to-b from-rose-950 via-[#1e0a12] to-[#0a0306] border-rose-500 shadow-xl cell-dia-e'
+                      : isToday
+                      ? 'bg-[#0a274c] border-blue-500 shadow-md cell-today'
                       : dayEvents.length > 0
-                      ? 'bg-[#081e36] border-cyan-500/40 hover:border-cyan-300'
-                      : 'bg-[#030e1c]/60 border-slate-800'
+                      ? 'bg-[#081e36] border-cyan-500/40 hover:border-cyan-300 cell-with-events'
+                      : 'bg-[#030e1c]/60 border-slate-800 cell-empty'
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className={`font-mono text-xs font-black px-2 py-0.5 rounded ${
-                      isDiaE ? 'bg-rose-600 text-white animate-pulse' : 'text-slate-300'
+                    <span className={`font-mono text-xs font-black px-2 py-0.5 rounded agenda-day-number ${
+                      isDiaE ? 'bg-rose-600 text-white animate-pulse' : isToday ? 'bg-blue-600 text-white' : 'text-slate-300'
                     }`}>
                       {dayNumber}
                     </span>
                     {isDiaE && (
-                      <span className="text-[9px] font-black uppercase text-rose-300 bg-rose-900 px-1 rounded">
+                      <span className="text-[9px] font-black uppercase text-rose-300 bg-rose-900 px-1 rounded agenda-day-badge-e">
                         DÍA E
+                      </span>
+                    )}
+                    {isToday && !isDiaE && (
+                      <span className="text-[9px] font-bold uppercase text-blue-300 bg-blue-900/60 px-1 rounded agenda-day-badge-today">
+                        HOY
                       </span>
                     )}
                   </div>
 
-                  <div className="space-y-1 my-1">
+                  <div className="space-y-1 my-1 agenda-day-events-list">
                     {dayEvents.map(ev => (
                       <div
                         key={ev.id}
                         title={ev.title}
-                        className={`p-1 rounded text-[10px] font-bold truncate leading-tight border ${
+                        className={`p-1 rounded text-[10px] font-bold truncate leading-tight border agenda-day-event-pill ${
                           ev.isOfficialDeadline
-                            ? 'bg-rose-950 text-rose-200 border-rose-500/40'
-                            : 'bg-cyan-950 text-cyan-200 border-cyan-500/30'
+                            ? 'bg-rose-950 text-rose-200 border-rose-500/40 pill-deadline'
+                            : 'bg-cyan-950 text-cyan-200 border-cyan-500/30 pill-normal'
                         }`}
                       >
                         {ev.title}
@@ -753,7 +761,7 @@ export const AgendaCalendarioView: React.FC<{
                     ))}
                   </div>
 
-                  <div className="text-[9px] text-slate-500 font-mono text-right">
+                  <div className="text-[9px] text-slate-500 font-mono text-right agenda-day-count">
                     {dayEvents.length > 0 ? `${dayEvents.length} Evento(s)` : ''}
                   </div>
                 </div>
@@ -766,37 +774,37 @@ export const AgendaCalendarioView: React.FC<{
 
       {/* VIEW 3: FECHAS LÍMITE OFICIALES CNE & REGISTRADURÍA */}
       {viewMode === 'official_cne' && (
-        <div className="space-y-4">
-          <div className="bg-gradient-to-r from-rose-950/80 via-[#05162a] to-amber-950/80 border border-rose-500/40 rounded-3xl p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-rose-500/20 pb-3">
+        <div className="space-y-4 agenda-cne-section">
+          <div className="bg-gradient-to-r from-rose-950/80 via-[#05162a] to-amber-950/80 border border-rose-500/40 rounded-3xl p-6 shadow-2xl space-y-4 agenda-cne-card">
+            <div className="flex items-center justify-between border-b border-rose-500/20 pb-3 agenda-cne-header">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-rose-500/20 text-rose-300 rounded-xl border border-rose-400/30">
+                <div className="p-2 bg-rose-500/20 text-rose-300 rounded-xl border border-rose-400/30 agenda-cne-icon-box">
                   <Scale className="w-6 h-6 text-rose-400" />
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-white text-lg">Hitos e Imperativos Legales CNE & Registraduría</h3>
+                  <h3 className="font-extrabold text-white text-lg agenda-cne-title">Hitos e Imperativos Legales CNE & Registraduría</h3>
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 agenda-cne-grid">
               {events.filter(e => e.isOfficialDeadline).map((evt) => (
-                <div key={evt.id} className="p-4 bg-[#030e1c] rounded-2xl border border-rose-500/30 space-y-2">
+                <div key={evt.id} className="p-4 bg-[#030e1c] rounded-2xl border border-rose-500/30 space-y-2 agenda-cne-item">
                   <div className="flex items-center justify-between">
-                    <span className="px-2.5 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-500/40 text-[10px] font-extrabold uppercase">
+                    <span className="px-2.5 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-500/40 text-[10px] font-extrabold uppercase agenda-cne-badge">
                       Exigencia Legal
                     </span>
-                    <span className="text-xs font-mono font-extrabold text-amber-300">
+                    <span className="text-xs font-mono font-extrabold text-amber-300 agenda-cne-date">
                       {evt.date} • {evt.time}
                     </span>
                   </div>
 
-                  <h4 className="font-bold text-white text-sm">{evt.title}</h4>
-                  <p className="text-xs text-slate-300 leading-relaxed">{evt.description}</p>
+                  <h4 className="font-bold text-white text-sm agenda-cne-item-title">{evt.title}</h4>
+                  <p className="text-xs text-slate-300 leading-relaxed agenda-cne-desc">{evt.description}</p>
                   
-                  <div className="flex items-center justify-between pt-2 text-[11px] border-t border-slate-800">
-                    <span className="text-slate-400">Entidad: <strong>{evt.organizer}</strong></span>
-                    <span className={`font-bold ${evt.status === 'Completado' ? 'text-emerald-400' : 'text-amber-400'}`}>
+                  <div className="flex items-center justify-between pt-2 text-[11px] border-t border-slate-800 agenda-cne-footer">
+                    <span className="text-slate-400">Entidad: <strong className="text-slate-200">{evt.organizer}</strong></span>
+                    <span className={`font-bold ${evt.status === 'Completado' ? 'text-emerald-400 status-ok' : 'text-amber-400 status-pending'}`}>
                       {evt.status === 'Completado' ? '✓ Cumplido' : '⚠️ Pendiente por Radicar'}
                     </span>
                   </div>
@@ -810,63 +818,63 @@ export const AgendaCalendarioView: React.FC<{
       {/* MODAL: PROGRAMAR NUEVO EVENTO DE CAMPAÑA */}
       <AnimatePresence>
         {showAddModal && (
-          <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 agenda-modal-overlay">
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-[#05162a] border border-cyan-500/40 rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-5"
+              className="bg-[#05162a] border border-cyan-500/40 rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-5 agenda-modal-dialog"
             >
-              <div className="flex items-center justify-between border-b border-cyan-500/20 pb-3">
-                <h3 className="font-extrabold text-white text-base flex items-center gap-2">
+              <div className="flex items-center justify-between border-b border-cyan-500/20 pb-3 agenda-modal-header">
+                <h3 className="font-extrabold text-white text-base flex items-center gap-2 agenda-modal-title">
                   <Plus className="w-5 h-5 text-emerald-400" /> Programar Evento o Hito Electoral
                 </h3>
-                <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-white cursor-pointer">
+                <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-white cursor-pointer agenda-modal-close">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               <div className="space-y-3 text-xs">
                 <div>
-                  <label className="block text-slate-300 font-bold mb-1">Título del Evento / Hito:</label>
+                  <label className="block text-slate-300 font-bold mb-1 agenda-modal-label">Título del Evento / Hito:</label>
                   <input
                     type="text"
                     placeholder="Ej: Caminata Comuna 4 o Reunión con Gremio de Comerciantes..."
                     value={newEvent.title}
                     onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
-                    className="w-full bg-[#030e1c] border border-cyan-500/30 rounded-xl px-3 py-2.5 text-white outline-none focus:border-cyan-400"
+                    className="w-full bg-[#030e1c] border border-cyan-500/30 rounded-xl px-3 py-2.5 text-white outline-none focus:border-cyan-400 agenda-modal-input"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-slate-300 font-bold mb-1">Fecha (AAAA-MM-DD):</label>
+                    <label className="block text-slate-300 font-bold mb-1 agenda-modal-label">Fecha (AAAA-MM-DD):</label>
                     <input
                       type="date"
                       value={newEvent.date}
                       onChange={(e) => setNewEvent({ ...newEvent, date: e.target.value })}
-                      className="w-full bg-[#030e1c] border border-cyan-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-cyan-400"
+                      className="w-full bg-[#030e1c] border border-cyan-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-cyan-400 agenda-modal-input"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-slate-300 font-bold mb-1">Hora (24h):</label>
+                    <label className="block text-slate-300 font-bold mb-1 agenda-modal-label">Hora (24h):</label>
                     <input
                       type="time"
                       value={newEvent.time}
                       onChange={(e) => setNewEvent({ ...newEvent, time: e.target.value })}
-                      className="w-full bg-[#030e1c] border border-cyan-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-cyan-400"
+                      className="w-full bg-[#030e1c] border border-cyan-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-cyan-400 agenda-modal-input"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-slate-300 font-bold mb-1">Categoría:</label>
+                    <label className="block text-slate-300 font-bold mb-1 agenda-modal-label">Categoría:</label>
                     <select
                       value={newEvent.category}
                       onChange={(e) => setNewEvent({ ...newEvent, category: e.target.value as any })}
-                      className="w-full bg-[#030e1c] border border-cyan-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-cyan-400"
+                      className="w-full bg-[#030e1c] border border-cyan-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-cyan-400 agenda-modal-select"
                     >
                       <option value="Territorial_Campana">Campaña & Territorio</option>
                       <option value="CNE_Registraduria">Oficial Registraduría / CNE</option>
@@ -877,11 +885,11 @@ export const AgendaCalendarioView: React.FC<{
                   </div>
 
                   <div>
-                    <label className="block text-slate-300 font-bold mb-1">Prioridad:</label>
+                    <label className="block text-slate-300 font-bold mb-1 agenda-modal-label">Prioridad:</label>
                     <select
                       value={newEvent.priority}
                       onChange={(e) => setNewEvent({ ...newEvent, priority: e.target.value as any })}
-                      className="w-full bg-[#030e1c] border border-cyan-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-cyan-400"
+                      className="w-full bg-[#030e1c] border border-cyan-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-cyan-400 agenda-modal-select"
                     >
                       <option value="Critica">Prioridad Crítica</option>
                       <option value="Alta">Prioridad Alta</option>
@@ -892,52 +900,52 @@ export const AgendaCalendarioView: React.FC<{
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-slate-300 font-bold mb-1">Ubicación / Lugar:</label>
+                    <label className="block text-slate-300 font-bold mb-1 agenda-modal-label">Ubicación / Lugar:</label>
                     <input
                       type="text"
                       placeholder="Ej: Parque Aranjuez..."
                       value={newEvent.location}
                       onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
-                      className="w-full bg-[#030e1c] border border-cyan-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-cyan-400"
+                      className="w-full bg-[#030e1c] border border-cyan-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-cyan-400 agenda-modal-input"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-slate-300 font-bold mb-1">Comuna / Sector (Opcional):</label>
+                    <label className="block text-slate-300 font-bold mb-1 agenda-modal-label">Comuna / Sector (Opcional):</label>
                     <input
                       type="text"
                       placeholder="Ej: Comuna 4 - Aranjuez"
                       value={newEvent.comunaSector}
                       onChange={(e) => setNewEvent({ ...newEvent, comunaSector: e.target.value })}
-                      className="w-full bg-[#030e1c] border border-cyan-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-cyan-400"
+                      className="w-full bg-[#030e1c] border border-cyan-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-cyan-400 agenda-modal-input"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-bold mb-1">Descripción / Notas Estratégicas:</label>
+                  <label className="block text-slate-300 font-bold mb-1 agenda-modal-label">Descripción / Notas Estratégicas:</label>
                   <textarea
                     rows={3}
                     placeholder="Objetivo del evento, mensaje clave a transmitir y compromisos..."
                     value={newEvent.description}
                     onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
-                    className="w-full bg-[#030e1c] border border-cyan-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-cyan-400 resize-none"
+                    className="w-full bg-[#030e1c] border border-cyan-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-cyan-400 resize-none agenda-modal-textarea"
                   />
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 border-t border-cyan-500/20 pt-4">
+              <div className="flex items-center justify-end gap-3 border-t border-cyan-500/20 pt-4 agenda-modal-footer">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl cursor-pointer"
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl cursor-pointer agenda-modal-btn-cancel"
                 >
                   Cancelar
                 </button>
                 <button
                   type="button"
                   onClick={handleAddEvent}
-                  className="px-5 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 text-xs font-black rounded-xl shadow-lg cursor-pointer"
+                  className="px-5 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 text-xs font-black rounded-xl shadow-lg cursor-pointer agenda-modal-btn-submit"
                 >
                   Guardar en Agenda
                 </button>
@@ -950,3 +958,4 @@ export const AgendaCalendarioView: React.FC<{
     </div>
   );
 };
+

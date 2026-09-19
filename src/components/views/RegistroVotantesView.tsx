@@ -1016,7 +1016,7 @@ _Documento Oficial de Auditoría Electoral - Campaña Ganadora AI_`;
     .filter(a => a.estadoCne === '¡LUGAR ACTUALIZADO A MEDELLÍN!').length;
 
   return (
-    <div className="p-4 sm:p-6 md:p-8 space-y-6 max-w-7xl mx-auto text-slate-800">
+    <div className="registro-votantes-view p-4 sm:p-6 md:p-8 space-y-6 max-w-7xl mx-auto text-slate-800">
       
       {/* Toast Notification */}
       <AnimatePresence>
@@ -1041,23 +1041,23 @@ _Documento Oficial de Auditoría Electoral - Campaña Ganadora AI_`;
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-[#030d1d] rounded-3xl p-6 shadow-2xl border border-cyan-500/30 max-w-md w-full space-y-4 text-white"
+              className="registro-modal-dialog bg-[#030d1d] rounded-3xl p-6 shadow-2xl border border-cyan-500/30 max-w-md w-full space-y-4 text-white"
             >
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                <h3 className="text-base font-black text-slate-100 flex items-center gap-2">
+              <div className="registro-modal-header flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 className="registro-modal-title text-base font-black text-slate-100 flex items-center gap-2">
                   <UserCog className="w-5 h-5 text-teal-400" />
                   Reasignar Líder / Usuario de Campaña
                 </h3>
                 <button
                   onClick={() => setReassignModal(null)}
-                  className="text-slate-400 hover:text-white font-extrabold text-sm p-1 rounded-lg transition-colors cursor-pointer"
+                  className="registro-modal-close text-slate-400 hover:text-white font-extrabold text-sm p-1 rounded-lg transition-colors cursor-pointer"
                 >
                   ✕
                 </button>
               </div>
 
               <div className="space-y-3 text-xs">
-                <div className="bg-[#020712] p-3 rounded-2xl border border-slate-800 space-y-1">
+                <div className="registro-modal-voter-card bg-[#020712] p-3 rounded-2xl border border-slate-800 space-y-1">
                   <span className="text-slate-400 font-medium block">Votante:</span>
                   <span className="font-extrabold text-white text-sm">{reassignModal.voterName}</span>
                   <div className="text-slate-400 text-[11px] pt-1">
@@ -1066,13 +1066,13 @@ _Documento Oficial de Auditoría Electoral - Campaña Ganadora AI_`;
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">
+                  <label className="registro-modal-label block text-xs font-bold text-slate-300 mb-1">
                     Seleccione el Nuevo Líder o Usuario Asignado:
                   </label>
                   <select
                     value={reassignModal.selectedNewLeader}
                     onChange={(e) => setReassignModal({ ...reassignModal, selectedNewLeader: e.target.value })}
-                    className="w-full bg-[#020712] border border-slate-700 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-100 outline-none focus:border-teal-400 cursor-pointer"
+                    className="registro-modal-select w-full bg-[#020712] border border-slate-700 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-100 outline-none focus:border-teal-400 cursor-pointer"
                   >
                     {authUser?.name ? (
                       <option value={`${authUser.name} (${authUser.roleName || 'Usuario Campaña'})`}>
@@ -1090,18 +1090,18 @@ _Documento Oficial de Auditoría Electoral - Campaña Ganadora AI_`;
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
+              <div className="registro-modal-footer flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
                 <button
                   type="button"
                   onClick={() => setReassignModal(null)}
-                  className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold text-xs cursor-pointer border border-slate-750"
+                  className="registro-modal-btn-cancel px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold text-xs cursor-pointer border border-slate-750"
                 >
                   Cancelar
                 </button>
                 <button
                   type="button"
                   onClick={handleConfirmReassign}
-                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white font-extrabold text-xs shadow-md cursor-pointer flex items-center gap-1.5"
+                  className="registro-modal-btn-submit px-4 py-2 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white font-extrabold text-xs shadow-md cursor-pointer flex items-center gap-1.5"
                 >
                   <Check className="w-4 h-4" />
                   <span>Confirmar Reasignación</span>
@@ -1120,10 +1120,10 @@ _Documento Oficial de Auditoría Electoral - Campaña Ganadora AI_`;
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="bg-[#030d1d] border-2 border-rose-500/60 rounded-3xl max-w-2xl w-full shadow-2xl overflow-hidden text-slate-200 my-8"
+              className="registro-modal-dialog registro-duplicate-dialog bg-[#030d1d] border-2 border-rose-500/60 rounded-3xl max-w-2xl w-full shadow-2xl overflow-hidden text-slate-200 my-8"
             >
               {/* Modal Header */}
-              <div className="bg-gradient-to-r from-rose-950 via-red-950 to-slate-950 text-white p-6 relative border-b border-rose-900/60">
+              <div className="registro-duplicate-header bg-gradient-to-r from-rose-950 via-red-950 to-slate-950 text-white p-6 relative border-b border-rose-900/60">
                 <div className="flex items-center gap-3">
                   <div className="p-3 bg-rose-500/20 border border-rose-400/40 rounded-2xl text-rose-300">
                     <AlertTriangle className="w-8 h-8" />
@@ -1151,7 +1151,7 @@ _Documento Oficial de Auditoría Electoral - Campaña Ganadora AI_`;
               </div>
 
               {/* Modal Body */}
-              <div className="p-6 space-y-5 max-h-[75vh] overflow-y-auto">
+              <div className="registro-duplicate-body p-6 space-y-5 max-h-[75vh] overflow-y-auto">
                 {/* INTENTO BANNER */}
                 <div className="bg-rose-950/40 border border-rose-500/40 p-4 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
                   <div>
@@ -1259,7 +1259,7 @@ _Documento Oficial de Auditoría Electoral - Campaña Ganadora AI_`;
               </div>
 
               {/* Modal Footer / Actions */}
-              <div className="bg-slate-950 p-4 border-t border-slate-800 flex flex-col gap-3">
+              <div className="registro-modal-footer bg-slate-950 p-4 border-t border-slate-800 flex flex-col gap-3">
                 <div className="flex flex-wrap items-center justify-between gap-2.5">
                   {/* Left Action Buttons: Download PDF & Share */}
                   <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
@@ -1338,19 +1338,19 @@ _Documento Oficial de Auditoría Electoral - Campaña Ganadora AI_`;
       </AnimatePresence>
 
       {/* HEADER BANNER */}
-      <div className="bg-gradient-to-r from-[#071d38] via-[#0b294d] to-[#05162a] border border-teal-500/30 p-6 rounded-3xl shadow-2xl relative overflow-hidden text-white space-y-4">
+      <div className="registro-header-banner bg-gradient-to-r from-[#071d38] via-[#0b294d] to-[#05162a] border border-teal-500/30 p-6 rounded-3xl shadow-2xl relative overflow-hidden text-white space-y-4">
         <div className="absolute top-0 right-0 w-80 h-80 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
           <div className="space-y-2 max-w-3xl">
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
+            <h1 className="registro-header-title text-2xl sm:text-3xl font-black tracking-tight">
               Módulo de <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-300 via-emerald-300 to-cyan-300">Registro de Votantes</span>
             </h1>
           </div>
 
           {/* QUICK METRICS */}
           <div className="grid grid-cols-3 gap-3 shrink-0 lg:w-96 font-mono">
-            <div className="bg-[#030e1c] p-3 rounded-2xl border border-teal-500/30 text-center">
+            <div className="registro-kpi-card registro-kpi-voters bg-[#030e1c] p-3 rounded-2xl border border-teal-500/30 text-center">
               <span className="block text-2xl font-black text-teal-300">
                 {strictLeaderMode ? myVotantesCount : totalVotantes}
               </span>
@@ -1359,7 +1359,7 @@ _Documento Oficial de Auditoría Electoral - Campaña Ganadora AI_`;
               </span>
             </div>
 
-            <div className="bg-[#030e1c] p-3 rounded-2xl border border-amber-500/30 text-center relative">
+            <div className="registro-kpi-card registro-kpi-archived bg-[#030e1c] p-3 rounded-2xl border border-amber-500/30 text-center relative">
               <span className="block text-2xl font-black text-amber-400">
                 {strictLeaderMode ? myArchivadosCount : totalArchivados}
               </span>
@@ -1368,7 +1368,7 @@ _Documento Oficial de Auditoría Electoral - Campaña Ganadora AI_`;
               </span>
             </div>
 
-            <div className={`p-3 rounded-2xl text-center relative transition-all ${
+            <div className={`registro-kpi-card registro-kpi-transfers p-3 rounded-2xl text-center relative transition-all ${
               totalNotificacionesNuevas > 0 
                 ? 'bg-emerald-950/80 border-2 border-emerald-400 shadow-lg shadow-emerald-900/50 animate-pulse' 
                 : 'bg-[#030e1c] border border-slate-700'
@@ -1382,13 +1382,13 @@ _Documento Oficial de Auditoría Electoral - Campaña Ganadora AI_`;
         </div>
 
         {/* NAVIGATION TABS */}
-        <div className="flex items-center gap-3 pt-2 border-t border-slate-800/80">
+        <div className="registro-tabs-nav flex items-center gap-3 pt-2 border-t border-slate-800/80">
           <button
             onClick={() => setActiveTab('activos')}
-            className={`px-4 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition-all cursor-pointer ${
+            className={`registro-tab-btn px-4 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition-all cursor-pointer ${
               activeTab === 'activos'
-                ? 'bg-gradient-to-r from-teal-500 to-emerald-600 text-white shadow-lg'
-                : 'bg-slate-900/80 text-slate-400 hover:text-white hover:bg-slate-800'
+                ? 'registro-tab-active bg-gradient-to-r from-teal-500 to-emerald-600 text-white shadow-lg'
+                : 'registro-tab-inactive bg-slate-900/80 text-slate-400 hover:text-white hover:bg-slate-800'
             }`}
           >
             <UserCheck className="w-4 h-4 text-teal-200" />
@@ -1400,10 +1400,10 @@ _Documento Oficial de Auditoría Electoral - Campaña Ganadora AI_`;
 
           <button
             onClick={() => setActiveTab('archivados')}
-            className={`px-4 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition-all cursor-pointer relative ${
+            className={`registro-tab-btn px-4 py-2 rounded-xl text-xs font-black flex items-center gap-2 transition-all cursor-pointer relative ${
               activeTab === 'archivados'
-                ? 'bg-gradient-to-r from-amber-600 to-amber-700 text-white shadow-lg'
-                : 'bg-slate-900/80 text-amber-300/80 hover:text-white hover:bg-slate-800'
+                ? 'registro-tab-active bg-gradient-to-r from-amber-600 to-amber-700 text-white shadow-lg'
+                : 'registro-tab-inactive bg-slate-900/80 text-amber-300/80 hover:text-white hover:bg-slate-800'
             }`}
           >
             <FolderArchive className="w-4 h-4 text-amber-300" />
@@ -1428,7 +1428,7 @@ _Documento Oficial de Auditoría Electoral - Campaña Ganadora AI_`;
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             
             {/* API CONSULTA CARD (LEFT 5 COLS) */}
-            <div className="lg:col-span-5 bg-[#030d1d] border border-cyan-500/30 rounded-3xl p-6 shadow-xl space-y-5 text-white">
+            <div className="registro-cne-card registro-card lg:col-span-5 bg-[#030d1d] border border-cyan-500/30 rounded-3xl p-6 shadow-xl space-y-5 text-white">
               <div className="border-b border-slate-800 pb-3">
                 <h2 className="text-base font-black text-slate-100 flex items-center gap-2">
                   <SearchCheck className="w-5 h-5 text-teal-400" />
@@ -1449,13 +1449,13 @@ _Documento Oficial de Auditoría Electoral - Campaña Ganadora AI_`;
                       value={cedulaInput}
                       onChange={(e) => setCedulaInput(e.target.value.replace(/\D/g, ''))}
                       onKeyDown={(e) => e.key === 'Enter' && handleConsultarCenso()}
-                      className="w-full bg-[#020712] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-mono text-slate-100 outline-none focus:border-teal-400 transition-all"
+                      className="registro-cedula-input registro-input w-full bg-[#020712] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-mono text-slate-100 outline-none focus:border-teal-400 transition-all"
                     />
                     <button
                       type="button"
                       onClick={() => handleConsultarCenso()}
                       disabled={isConsulting}
-                      className="px-4 py-2.5 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white font-extrabold text-xs rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0"
+                      className="registro-cne-btn px-4 py-2.5 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white font-extrabold text-xs rounded-xl shadow-md flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shrink-0"
                     >
                       {isConsulting ? (
                         <>
@@ -1485,7 +1485,7 @@ _Documento Oficial de Auditoría Electoral - Campaña Ganadora AI_`;
                   >
                     {consultaResult.encontrado && consultaResult.esCircunscripcionPermitida ? (
                       /* SUCCESS RESULT: VALID IN MEDELLÍN */
-                      <div className="bg-[#020712] border border-emerald-500/40 p-4 rounded-2xl space-y-3">
+                      <div className="registro-cne-success-box bg-[#020712] border border-emerald-500/40 p-4 rounded-2xl space-y-3">
                         <div className="flex items-center justify-between border-b border-emerald-500/30 pb-2">
                           <span className="text-xs font-black text-emerald-400 flex items-center gap-1.5">
                             <CheckCircle2 className="w-4 h-4 text-emerald-400" />
@@ -1535,7 +1535,7 @@ _Documento Oficial de Auditoría Electoral - Campaña Ganadora AI_`;
                       </div>
                     ) : (
                       /* REJECTION RESULT: OUTSIDE DISTRICT -> ARCHIVE ACTION OFFERED */
-                      <div className="bg-[#020712] border border-amber-500/40 p-4 rounded-2xl space-y-3">
+                      <div className="registro-cne-reject-box bg-[#020712] border border-amber-500/40 p-4 rounded-2xl space-y-3">
                         <div className="flex items-center justify-between border-b border-amber-500/30 pb-2">
                           <span className="text-xs font-black text-amber-400 flex items-center gap-1.5">
                             <ShieldAlert className="w-4 h-4 text-amber-400" />
@@ -1572,7 +1572,7 @@ _Documento Oficial de Auditoría Electoral - Campaña Ganadora AI_`;
                                 placeholder="Nombre completo..."
                                 value={archiveForm.nombreCompleto}
                                 onChange={(e) => setArchiveForm({ ...archiveForm, nombreCompleto: e.target.value })}
-                                className="w-full bg-[#020712] border border-slate-700 rounded-lg p-2 text-xs font-bold text-slate-100"
+                                className="registro-input w-full bg-[#020712] border border-slate-700 rounded-lg p-2 text-xs font-bold text-slate-100"
                               />
                             </div>
 
@@ -1583,7 +1583,7 @@ _Documento Oficial de Auditoría Electoral - Campaña Ganadora AI_`;
                                 placeholder="Ej: 300 123 4567"
                                 value={archiveForm.telefono}
                                 onChange={(e) => setArchiveForm({ ...archiveForm, telefono: e.target.value })}
-                                className="w-full bg-[#020712] border border-slate-700 rounded-lg p-2 text-xs font-bold text-slate-100"
+                                className="registro-input w-full bg-[#020712] border border-slate-700 rounded-lg p-2 text-xs font-bold text-slate-100"
                               />
                             </div>
 
@@ -1592,7 +1592,7 @@ _Documento Oficial de Auditoría Electoral - Campaña Ganadora AI_`;
                               <select
                                 value={archiveForm.liderAsignado}
                                 onChange={(e) => setArchiveForm({ ...archiveForm, liderAsignado: e.target.value })}
-                                className="w-full bg-[#020712] border border-slate-700 rounded-lg p-2 text-xs font-bold text-slate-100 cursor-pointer"
+                                className="registro-select w-full bg-[#020712] border border-slate-700 rounded-lg p-2 text-xs font-bold text-slate-100 cursor-pointer"
                               >
                                 {authUser?.name ? (
                                   <option value={`${authUser.name} (${authUser.roleName || 'Usuario Campaña'})`}>
@@ -1616,7 +1616,7 @@ _Documento Oficial de Auditoría Electoral - Campaña Ganadora AI_`;
                                 placeholder="Ej: Inscripción realizada en Puesto Marco Fidel Suárez el 05/Ago..."
                                 value={archiveForm.observaciones}
                                 onChange={(e) => setArchiveForm({ ...archiveForm, observaciones: e.target.value })}
-                                className="w-full bg-[#020712] border border-slate-700 rounded-lg p-2 text-xs text-slate-200"
+                                className="registro-input w-full bg-[#020712] border border-slate-700 rounded-lg p-2 text-xs text-slate-200"
                               />
                             </div>
                           </div>
@@ -1646,7 +1646,7 @@ _Documento Oficial de Auditoría Electoral - Campaña Ganadora AI_`;
             </div>
 
             {/* FORMULARIO DE REGISTRO DE VOTANTE ACTIVO (RIGHT 7 COLS) */}
-            <div className="lg:col-span-7 bg-[#030d1d] border border-cyan-500/30 rounded-3xl p-6 shadow-xl space-y-5 flex flex-col justify-between text-white">
+            <div className="registro-form-card registro-card lg:col-span-7 bg-[#030d1d] border border-cyan-500/30 rounded-3xl p-6 shadow-xl space-y-5 flex flex-col justify-between text-white">
               <div>
                 <div className="border-b border-slate-800 pb-3 flex items-center justify-between">
                   <div>
@@ -1692,7 +1692,7 @@ _Documento Oficial de Auditoría Electoral - Campaña Ganadora AI_`;
                         placeholder="Auto-completado por API o Manual..."
                         value={formData.nombreCompleto}
                         onChange={(e) => setFormData({ ...formData, nombreCompleto: e.target.value })}
-                        className="w-full bg-[#020712] border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-100 outline-none focus:border-teal-400 disabled:opacity-50"
+                        className="registro-input w-full bg-[#020712] border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-100 outline-none focus:border-teal-400 disabled:opacity-50"
                       />
                     </div>
 
@@ -1706,7 +1706,7 @@ _Documento Oficial de Auditoría Electoral - Campaña Ganadora AI_`;
                         placeholder="Ej: 300 123 4567"
                         value={formData.telefono}
                         onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
-                        className="w-full bg-[#020712] border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-100 outline-none focus:border-teal-400 disabled:opacity-50"
+                        className="registro-input w-full bg-[#020712] border border-slate-700 rounded-xl px-3 py-2 text-xs font-bold text-slate-100 outline-none focus:border-teal-400 disabled:opacity-50"
                       />
                     </div>
                   </div>
@@ -1722,7 +1722,7 @@ _Documento Oficial de Auditoría Electoral - Campaña Ganadora AI_`;
                         placeholder="Ej: Laureles, Aranjuez, Robledo..."
                         value={formData.barrio}
                         onChange={(e) => setFormData({ ...formData, barrio: e.target.value })}
-                        className="w-full bg-[#020712] border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none focus:border-teal-400 disabled:opacity-50"
+                        className="registro-input w-full bg-[#020712] border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none focus:border-teal-400 disabled:opacity-50"
                       />
                     </div>
 
@@ -1734,7 +1734,7 @@ _Documento Oficial de Auditoría Electoral - Campaña Ganadora AI_`;
                         disabled={!consultaResult || !consultaResult.esCircunscripcionPermitida}
                         value={formData.liderAsignado}
                         onChange={(e) => setFormData({ ...formData, liderAsignado: e.target.value })}
-                        className="w-full bg-[#020712] border border-slate-700 rounded-xl px-3 py-2 text-xs font-extrabold text-slate-100 outline-none focus:border-teal-400 disabled:opacity-50 cursor-pointer"
+                        className="registro-select w-full bg-[#020712] border border-slate-700 rounded-xl px-3 py-2 text-xs font-extrabold text-slate-100 outline-none focus:border-teal-400 disabled:opacity-50 cursor-pointer"
                       >
                         {authUser?.name ? (
                           <option value={`${authUser.name} (${authUser.roleName || 'Usuario Campaña'})`}>
@@ -1761,7 +1761,7 @@ _Documento Oficial de Auditoría Electoral - Campaña Ganadora AI_`;
                         disabled={!consultaResult || !consultaResult.esCircunscripcionPermitida}
                         value={formData.intencionVoto}
                         onChange={(e) => setFormData({ ...formData, intencionVoto: e.target.value as any })}
-                        className="w-full bg-[#020712] border border-slate-700 rounded-xl px-3 py-2 text-xs font-extrabold text-slate-100 outline-none focus:border-teal-400 disabled:opacity-50 cursor-pointer"
+                        className="registro-select w-full bg-[#020712] border border-slate-700 rounded-xl px-3 py-2 text-xs font-extrabold text-slate-100 outline-none focus:border-teal-400 disabled:opacity-50 cursor-pointer"
                       >
                         <option value="Voto Seguro">💚 Voto Seguro (Confirmado)</option>
                         <option value="Simpatizante">💙 Simpatizante</option>
@@ -1771,7 +1771,7 @@ _Documento Oficial de Auditoría Electoral - Campaña Ganadora AI_`;
                     </div>
 
                     <div className="flex items-center pt-5">
-                      <label className={`flex items-center gap-2 text-xs font-extrabold cursor-pointer p-2.5 rounded-xl border w-full transition-all ${
+                      <label className={`registro-transport-toggle flex items-center gap-2 text-xs font-extrabold cursor-pointer p-2.5 rounded-xl border w-full transition-all ${
                         formData.requiereTransporte 
                           ? 'bg-amber-950/60 border-amber-500/50 text-amber-300' 
                           : 'bg-[#020712] border-slate-800 text-slate-300'
@@ -1799,7 +1799,7 @@ _Documento Oficial de Auditoría Electoral - Campaña Ganadora AI_`;
                       placeholder="Ej: Aceptó fijar afiche en su casa, solicita transporte a las 10:00 AM..."
                       value={formData.observaciones}
                       onChange={(e) => setFormData({ ...formData, observaciones: e.target.value })}
-                      className="w-full bg-[#020712] border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none focus:border-teal-400 disabled:opacity-50 resize-none"
+                      className="registro-textarea registro-input w-full bg-[#020712] border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 outline-none focus:border-teal-400 disabled:opacity-50 resize-none"
                     />
                   </div>
 
@@ -1817,7 +1817,7 @@ _Documento Oficial de Auditoría Electoral - Campaña Ganadora AI_`;
                     <button
                       type="submit"
                       disabled={!consultaResult || !consultaResult.encontrado || !consultaResult.esCircunscripcionPermitida}
-                      className="w-full py-3 bg-gradient-to-r from-teal-600 via-emerald-600 to-cyan-600 hover:from-teal-500 hover:to-emerald-500 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-lg flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all"
+                      className="registro-submit-btn w-full py-3 bg-gradient-to-r from-teal-600 via-emerald-600 to-cyan-600 hover:from-teal-500 hover:to-emerald-500 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-lg flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all"
                     >
                       <UserCheck className="w-4 h-4" />
                       <span>Confirmar y registrar votante (Rol Admin)</span>
@@ -1830,7 +1830,7 @@ _Documento Oficial de Auditoría Electoral - Campaña Ganadora AI_`;
           </div>
 
           {/* SECTION 2: TABLA DE VOTANTES REGISTRADOS ACTIVOS */}
-          <div className="bg-[#030d1d] border border-cyan-500/30 rounded-3xl p-6 shadow-xl space-y-4 text-white">
+          <div className="registro-table-card registro-card bg-[#030d1d] border border-cyan-500/30 rounded-3xl p-6 shadow-xl space-y-4 text-white">
             
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
               <div>
@@ -2053,7 +2053,7 @@ _Documento Oficial de Auditoría Electoral - Campaña Ganadora AI_`;
             <motion.div
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="bg-gradient-to-r from-emerald-950 via-teal-950 to-slate-950 text-white p-5 rounded-3xl border-2 border-emerald-500/60 shadow-2xl space-y-3 relative overflow-hidden"
+              className="registro-notif-banner bg-gradient-to-r from-emerald-950 via-teal-950 to-slate-950 text-white p-5 rounded-3xl border-2 border-emerald-500/60 shadow-2xl space-y-3 relative overflow-hidden"
             >
               <div className="absolute -top-10 -right-10 w-48 h-48 bg-emerald-500/20 rounded-full blur-2xl pointer-events-none" />
 
@@ -2082,7 +2082,7 @@ _Documento Oficial de Auditoría Electoral - Campaña Ganadora AI_`;
           )}
 
           {/* CONTROL BAR FOR ARCHIVED MONITORS */}
-          <div className="bg-[#030d1d] border border-cyan-500/30 rounded-3xl p-6 shadow-xl space-y-4 text-white">
+          <div className="registro-archived-card registro-card bg-[#030d1d] border border-cyan-500/30 rounded-3xl p-6 shadow-xl space-y-4 text-white">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800 pb-4">
               <div>
                 <h3 className="text-base font-black text-slate-100 flex items-center gap-2">
@@ -2095,7 +2095,7 @@ _Documento Oficial de Auditoría Electoral - Campaña Ganadora AI_`;
                 <button
                   onClick={handleSyncAllArchived}
                   disabled={isSyncingArchived || totalArchivados === 0}
-                  className="px-4 py-2 bg-gradient-to-r from-teal-700 to-emerald-700 hover:from-teal-600 hover:to-emerald-600 text-white font-extrabold text-xs rounded-xl shadow-md flex items-center gap-2 disabled:opacity-50 cursor-pointer transition-all"
+                  className="registro-btn-sync px-4 py-2 bg-gradient-to-r from-teal-700 to-emerald-700 hover:from-teal-600 hover:to-emerald-600 text-white font-extrabold text-xs rounded-xl shadow-md flex items-center gap-2 disabled:opacity-50 cursor-pointer transition-all"
                 >
                   <RefreshCw className={`w-4 h-4 ${isSyncingArchived ? 'animate-spin' : ''}`} />
                   <span>{isSyncingArchived ? 'Verificando Censo...' : '🔄 Sincronizar API CNE (Verificar Todos)'}</span>

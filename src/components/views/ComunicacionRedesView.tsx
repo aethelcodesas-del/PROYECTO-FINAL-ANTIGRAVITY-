@@ -612,23 +612,23 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
   const attachmentCount = posts.reduce((total, post) => total + (post.attachments?.length || 0), 0);
 
   return (
-    <div className="space-y-6 font-sans">
+    <div className="space-y-6 font-sans comunicacion-redes-view">
       
       {/* HEADER BANNER: SALA DE ESTRATEGIA DE COMUNICACIÓN & REDES SOCIALES */}
-      <div className="bg-gradient-to-r from-[#0a182c] via-[#0d274c] to-[#07172e] border border-purple-500/30 rounded-3xl p-6 shadow-2xl relative overflow-hidden">
+      <div className="bg-gradient-to-r from-[#0a182c] via-[#0d274c] to-[#07172e] border border-purple-500/30 rounded-3xl p-6 shadow-2xl relative overflow-hidden comms-header-banner">
         <div className="absolute top-0 right-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
         
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 relative z-10">
           <div className="space-y-2 max-w-2xl">
-            <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-              Estrategia de Comunicación & <span className="text-purple-400">Redes Sociales AI</span>
+            <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight comms-header-title">
+              Estrategia de Comunicación & <span className="text-purple-400 comms-header-highlight">Redes Sociales AI</span>
             </h2>
           </div>
 
           <div className="flex flex-wrap items-center gap-3 shrink-0">
             <button
               onClick={() => setIsAddModalOpen(true)}
-              className="px-4 py-2.5 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-purple-900/40 flex items-center gap-2 transition-all cursor-pointer hover:scale-102"
+              className="px-4 py-2.5 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-purple-900/40 flex items-center gap-2 transition-all cursor-pointer hover:scale-102 comms-new-post-btn"
             >
               <Plus className="w-4 h-4" />
               <span>Programar Publicación</span>
@@ -637,71 +637,85 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
         </div>
 
         {/* METRICS DASHBOARD / KPIS DE CAMPAÑA DIGITAL */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mt-6 pt-5 border-t border-purple-500/20">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mt-6 pt-5 border-t border-purple-500/20 comms-metrics-grid">
           
-          <div className="bg-[#051428]/90 border border-purple-500/20 p-3.5 rounded-2xl space-y-1">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1">
+          <div className="bg-[#051428]/90 border border-purple-500/20 p-3.5 rounded-2xl space-y-1 comms-metric-card comms-metric-total">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1 comms-metric-label">
               <Users className="w-3.5 h-3.5 text-purple-400" /> Piezas registradas
             </span>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-xl font-black text-white font-mono">{posts.length}</span>
+              <span className="text-xl font-black text-white font-mono comms-metric-value">{posts.length}</span>
             </div>
-            <p className="text-[10px] text-slate-400 truncate">Calendario de la campaña</p>
+            <p className="text-[10px] text-slate-400 truncate comms-metric-subtitle">Calendario de la campaña</p>
           </div>
 
-          <div className="bg-[#051428]/90 border border-purple-500/20 p-3.5 rounded-2xl space-y-1">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1">
+          <div className="bg-[#051428]/90 border border-purple-500/20 p-3.5 rounded-2xl space-y-1 comms-metric-card comms-metric-programmed">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1 comms-metric-label">
               <Flame className="w-3.5 h-3.5 text-amber-400" /> Programadas
             </span>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-xl font-black text-amber-400 font-mono">{programmedCount}</span>
+              <span className="text-xl font-black text-amber-400 font-mono comms-metric-value">{programmedCount}</span>
             </div>
-            <p className="text-[10px] text-slate-400 truncate">Pendientes de publicación</p>
+            <p className="text-[10px] text-slate-400 truncate comms-metric-subtitle">Pendientes de publicación</p>
           </div>
 
-          <div className="bg-[#051428]/90 border border-purple-500/20 p-3.5 rounded-2xl space-y-1">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1">
+          <div className="bg-[#051428]/90 border border-purple-500/20 p-3.5 rounded-2xl space-y-1 comms-metric-card comms-metric-published">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1 comms-metric-label">
               <Eye className="w-3.5 h-3.5 text-cyan-400" /> Publicadas
             </span>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-xl font-black text-cyan-300 font-mono">{publishedCount}</span>
+              <span className="text-xl font-black text-cyan-300 font-mono comms-metric-value">{publishedCount}</span>
             </div>
-            <p className="text-[10px] text-slate-400 truncate">Marcadas por el equipo</p>
+            <p className="text-[10px] text-slate-400 truncate comms-metric-subtitle">Marcadas por el equipo</p>
           </div>
 
-          <div className="bg-[#051428]/90 border border-purple-500/20 p-3.5 rounded-2xl space-y-1">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1">
+          <div className="bg-[#051428]/90 border border-purple-500/20 p-3.5 rounded-2xl space-y-1 comms-metric-card comms-metric-review">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1 comms-metric-label">
               <ThumbsUp className="w-3.5 h-3.5 text-emerald-400" /> En revisión / borrador
             </span>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-xl font-black text-emerald-300 font-mono">{reviewCount + draftCount}</span>
+              <span className="text-xl font-black text-emerald-300 font-mono comms-metric-value">{reviewCount + draftCount}</span>
             </div>
-            <p className="text-[10px] text-slate-400 truncate">{reviewCount} revisión · {draftCount} borradores</p>
+            <p className="text-[10px] text-slate-400 truncate comms-metric-subtitle">{reviewCount} revisión · {draftCount} borradores</p>
           </div>
 
-          <div className="bg-[#051428]/90 border border-purple-500/20 p-3.5 rounded-2xl space-y-1 col-span-2 sm:col-span-1">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1">
+          <div className="bg-[#051428]/90 border border-purple-500/20 p-3.5 rounded-2xl space-y-1 col-span-2 sm:col-span-1 comms-metric-card comms-metric-files">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1 comms-metric-label">
               <Radio className="w-3.5 h-3.5 text-rose-400" /> Archivos privados
             </span>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-xl font-black text-rose-300 font-mono">{attachmentCount}</span>
+              <span className="text-xl font-black text-rose-300 font-mono comms-metric-value">{attachmentCount}</span>
             </div>
-            <p className="text-[10px] text-slate-400 truncate">Imágenes y videos adjuntos</p>
+            <p className="text-[10px] text-slate-400 truncate comms-metric-subtitle">Imágenes y videos adjuntos</p>
           </div>
 
         </div>
       </div>
-      {communicationMessage && <p className={`text-xs font-bold ${/guardada|eliminada|almacenado/i.test(communicationMessage) ? 'text-emerald-300' : 'text-amber-300'}`}>{communicationMessage}</p>}
+
+      {communicationMessage && (
+        <div className={`p-3.5 rounded-2xl border text-xs font-bold flex items-center gap-2 comms-feedback-msg ${
+          /guardada|eliminada|almacenado/i.test(communicationMessage) 
+            ? 'comms-msg-success bg-emerald-950/40 text-emerald-300 border-emerald-500/40' 
+            : 'comms-msg-alert bg-amber-950/40 text-amber-300 border-amber-500/40'
+        }`}>
+          {/guardada|eliminada|almacenado/i.test(communicationMessage) ? (
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          ) : (
+            <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+          )}
+          <span>{communicationMessage}</span>
+        </div>
+      )}
 
       {/* SUB-TABS NAVIGATION BAR */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-[#05162a] p-2 rounded-2xl border border-purple-500/20 shadow-md">
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-[#05162a] p-2 rounded-2xl border border-purple-500/20 shadow-md comms-subtabs-nav">
         <div className="flex flex-wrap items-center gap-1.5 text-xs font-bold">
           
           <button
             onClick={() => setActiveSubTab('calendario')}
-            className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer ${
+            className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer comms-subtab-btn subtab-calendario ${
               activeSubTab === 'calendario'
-                ? 'bg-gradient-to-r from-purple-500/30 to-indigo-500/30 text-purple-300 border border-purple-400/50 shadow'
+                ? 'active bg-gradient-to-r from-purple-500/30 to-indigo-500/30 text-purple-300 border border-purple-400/50 shadow'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
             }`}
           >
@@ -711,9 +725,9 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
 
           <button
             onClick={() => setActiveSubTab('ai_studio')}
-            className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer ${
+            className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer comms-subtab-btn subtab-ai ${
               activeSubTab === 'ai_studio'
-                ? 'bg-gradient-to-r from-amber-500/30 to-orange-500/30 text-amber-300 border border-amber-400/50 shadow'
+                ? 'active bg-gradient-to-r from-amber-500/30 to-orange-500/30 text-amber-300 border border-amber-400/50 shadow'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
             }`}
           >
@@ -724,9 +738,9 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
 
           <button
             onClick={() => setActiveSubTab('editor_media')}
-            className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer ${
+            className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer comms-subtab-btn subtab-media ${
               activeSubTab === 'editor_media'
-                ? 'bg-gradient-to-r from-pink-500/30 to-purple-500/30 text-pink-300 border border-pink-400/50 shadow'
+                ? 'active bg-gradient-to-r from-pink-500/30 to-purple-500/30 text-pink-300 border border-pink-400/50 shadow'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
             }`}
           >
@@ -737,9 +751,9 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
 
           <button
             onClick={() => setActiveSubTab('pilares')}
-            className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer ${
+            className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer comms-subtab-btn subtab-pilares ${
               activeSubTab === 'pilares'
-                ? 'bg-gradient-to-r from-cyan-500/30 to-blue-500/30 text-cyan-300 border border-cyan-400/50 shadow'
+                ? 'active bg-gradient-to-r from-cyan-500/30 to-blue-500/30 text-cyan-300 border border-cyan-400/50 shadow'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
             }`}
           >
@@ -749,9 +763,9 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
 
           <button
             onClick={() => setActiveSubTab('social_listening')}
-            className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer ${
+            className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer comms-subtab-btn subtab-listening ${
               activeSubTab === 'social_listening'
-                ? 'bg-gradient-to-r from-emerald-500/30 to-teal-500/30 text-emerald-300 border border-emerald-400/50 shadow'
+                ? 'active bg-gradient-to-r from-emerald-500/30 to-teal-500/30 text-emerald-300 border border-emerald-400/50 shadow'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
             }`}
           >
@@ -761,9 +775,9 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
 
           <button
             onClick={() => setActiveSubTab('whatsapp')}
-            className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer ${
+            className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer comms-subtab-btn subtab-whatsapp ${
               activeSubTab === 'whatsapp'
-                ? 'bg-gradient-to-r from-emerald-600/30 to-green-500/30 text-emerald-300 border border-emerald-400/50 shadow'
+                ? 'active bg-gradient-to-r from-emerald-600/30 to-green-500/30 text-emerald-300 border border-emerald-400/50 shadow'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
             }`}
           >
@@ -776,19 +790,19 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
 
       {/* SUBTAB 1: CALENDARIO Y GRID DE PUBLICACIONES */}
       {activeSubTab === 'calendario' && (
-        <div className="space-y-4">
+        <div className="space-y-4 comms-tab-calendario">
           
           {/* SEARCH & FILTERS BAR */}
-          <div className="bg-[#05162a] border border-purple-500/20 p-4 rounded-2xl flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="bg-[#05162a] border border-purple-500/20 p-4 rounded-2xl flex flex-wrap items-center justify-between gap-3 text-xs comms-filter-bar">
             
-            <div className="flex items-center gap-2 flex-1 min-w-[240px] bg-[#030e1c] border border-purple-500/30 rounded-xl px-3 py-2">
+            <div className="flex items-center gap-2 flex-1 min-w-[240px] bg-[#030e1c] border border-purple-500/30 rounded-xl px-3 py-2 comms-search-box">
               <Search className="w-4 h-4 text-slate-400" />
               <input
                 type="text"
                 placeholder="Buscar publicación por título, pilar o palabra clave..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-transparent text-white w-full outline-none text-xs"
+                className="bg-transparent text-white w-full outline-none text-xs comms-search-input"
               />
               {searchQuery && (
                 <button onClick={() => setSearchQuery('')} className="text-slate-400 hover:text-white">
@@ -798,13 +812,13 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
-              <div className="flex items-center gap-1.5 bg-[#030e1c] px-3 py-1.5 rounded-xl border border-purple-500/30">
+              <div className="flex items-center gap-1.5 bg-[#030e1c] px-3 py-1.5 rounded-xl border border-purple-500/30 comms-filter-box">
                 <Filter className="w-3.5 h-3.5 text-purple-400" />
                 <span className="text-slate-400 font-bold">Red:</span>
                 <select
                   value={selectedPlatformFilter}
                   onChange={(e) => setSelectedPlatformFilter(e.target.value)}
-                  className="bg-transparent text-white font-bold outline-none cursor-pointer"
+                  className="bg-transparent text-white font-bold outline-none cursor-pointer comms-filter-select"
                 >
                   <option value="Todas" className="bg-slate-900">Todas las redes</option>
                   <option value="Instagram" className="bg-slate-900">Instagram</option>
@@ -816,12 +830,12 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
                 </select>
               </div>
 
-              <div className="flex items-center gap-1.5 bg-[#030e1c] px-3 py-1.5 rounded-xl border border-purple-500/30">
+              <div className="flex items-center gap-1.5 bg-[#030e1c] px-3 py-1.5 rounded-xl border border-purple-500/30 comms-filter-box">
                 <span className="text-slate-400 font-bold">Estado:</span>
                 <select
                   value={selectedStatusFilter}
                   onChange={(e) => setSelectedStatusFilter(e.target.value)}
-                  className="bg-transparent text-white font-bold outline-none cursor-pointer"
+                  className="bg-transparent text-white font-bold outline-none cursor-pointer comms-filter-select"
                 >
                   <option value="Todos" className="bg-slate-900">Todos los estados</option>
                   <option value="Programado" className="bg-slate-900">Programado</option>
@@ -835,9 +849,9 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
           </div>
 
           {/* POSTS LISTING */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 comms-posts-grid">
             {filteredPosts.length === 0 ? (
-              <div className="col-span-full bg-[#05162a] border border-slate-800 rounded-2xl p-12 text-center text-slate-400 space-y-3">
+              <div className="col-span-full bg-[#05162a] border border-slate-800 rounded-2xl p-12 text-center text-slate-400 space-y-3 comms-empty-state">
                 <Calendar className="w-10 h-10 text-slate-500 mx-auto" />
                 <p className="font-bold text-sm">No se encontraron publicaciones con los filtros seleccionados.</p>
                 <button
@@ -855,13 +869,13 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
               filteredPosts.map((post) => (
                 <div
                   key={post.id}
-                  className="bg-[#05162a] border border-purple-500/20 hover:border-purple-400/50 rounded-2xl p-5 space-y-4 shadow-xl transition-all flex flex-col justify-between group"
+                  className="bg-[#05162a] border border-purple-500/20 hover:border-purple-400/50 rounded-2xl p-5 space-y-4 shadow-xl transition-all flex flex-col justify-between group comms-post-card"
                 >
                   <div className="space-y-3">
                     
                     {/* TOP BADGES */}
                     <div className="flex items-center justify-between gap-2">
-                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border comms-post-platform-badge ${
                         post.platform === 'Instagram' ? 'bg-pink-500/20 text-pink-300 border-pink-500/40' :
                         post.platform === 'TikTok' ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40' :
                         post.platform === 'X (Twitter)' ? 'bg-blue-500/20 text-blue-300 border-blue-500/40' :
@@ -872,7 +886,7 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
                         {post.platform} • {post.format}
                       </span>
 
-                      <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${
+                      <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border comms-post-status-badge ${
                         post.status === 'Publicado' ? 'bg-emerald-950 text-emerald-300 border-emerald-500/30' :
                         post.status === 'Programado' ? 'bg-purple-950 text-purple-300 border-purple-500/30' :
                         post.status === 'En Revisión' ? 'bg-amber-950 text-amber-300 border-amber-500/30' :
@@ -884,16 +898,16 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
 
                     {/* TITLE & PILAR */}
                     <div className="space-y-1">
-                      <span className="text-[10px] font-bold text-purple-400 uppercase tracking-wider block">
+                      <span className="text-[10px] font-bold text-purple-400 uppercase tracking-wider block comms-post-pilar">
                         Pilar: {post.pilarEstrategico}
                       </span>
-                      <h4 className="font-extrabold text-white text-sm leading-snug group-hover:text-purple-300 transition-colors">
+                      <h4 className="font-extrabold text-white text-sm leading-snug group-hover:text-purple-300 transition-colors comms-post-title">
                         {post.title}
                       </h4>
                     </div>
 
                     {/* CAPTION PREVIEW */}
-                    <p className="text-xs text-slate-300 leading-relaxed line-clamp-3 bg-[#030e1c] p-3 rounded-xl border border-purple-500/10">
+                    <p className="text-xs text-slate-300 leading-relaxed line-clamp-3 bg-[#030e1c] p-3 rounded-xl border border-purple-500/10 comms-caption-box">
                       {post.caption}
                     </p>
 
@@ -901,7 +915,7 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
                     {post.attachments && post.attachments.length > 0 && (
                       <div className="space-y-2 pt-1 border-t border-purple-500/10">
                         <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-bold text-purple-300 flex items-center gap-1">
+                          <span className="text-[10px] font-bold text-purple-300 flex items-center gap-1 comms-attachment-header">
                             <Paperclip className="w-3 h-3 text-purple-400" />
                             {post.attachments.length} {post.attachments.length === 1 ? 'Archivo Adjunto' : 'Archivos Adjuntos'}:
                           </span>
@@ -909,7 +923,7 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
 
                         <div className="space-y-2">
                           {post.attachments.map((att) => (
-                            <div key={att.id} className="rounded-xl overflow-hidden bg-[#020b16] border border-purple-500/20 relative">
+                            <div key={att.id} className="rounded-xl overflow-hidden bg-[#020b16] border border-purple-500/20 relative comms-attachment-box">
                               {att.type === 'video' ? (
                                 <div className="relative">
                                   <video 
@@ -925,7 +939,7 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
                                     }}
                                     className="w-full h-40 object-cover bg-black rounded-t-xl"
                                   />
-                                  <div className="p-2 bg-[#030e1c] flex items-center justify-between text-[10px] text-slate-300">
+                                  <div className="p-2 bg-[#030e1c] flex items-center justify-between text-[10px] text-slate-300 comms-attachment-info">
                                     <span className="font-bold flex items-center gap-1 text-cyan-300 truncate max-w-[140px]">
                                       <Film className="w-3 h-3 text-cyan-400" /> {att.name}
                                     </span>
@@ -937,7 +951,7 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
                                           setSelectedMediaForEditor(att);
                                           setActiveSubTab('editor_media');
                                         }}
-                                        className="px-2 py-0.5 bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-500/30 rounded font-bold text-[9px] flex items-center gap-1 cursor-pointer transition-all"
+                                        className="px-2 py-0.5 bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-500/30 rounded font-bold text-[9px] flex items-center gap-1 cursor-pointer transition-all comms-edit-media-btn"
                                       >
                                         <Edit3 className="w-2.5 h-2.5" /> Editar
                                       </button>
@@ -958,7 +972,7 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
                                       </span>
                                     </div>
                                   </div>
-                                  <div className="p-2 bg-[#030e1c] flex items-center justify-between text-[10px] text-slate-300">
+                                  <div className="p-2 bg-[#030e1c] flex items-center justify-between text-[10px] text-slate-300 comms-attachment-info">
                                     <span className="font-bold flex items-center gap-1 text-pink-300 truncate max-w-[140px]">
                                       <ImageIcon className="w-3 h-3 text-pink-400" /> {att.name}
                                     </span>
@@ -971,7 +985,7 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
                                           setSelectedMediaForEditor(att);
                                           setActiveSubTab('editor_media');
                                         }}
-                                        className="px-2 py-0.5 bg-pink-950 hover:bg-pink-900 text-pink-300 border border-pink-500/30 rounded font-bold text-[9px] flex items-center gap-1 cursor-pointer transition-all"
+                                        className="px-2 py-0.5 bg-pink-950 hover:bg-pink-900 text-pink-300 border border-pink-500/30 rounded font-bold text-[9px] flex items-center gap-1 cursor-pointer transition-all comms-edit-media-btn"
                                       >
                                         <Edit3 className="w-2.5 h-2.5" /> Editar
                                       </button>
@@ -988,7 +1002,7 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
                     {/* HASHTAGS */}
                     <div className="flex flex-wrap gap-1">
                       {post.hashtags.map((tag, idx) => (
-                        <span key={idx} className="text-[10px] font-bold text-cyan-400/90">
+                        <span key={idx} className="text-[10px] font-bold text-cyan-400/90 comms-post-tag">
                           {tag}
                         </span>
                       ))}
@@ -997,19 +1011,19 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
                   </div>
 
                   {/* BOTTOM FOOTER */}
-                  <div className="pt-3 border-t border-purple-500/20 space-y-2">
+                  <div className="pt-3 border-t border-purple-500/20 space-y-2 comms-post-footer">
                     <div className="flex items-center justify-between text-[11px] text-slate-400">
                       <span className="flex items-center gap-1 font-mono">
                         <Clock className="w-3.5 h-3.5 text-purple-400" /> {post.scheduledDate} ({post.scheduledTime})
                       </span>
-                      <span className="font-bold text-slate-300">{post.estimatedReach}</span>
+                      <span className="font-bold text-slate-300 comms-post-reach">{post.estimatedReach}</span>
                     </div>
 
                     <div className="flex items-center justify-between pt-1">
                       <span className="text-[10px] text-slate-500 font-medium">Por: {post.author}</span>
                       <button
                         onClick={() => handleDeletePost(post.id)}
-                        className="text-slate-400 hover:text-rose-400 p-1 rounded-lg transition-colors cursor-pointer"
+                        className="text-slate-400 hover:text-rose-400 p-1 rounded-lg transition-colors cursor-pointer comms-post-del-btn"
                         title="Eliminar Publicación"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -1027,40 +1041,40 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
 
       {/* SUBTAB 2: ESTUDIO AI DE GENERACIÓN DE CONTENIDOS (AI CONTENT STUDIO) */}
       {activeSubTab === 'ai_studio' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 comms-tab-ai">
           
           {/* LEFT COLUMN: FORMULARIO GENERADOR AI (5/12) */}
-          <div className="lg:col-span-5 bg-[#05162a] border border-amber-500/30 rounded-3xl p-6 space-y-4 shadow-2xl">
+          <div className="lg:col-span-5 bg-[#05162a] border border-amber-500/30 rounded-3xl p-6 space-y-4 shadow-2xl comms-ai-form-card">
             
-            <div className="flex items-center gap-2 border-b border-amber-500/20 pb-3">
-              <div className="p-2 bg-amber-500/20 text-amber-400 rounded-xl">
+            <div className="flex items-center gap-2 border-b border-amber-500/20 pb-3 comms-ai-header">
+              <div className="p-2 bg-amber-500/20 text-amber-400 rounded-xl comms-ai-icon-box">
                 <Sparkles className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="font-extrabold text-white text-base">Asistente AI de Contenido Digital</h3>
+                <h3 className="font-extrabold text-white text-base comms-ai-title">Asistente AI de Contenido Digital</h3>
               </div>
             </div>
 
             <div className="space-y-3.5 text-xs">
               
               <div>
-                <label className="block text-slate-300 font-bold mb-1">Tema / Eje de la Publicación:</label>
+                <label className="block text-slate-300 font-bold mb-1 comms-ai-label">Tema / Eje de la Publicación:</label>
                 <input
                   type="text"
                   value={aiForm.topic}
                   onChange={(e) => setAiForm({ ...aiForm, topic: e.target.value })}
                   placeholder="Ej: Plan de Choque de Pavimentación Vial..."
-                  className="w-full bg-[#030e1c] border border-amber-500/30 rounded-xl px-3 py-2.5 text-white outline-none focus:border-amber-400 font-medium"
+                  className="w-full bg-[#030e1c] border border-amber-500/30 rounded-xl px-3 py-2.5 text-white outline-none focus:border-amber-400 font-medium comms-ai-input"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-300 font-bold mb-1">Red Objetivo:</label>
+                  <label className="block text-slate-300 font-bold mb-1 comms-ai-label">Red Objetivo:</label>
                   <select
                     value={aiForm.platform}
                     onChange={(e) => setAiForm({ ...aiForm, platform: e.target.value as any })}
-                    className="w-full bg-[#030e1c] border border-amber-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-amber-400 cursor-pointer"
+                    className="w-full bg-[#030e1c] border border-amber-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-amber-400 cursor-pointer comms-ai-select"
                   >
                     <option value="Instagram">Instagram (Reel / Carrusel)</option>
                     <option value="TikTok">TikTok (Short Video)</option>
@@ -1071,11 +1085,11 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-bold mb-1">Tono Comunicacional:</label>
+                  <label className="block text-slate-300 font-bold mb-1 comms-ai-label">Tono Comunicacional:</label>
                   <select
                     value={aiForm.tone}
                     onChange={(e) => setAiForm({ ...aiForm, tone: e.target.value as any })}
-                    className="w-full bg-[#030e1c] border border-amber-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-amber-400 cursor-pointer"
+                    className="w-full bg-[#030e1c] border border-amber-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-amber-400 cursor-pointer comms-ai-select"
                   >
                     <option value="Inspiracional & Cercano">Inspiracional & Cercano</option>
                     <option value="Firme / Ataque Político">Firme / Contundente</option>
@@ -1086,30 +1100,30 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
               </div>
 
               <div>
-                <label className="block text-slate-300 font-bold mb-1">Audiencia Objetivo:</label>
+                <label className="block text-slate-300 font-bold mb-1 comms-ai-label">Audiencia Objetivo:</label>
                 <input
                   type="text"
                   value={aiForm.targetAudience}
                   onChange={(e) => setAiForm({ ...aiForm, targetAudience: e.target.value })}
                   placeholder="Ej: Madres cabeza de hogar, Jóvenes 18-28..."
-                  className="w-full bg-[#030e1c] border border-amber-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-amber-400"
+                  className="w-full bg-[#030e1c] border border-amber-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-amber-400 comms-ai-input"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-300 font-bold mb-1">Dato Clave / Cifra de Impacto:</label>
+                <label className="block text-slate-300 font-bold mb-1 comms-ai-label">Dato Clave / Cifra de Impacto:</label>
                 <textarea
                   value={aiForm.keyHighlight}
                   onChange={(e) => setAiForm({ ...aiForm, keyHighlight: e.target.value })}
                   placeholder="Ej: Reducción del 18% en extorsión, 10.000 becas..."
-                  className="w-full bg-[#030e1c] border border-amber-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-amber-400 h-20 text-xs leading-relaxed"
+                  className="w-full bg-[#030e1c] border border-amber-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-amber-400 h-20 text-xs leading-relaxed comms-ai-textarea"
                 />
               </div>
 
               <button
                 onClick={handleGenerateAiPost}
                 disabled={isGeneratingAi}
-                className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-black rounded-xl shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+                className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-black rounded-xl shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50 comms-ai-generate-btn"
               >
                 <Sparkles className={`w-4 h-4 ${isGeneratingAi ? 'animate-spin' : ''}`} />
                 <span>{isGeneratingAi ? 'Generando Contenido Viral...' : 'Generar Guión & Caption con IA'}</span>
@@ -1123,10 +1137,10 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
           <div className="lg:col-span-7 space-y-4">
             
             {aiGeneratedOutput ? (
-              <div className="bg-[#05162a] border border-amber-500/40 rounded-3xl p-6 space-y-5 shadow-2xl relative">
+              <div className="bg-[#05162a] border border-amber-500/40 rounded-3xl p-6 space-y-5 shadow-2xl relative comms-ai-output-card">
                 
-                <div className="flex items-center justify-between border-b border-amber-500/20 pb-3">
-                  <span className="px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 font-black text-xs uppercase tracking-wider flex items-center gap-1.5 border border-amber-400/30">
+                <div className="flex items-center justify-between border-b border-amber-500/20 pb-3 comms-ai-output-header">
+                  <span className="px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 font-black text-xs uppercase tracking-wider flex items-center gap-1.5 border border-amber-400/30 comms-ai-badge-success">
                     <CheckCircle2 className="w-4 h-4 text-amber-400" /> Contenido Generado Exitosamente
                   </span>
 
@@ -1137,7 +1151,7 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
                       setCopySuccess(true);
                       setTimeout(() => setCopySuccess(false), 2500);
                     }}
-                    className="px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-400/40 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer"
+                    className="px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-400/40 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer comms-ai-copy-btn"
                   >
                     {copySuccess ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                     <span>{copySuccess ? '¡Copiado!' : 'Copiar Texto'}</span>
@@ -1145,33 +1159,33 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
                 </div>
 
                 {/* HOOK DE APERTURA */}
-                <div className="space-y-1.5 bg-[#030e1c] p-4 rounded-2xl border border-amber-500/20">
-                  <span className="text-[10px] font-black uppercase text-amber-400 tracking-wider flex items-center gap-1">
+                <div className="space-y-1.5 bg-[#030e1c] p-4 rounded-2xl border border-amber-500/20 comms-ai-output-box">
+                  <span className="text-[10px] font-black uppercase text-amber-400 tracking-wider flex items-center gap-1 comms-ai-box-label">
                     <Flame className="w-3.5 h-3.5" /> Hook / Gancho Inicial (Primeros 3 Segundos):
                   </span>
-                  <p className="text-white text-sm font-extrabold italic leading-snug">
+                  <p className="text-white text-sm font-extrabold italic leading-snug comms-ai-hook-text">
                     {aiGeneratedOutput.hook}
                   </p>
                 </div>
 
                 {/* GUIÓN TIKTOK/REELS SI APLICA */}
                 {aiGeneratedOutput.videoScript && (
-                  <div className="space-y-1.5 bg-[#030e1c] p-4 rounded-2xl border border-cyan-500/20">
-                    <span className="text-[10px] font-black uppercase text-cyan-400 tracking-wider flex items-center gap-1">
+                  <div className="space-y-1.5 bg-[#030e1c] p-4 rounded-2xl border border-cyan-500/20 comms-ai-output-box comms-ai-script-box">
+                    <span className="text-[10px] font-black uppercase text-cyan-400 tracking-wider flex items-center gap-1 comms-ai-box-label">
                       <Video className="w-3.5 h-3.5" /> Escaleta de Video / Guión Técnico:
                     </span>
-                    <pre className="text-slate-300 text-xs font-mono whitespace-pre-wrap leading-relaxed">
+                    <pre className="text-slate-300 text-xs font-mono whitespace-pre-wrap leading-relaxed comms-ai-script-text">
                       {aiGeneratedOutput.videoScript}
                     </pre>
                   </div>
                 )}
 
                 {/* CAPTION Y TEXTO DE ACOMPAÑAMIENTO */}
-                <div className="space-y-1.5 bg-[#030e1c] p-4 rounded-2xl border border-amber-500/20">
-                  <span className="text-[10px] font-black uppercase text-amber-300 tracking-wider flex items-center gap-1">
+                <div className="space-y-1.5 bg-[#030e1c] p-4 rounded-2xl border border-amber-500/20 comms-ai-output-box">
+                  <span className="text-[10px] font-black uppercase text-amber-300 tracking-wider flex items-center gap-1 comms-ai-box-label">
                     <FileText className="w-3.5 h-3.5" /> Texto de Acompañamiento (Caption):
                   </span>
-                  <p className="text-slate-200 text-xs leading-relaxed whitespace-pre-wrap">
+                  <p className="text-slate-200 text-xs leading-relaxed whitespace-pre-wrap comms-ai-caption-text">
                     {aiGeneratedOutput.caption}
                   </p>
                 </div>
@@ -1180,13 +1194,13 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
                 <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
                   <div className="flex flex-wrap gap-1">
                     {aiGeneratedOutput.hashtags.map((h, i) => (
-                      <span key={i} className="text-xs font-bold text-cyan-400 bg-cyan-950/60 px-2.5 py-1 rounded-lg border border-cyan-500/30">
+                      <span key={i} className="text-xs font-bold text-cyan-400 bg-cyan-950/60 px-2.5 py-1 rounded-lg border border-cyan-500/30 comms-ai-tag">
                         {h}
                       </span>
                     ))}
                   </div>
 
-                  <span className="text-xs font-black text-amber-300 bg-amber-950/60 px-3 py-1 rounded-lg border border-amber-500/30">
+                  <span className="text-xs font-black text-amber-300 bg-amber-950/60 px-3 py-1 rounded-lg border border-amber-500/30 comms-ai-cta">
                     CTA: {aiGeneratedOutput.callToAction}
                   </span>
                 </div>
@@ -1212,7 +1226,7 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
                     setPosts([newPostObj, ...posts]);
                     setActiveSubTab('calendario');
                   }}
-                  className="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black rounded-xl text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shadow-emerald-500/20"
+                  className="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black rounded-xl text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shadow-emerald-500/20 comms-ai-add-btn"
                 >
                   <Plus className="w-4 h-4" />
                   <span>Guardar e Insertar en el Calendario de Publicaciones</span>
@@ -1220,11 +1234,11 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
 
               </div>
             ) : (
-              <div className="bg-[#05162a] border border-slate-800 rounded-3xl p-12 text-center text-slate-400 space-y-4 flex flex-col items-center justify-center min-h-[400px]">
+              <div className="bg-[#05162a] border border-slate-800 rounded-3xl p-12 text-center text-slate-400 space-y-4 flex flex-col items-center justify-center min-h-[400px] comms-ai-waiting-card">
                 <Sparkles className="w-12 h-12 text-amber-400 animate-bounce" />
                 <div className="space-y-1">
-                  <h4 className="font-extrabold text-white text-base">Esperando Parámetros de Generación</h4>
-                  <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                  <h4 className="font-extrabold text-white text-base comms-ai-waiting-title">Esperando Parámetros de Generación</h4>
+                  <p className="text-xs text-slate-400 max-w-sm mx-auto comms-ai-waiting-desc">
                     Diligencie el formulario de la izquierda con el eje temático y presione "Generar Guión" para obtener piezas publicitarias con IA.
                   </p>
                 </div>
@@ -1238,43 +1252,45 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
 
       {/* SUBTAB: EDITOR MULTIMEDIA PRO (FOTOS Y VIDEOS) */}
       {activeSubTab === 'editor_media' && (
-        <EditorMediaStudio
-          posts={posts}
-          candidateName={candidateName}
-          candidateRole="Candidato a la Alcaldía"
-          initialMedia={selectedMediaForEditor}
-          onSaveEditedMedia={handleSaveEditedMedia}
-        />
+        <div className="comms-tab-media">
+          <EditorMediaStudio
+            posts={posts}
+            candidateName={candidateName}
+            candidateRole="Candidato a la Alcaldía"
+            initialMedia={selectedMediaForEditor}
+            onSaveEditedMedia={handleSaveEditedMedia}
+          />
+        </div>
       )}
 
       {/* SUBTAB 3: PILARES Y TONO DE VOZ DE LA COMUNICACIÓN */}
       {activeSubTab === 'pilares' && (
-        <div className="space-y-6">
+        <div className="space-y-6 comms-tab-pilares">
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
 
             {/* Pilar 1: Seguridad */}
-            <div className="relative bg-gradient-to-b from-[#071e3d] to-[#04122a] border border-cyan-500/40 p-0 rounded-2xl shadow-2xl overflow-hidden flex flex-col group hover:border-cyan-400/60 transition-all duration-300">
-              <div className="h-1 w-full bg-gradient-to-r from-cyan-400 to-cyan-600" />
+            <div className="relative bg-gradient-to-b from-[#071e3d] to-[#04122a] border border-cyan-500/40 p-0 rounded-2xl shadow-2xl overflow-hidden flex flex-col group hover:border-cyan-400/60 transition-all duration-300 comms-pillar-card pilar-card-1">
+              <div className="h-1 w-full bg-gradient-to-r from-cyan-400 to-cyan-600 comms-pillar-accent" />
               <div className="p-5 flex flex-col flex-1 space-y-3">
                 <div className="flex items-start gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-cyan-500/20 border border-cyan-400/30 flex items-center justify-center shrink-0">
+                  <div className="w-9 h-9 rounded-xl bg-cyan-500/20 border border-cyan-400/30 flex items-center justify-center shrink-0 comms-pillar-icon">
                     <ShieldCheck className="w-5 h-5 text-cyan-300" />
                   </div>
                   <div className="min-w-0">
                     <span className="text-[10px] font-black text-cyan-400 uppercase tracking-widest block whitespace-nowrap">Pilar 1</span>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">Seguridad</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap comms-pillar-category">Seguridad</span>
                   </div>
-                  <span className="ml-auto text-3xl font-black text-cyan-500/15 select-none leading-none shrink-0">01</span>
+                  <span className="ml-auto text-3xl font-black text-cyan-500/15 select-none leading-none shrink-0 comms-pillar-number">01</span>
                 </div>
-                <h4 className="font-black text-white text-sm leading-snug">
+                <h4 className="font-black text-white text-sm leading-snug comms-pillar-title">
                   {territory ? `${territory} Segura e Inteligente` : 'Seguridad Ciudadana Inteligente'}
                 </h4>
-                <p className="text-xs text-slate-400 leading-relaxed flex-1">
+                <p className="text-xs text-slate-400 leading-relaxed flex-1 comms-pillar-desc">
                   Narrativa enfocada en paz urbana, combate a la inseguridad, tecnología de vigilancia y respuesta policial inmediata para el territorio de la circunscripción.
                 </p>
-                <div className="pt-3 border-t border-cyan-500/15">
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-400/30 text-[11px] font-black text-cyan-300">
+                <div className="pt-3 border-t border-cyan-500/15 comms-pillar-footer">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-400/30 text-[11px] font-black text-cyan-300 comms-pillar-tag">
                     #{(territory || 'Territorio').replace(/[\s,]/g, '')}Segura
                   </span>
                 </div>
@@ -1282,27 +1298,27 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
             </div>
 
             {/* Pilar 2: Empleo */}
-            <div className="relative bg-gradient-to-b from-[#071e18] to-[#041209] border border-emerald-500/40 p-0 rounded-2xl shadow-2xl overflow-hidden flex flex-col group hover:border-emerald-400/60 transition-all duration-300">
-              <div className="h-1 w-full bg-gradient-to-r from-emerald-400 to-emerald-600" />
+            <div className="relative bg-gradient-to-b from-[#071e18] to-[#041209] border border-emerald-500/40 p-0 rounded-2xl shadow-2xl overflow-hidden flex flex-col group hover:border-emerald-400/60 transition-all duration-300 comms-pillar-card pilar-card-2">
+              <div className="h-1 w-full bg-gradient-to-r from-emerald-400 to-emerald-600 comms-pillar-accent" />
               <div className="p-5 flex flex-col flex-1 space-y-3">
                 <div className="flex items-start gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center shrink-0">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center shrink-0 comms-pillar-icon">
                     <TrendingUp className="w-5 h-5 text-emerald-300" />
                   </div>
                   <div className="min-w-0">
                     <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest block whitespace-nowrap">Pilar 2</span>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">Empleo</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap comms-pillar-category">Empleo</span>
                   </div>
-                  <span className="ml-auto text-3xl font-black text-emerald-500/15 select-none leading-none shrink-0">02</span>
+                  <span className="ml-auto text-3xl font-black text-emerald-500/15 select-none leading-none shrink-0 comms-pillar-number">02</span>
                 </div>
-                <h4 className="font-black text-white text-sm leading-snug">
+                <h4 className="font-black text-white text-sm leading-snug comms-pillar-title">
                   Desarrollo Económico & Empleo Local
                 </h4>
-                <p className="text-xs text-slate-400 leading-relaxed flex-1">
+                <p className="text-xs text-slate-400 leading-relaxed flex-1 comms-pillar-desc">
                   Apoyo a microempresarios, atracción de inversión, simplificación de trámites e incentivos tributarios para la generación de empleo en la circunscripción.
                 </p>
-                <div className="pt-3 border-t border-emerald-500/15">
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-400/30 text-[11px] font-black text-emerald-300">
+                <div className="pt-3 border-t border-emerald-500/15 comms-pillar-footer">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-400/30 text-[11px] font-black text-emerald-300 comms-pillar-tag">
                     #EmpleoLocal
                   </span>
                 </div>
@@ -1310,27 +1326,27 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
             </div>
 
             {/* Pilar 3: Juventud */}
-            <div className="relative bg-gradient-to-b from-[#1e1504] to-[#120d02] border border-amber-500/40 p-0 rounded-2xl shadow-2xl overflow-hidden flex flex-col group hover:border-amber-400/60 transition-all duration-300">
-              <div className="h-1 w-full bg-gradient-to-r from-amber-400 to-amber-600" />
+            <div className="relative bg-gradient-to-b from-[#1e1504] to-[#120d02] border border-amber-500/40 p-0 rounded-2xl shadow-2xl overflow-hidden flex flex-col group hover:border-amber-400/60 transition-all duration-300 comms-pillar-card pilar-card-3">
+              <div className="h-1 w-full bg-gradient-to-r from-amber-400 to-amber-600 comms-pillar-accent" />
               <div className="p-5 flex flex-col flex-1 space-y-3">
                 <div className="flex items-start gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-400/30 flex items-center justify-center shrink-0">
+                  <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-400/30 flex items-center justify-center shrink-0 comms-pillar-icon">
                     <Award className="w-5 h-5 text-amber-300" />
                   </div>
                   <div className="min-w-0">
                     <span className="text-[10px] font-black text-amber-400 uppercase tracking-widest block whitespace-nowrap">Pilar 3</span>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">Juventud</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap comms-pillar-category">Juventud</span>
                   </div>
-                  <span className="ml-auto text-3xl font-black text-amber-500/15 select-none leading-none shrink-0">03</span>
+                  <span className="ml-auto text-3xl font-black text-amber-500/15 select-none leading-none shrink-0 comms-pillar-number">03</span>
                 </div>
-                <h4 className="font-black text-white text-sm leading-snug">
+                <h4 className="font-black text-white text-sm leading-snug comms-pillar-title">
                   Oportunidades para la Juventud
                 </h4>
-                <p className="text-xs text-slate-400 leading-relaxed flex-1">
+                <p className="text-xs text-slate-400 leading-relaxed flex-1 comms-pillar-desc">
                   Becas, centros de formación técnica y deporte competitivo para los jóvenes de la circunscripción como motor de transformación social.
                 </p>
-                <div className="pt-3 border-t border-amber-500/15">
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-400/30 text-[11px] font-black text-amber-300">
+                <div className="pt-3 border-t border-amber-500/15 comms-pillar-footer">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-400/30 text-[11px] font-black text-amber-300 comms-pillar-tag">
                     #JuventudAvanza
                   </span>
                 </div>
@@ -1338,27 +1354,27 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
             </div>
 
             {/* Pilar 4: Transparencia */}
-            <div className="relative bg-gradient-to-b from-[#160d2a] to-[#0d0618] border border-purple-500/40 p-0 rounded-2xl shadow-2xl overflow-hidden flex flex-col group hover:border-purple-400/60 transition-all duration-300">
-              <div className="h-1 w-full bg-gradient-to-r from-purple-400 to-purple-600" />
+            <div className="relative bg-gradient-to-b from-[#160d2a] to-[#0d0618] border border-purple-500/40 p-0 rounded-2xl shadow-2xl overflow-hidden flex flex-col group hover:border-purple-400/60 transition-all duration-300 comms-pillar-card pilar-card-4">
+              <div className="h-1 w-full bg-gradient-to-r from-purple-400 to-purple-600 comms-pillar-accent" />
               <div className="p-5 flex flex-col flex-1 space-y-3">
                 <div className="flex items-start gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-purple-500/20 border border-purple-400/30 flex items-center justify-center shrink-0">
+                  <div className="w-9 h-9 rounded-xl bg-purple-500/20 border border-purple-400/30 flex items-center justify-center shrink-0 comms-pillar-icon">
                     <CheckCircle2 className="w-5 h-5 text-purple-300" />
                   </div>
                   <div className="min-w-0">
                     <span className="text-[10px] font-black text-purple-400 uppercase tracking-widest block whitespace-nowrap">Pilar 4</span>
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">Transparencia</span>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap comms-pillar-category">Transparencia</span>
                   </div>
-                  <span className="ml-auto text-3xl font-black text-purple-500/15 select-none leading-none shrink-0">04</span>
+                  <span className="ml-auto text-3xl font-black text-purple-500/15 select-none leading-none shrink-0 comms-pillar-number">04</span>
                 </div>
-                <h4 className="font-black text-white text-sm leading-snug">
+                <h4 className="font-black text-white text-sm leading-snug comms-pillar-title">
                   Gerencia Pública Abierta
                 </h4>
-                <p className="text-xs text-slate-400 leading-relaxed flex-1">
+                <p className="text-xs text-slate-400 leading-relaxed flex-1 comms-pillar-desc">
                   Cero tolerancia a la corrupción, veeduría ciudadana en tiempo real y presupuesto participativo 100% digital para la circunscripción.
                 </p>
-                <div className="pt-3 border-t border-purple-500/15">
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-500/10 border border-purple-400/30 text-[11px] font-black text-purple-300">
+                <div className="pt-3 border-t border-purple-500/15 comms-pillar-footer">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-purple-500/10 border border-purple-400/30 text-[11px] font-black text-purple-300 comms-pillar-tag">
                     #GerenciaHonesta
                   </span>
                 </div>
@@ -1368,14 +1384,14 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
           </div>
 
           {/* TONO DE VOZ GUIDELINES */}
-          <div className="bg-[#05162a] border border-purple-500/30 p-6 rounded-3xl space-y-4 shadow-xl">
-            <h3 className="font-extrabold text-white text-base flex items-center gap-2">
+          <div className="bg-[#05162a] border border-purple-500/30 p-6 rounded-3xl space-y-4 shadow-xl comms-tone-card">
+            <h3 className="font-extrabold text-white text-base flex items-center gap-2 comms-tone-title">
               <Radio className="w-5 h-5 text-purple-400" />
               Guía de Tono de Voz & Lenguaje Permitido
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-              <div className="bg-emerald-950/40 border border-emerald-500/30 p-4 rounded-2xl space-y-2">
+              <div className="bg-emerald-950/40 border border-emerald-500/30 p-4 rounded-2xl space-y-2 comms-tone-good">
                 <strong className="text-emerald-300 font-extrabold block text-sm flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Palabras y Atributos Recomendados:
                 </strong>
@@ -1384,7 +1400,7 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
                 </p>
               </div>
 
-              <div className="bg-rose-950/40 border border-rose-500/30 p-4 rounded-2xl space-y-2">
+              <div className="bg-rose-950/40 border border-rose-500/30 p-4 rounded-2xl space-y-2 comms-tone-bad">
                 <strong className="text-rose-300 font-extrabold block text-sm flex items-center gap-1.5">
                   <X className="w-4 h-4 text-rose-400" /> Términos Estrictamente Prohibidos:
                 </strong>
@@ -1400,25 +1416,25 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
 
       {/* SUBTAB 4: ESCUCHA ACTIVA & ANTI-FAKE NEWS */}
       {activeSubTab === 'social_listening' && (
-        <div className="space-y-6">
+        <div className="space-y-6 comms-tab-listening">
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             
             {/* ESCUDO CONTRA DESINFORMACIÓN */}
-            <div className="bg-[#05162a] border border-rose-500/40 p-6 rounded-3xl space-y-4 shadow-xl">
-              <div className="flex items-center justify-between border-b border-rose-500/20 pb-3">
+            <div className="bg-[#05162a] border border-rose-500/40 p-6 rounded-3xl space-y-4 shadow-xl comms-shield-card">
+              <div className="flex items-center justify-between border-b border-rose-500/20 pb-3 comms-shield-header">
                 <div className="flex items-center gap-2">
-                  <div className="p-2 bg-rose-500/20 text-rose-400 rounded-xl">
+                  <div className="p-2 bg-rose-500/20 text-rose-400 rounded-xl comms-shield-icon-box">
                     <AlertTriangle className="w-5 h-5" />
                   </div>
-                  <h3 className="font-extrabold text-white text-base">Escudo Anti-Fake News & Guerra Sucia</h3>
+                  <h3 className="font-extrabold text-white text-base comms-shield-title">Escudo Anti-Fake News & Guerra Sucia</h3>
                 </div>
-                <span className="bg-rose-500/20 text-rose-300 text-[10px] font-black px-2.5 py-0.5 rounded-full border border-rose-400/40">
+                <span className="bg-rose-500/20 text-rose-300 text-[10px] font-black px-2.5 py-0.5 rounded-full border border-rose-400/40 comms-shield-badge">
                   Alertas Activas: 1
                 </span>
               </div>
 
-              <div className="bg-rose-950/30 border border-rose-500/30 p-4 rounded-2xl space-y-3">
+              <div className="bg-rose-950/30 border border-rose-500/30 p-4 rounded-2xl space-y-3 comms-shield-alert-box">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-rose-300 flex items-center gap-1">
                     <AlertTriangle className="w-3.5 h-3.5" /> Falsa Cadenas de WhatsApp Detectada
@@ -1430,7 +1446,7 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
                   <strong>Contenido Falso:</strong> "Se difunde un supuesto audio editado afirmando que el candidato cancelará los programas de subsidios a adultos mayores."
                 </p>
 
-                <div className="bg-[#030e1c] p-3 rounded-xl border border-emerald-500/30 space-y-1.5">
+                <div className="bg-[#030e1c] p-3 rounded-xl border border-emerald-500/30 space-y-1.5 comms-shield-counter-box">
                   <strong className="text-emerald-400 text-xs font-extrabold block flex items-center gap-1">
                     <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> Contra-Narrativa Oficial Preparada:
                   </strong>
@@ -1441,7 +1457,7 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
 
                 <button
                   onClick={() => alert('¡Comunicado de Desmentido Oficial enviado al canal de difusión de WhatsApp!')}
-                  className="w-full py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black text-xs rounded-xl transition-all cursor-pointer shadow"
+                  className="w-full py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black text-xs rounded-xl transition-all cursor-pointer shadow comms-shield-btn"
                 >
                   Lanzar Desmentido en WhatsApp & Redes
                 </button>
@@ -1449,50 +1465,50 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
             </div>
 
             {/* MONITOR DE SENTIMIENTO SOCIAL */}
-            <div className="bg-[#05162a] border border-cyan-500/30 p-6 rounded-3xl space-y-4 shadow-xl">
-              <h3 className="font-extrabold text-white text-base flex items-center gap-2 border-b border-cyan-500/20 pb-3">
+            <div className="bg-[#05162a] border border-cyan-500/30 p-6 rounded-3xl space-y-4 shadow-xl comms-listening-card">
+              <h3 className="font-extrabold text-white text-base flex items-center gap-2 border-b border-cyan-500/20 pb-3 comms-listening-title">
                 <BarChart2 className="w-5 h-5 text-cyan-400" />
                 Análisis de Sentimiento de Menciones (Últimas 24h)
               </h3>
 
-              <div className="space-y-3 text-xs">
+              <div className="space-y-3 text-xs comms-sentiment-bars">
                 <div>
                   <div className="flex justify-between font-bold mb-1">
-                    <span className="text-emerald-400">Positivo (Apoyo & Propuestas)</span>
-                    <span className="text-white font-mono">76%</span>
+                    <span className="text-emerald-400 comms-sentiment-label-pos">Positivo (Apoyo & Propuestas)</span>
+                    <span className="text-white font-mono comms-sentiment-val">76%</span>
                   </div>
-                  <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
+                  <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden comms-sentiment-track">
                     <div className="bg-emerald-400 h-full rounded-full" style={{ width: '76%' }} />
                   </div>
                 </div>
 
                 <div>
                   <div className="flex justify-between font-bold mb-1">
-                    <span className="text-slate-300">Neutral (Preguntas & Dudas)</span>
-                    <span className="text-white font-mono">18%</span>
+                    <span className="text-slate-300 comms-sentiment-label-neu">Neutral (Preguntas & Dudas)</span>
+                    <span className="text-white font-mono comms-sentiment-val">18%</span>
                   </div>
-                  <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
+                  <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden comms-sentiment-track">
                     <div className="bg-slate-400 h-full rounded-full" style={{ width: '18%' }} />
                   </div>
                 </div>
 
                 <div>
                   <div className="flex justify-between font-bold mb-1">
-                    <span className="text-rose-400">Crítico (Ataques RIVALES)</span>
-                    <span className="text-white font-mono">6%</span>
+                    <span className="text-rose-400 comms-sentiment-label-neg">Crítico (Ataques RIVALES)</span>
+                    <span className="text-white font-mono comms-sentiment-val">6%</span>
                   </div>
-                  <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
+                  <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden comms-sentiment-track">
                     <div className="bg-rose-500 h-full rounded-full" style={{ width: '6%' }} />
                   </div>
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-cyan-500/20 space-y-2">
-                <span className="text-xs font-extrabold text-cyan-300 block">Hashtags Más Mencionados hoy:</span>
+              <div className="pt-3 border-t border-cyan-500/20 space-y-2 comms-hashtags-section">
+                <span className="text-xs font-extrabold text-cyan-300 block comms-hashtags-title">Hashtags Más Mencionados hoy:</span>
                 <div className="flex flex-wrap gap-1.5">
-                  <span className="px-2.5 py-1 bg-cyan-950 text-cyan-300 border border-cyan-500/30 rounded-lg text-xs font-bold">#SantiagoPerez</span>
-                  <span className="px-2.5 py-1 bg-cyan-950 text-cyan-300 border border-cyan-500/30 rounded-lg text-xs font-bold">#Medellin2026</span>
-                  <span className="px-2.5 py-1 bg-cyan-950 text-cyan-300 border border-cyan-500/30 rounded-lg text-xs font-bold">#DebateSeguridad</span>
+                  <span className="px-2.5 py-1 bg-cyan-950 text-cyan-300 border border-cyan-500/30 rounded-lg text-xs font-bold comms-hashtag-badge">#SantiagoPerez</span>
+                  <span className="px-2.5 py-1 bg-cyan-950 text-cyan-300 border border-cyan-500/30 rounded-lg text-xs font-bold comms-hashtag-badge">#Medellin2026</span>
+                  <span className="px-2.5 py-1 bg-cyan-950 text-cyan-300 border border-cyan-500/30 rounded-lg text-xs font-bold comms-hashtag-badge">#DebateSeguridad</span>
                 </div>
               </div>
             </div>
@@ -1504,21 +1520,21 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
 
       {/* SUBTAB 5: ESTRATEGIA WHATSAPP & CANALES DIRECTOS */}
       {activeSubTab === 'whatsapp' && (
-        <div className="bg-[#05162a] border border-emerald-500/30 p-6 rounded-3xl space-y-6 shadow-xl">
+        <div className="bg-[#05162a] border border-emerald-500/30 p-6 rounded-3xl space-y-6 shadow-xl comms-whatsapp-card">
           
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-emerald-500/20 pb-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-emerald-500/20 pb-4 comms-whatsapp-header">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-emerald-500/20 text-emerald-400 rounded-2xl">
+              <div className="p-3 bg-emerald-500/20 text-emerald-400 rounded-2xl comms-whatsapp-icon-box">
                 <MessageCircle className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="font-extrabold text-white text-lg">Central de Difusión Directa por WhatsApp</h3>
+                <h3 className="font-extrabold text-white text-lg comms-whatsapp-title">Central de Difusión Directa por WhatsApp</h3>
               </div>
             </div>
 
             <button
               onClick={() => alert('¡Mensaje de difusión masivo programado para enviar a 4,200 líderes comunitarios!')}
-              className="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black text-xs rounded-xl shadow-lg shadow-emerald-500/20 flex items-center gap-2 transition-all cursor-pointer"
+              className="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black text-xs rounded-xl shadow-lg shadow-emerald-500/20 flex items-center gap-2 transition-all cursor-pointer comms-whatsapp-btn"
             >
               <Send className="w-4 h-4" />
               <span>Enviar Difusión a Líderes</span>
@@ -1527,22 +1543,22 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             
-            <div className="bg-[#030e1c] border border-emerald-500/20 p-4 rounded-2xl space-y-2">
-              <span className="text-xs font-extrabold text-emerald-400 block">Canal 1: Comunas Populares (1, 3, 8)</span>
-              <p className="text-xs text-slate-300">1,850 Líderes y Voluntarios Registrados.</p>
-              <span className="text-[10px] text-slate-400 font-mono">Última emisión: Hoy 09:30 AM</span>
+            <div className="bg-[#030e1c] border border-emerald-500/20 p-4 rounded-2xl space-y-2 comms-whatsapp-channel">
+              <span className="text-xs font-extrabold text-emerald-400 block comms-channel-title">Canal 1: Comunas Populares (1, 3, 8)</span>
+              <p className="text-xs text-slate-300 comms-channel-desc">1,850 Líderes y Voluntarios Registrados.</p>
+              <span className="text-[10px] text-slate-400 font-mono comms-channel-time">Última emisión: Hoy 09:30 AM</span>
             </div>
 
-            <div className="bg-[#030e1c] border border-emerald-500/20 p-4 rounded-2xl space-y-2">
-              <span className="text-xs font-extrabold text-emerald-400 block">Canal 2: Sector Comercial & Empresarial</span>
-              <p className="text-xs text-slate-300">1,240 Comerciantes del Centro y El Poblado.</p>
-              <span className="text-[10px] text-slate-400 font-mono">Última emisión: Ayer 17:00 PM</span>
+            <div className="bg-[#030e1c] border border-emerald-500/20 p-4 rounded-2xl space-y-2 comms-whatsapp-channel">
+              <span className="text-xs font-extrabold text-emerald-400 block comms-channel-title">Canal 2: Sector Comercial & Empresarial</span>
+              <p className="text-xs text-slate-300 comms-channel-desc">1,240 Comerciantes del Centro y El Poblado.</p>
+              <span className="text-[10px] text-slate-400 font-mono comms-channel-time">Última emisión: Ayer 17:00 PM</span>
             </div>
 
-            <div className="bg-[#030e1c] border border-emerald-500/20 p-4 rounded-2xl space-y-2">
-              <span className="text-xs font-extrabold text-emerald-400 block">Canal 3: Red de Jóvenes Universitarios</span>
-              <p className="text-xs text-slate-300">1,110 Estudiantes y Emprendedores.</p>
-              <span className="text-[10px] text-slate-400 font-mono">Última emisión: Hace 3 días</span>
+            <div className="bg-[#030e1c] border border-emerald-500/20 p-4 rounded-2xl space-y-2 comms-whatsapp-channel">
+              <span className="text-xs font-extrabold text-emerald-400 block comms-channel-title">Canal 3: Red de Jóvenes Universitarios</span>
+              <p className="text-xs text-slate-300 comms-channel-desc">1,110 Estudiantes y Emprendedores.</p>
+              <span className="text-[10px] text-slate-400 font-mono comms-channel-time">Última emisión: Hace 3 días</span>
             </div>
 
           </div>
@@ -1553,14 +1569,14 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
       {/* MODAL: CREAR / PROGRAMAR NUEVA PUBLICACIÓN */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#05162a] border border-purple-500/40 rounded-3xl p-6 max-w-xl w-full max-h-[90vh] overflow-y-auto space-y-4 text-xs shadow-2xl custom-scrollbar">
+          <div className="bg-[#05162a] border border-purple-500/40 rounded-3xl p-6 max-w-xl w-full max-h-[90vh] overflow-y-auto space-y-4 text-xs shadow-2xl custom-scrollbar comms-modal-dialog">
             
-            <div className="flex justify-between items-center border-b border-purple-500/20 pb-3">
-              <h4 className="font-extrabold text-white text-sm flex items-center gap-2">
+            <div className="flex justify-between items-center border-b border-purple-500/20 pb-3 comms-modal-header">
+              <h4 className="font-extrabold text-white text-sm flex items-center gap-2 comms-modal-title">
                 <Plus className="w-4 h-4 text-purple-400" />
                 Programar Nueva Publicación en Redes
               </h4>
-              <button onClick={() => setIsAddModalOpen(false)} className="text-slate-400 hover:text-white cursor-pointer">
+              <button onClick={() => setIsAddModalOpen(false)} className="text-slate-400 hover:text-white cursor-pointer comms-modal-close">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -1568,24 +1584,24 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
             <form onSubmit={handleCreatePost} className="space-y-3.5">
               
               <div>
-                <label className="block text-purple-300 font-bold mb-1">Título / Pieza de Contenido:</label>
+                <label className="block text-purple-300 font-bold mb-1 comms-modal-label">Título / Pieza de Contenido:</label>
                 <input
                   type="text"
                   required
                   value={newPost.title}
                   onChange={(e) => setNewPost({ ...newPost, title: e.target.value })}
                   placeholder="Ej: Video Lanzamiento Plan de Seguridad Comuna 13"
-                  className="w-full bg-[#030e1c] border border-purple-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-400 font-medium"
+                  className="w-full bg-[#030e1c] border border-purple-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-400 font-medium comms-modal-input"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-purple-300 font-bold mb-1">Red Social:</label>
+                  <label className="block text-purple-300 font-bold mb-1 comms-modal-label">Red Social:</label>
                   <select
                     value={newPost.platform}
                     onChange={(e) => setNewPost({ ...newPost, platform: e.target.value as any })}
-                    className="w-full bg-[#030e1c] border border-purple-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-400 cursor-pointer"
+                    className="w-full bg-[#030e1c] border border-purple-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-400 cursor-pointer comms-modal-select"
                   >
                     <option value="Instagram">Instagram</option>
                     <option value="TikTok">TikTok</option>
@@ -1597,11 +1613,11 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
                 </div>
 
                 <div>
-                  <label className="block text-purple-300 font-bold mb-1">Formato:</label>
+                  <label className="block text-purple-300 font-bold mb-1 comms-modal-label">Formato:</label>
                   <select
                     value={newPost.format}
                     onChange={(e) => setNewPost({ ...newPost, format: e.target.value as any })}
-                    className="w-full bg-[#030e1c] border border-purple-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-400 cursor-pointer"
+                    className="w-full bg-[#030e1c] border border-purple-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-400 cursor-pointer comms-modal-select"
                   >
                     <option value="Reel / Video">Reel / Video Short</option>
                     <option value="Carrusel Infográfico">Carrusel Infográfico</option>
@@ -1614,55 +1630,55 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-purple-300 font-bold mb-1">Fecha Programada:</label>
+                  <label className="block text-purple-300 font-bold mb-1 comms-modal-label">Fecha Programada:</label>
                   <input
                     type="date"
                     required
                     value={newPost.scheduledDate}
                     onChange={(e) => setNewPost({ ...newPost, scheduledDate: e.target.value })}
-                    className="w-full bg-[#030e1c] border border-purple-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-400"
+                    className="w-full bg-[#030e1c] border border-purple-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-400 comms-modal-input"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-purple-300 font-bold mb-1">Hora Programada:</label>
+                  <label className="block text-purple-300 font-bold mb-1 comms-modal-label">Hora Programada:</label>
                   <input
                     type="time"
                     required
                     value={newPost.scheduledTime}
                     onChange={(e) => setNewPost({ ...newPost, scheduledTime: e.target.value })}
-                    className="w-full bg-[#030e1c] border border-purple-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-400"
+                    className="w-full bg-[#030e1c] border border-purple-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-400 comms-modal-input"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-purple-300 font-bold mb-1">Pilar Estratégico Asociado:</label>
+                <label className="block text-purple-300 font-bold mb-1 comms-modal-label">Pilar Estratégico Asociado:</label>
                 <input
                   type="text"
                   required
                   value={newPost.pilarEstrategico}
                   onChange={(e) => setNewPost({ ...newPost, pilarEstrategico: e.target.value })}
                   placeholder="Ej: Seguridad Inteligente, Empleo..."
-                  className="w-full bg-[#030e1c] border border-purple-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-400"
+                  className="w-full bg-[#030e1c] border border-purple-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-400 comms-modal-input"
                 />
               </div>
 
               <div>
-                <label className="block text-purple-300 font-bold mb-1">Texto de la Publicación (Caption):</label>
+                <label className="block text-purple-300 font-bold mb-1 comms-modal-label">Texto de la Publicación (Caption):</label>
                 <textarea
                   required
                   value={newPost.caption}
                   onChange={(e) => setNewPost({ ...newPost, caption: e.target.value })}
                   placeholder="Escriba el texto oficial o copy de la publicación..."
-                  className="w-full bg-[#030e1c] border border-purple-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-400 h-24 text-xs leading-relaxed"
+                  className="w-full bg-[#030e1c] border border-purple-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-purple-400 h-24 text-xs leading-relaxed comms-modal-textarea"
                 />
               </div>
 
               {/* ADJUNTAR MULTIMEDIA (IMÁGENES Y VIDEOS) */}
               <div className="space-y-2 pt-2 border-t border-purple-500/20">
                 <div className="flex items-center justify-between">
-                  <label className="block text-purple-300 font-bold flex items-center gap-1.5">
+                  <label className="block text-purple-300 font-bold flex items-center gap-1.5 comms-modal-label">
                     <Paperclip className="w-3.5 h-3.5 text-purple-400" />
                     Adjuntar Archivos Multimedia (Fotos y Videos):
                   </label>
@@ -1674,7 +1690,7 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
                   onClick={() => fileInputRef.current?.click()}
-                  className={`border-2 border-dashed rounded-2xl p-4 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2 ${
+                  className={`border-2 border-dashed rounded-2xl p-4 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2 comms-dropzone ${
                     dragActive
                       ? 'border-purple-400 bg-purple-500/20 scale-[1.01]'
                       : 'border-purple-500/30 bg-[#030e1c] hover:border-purple-400/60 hover:bg-[#041326]'
@@ -1688,14 +1704,14 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
                     multiple
                     className="hidden"
                   />
-                  <div className="p-2.5 bg-purple-500/20 text-purple-300 rounded-full">
+                  <div className="p-2.5 bg-purple-500/20 text-purple-300 rounded-full comms-dropzone-icon">
                     <Upload className="w-5 h-5 animate-bounce text-purple-400" />
                   </div>
                   <div className="space-y-0.5">
-                    <p className="text-xs font-bold text-white">
+                    <p className="text-xs font-bold text-white comms-dropzone-title">
                       Arrastra y suelta tus videos o imágenes aquí
                     </p>
-                    <p className="text-[10px] text-slate-400">
+                    <p className="text-[10px] text-slate-400 comms-dropzone-desc">
                       o haz clic para explorar en tu dispositivo (MP4, MOV, WEBM, JPG, PNG, GIF)
                     </p>
                   </div>
@@ -1706,18 +1722,18 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
                   <button
                     type="button"
                     onClick={() => setShowUrlInput(!showUrlInput)}
-                    className="text-purple-400 hover:text-purple-300 font-bold underline cursor-pointer"
+                    className="text-purple-400 hover:text-purple-300 font-bold underline cursor-pointer comms-url-toggle"
                   >
                     {showUrlInput ? 'Ocultar ingreso por URL' : '＋ Ingresar enlace URL externo (video / imagen)'}
                   </button>
                 </div>
 
                 {showUrlInput && (
-                  <div className="flex items-center gap-2 bg-[#030e1c] p-2 rounded-xl border border-purple-500/30">
+                  <div className="flex items-center gap-2 bg-[#030e1c] p-2 rounded-xl border border-purple-500/30 comms-url-box">
                     <select
                       value={urlType}
                       onChange={(e) => setUrlType(e.target.value as any)}
-                      className="bg-slate-900 text-white font-bold text-[10px] px-2 py-1 rounded-lg border border-purple-500/30 outline-none cursor-pointer"
+                      className="bg-slate-900 text-white font-bold text-[10px] px-2 py-1 rounded-lg border border-purple-500/30 outline-none cursor-pointer comms-url-select"
                     >
                       <option value="video">🎥 Video</option>
                       <option value="image">🖼️ Imagen</option>
@@ -1727,12 +1743,12 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
                       placeholder="https://ejemplo.com/mi_video.mp4"
                       value={urlInput}
                       onChange={(e) => setUrlInput(e.target.value)}
-                      className="flex-1 bg-transparent text-white text-xs outline-none px-1"
+                      className="flex-1 bg-transparent text-white text-xs outline-none px-1 comms-url-input"
                     />
                     <button
                       type="button"
                       onClick={handleAddUrlMedia}
-                      className="px-3 py-1 bg-purple-600 hover:bg-purple-500 text-white font-extrabold rounded-lg text-xs cursor-pointer transition-all"
+                      className="px-3 py-1 bg-purple-600 hover:bg-purple-500 text-white font-extrabold rounded-lg text-xs cursor-pointer transition-all comms-url-btn"
                     >
                       Agregar
                     </button>
@@ -1742,14 +1758,14 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
                 {/* LIST OF ATTACHED MEDIA PREVIEWS */}
                 {modalAttachments.length > 0 && (
                   <div className="space-y-2 pt-1">
-                    <span className="text-[10px] font-bold text-slate-400 block">
+                    <span className="text-[10px] font-bold text-slate-400 block comms-modal-label">
                       Archivos adjuntos ({modalAttachments.length}):
                     </span>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar">
                       {modalAttachments.map((att) => (
                         <div
                           key={att.id}
-                          className="flex items-center gap-2 bg-[#030e1c] p-2 rounded-xl border border-purple-500/30 relative group"
+                          className="flex items-center gap-2 bg-[#030e1c] p-2 rounded-xl border border-purple-500/30 relative group comms-attachment-item"
                         >
                           <div className="w-12 h-12 rounded-lg overflow-hidden bg-slate-950 flex-shrink-0 border border-slate-800 flex items-center justify-center relative">
                             {att.type === 'video' ? (
@@ -1770,11 +1786,11 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
                             }`}>
                               {att.type === 'video' ? 'VIDEO' : 'IMAGEN'}
                             </span>
-                            <p className="text-[11px] font-bold text-white truncate leading-tight">
+                            <p className="text-[11px] font-bold text-white truncate leading-tight comms-item-name">
                               {att.name}
                             </p>
                             {att.size && (
-                              <p className="text-[9px] text-slate-400 font-mono">
+                              <p className="text-[9px] text-slate-400 font-mono comms-item-size">
                                 {att.size}
                               </p>
                             )}
@@ -1795,18 +1811,18 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
                 )}
               </div>
 
-              <div className="flex gap-2 pt-3 border-t border-purple-500/20">
+              <div className="flex gap-2 pt-3 border-t border-purple-500/20 comms-modal-footer">
                 <button
                   type="button"
                   onClick={() => setIsAddModalOpen(false)}
-                  className="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold cursor-pointer transition-all"
+                  className="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold cursor-pointer transition-all comms-modal-btn-cancel"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={isSavingPost || !campaignId}
-                  className="flex-1 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white rounded-xl font-extrabold cursor-pointer transition-all shadow-lg shadow-purple-900/40"
+                  className="flex-1 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white rounded-xl font-extrabold cursor-pointer transition-all shadow-lg shadow-purple-900/40 comms-modal-btn-submit"
                 >
                   {isSavingPost ? 'Guardando...' : 'Guardar Publicación'}
                 </button>
@@ -1821,8 +1837,8 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
       {/* LIGHTBOX MODAL FOR FULLSCREEN MEDIA VIEW */}
       {lightboxMedia && (
         <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="relative max-w-4xl w-full bg-[#05162a] border border-purple-500/40 rounded-3xl p-4 shadow-2xl space-y-3">
-            <div className="flex justify-between items-center border-b border-purple-500/20 pb-3 px-2">
+          <div className="relative max-w-4xl w-full bg-[#05162a] border border-purple-500/40 rounded-3xl p-4 shadow-2xl space-y-3 comms-lightbox-dialog">
+            <div className="flex justify-between items-center border-b border-purple-500/20 pb-3 px-2 comms-lightbox-header">
               <div className="flex items-center gap-2">
                 {lightboxMedia.type === 'video' ? (
                   <Film className="w-5 h-5 text-cyan-400" />
@@ -1830,7 +1846,7 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
                   <ImageIcon className="w-5 h-5 text-pink-400" />
                 )}
                 <div>
-                  <h4 className="font-extrabold text-white text-sm">{lightboxMedia.name}</h4>
+                  <h4 className="font-extrabold text-white text-sm comms-lightbox-title">{lightboxMedia.name}</h4>
                   <span className="text-[10px] text-slate-400 font-mono">{lightboxMedia.size || 'Multimedia'}</span>
                 </div>
               </div>

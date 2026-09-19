@@ -20,6 +20,8 @@ import {
   Info
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { useModuleColorMode } from '../../utils/themeColorMode';
+import { ColorModeToggle } from '../common/ColorModeToggle';
 
 interface EncuestasViewProps {
   onSelectView: (view: ViewMode) => void;
@@ -41,6 +43,7 @@ interface Encuesta {
 }
 
 export const EncuestasView: React.FC<EncuestasViewProps> = ({ onSelectView, authUser }) => {
+  const { colorMode, isWhiteMode } = useModuleColorMode('gestion_territorial');
   const [encuestas, setEncuestas] = useState<Encuesta[]>([]);
   const [campaignId, setCampaignId] = useState('');
   const [surveyId, setSurveyId] = useState('');
@@ -179,20 +182,27 @@ export const EncuestasView: React.FC<EncuestasViewProps> = ({ onSelectView, auth
   });
 
   return (
-    <div className="responsive-view encuestas-campo-view min-h-[calc(100dvh-60px)] w-full min-w-0 bg-[#030712] text-slate-100 p-3 sm:p-4 md:p-8 space-y-4 sm:space-y-6 max-w-7xl mx-auto overflow-x-hidden">
+    <div 
+      data-module="encuestas"
+      data-color-mode={isWhiteMode ? 'white' : 'established'}
+      className="responsive-view encuestas-campo-view min-h-[calc(100dvh-60px)] w-full min-w-0 bg-[#030712] text-slate-100 p-3 sm:p-4 md:p-8 space-y-4 sm:space-y-6 max-w-7xl mx-auto overflow-x-hidden"
+    >
       {dataError && <div className="rounded-xl border border-amber-500/40 bg-amber-950/30 px-4 py-3 text-sm text-amber-200 flex justify-between gap-3"><span>{dataError}</span><button type="button" onClick={() => void loadRealSurveys()} className="font-bold text-cyan-300">Reintentar</button></div>}
       
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-[#0b1d38] via-[#0d2a4a] to-[#2563eb] rounded-3xl p-5 md:p-6 text-white shadow-xl relative overflow-hidden">
+      <div className="encuestas-header-banner bg-gradient-to-r from-[#0b1d38] via-[#0d2a4a] to-[#2563eb] rounded-3xl p-5 md:p-6 text-white shadow-xl relative overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(37,99,235,0.08),transparent)]" />
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-5 relative z-10">
           <div className="space-y-2">
-            <h2 className="text-xl md:text-2xl font-black tracking-tight">Registro de Encuestas & Opinión</h2>
+            <div className="flex items-center gap-3">
+              <h2 className="text-xl md:text-2xl font-black tracking-tight">Registro de Encuestas & Opinión</h2>
+              <ColorModeToggle moduleId="gestion_territorial" />
+            </div>
             <p className="text-xs text-blue-100/70">{surveyTitle}</p>
           </div>
           
           {/* Daily Goal card */}
-          <div className="bg-[#041733]/90 border border-blue-500/30 rounded-2xl p-4 w-full md:w-auto md:min-w-[220px] shrink-0 shadow-lg space-y-2.5">
+          <div className="encuestas-goal-card bg-[#041733]/90 border border-blue-500/30 rounded-2xl p-4 w-full md:w-auto md:min-w-[220px] shrink-0 shadow-lg space-y-2.5">
             <div className="flex justify-between items-center text-xs">
               <span className="text-slate-400 font-semibold">Meta de Hoy</span>
               <span className="font-mono font-bold text-blue-300">{metaDiaria > 0 ? `${completadasHoy} / ${metaDiaria}` : completadasHoy} encuestas</span>
@@ -219,7 +229,7 @@ export const EncuestasView: React.FC<EncuestasViewProps> = ({ onSelectView, auth
         <div className="lg:col-span-2 space-y-6">
           
           {/* Survey Submission form */}
-          <div className="bg-[#041733]/50 border border-slate-800/80 rounded-3xl p-5 md:p-6 shadow-xl space-y-4">
+          <div className="encuestas-form-card bg-[#041733]/50 border border-slate-800/80 rounded-3xl p-5 md:p-6 shadow-xl space-y-4">
             <div className="flex items-center gap-2">
               <PlusCircle className="w-5 h-5 text-blue-400" />
               <h3 className="text-sm font-black text-white">Registrar Nueva Encuesta</h3>
@@ -387,7 +397,7 @@ export const EncuestasView: React.FC<EncuestasViewProps> = ({ onSelectView, auth
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             
             {/* Intention of Vote Chart Card */}
-            <div className="bg-[#041733]/50 border border-slate-800/80 rounded-3xl p-5 shadow-xl space-y-4">
+            <div className="encuestas-metric-card bg-[#041733]/50 border border-slate-800/80 rounded-3xl p-5 shadow-xl space-y-4">
               <div className="flex justify-between items-center border-b border-slate-800 pb-2">
                 <div className="flex items-center gap-2">
                   <TrendingUp className="w-4 h-4 text-blue-400" />
@@ -423,7 +433,7 @@ export const EncuestasView: React.FC<EncuestasViewProps> = ({ onSelectView, auth
             </div>
 
             {/* Top Concerns Summary */}
-            <div className="bg-[#041733]/50 border border-slate-800/80 rounded-3xl p-5 shadow-xl space-y-4">
+            <div className="encuestas-metric-card bg-[#041733]/50 border border-slate-800/80 rounded-3xl p-5 shadow-xl space-y-4">
               <div className="flex justify-between items-center border-b border-slate-800 pb-2">
                 <div className="flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4 text-amber-500" />
@@ -460,7 +470,7 @@ export const EncuestasView: React.FC<EncuestasViewProps> = ({ onSelectView, auth
 
         {/* Right Column: History of survey results */}
         <div className="space-y-6">
-          <div className="bg-[#041733]/50 border border-slate-800/80 rounded-3xl p-5 shadow-xl space-y-4 min-h-[500px] flex flex-col">
+          <div className="encuestas-history-card bg-[#041733]/50 border border-slate-800/80 rounded-3xl p-5 shadow-xl space-y-4 min-h-[500px] flex flex-col">
             
             {/* Title & Filters */}
             <div className="space-y-3 shrink-0">
@@ -514,7 +524,7 @@ export const EncuestasView: React.FC<EncuestasViewProps> = ({ onSelectView, auth
                         initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.95 }}
-                        className="bg-[#020a17] border border-slate-800 rounded-xl p-3.5 space-y-2 relative group"
+                        className="encuestas-history-item bg-[#020a17] border border-slate-800 rounded-xl p-3.5 space-y-2 relative group"
                       >
                         {/* Delete button (only for admins/coordinators) */}
                         {authUser?.role !== 'puntero_territorial' && authUser?.role !== 'lider' && (
@@ -589,7 +599,7 @@ export const EncuestasView: React.FC<EncuestasViewProps> = ({ onSelectView, auth
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-[#0b1329] border border-blue-500/30 rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl space-y-6"
+            className="encuestas-modal-card bg-[#0b1329] border border-blue-500/30 rounded-3xl p-6 md:p-8 max-w-lg w-full shadow-2xl space-y-6"
           >
             <div className="flex items-center gap-3 pb-3 border-b border-slate-800">
               <div className="p-2 bg-blue-500/20 rounded-xl text-blue-400">

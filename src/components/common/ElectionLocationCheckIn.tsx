@@ -164,13 +164,13 @@ export const ElectionLocationCheckIn: React.FC<ElectionLocationCheckInProps> = (
   return (
     <>
     {showPermissionModal && (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/90 p-4 backdrop-blur-md" role="dialog" aria-modal="true" aria-labelledby="location-permission-title">
-        <div className="w-full max-w-md rounded-3xl border border-cyan-400/40 bg-[#07162b] p-6 shadow-2xl shadow-cyan-950/50">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-cyan-400/40 bg-cyan-500/15 text-cyan-300">
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/90 p-4 backdrop-blur-md election-location-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="location-permission-title">
+        <div className="election-location-modal w-full max-w-md rounded-3xl border border-cyan-400/40 bg-[#07162b] p-6 shadow-2xl shadow-cyan-950/50">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-cyan-400/40 bg-cyan-500/15 text-cyan-300 election-location-icon">
             <MapPin className="h-7 w-7" />
           </div>
-          <h2 id="location-permission-title" className="text-center text-xl font-black text-white">Permitir ubicación</h2>
-          <p className="mt-3 text-center text-sm leading-6 text-slate-300">
+          <h2 id="location-permission-title" className="text-center text-xl font-black text-white election-location-title">Permitir ubicación</h2>
+          <p className="mt-3 text-center text-sm leading-6 text-slate-300 election-location-desc">
             Para ingresar al panel de {personType === 'witness' ? 'testigo electoral' : 'jurado de mesa'}, debe permitir la ubicación del dispositivo. Se usará exclusivamente para registrar su llegada al puesto asignado.
           </p>
           {loading && <p className="mt-4 text-center text-xs text-cyan-300">Verificando su asignación…</p>}
@@ -179,7 +179,7 @@ export const ElectionLocationCheckIn: React.FC<ElectionLocationCheckInProps> = (
             type="button"
             onClick={requestMandatoryLocation}
             disabled={loading || locating || !assignment}
-            className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-400 px-4 py-3 font-black text-slate-950 disabled:cursor-not-allowed disabled:opacity-40"
+            className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl bg-cyan-400 px-4 py-3 font-black text-slate-950 disabled:cursor-not-allowed disabled:opacity-40 election-location-btn"
           >
             <Locate className={`h-5 w-5 ${locating ? 'animate-pulse' : ''}`} />
             {locating ? 'Obteniendo ubicación…' : 'Permitir ubicación y continuar'}
@@ -188,19 +188,19 @@ export const ElectionLocationCheckIn: React.FC<ElectionLocationCheckInProps> = (
         </div>
       </div>
     )}
-    <section className="rounded-2xl border border-cyan-500/30 bg-[#041126] p-4 text-xs shadow-lg">
+    <section className="election-checkin-banner rounded-2xl border border-cyan-500/30 bg-[#041126] p-4 text-xs shadow-lg">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="space-y-1">
-          <h3 className="flex items-center gap-2 font-black text-white">
-            <MapPin className="h-4 w-4 text-cyan-400" /> Confirmación GPS de llegada
+          <h3 className="flex items-center gap-2 font-black text-white election-checkin-title">
+            <MapPin className="h-4 w-4 text-cyan-400 shrink-0" /> Confirmación GPS de llegada
           </h3>
           {loading ? <p className="text-slate-400">Consultando asignación real…</p> : assignment ? (
-            <p className="text-slate-300">{assignment.puesto} · {assignment.mesa} · Radio permitido: {CHECK_IN_RADIUS_METERS} m</p>
+            <p className="text-slate-300 election-checkin-details">{assignment.puesto} · {assignment.mesa} · Radio permitido: {CHECK_IN_RADIUS_METERS} m</p>
           ) : <p className="text-slate-400">No hay una asignación disponible para esta sesión.</p>}
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <span className={`rounded-lg border px-3 py-2 font-bold ${
+          <span className={`election-checkin-status rounded-lg border px-3 py-2 font-bold ${
             checkIn?.status === 'EN_MESA'
               ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-300'
               : checkIn
@@ -214,7 +214,7 @@ export const ElectionLocationCheckIn: React.FC<ElectionLocationCheckInProps> = (
             type="button"
             onClick={() => confirmArrival()}
             disabled={loading || locating || !assignment || !consent}
-            className="flex items-center gap-2 rounded-xl bg-cyan-500 px-3 py-2 font-black text-slate-950 disabled:cursor-not-allowed disabled:opacity-40"
+            className="election-checkin-btn flex items-center gap-2 rounded-xl bg-cyan-500 px-3 py-2 font-black text-slate-950 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <Locate className={`h-4 w-4 ${locating ? 'animate-pulse' : ''}`} />
             {locating ? 'Ubicando…' : 'Confirmar llegada'}
@@ -222,11 +222,11 @@ export const ElectionLocationCheckIn: React.FC<ElectionLocationCheckInProps> = (
         </div>
       </div>
 
-      <label className="mt-3 flex cursor-pointer items-start gap-2 border-t border-cyan-500/15 pt-3 text-slate-300">
+      <label className="mt-3 flex cursor-pointer items-start gap-2 border-t border-cyan-500/15 pt-3 text-slate-300 election-checkin-consent">
         <input type="checkbox" checked={consent} onChange={event => setConsent(event.target.checked)} className="mt-0.5" />
         <span><ShieldCheck className="mr-1 inline h-3.5 w-3.5 text-emerald-400" />Autorizo registrar mi ubicación únicamente para verificar mi presencia en el puesto y mesa asignados durante la jornada electoral.</span>
       </label>
-      {!hasAssignedCoordinates && assignment && <p className="mt-2 text-amber-300">La ubicación del dispositivo se registrará, pero el puesto aún no tiene coordenadas para validar el perímetro.</p>}
+      {!hasAssignedCoordinates && assignment && <p className="mt-2 text-amber-300 election-checkin-warning">La ubicación del dispositivo se registrará, pero el puesto aún no tiene coordenadas para validar el perímetro.</p>}
       {error && <p className="mt-2 text-rose-300">{error}</p>}
       {checkIn && <p className="mt-2 font-mono text-[10px] text-slate-500">Último reporte: {new Date(checkIn.checkedInAt).toLocaleString('es-CO')} · Precisión ±{checkIn.accuracyMeters} m</p>}
     </section>

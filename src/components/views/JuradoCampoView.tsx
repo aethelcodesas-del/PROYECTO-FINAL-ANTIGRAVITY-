@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ViewMode, AuthUser } from '../../types';
 import { ElectionLocationCheckIn } from '../common/ElectionLocationCheckIn';
 import { supabase } from '../../lib/supabase';
+import { useModuleColorMode } from '../../utils/themeColorMode';
+import { ColorModeToggle } from '../common/ColorModeToggle';
 import {
   Users,
   ShieldCheck,
@@ -49,6 +51,7 @@ interface IncidenteMesa {
 }
 
 export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, authUser }) => {
+  const { colorMode, isWhiteMode } = useModuleColorMode('gestion_territorial');
   const [activeTab, setActiveTab] = useState<'instalacion' | 'padron' | 'conteo' | 'cierre_e14' | 'novedades'>('instalacion');
   const tabsContainerRef = useRef<HTMLDivElement | null>(null);
   const tabRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
@@ -275,7 +278,11 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
   };
 
   return (
-    <div className="responsive-view min-h-[calc(100dvh-60px)] w-full min-w-0 bg-slate-50/50 text-slate-900 p-3 sm:p-4 md:p-8 space-y-4 sm:space-y-6 max-w-7xl mx-auto overflow-x-hidden">
+    <div 
+      data-module="jurados_mesa"
+      data-color-mode={isWhiteMode ? 'white' : 'established'}
+      className={`responsive-view min-h-[calc(100dvh-60px)] w-full min-w-0 jurados-mesa-view jurado-campo-view ${isWhiteMode ? 'bg-slate-50 text-slate-900' : 'bg-slate-900 text-slate-100'} p-3 sm:p-4 md:p-8 space-y-4 sm:space-y-6 max-w-7xl mx-auto overflow-x-hidden`}
+    >
       {assignmentError && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-bold text-amber-900 shadow-sm flex items-center gap-2">
           <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600" />
@@ -284,13 +291,13 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
       )}
 
       {/* Banner Principal del Jurado de Mesa */}
-      <div className="bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-950 rounded-3xl p-5 md:p-6 text-white shadow-sm border border-blue-200/40 relative overflow-hidden">
+      <div className="jurado-top-banner bg-gradient-to-r from-blue-900 via-blue-800 to-indigo-950 rounded-3xl p-5 md:p-6 text-white shadow-sm border border-blue-200/40 relative overflow-hidden">
         <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
           <ShieldCheck className="w-48 h-48 text-blue-200" />
         </div>
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-5 relative z-10">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full text-xs text-blue-100 font-bold">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full text-xs text-blue-100 font-bold jurado-top-badge">
               <Users className="w-3.5 h-3.5" />
               <span>Panel Oficial para Jurados de Mesa de Votación</span>
             </div>
@@ -301,14 +308,19 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
               <span>{mesaAsignada.comuna}</span>
             </div>
           </div>
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-4 flex flex-row items-center gap-4 shrink-0 shadow-sm">
-            <div className="p-3 bg-white/20 border border-white/30 rounded-xl text-white">
-              <UserCheck className="w-6 h-6" />
+          <div className="flex items-center gap-3">
+            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-4 flex flex-row items-center gap-4 shrink-0 shadow-sm jurado-mesa-box">
+              <div className="p-3 bg-white/20 border border-white/30 rounded-xl text-white">
+                <UserCheck className="w-6 h-6" />
+              </div>
+              <div>
+                <div className="text-[10px] text-blue-200 font-semibold uppercase tracking-wider">Asignación Oficial</div>
+                <div className="text-xl font-black text-white">{mesaAsignada.mesa}</div>
+                <div className="text-[10px] text-blue-200 font-bold font-mono">Censo: {mesaAsignada.censoTotal} sufragantes</div>
+              </div>
             </div>
-            <div>
-              <div className="text-[10px] text-blue-200 font-semibold uppercase tracking-wider">Asignación Oficial</div>
-              <div className="text-xl font-black text-white">{mesaAsignada.mesa}</div>
-              <div className="text-[10px] text-blue-200 font-bold font-mono">Censo: {mesaAsignada.censoTotal} sufragantes</div>
+            <div className="hidden sm:block">
+              <ColorModeToggle moduleId="gestion_territorial" />
             </div>
           </div>
         </div>
@@ -319,7 +331,7 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
       {/* Navegación por pestañas del Jurado */}
       <div 
         ref={tabsContainerRef}
-        className="bg-white p-1.5 rounded-2xl border border-slate-200 flex items-center gap-1.5 overflow-x-auto no-scrollbar scrollbar-none shadow-sm scroll-smooth"
+        className="jurado-tabs-bar bg-white p-1.5 rounded-2xl border border-slate-200 flex items-center gap-1.5 overflow-x-auto no-scrollbar scrollbar-none shadow-sm scroll-smooth"
       >
         {[
           { id: 'instalacion', step: '1', label: 'Instalación de Mesa', icon: <Clock className="w-4 h-4" /> },
@@ -336,10 +348,10 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
                 tabRefs.current[tab.id] = el;
               }}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2.5 cursor-pointer transition-all shrink-0 whitespace-nowrap ${
+              className={`jurado-tab-btn px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2.5 cursor-pointer transition-all shrink-0 whitespace-nowrap ${
                 isActive
-                  ? 'bg-blue-50 text-blue-700 border border-blue-200 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50 border border-transparent'
+                  ? 'jurado-tab-active bg-blue-50 text-blue-700 border border-blue-200 shadow-sm'
+                  : 'jurado-tab-inactive text-slate-500 hover:text-slate-900 hover:bg-slate-50 border border-transparent'
               }`}
             >
               <span className={`w-5 h-5 rounded-lg flex items-center justify-center text-[10px] font-mono font-bold transition-all ${
@@ -357,7 +369,7 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
       </div>
 
       {/* Contenido principal de Pestañas */}
-      <div className="bg-white border border-slate-200/80 rounded-3xl p-5 md:p-6 shadow-sm min-h-[420px]">
+      <div className="jurado-content-card bg-white border border-slate-200/80 rounded-3xl p-5 md:p-6 shadow-sm min-h-[420px]">
         <AnimatePresence mode="wait">
 
           {/* PESTAÑA 1: INSTALACIÓN DE MESA */}

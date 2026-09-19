@@ -4332,7 +4332,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
         {/* TAB 8: JURADOS ELECTORALES (POSTULACIÓN A REGISTRADURÍA & CONFRONTACIÓN) */}
         {/* ---------------------------------------------------------------------- */}
         {activeTab === 'jurados_electorales' && (
-          <div className="space-y-6 animate-fadeIn">
+          <div className="space-y-6 animate-fadeIn jurados-electorales-admin">
             {jurorError && (
               <div className="rounded-xl border p-3.5 text-xs font-bold flex items-center gap-2.5 bg-rose-50 border-rose-200 text-rose-800 shadow-sm">
                 <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />

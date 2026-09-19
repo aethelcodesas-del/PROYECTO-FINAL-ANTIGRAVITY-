@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ViewMode, AuthUser } from '../../types';
 import { ElectionLocationCheckIn } from '../common/ElectionLocationCheckIn';
 import { supabase } from '../../lib/supabase';
+import { useModuleColorMode } from '../../utils/themeColorMode';
+import { ColorModeToggle } from '../common/ColorModeToggle';
 import { 
   CheckCircle2, 
   AlertTriangle, 
@@ -53,6 +55,7 @@ interface ReporteParticipacion {
 }
 
 export const TestigoCampoView: React.FC<TestigoCampoViewProps> = ({ onSelectView, authUser }) => {
+  const { colorMode, isWhiteMode } = useModuleColorMode('gestion_territorial');
   const [activeTab, setActiveTab] = useState<'apertura' | 'participacion' | 'escrutinio' | 'novedades' | 'impugnacion' | 'cuentavotos'>('apertura');
   const tabsContainerRef = useRef<HTMLDivElement | null>(null);
   const tabRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
@@ -567,42 +570,49 @@ export const TestigoCampoView: React.FC<TestigoCampoViewProps> = ({ onSelectView
     (Number(votosNulos) || 0);
 
   return (
-    <div className="responsive-view min-h-[calc(100dvh-60px)] w-full min-w-0 bg-[#030712] text-slate-100 p-3 sm:p-4 md:p-8 space-y-4 sm:space-y-6 max-w-7xl mx-auto overflow-x-hidden">
+    <div 
+      className="testigo-campo-view module-theme-root responsive-view min-h-[calc(100dvh-60px)] w-full min-w-0 bg-[#030712] text-slate-100 p-3 sm:p-4 md:p-8 space-y-4 sm:space-y-6 max-w-7xl mx-auto overflow-x-hidden transition-colors duration-200"
+      data-module="testigo_campo"
+      data-color-mode={isWhiteMode ? 'white' : 'established'}
+    >
       
       {/* Top Banner: Assigned Voting Table details */}
-      <div className={`rounded-3xl p-5 md:p-6 text-white shadow-xl relative overflow-hidden ${puestoAsignado.id ? 'bg-gradient-to-r from-[#0b1d38] via-[#0d2a4a] to-[#047857]' : 'bg-[#071426] border border-slate-800'}`}>
+      <div className={`testigo-top-banner rounded-3xl p-5 md:p-6 text-white shadow-xl relative overflow-hidden transition-all ${puestoAsignado.id ? 'bg-gradient-to-r from-[#0b1d38] via-[#0d2a4a] to-[#047857]' : 'bg-[#071426] border border-slate-800'}`}>
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(16,185,129,0.08),transparent)]" />
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-5 relative z-10">
           <div className="space-y-2">
             {(assignmentLoading || puestoAsignado.id) && (
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/20 border border-emerald-400/30 rounded-full text-xs text-emerald-300 font-bold">
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/20 border border-emerald-400/30 rounded-full text-xs text-emerald-300 font-bold testigo-status-badge">
                 <MapPin className="w-3.5 h-3.5" />
                 <span>{assignmentLoading ? 'Consultando asignación' : 'Puesto de Votación Asignado'}</span>
               </div>
             )}
-            <h2 className="text-xl md:text-2xl font-black tracking-tight">{puestoAsignado.nombre}</h2>
+            <h2 className="text-xl md:text-2xl font-black tracking-tight testigo-banner-title">{puestoAsignado.nombre}</h2>
             {puestoAsignado.id && (puestoAsignado.direccion || puestoAsignado.zona) && (
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-teal-100/90 font-medium">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-teal-100/90 font-medium testigo-banner-location">
                 {puestoAsignado.direccion && <span>{puestoAsignado.direccion}</span>}
                 {puestoAsignado.direccion && puestoAsignado.zona && <span className="text-teal-400/40">•</span>}
                 {puestoAsignado.zona && <span>{puestoAsignado.zona}</span>}
               </div>
             )}
           </div>
-          <div className="bg-[#041733]/90 border border-cyan-500/30 rounded-2xl p-4 flex flex-row items-center gap-4 shrink-0 shadow-lg">
-            <div className="p-2.5 bg-emerald-500/20 border border-emerald-500/40 rounded-xl text-emerald-300">
-              <UserCheck className="w-6 h-6" />
-            </div>
-            <div>
-              <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Mesa de Votación</div>
-              <div className="text-lg font-black text-white">{puestoAsignado.mesa}</div>
-              <div className="text-[10px] text-emerald-400 font-semibold font-mono">
-                {puestoAsignado.votantesHabilitados > 0 ? `Censo: ${puestoAsignado.votantesHabilitados} votantes` : 'Censo no configurado'}
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="testigo-mesa-box bg-[#041733]/90 border border-cyan-500/30 rounded-2xl p-4 flex flex-row items-center gap-4 shadow-lg">
+              <div className="p-2.5 bg-emerald-500/20 border border-emerald-500/40 rounded-xl text-emerald-300 testigo-mesa-icon">
+                <UserCheck className="w-6 h-6" />
+              </div>
+              <div>
+                <div className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider testigo-mesa-label">Mesa de Votación</div>
+                <div className="text-lg font-black text-white testigo-mesa-number">{puestoAsignado.mesa}</div>
+                <div className="text-[10px] text-emerald-400 font-semibold font-mono testigo-censo-text">
+                  {puestoAsignado.votantesHabilitados > 0 ? `Censo: ${puestoAsignado.votantesHabilitados} votantes` : 'Censo no configurado'}
+                </div>
               </div>
             </div>
+            <ColorModeToggle moduleId="gestion_territorial" />
           </div>
         </div>
-        {assignmentMessage && <p className="relative z-10 mt-4 rounded-xl border border-amber-500/30 bg-amber-950/30 px-4 py-3 text-xs text-amber-200">{assignmentMessage}</p>}
+        {assignmentMessage && <p className="relative z-10 mt-4 rounded-xl border border-amber-500/30 bg-amber-950/30 px-4 py-3 text-xs text-amber-200 testigo-warning-alert">{assignmentMessage}</p>}
       </div>
 
       <ElectionLocationCheckIn authUser={authUser} personType="witness" />
@@ -610,7 +620,7 @@ export const TestigoCampoView: React.FC<TestigoCampoViewProps> = ({ onSelectView
       {/* Tabs Switcher */}
       <div 
         ref={tabsContainerRef}
-        className="bg-[#041126]/90 p-1.5 rounded-2xl border border-slate-800/80 flex items-center gap-1.5 overflow-x-auto no-scrollbar scrollbar-none shadow-lg scroll-smooth"
+        className="testigo-tabs-nav bg-[#041126]/90 p-1.5 rounded-2xl border border-slate-800/80 flex items-center gap-1.5 overflow-x-auto no-scrollbar scrollbar-none shadow-lg scroll-smooth"
       >
         {[
           { id: 'apertura', step: '1', label: 'Apertura de Mesa', icon: <Clock className="w-4 h-4" /> },
@@ -628,13 +638,13 @@ export const TestigoCampoView: React.FC<TestigoCampoViewProps> = ({ onSelectView
                 tabRefs.current[tab.id] = el;
               }}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2.5 cursor-pointer transition-all shrink-0 whitespace-nowrap ${
+              className={`testigo-tab-btn px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2.5 cursor-pointer transition-all shrink-0 whitespace-nowrap ${
                 isActive
-                  ? 'bg-gradient-to-r from-emerald-500/20 to-teal-500/20 text-emerald-300 border border-emerald-500/50 shadow-md shadow-emerald-950/40'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 border border-transparent'
+                  ? 'testigo-tab-active bg-gradient-to-r from-emerald-500/20 to-teal-500/20 text-emerald-300 border border-emerald-500/50 shadow-md shadow-emerald-950/40'
+                  : 'testigo-tab-inactive text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 border border-transparent'
               }`}
             >
-              <span className={`w-5 h-5 rounded-lg flex items-center justify-center text-[10px] font-mono font-bold transition-all ${
+              <span className={`testigo-step-badge w-5 h-5 rounded-lg flex items-center justify-center text-[10px] font-mono font-bold transition-all ${
                 isActive 
                   ? 'bg-emerald-500 text-slate-950 shadow-sm font-black' 
                   : 'bg-slate-800/90 text-slate-400'
@@ -649,7 +659,7 @@ export const TestigoCampoView: React.FC<TestigoCampoViewProps> = ({ onSelectView
       </div>
 
       {/* Tab Panels */}
-      <div className="bg-[#041733]/50 border border-slate-800/80 rounded-3xl p-5 md:p-6 shadow-xl min-h-[400px]">
+      <div className="testigo-tab-card bg-[#041733]/50 border border-slate-800/80 rounded-3xl p-5 md:p-6 shadow-xl min-h-[400px]">
         <AnimatePresence mode="wait">
           
           {/* TAB 1: APERTURA */}

@@ -1730,34 +1730,34 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
       )}
 
       {activeTab === 'diagnostico' && !diagnosticCampaignLoading && diagnosticCampaign && (
-        <div className="space-y-6">
+        <div className="space-y-6 diagnostico-360-view">
           
           {/* Hero Banner: Diagnostic Score & Scan Action */}
-          <div className="bg-gradient-to-r from-[#081e36] via-[#0b2747] to-[#06172b] border border-cyan-500/30 rounded-3xl p-6 shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="diagnostic-hero-banner bg-gradient-to-r from-[#081e36] via-[#0b2747] to-[#06172b] border border-cyan-500/30 rounded-3xl p-6 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none diagnostic-hero-glow" />
             
             <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 relative z-10">
               
               <div className="space-y-2 max-w-2xl">
-                <h3 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                <h3 className="diagnostic-hero-title text-2xl sm:text-3xl font-black text-white tracking-tight">
                   Sesión de Diagnóstico de Campaña{' '}
-                  <span className="text-emerald-400">
+                  <span className="diagnostic-hero-campaign-tag text-emerald-400">
                     {diagnosticCampaignName}{diagnosticTerritory ? ` · ${diagnosticTerritory}` : ''} · {diagnosticYear}
                   </span>
                 </h3>
               </div>
 
               {/* Score & Action Button Card */}
-              <div className="flex flex-col sm:flex-row items-center gap-4 bg-[#051325]/90 border border-cyan-500/30 p-4 rounded-2xl w-full lg:w-auto shrink-0">
+              <div className="diagnostic-score-box flex flex-col sm:flex-row items-center gap-4 bg-[#051325]/90 border border-cyan-500/30 p-4 rounded-2xl w-full lg:w-auto shrink-0">
                 <div className="text-center sm:text-left space-y-1">
-                  <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">
+                  <span className="diagnostic-score-label text-[10px] font-black uppercase text-slate-400 tracking-wider">
                     Índice de Salud de Campaña
                   </span>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-4xl font-black text-emerald-400 font-mono tracking-tight">84</span>
-                    <span className="text-slate-400 font-bold text-sm">/ 100</span>
+                    <span className="diagnostic-score-value text-4xl font-black text-emerald-400 font-mono tracking-tight">84</span>
+                    <span className="diagnostic-score-max text-slate-400 font-bold text-sm">/ 100</span>
                   </div>
-                  <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-500/30">
+                  <span className="diagnostic-score-status inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-500/30">
                     Nivel: Saludable con Alertas
                   </span>
                 </div>
@@ -1772,7 +1772,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                     }, 1800);
                   }}
                   disabled={isDiagnosticScanning}
-                  className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-5 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs shadow-lg shadow-emerald-500/20 transition-all cursor-pointer disabled:opacity-50"
+                  className="diagnostic-scan-btn w-full sm:w-auto flex items-center justify-center gap-2.5 px-5 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs shadow-lg shadow-emerald-500/20 transition-all cursor-pointer disabled:opacity-50"
                 >
                   <RefreshCw className={`w-4 h-4 ${isDiagnosticScanning ? 'animate-spin' : ''}`} />
                   <span>{isDiagnosticScanning ? 'Escaneando Campaña...' : 'Ejecutar Diagnóstico AI'}</span>
@@ -1782,12 +1782,12 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
             </div>
 
             {/* Diagnostic Sub-Tabs Navigation */}
-            <div className="flex flex-wrap items-center gap-2 mt-6 pt-4 border-t border-cyan-500/20 text-xs font-bold">
+            <div className="diagnostic-subtabs-nav flex flex-wrap items-center gap-2 mt-6 pt-4 border-t border-cyan-500/20 text-xs font-bold">
               <button
                 onClick={() => setDiagnosticSubTab('overview')}
-                className={`px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+                className={`diagnostic-subtab-btn px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
                   diagnosticSubTab === 'overview'
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 font-extrabold shadow'
+                    ? 'active bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 font-extrabold shadow'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -1796,9 +1796,9 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
 
               <button
                 onClick={() => setDiagnosticSubTab('audit')}
-                className={`px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+                className={`diagnostic-subtab-btn px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
                   diagnosticSubTab === 'audit'
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 font-extrabold shadow'
+                    ? 'active bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 font-extrabold shadow'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -1807,9 +1807,9 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
 
               <button
                 onClick={() => setDiagnosticSubTab('report')}
-                className={`px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+                className={`diagnostic-subtab-btn px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
                   diagnosticSubTab === 'report'
-                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 font-extrabold shadow'
+                    ? 'active bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 font-extrabold shadow'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -1820,36 +1820,36 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
 
           {/* SUB-TAB 1: VISIÓN GENERAL DE LOS 6 PILARES */}
           {diagnosticSubTab === 'overview' && (
-            <div className="functional-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="functional-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 diagnostic-pillars-grid">
               
               {/* Pilar 1: Cobertura Territorial */}
-              <div className="functional-card bg-[#05162a] border border-cyan-500/30 rounded-3xl p-5 space-y-4 shadow-xl">
+              <div className="functional-card diagnostic-pillar-card pilar-cobertura bg-[#05162a] border border-cyan-500/30 rounded-3xl p-5 space-y-4 shadow-xl">
                 <div className="flex justify-between items-start">
                   <div className="flex items-center gap-2">
-                    <div className="p-2 bg-emerald-500/20 text-emerald-300 rounded-xl">
+                    <div className="pillar-icon-box p-2 bg-emerald-500/20 text-emerald-300 rounded-xl">
                       <Target className="w-5 h-5" />
                     </div>
                     <div>
-                      <h4 className="font-extrabold text-white text-sm">1. Cobertura Territorial</h4>
-                      <span className="text-[10px] text-slate-400">Puestos, Mesas & Comunas</span>
+                      <h4 className="pillar-title font-extrabold text-white text-sm">1. Cobertura Territorial</h4>
+                      <span className="pillar-subtitle text-[10px] text-slate-400">Puestos, Mesas & Comunas</span>
                     </div>
                   </div>
-                  <span className="text-xs font-mono font-black text-emerald-400 bg-emerald-950 px-2.5 py-1 rounded-full border border-emerald-500/30">
+                  <span className="pillar-badge badge-emerald text-xs font-mono font-black text-emerald-400 bg-emerald-950 px-2.5 py-1 rounded-full border border-emerald-500/30">
                     82 / 100
                   </span>
                 </div>
 
                 <div className="space-y-1.5">
-                  <div className="flex justify-between text-xs text-slate-300 font-semibold">
+                  <div className="flex justify-between text-xs text-slate-300 font-semibold pillar-metric-label">
                     <span>Meta de Cobertura Puestos</span>
-                    <span className="text-emerald-300">82%</span>
+                    <span className="pillar-metric-value text-emerald-300">82%</span>
                   </div>
-                  <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden">
-                    <div className="h-full bg-emerald-400 rounded-full" style={{ width: '82%' }} />
+                  <div className="pillar-progress-track w-full h-2 bg-slate-900 rounded-full overflow-hidden">
+                    <div className="pillar-progress-bar h-full bg-emerald-400 rounded-full" style={{ width: '82%' }} />
                   </div>
                 </div>
 
-                <div className="p-3 bg-[#081d38] rounded-2xl border border-cyan-500/20 text-xs space-y-1 text-slate-300">
+                <div className="pillar-analysis-box p-3 bg-[#081d38] rounded-2xl border border-cyan-500/20 text-xs space-y-1 text-slate-300">
                   <strong className="text-emerald-300 font-bold block">Diagnóstico Territorial:</strong>
                   <p className="text-[11px] leading-relaxed">
                     Gran solidez en Comunas 11 (La Laureles) y 14 (El Poblado). Se detectaron brechas de coordinación en Comunas 1 (Popular) y 3 (Manrique).
@@ -1858,33 +1858,33 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
               </div>
 
               {/* Pilar 2: Traje Político & Encuestas */}
-              <div className="functional-card bg-[#05162a] border border-cyan-500/30 rounded-3xl p-5 space-y-4 shadow-xl">
+              <div className="functional-card diagnostic-pillar-card pilar-intencion bg-[#05162a] border border-cyan-500/30 rounded-3xl p-5 space-y-4 shadow-xl">
                 <div className="flex justify-between items-start">
                   <div className="flex items-center gap-2">
-                    <div className="p-2 bg-amber-500/20 text-amber-300 rounded-xl">
+                    <div className="pillar-icon-box p-2 bg-amber-500/20 text-amber-300 rounded-xl">
                       <TrendingUp className="w-5 h-5" />
                     </div>
                     <div>
-                      <h4 className="font-extrabold text-white text-sm">2. Intención de Voto</h4>
-                      <span className="text-[10px] text-slate-400">Tracking & Favorabilidad</span>
+                      <h4 className="pillar-title font-extrabold text-white text-sm">2. Intención de Voto</h4>
+                      <span className="pillar-subtitle text-[10px] text-slate-400">Tracking & Favorabilidad</span>
                     </div>
                   </div>
-                  <span className="text-xs font-mono font-black text-amber-400 bg-amber-950 px-2.5 py-1 rounded-full border border-amber-500/30">
+                  <span className="pillar-badge badge-amber text-xs font-mono font-black text-amber-400 bg-amber-950 px-2.5 py-1 rounded-full border border-amber-500/30">
                     76 / 100
                   </span>
                 </div>
 
                 <div className="space-y-1.5">
-                  <div className="flex justify-between text-xs text-slate-300 font-semibold">
+                  <div className="flex justify-between text-xs text-slate-300 font-semibold pillar-metric-label">
                     <span>Intención de Voto (2° Lugar)</span>
-                    <span className="text-amber-300">28.5%</span>
+                    <span className="pillar-metric-value text-amber-300">28.5%</span>
                   </div>
-                  <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden">
-                    <div className="h-full bg-amber-400 rounded-full" style={{ width: '76%' }} />
+                  <div className="pillar-progress-track w-full h-2 bg-slate-900 rounded-full overflow-hidden">
+                    <div className="pillar-progress-bar h-full bg-amber-400 rounded-full" style={{ width: '76%' }} />
                   </div>
                 </div>
 
-                <div className="p-3 bg-[#081d38] rounded-2xl border border-cyan-500/20 text-xs space-y-1 text-slate-300">
+                <div className="pillar-analysis-box p-3 bg-[#081d38] rounded-2xl border border-cyan-500/20 text-xs space-y-1 text-slate-300">
                   <strong className="text-amber-300 font-bold block">Análisis de Competencia:</strong>
                   <p className="text-[11px] leading-relaxed">
                     Brecha de 4.0% con respecto al puntero (Carlos Mario Rendón 32.5%). Alto potencial de capturar voto indeciso en debates universitarios.
@@ -1893,33 +1893,33 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
               </div>
 
               {/* Pilar 3: Control Electoral & Día E */}
-              <div className="functional-card bg-[#05162a] border border-cyan-500/30 rounded-3xl p-5 space-y-4 shadow-xl">
+              <div className="functional-card diagnostic-pillar-card pilar-testigos bg-[#05162a] border border-cyan-500/30 rounded-3xl p-5 space-y-4 shadow-xl">
                 <div className="flex justify-between items-start">
                   <div className="flex items-center gap-2">
-                    <div className="p-2 bg-rose-500/20 text-rose-300 rounded-xl">
+                    <div className="pillar-icon-box p-2 bg-rose-500/20 text-rose-300 rounded-xl">
                       <ShieldCheck className="w-5 h-5" />
                     </div>
                     <div>
-                      <h4 className="font-extrabold text-white text-sm">3. Testigos & Día E</h4>
-                      <span className="text-[10px] text-slate-400">Acreditaciones Registraduría</span>
+                      <h4 className="pillar-title font-extrabold text-white text-sm">3. Testigos & Día E</h4>
+                      <span className="pillar-subtitle text-[10px] text-slate-400">Acreditaciones Registraduría</span>
                     </div>
                   </div>
-                  <span className="text-xs font-mono font-black text-rose-400 bg-rose-950 px-2.5 py-1 rounded-full border border-rose-500/30">
+                  <span className="pillar-badge badge-rose text-xs font-mono font-black text-rose-400 bg-rose-950 px-2.5 py-1 rounded-full border border-rose-500/30">
                     68 / 100
                   </span>
                 </div>
 
                 <div className="space-y-1.5">
-                  <div className="flex justify-between text-xs text-slate-300 font-semibold">
+                  <div className="flex justify-between text-xs text-slate-300 font-semibold pillar-metric-label">
                     <span>Mesas con Testigo Acreditado</span>
-                    <span className="text-rose-300">68%</span>
+                    <span className="pillar-metric-value text-rose-300">68%</span>
                   </div>
-                  <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden">
-                    <div className="h-full bg-rose-400 rounded-full" style={{ width: '68%' }} />
+                  <div className="pillar-progress-track w-full h-2 bg-slate-900 rounded-full overflow-hidden">
+                    <div className="pillar-progress-bar h-full bg-rose-400 rounded-full" style={{ width: '68%' }} />
                   </div>
                 </div>
 
-                <div className="p-3 bg-[#081d38] rounded-2xl border border-rose-500/30 text-xs space-y-1 text-slate-300">
+                <div className="pillar-analysis-box p-3 bg-[#081d38] rounded-2xl border border-rose-500/30 text-xs space-y-1 text-slate-300">
                   <strong className="text-rose-300 font-bold block flex items-center gap-1">
                     <AlertTriangle className="w-3.5 h-3.5 text-rose-400" /> Alerta Crítica Día E:
                   </strong>
@@ -1930,33 +1930,33 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
               </div>
 
               {/* Pilar 4: Finanzas & Cumplimiento CNE */}
-              <div className="functional-card bg-[#05162a] border border-cyan-500/30 rounded-3xl p-5 space-y-4 shadow-xl">
+              <div className="functional-card diagnostic-pillar-card pilar-finanzas bg-[#05162a] border border-cyan-500/30 rounded-3xl p-5 space-y-4 shadow-xl">
                 <div className="flex justify-between items-start">
                   <div className="flex items-center gap-2">
-                    <div className="p-2 bg-emerald-500/20 text-emerald-300 rounded-xl">
+                    <div className="pillar-icon-box p-2 bg-emerald-500/20 text-emerald-300 rounded-xl">
                       <DollarSign className="w-5 h-5" />
                     </div>
                     <div>
-                      <h4 className="font-extrabold text-white text-sm">4. Rendición Finanzas CNE</h4>
-                      <span className="text-[10px] text-slate-400">Cuentas Claras & OCR</span>
+                      <h4 className="pillar-title font-extrabold text-white text-sm">4. Rendición Finanzas CNE</h4>
+                      <span className="pillar-subtitle text-[10px] text-slate-400">Cuentas Claras & OCR</span>
                     </div>
                   </div>
-                  <span className="text-xs font-mono font-black text-emerald-400 bg-emerald-950 px-2.5 py-1 rounded-full border border-emerald-500/30">
+                  <span className="pillar-badge badge-emerald text-xs font-mono font-black text-emerald-400 bg-emerald-950 px-2.5 py-1 rounded-full border border-emerald-500/30">
                     94 / 100
                   </span>
                 </div>
 
                 <div className="space-y-1.5">
-                  <div className="flex justify-between text-xs text-slate-300 font-semibold">
+                  <div className="flex justify-between text-xs text-slate-300 font-semibold pillar-metric-label">
                     <span>Soportes OCR Verificados</span>
-                    <span className="text-emerald-300">94%</span>
+                    <span className="pillar-metric-value text-emerald-300">94%</span>
                   </div>
-                  <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden">
-                    <div className="h-full bg-emerald-400 rounded-full" style={{ width: '94%' }} />
+                  <div className="pillar-progress-track w-full h-2 bg-slate-900 rounded-full overflow-hidden">
+                    <div className="pillar-progress-bar h-full bg-emerald-400 rounded-full" style={{ width: '94%' }} />
                   </div>
                 </div>
 
-                <div className="p-3 bg-[#081d38] rounded-2xl border border-cyan-500/20 text-xs space-y-1 text-slate-300">
+                <div className="pillar-analysis-box p-3 bg-[#081d38] rounded-2xl border border-cyan-500/20 text-xs space-y-1 text-slate-300">
                   <strong className="text-emerald-300 font-bold block">Contabilidad Oficial:</strong>
                   <p className="text-[11px] leading-relaxed">
                     Ejecución presupuestal limpia dentro del tope legal de Medellín ($2.5B). Cero inconsistencias de bancarización registradas.
@@ -1965,33 +1965,33 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
               </div>
 
               {/* Pilar 5: Comunicaciones & Sentimiento Digital */}
-              <div className="functional-card bg-[#05162a] border border-cyan-500/30 rounded-3xl p-5 space-y-4 shadow-xl">
+              <div className="functional-card diagnostic-pillar-card pilar-estrategia bg-[#05162a] border border-cyan-500/30 rounded-3xl p-5 space-y-4 shadow-xl">
                 <div className="flex justify-between items-start">
                   <div className="flex items-center gap-2">
-                    <div className="p-2 bg-teal-500/20 text-teal-300 rounded-xl">
+                    <div className="pillar-icon-box p-2 bg-teal-500/20 text-teal-300 rounded-xl">
                       <MessageSquare className="w-5 h-5" />
                     </div>
                     <div>
-                      <h4 className="font-extrabold text-white text-sm">5. Estrategia & Sentimiento</h4>
-                      <span className="text-[10px] text-slate-400">Redes Sociales & Prensa</span>
+                      <h4 className="pillar-title font-extrabold text-white text-sm">5. Estrategia & Sentimiento</h4>
+                      <span className="pillar-subtitle text-[10px] text-slate-400">Redes Sociales & Prensa</span>
                     </div>
                   </div>
-                  <span className="text-xs font-mono font-black text-teal-400 bg-teal-950 px-2.5 py-1 rounded-full border border-teal-500/30">
+                  <span className="pillar-badge badge-teal text-xs font-mono font-black text-teal-400 bg-teal-950 px-2.5 py-1 rounded-full border border-teal-500/30">
                     78 / 100
                   </span>
                 </div>
 
                 <div className="space-y-1.5">
-                  <div className="flex justify-between text-xs text-slate-300 font-semibold">
+                  <div className="flex justify-between text-xs text-slate-300 font-semibold pillar-metric-label">
                     <span>Aceptación Positiva Redes</span>
-                    <span className="text-teal-300">72%</span>
+                    <span className="pillar-metric-value text-teal-300">72%</span>
                   </div>
-                  <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden">
-                    <div className="h-full bg-teal-400 rounded-full" style={{ width: '72%' }} />
+                  <div className="pillar-progress-track w-full h-2 bg-slate-900 rounded-full overflow-hidden">
+                    <div className="pillar-progress-bar h-full bg-teal-400 rounded-full" style={{ width: '72%' }} />
                   </div>
                 </div>
 
-                <div className="p-3 bg-[#081d38] rounded-2xl border border-cyan-500/20 text-xs space-y-1 text-slate-300">
+                <div className="pillar-analysis-box p-3 bg-[#081d38] rounded-2xl border border-cyan-500/20 text-xs space-y-1 text-slate-300">
                   <strong className="text-teal-300 font-bold block">Monitoreo de Opinión:</strong>
                   <p className="text-[11px] leading-relaxed">
                     Excelente respuesta a videos sobre propuestas de movilidad. Se recomienda contraatacar desinformación en cadenas de WhatsApp.
@@ -2000,33 +2000,33 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
               </div>
 
               {/* Pilar 6: Censo & Filtro de Duplicidad */}
-              <div className="functional-card bg-[#05162a] border border-cyan-500/30 rounded-3xl p-5 space-y-4 shadow-xl">
+              <div className="functional-card diagnostic-pillar-card pilar-censo bg-[#05162a] border border-cyan-500/30 rounded-3xl p-5 space-y-4 shadow-xl">
                 <div className="flex justify-between items-start">
                   <div className="flex items-center gap-2">
-                    <div className="p-2 bg-emerald-500/20 text-emerald-300 rounded-xl">
+                    <div className="pillar-icon-box p-2 bg-emerald-500/20 text-emerald-300 rounded-xl">
                       <Users className="w-5 h-5" />
                     </div>
                     <div>
-                      <h4 className="font-extrabold text-white text-sm">6. Filtro Unificado Censo</h4>
-                      <span className="text-[10px] text-slate-400">Blindaje Duplicidad Cédula</span>
+                      <h4 className="pillar-title font-extrabold text-white text-sm">6. Filtro Unificado Censo</h4>
+                      <span className="pillar-subtitle text-[10px] text-slate-400">Blindaje Duplicidad Cédula</span>
                     </div>
                   </div>
-                  <span className="text-xs font-mono font-black text-emerald-400 bg-emerald-950 px-2.5 py-1 rounded-full border border-emerald-500/30">
+                  <span className="pillar-badge badge-emerald text-xs font-mono font-black text-emerald-400 bg-emerald-950 px-2.5 py-1 rounded-full border border-emerald-500/30">
                     90 / 100
                   </span>
                 </div>
 
                 <div className="space-y-1.5">
-                  <div className="flex justify-between text-xs text-slate-300 font-semibold">
+                  <div className="flex justify-between text-xs text-slate-300 font-semibold pillar-metric-label">
                     <span>Integridad de Votantes</span>
-                    <span className="text-emerald-300">90%</span>
+                    <span className="pillar-metric-value text-emerald-300">90%</span>
                   </div>
-                  <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden">
-                    <div className="h-full bg-emerald-400 rounded-full" style={{ width: '90%' }} />
+                  <div className="pillar-progress-track w-full h-2 bg-slate-900 rounded-full overflow-hidden">
+                    <div className="pillar-progress-bar h-full bg-emerald-400 rounded-full" style={{ width: '90%' }} />
                   </div>
                 </div>
 
-                <div className="p-3 bg-[#081d38] rounded-2xl border border-cyan-500/20 text-xs space-y-1 text-slate-300">
+                <div className="pillar-analysis-box p-3 bg-[#081d38] rounded-2xl border border-cyan-500/20 text-xs space-y-1 text-slate-300">
                   <strong className="text-emerald-300 font-bold block">Regla de Negocio Aplicada:</strong>
                   <p className="text-[11px] leading-relaxed">
                     Cada cédula está asignada únicamente al primer líder que la registró. Se bloquearon 142 intentos de duplicado de campañas aliadas.
@@ -2549,25 +2549,25 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
             </div>
           )}
           {diagnosticSubTab === 'audit' && (
-            <div className="bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 shadow-xl space-y-6">
+            <div className="diagnostic-audit-card bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 shadow-xl space-y-6">
               
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-cyan-500/20 pb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-cyan-500/20 pb-4 audit-header">
                 <div>
-                  <h4 className="text-lg font-black text-white flex items-center gap-2">
+                  <h4 className="audit-title text-lg font-black text-white flex items-center gap-2">
                     <CheckSquare className="w-5 h-5 text-emerald-400" /> Cuestionario de Diagnóstico Operativo Express
                   </h4>
                 </div>
 
-                <div className="bg-[#081d38] border border-cyan-500/30 px-4 py-2 rounded-2xl text-center shrink-0">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase block">Puntaje Audit:</span>
-                  <span className="text-2xl font-black text-emerald-400 font-mono">
+                <div className="audit-score-widget bg-[#081d38] border border-cyan-500/30 px-4 py-2 rounded-2xl text-center shrink-0">
+                  <span className="audit-score-label text-[10px] text-slate-400 font-bold uppercase block">Puntaje Audit:</span>
+                  <span className="audit-score-number text-2xl font-black text-emerald-400 font-mono">
                     {Object.values(auditAnswers).reduce((acc: number, curr) => curr === 'si' ? acc + 10 : curr === 'parcial' ? acc + 5 : acc, 0)} / 100
                   </span>
                 </div>
               </div>
 
               {/* 10 Questions List */}
-              <div className="functional-grid space-y-3 text-xs">
+              <div className="functional-grid space-y-3 text-xs audit-questions-list">
                 {[
                   { id: 1, title: '1. Cartografía & Censo:', text: '¿Tienen dividida la meta de votos por comuna, puesto y mesa en el censo oficial?' },
                   { id: 2, title: '2. Testigos Día E:', text: '¿Cuentan con testigos asignados y acreditados para al menos el 90% de las mesas?' },
@@ -2580,18 +2580,18 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                   { id: 9, title: '9. Estrategia Anti-Abstención:', text: '¿Tienen identificados los barrios periféricos con mayor riesgo de abstencionismo?' },
                   { id: 10, title: '10. Registro Unificado:', text: '¿Todo votante registrado está asociado obligatoriamente a una cédula única de líder?' }
                 ].map((q) => (
-                  <div key={q.id} className="functional-card p-3.5 bg-[#081d38] border border-cyan-500/20 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div key={q.id} className="functional-card audit-question-row p-3.5 bg-[#081d38] border border-cyan-500/20 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="space-y-0.5 max-w-xl">
-                      <span className="font-bold text-emerald-300">{q.title}</span>
-                      <p className="text-slate-200">{q.text}</p>
+                      <span className="audit-q-title font-bold text-emerald-300">{q.title}</span>
+                      <p className="audit-q-text text-slate-200">{q.text}</p>
                     </div>
 
-                    <div className="flex items-center gap-1.5 shrink-0 bg-[#051325] p-1 rounded-xl border border-cyan-500/20">
+                    <div className="audit-options-container flex items-center gap-1.5 shrink-0 bg-[#051325] p-1 rounded-xl border border-cyan-500/20">
                       <button
                         onClick={() => setAuditAnswers(prev => ({ ...prev, [q.id]: 'si' }))}
-                        className={`px-3 py-1.5 rounded-lg font-bold text-[11px] transition-all cursor-pointer ${
+                        className={`audit-btn px-3 py-1.5 rounded-lg font-bold text-[11px] transition-all cursor-pointer ${
                           auditAnswers[q.id] === 'si'
-                            ? 'bg-emerald-500 text-slate-950 font-black shadow'
+                            ? 'active-si bg-emerald-500 text-slate-950 font-black shadow'
                             : 'text-slate-400 hover:text-white'
                         }`}
                       >
@@ -2600,9 +2600,9 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
 
                       <button
                         onClick={() => setAuditAnswers(prev => ({ ...prev, [q.id]: 'parcial' }))}
-                        className={`px-3 py-1.5 rounded-lg font-bold text-[11px] transition-all cursor-pointer ${
+                        className={`audit-btn px-3 py-1.5 rounded-lg font-bold text-[11px] transition-all cursor-pointer ${
                           auditAnswers[q.id] === 'parcial'
-                            ? 'bg-amber-500 text-slate-950 font-black shadow'
+                            ? 'active-parcial bg-amber-500 text-slate-950 font-black shadow'
                             : 'text-slate-400 hover:text-white'
                         }`}
                       >
@@ -2611,9 +2611,9 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
 
                       <button
                         onClick={() => setAuditAnswers(prev => ({ ...prev, [q.id]: 'no' }))}
-                        className={`px-3 py-1.5 rounded-lg font-bold text-[11px] transition-all cursor-pointer ${
+                        className={`audit-btn px-3 py-1.5 rounded-lg font-bold text-[11px] transition-all cursor-pointer ${
                           auditAnswers[q.id] === 'no'
-                            ? 'bg-rose-500 text-white font-black shadow'
+                            ? 'active-no bg-rose-500 text-white font-black shadow'
                             : 'text-slate-400 hover:text-white'
                         }`}
                       >
@@ -2629,28 +2629,28 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
 
           {/* SUB-TAB 3: INFORME EJECUTIVO & PLAN DE ACCIÓN IA */}
           {diagnosticSubTab === 'report' && (
-            <div className="bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 shadow-xl space-y-6">
+            <div className="diagnostic-report-card bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 shadow-xl space-y-6">
               
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-cyan-500/20 pb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-cyan-500/20 pb-4 report-header">
                 <div>
-                  <h4 className="text-lg font-black text-white flex items-center gap-2">
+                  <h4 className="report-title text-lg font-black text-white flex items-center gap-2">
                     <Sparkles className="w-5 h-5 text-emerald-400" /> Informe Ejecutivo de Diagnóstico & Recomendaciones IA
                   </h4>
                 </div>
 
                 <button
                   onClick={() => alert('Generando PDF del Informe Ejecutivo de Diagnóstico de Campaña...')}
-                  className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/30 font-bold text-xs flex items-center gap-2 cursor-pointer transition-all"
+                  className="report-export-btn px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/30 font-bold text-xs flex items-center gap-2 cursor-pointer transition-all"
                 >
                   <FileText className="w-4 h-4" />
                   <span>Exportar Informe PDF</span>
                 </button>
               </div>
 
-              <div className="functional-grid grid grid-cols-1 lg:grid-cols-2 gap-6 text-xs">
+              <div className="functional-grid grid grid-cols-1 lg:grid-cols-2 gap-6 text-xs report-sections-grid">
                 
                 {/* Fortalezas Destacadas */}
-                <div className="functional-card p-4 bg-[#081d38] border border-emerald-500/30 rounded-2xl space-y-3">
+                <div className="functional-card report-section-card report-strengths p-4 bg-[#081d38] border border-emerald-500/30 rounded-2xl space-y-3">
                   <h5 className="font-extrabold text-emerald-300 text-sm flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Fortalezas Clave de la Campaña
                   </h5>
@@ -2662,7 +2662,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                 </div>
 
                 {/* Acciones Prioritarias de Contingencia */}
-                <div className="functional-card p-4 bg-[#081d38] border border-rose-500/30 rounded-2xl space-y-3">
+                <div className="functional-card report-section-card report-actions p-4 bg-[#081d38] border border-rose-500/30 rounded-2xl space-y-3">
                   <h5 className="font-extrabold text-rose-300 text-sm flex items-center gap-2">
                     <AlertTriangle className="w-4 h-4 text-rose-400" /> Plan de Acción Inmediato (30 Días)
                   </h5>
@@ -2683,13 +2683,13 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
 
       {/* TAB 2: DIAGNÓSTICO TERRITORIAL (INSUMO PROGRAMÁTICO / PROGRAMA DE GOBIERNO) */}
       {activeTab === 'diagnostico_territorial' && (
-        <div className="space-y-6">
-          <div className="bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 shadow-xl space-y-6">
+        <div className="space-y-6 diagnostico-territorial-view">
+          <div className="diagnostic-territorial-card bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 shadow-xl space-y-6">
             
             {/* Header & Sync with Sondeos de Opinión Bar */}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-cyan-500/20 pb-5">
+            <div className="territorial-header flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-cyan-500/20 pb-5">
               <div>
-                <h4 className="text-lg font-black text-white flex items-center gap-2">
+                <h4 className="territorial-title text-lg font-black text-white flex items-center gap-2">
                   <MapPin className="w-5 h-5 text-cyan-400" /> Diagnóstico Territorial Sectorial (Insumo Programático)
                 </h4>
               </div>
@@ -2700,7 +2700,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                   type="button"
                   onClick={handleSyncSurveys}
                   disabled={isSyncingSurveys}
-                  className="w-full sm:w-auto bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 text-slate-950 font-black text-xs px-4 py-2 rounded-xl transition-all flex items-center justify-center gap-2 shadow-md cursor-pointer disabled:opacity-50"
+                  className="territorial-sync-btn w-full sm:w-auto bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 text-slate-950 font-black text-xs px-4 py-2 rounded-xl transition-all flex items-center justify-center gap-2 shadow-md cursor-pointer disabled:opacity-50"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${isSyncingSurveys ? 'animate-spin' : ''}`} />
                   <span>{isSyncingSurveys ? 'Sincronizando...' : '🔄 Sincronizar Sondeos de Opinión'}</span>
@@ -2709,19 +2709,19 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
             </div>
 
             {/* SECTORIAL DIAGNOSTIC ENGINE: SECTOR TABS */}
-            <div className="space-y-4">
+            <div className="space-y-4 sector-engine-section">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <span className="text-xs font-black uppercase text-cyan-400 tracking-wider flex items-center gap-2">
+                <span className="sector-section-title text-xs font-black uppercase text-cyan-400 tracking-wider flex items-center gap-2">
                   <BarChart3 className="w-4 h-4" /> 1. Sectores Temáticos y Evaluación por Variables Sugeridas
                 </span>
                 <div className="flex items-center gap-2">
-                  <span className="text-[11px] text-slate-400 font-mono">
+                  <span className="sector-count-badge text-[11px] text-slate-400 font-mono">
                     {sectorDiagnostics.length} Sectores Evaluados
                   </span>
                   <button
                     type="button"
                     onClick={() => setShowAddSectorModal(true)}
-                    className="bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 text-slate-950 font-black text-xs px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 shadow-md cursor-pointer shrink-0"
+                    className="create-sector-btn bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 text-slate-950 font-black text-xs px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 shadow-md cursor-pointer shrink-0"
                   >
                     <Plus className="w-3.5 h-3.5" /> Crear Sector
                   </button>
@@ -2731,7 +2731,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
               {/* Sector Buttons Bar */}
               <div 
                 ref={sectorTabsContainerRef}
-                className="bg-[#030e21]/90 p-1.5 rounded-2xl border border-slate-800/80 flex items-center gap-1.5 overflow-x-auto no-scrollbar scrollbar-none shadow-lg scroll-smooth text-xs font-bold"
+                className="sector-buttons-bar bg-[#030e21]/90 p-1.5 rounded-2xl border border-slate-800/80 flex items-center gap-1.5 overflow-x-auto no-scrollbar scrollbar-none shadow-lg scroll-smooth text-xs font-bold"
               >
                 {sectorDiagnostics.map((sec) => {
                   const isActive = selectedSectorTab === sec.category;
@@ -2743,20 +2743,20 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                       ref={(el) => {
                         sectorTabRefs.current[sec.category] = el;
                       }}
-                      className={`group flex items-center rounded-xl transition-all shrink-0 whitespace-nowrap border ${
+                      className={`sector-tab-item group flex items-center rounded-xl transition-all shrink-0 whitespace-nowrap border ${
                         isActive
-                          ? 'bg-gradient-to-r from-cyan-500/20 to-teal-500/20 text-cyan-300 border border-cyan-400/50 shadow-md shadow-cyan-950/40 font-bold'
+                          ? 'active bg-gradient-to-r from-cyan-500/20 to-teal-500/20 text-cyan-300 border border-cyan-400/50 shadow-md shadow-cyan-950/40 font-bold'
                           : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 border border-transparent'
                       }`}
                     >
                       <button
                         type="button"
                         onClick={() => setSelectedSectorTab(sec.category)}
-                        className="pl-3.5 pr-2 py-2 flex items-center gap-2 cursor-pointer text-xs"
+                        className="sector-tab-btn pl-3.5 pr-2 py-2 flex items-center gap-2 cursor-pointer text-xs"
                       >
                         <span>{sec.iconEmoji} {sec.category}</span>
                         {criticalCount > 0 && (
-                          <span className="px-1.5 py-0.5 rounded-md text-[10px] font-black bg-rose-500 text-slate-950 shadow-sm">
+                          <span className="sector-crit-badge px-1.5 py-0.5 rounded-md text-[10px] font-black bg-rose-500 text-slate-950 shadow-sm">
                             {criticalCount}
                           </span>
                         )}
@@ -2767,7 +2767,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                           e.stopPropagation();
                           setSectorToDelete(sec);
                         }}
-                        className="pr-2 pl-1 py-1 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all opacity-40 group-hover:opacity-100 cursor-pointer mr-1"
+                        className="sector-del-btn pr-2 pl-1 py-1 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all opacity-40 group-hover:opacity-100 cursor-pointer mr-1"
                         title={`Eliminar sector ${sec.category}`}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -2779,7 +2779,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowAddSectorModal(true)}
-                  className="px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer text-xs font-bold text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10 border border-dashed border-cyan-500/30 hover:border-cyan-400/60 shrink-0"
+                  className="add-sector-pill-btn px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer text-xs font-bold text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10 border border-dashed border-cyan-500/30 hover:border-cyan-400/60 shrink-0"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>+ Crear Sector</span>
@@ -2787,7 +2787,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
               </div>
 
               {sectorDiagnostics.length === 0 && (
-                <div className="rounded-2xl border border-dashed border-cyan-500/30 bg-[#030e21]/70 px-6 py-10 text-center">
+                <div className="sector-empty-state rounded-2xl border border-dashed border-cyan-500/30 bg-[#030e21]/70 px-6 py-10 text-center">
                   <BarChart3 className="mx-auto mb-3 h-8 w-8 text-cyan-400/70" />
                   <p className="text-sm font-bold text-white">0 sectores registrados</p>
                   <p className="mx-auto mt-1 max-w-xl text-xs leading-relaxed text-slate-400">
@@ -2809,10 +2809,10 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                 if (!currentSector) return null;
 
                 return (
-                  <div className="bg-[#081d38] border border-cyan-500/30 rounded-2xl p-5 space-y-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-cyan-500/20 pb-3">
+                  <div className="selected-sector-box bg-[#081d38] border border-cyan-500/30 rounded-2xl p-5 space-y-4">
+                    <div className="selected-sector-header flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-cyan-500/20 pb-3">
                       <div>
-                        <h5 className="font-extrabold text-white text-sm flex items-center gap-2">
+                        <h5 className="selected-sector-title font-extrabold text-white text-sm flex items-center gap-2">
                           <span>{currentSector.iconEmoji} Sector: {currentSector.category}</span>
                         </h5>
                       </div>
@@ -2821,7 +2821,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                         <button
                           type="button"
                           onClick={() => setShowAddVariableModal(true)}
-                          className="bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 text-xs font-bold px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
+                          className="add-var-btn bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 text-xs font-bold px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
                         >
                           <Plus className="w-3.5 h-3.5" /> Agregar Variable
                         </button>
@@ -2829,7 +2829,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                         <button
                           type="button"
                           onClick={() => handleDeleteSector(currentSector.id)}
-                          className="bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-xs font-bold px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
+                          className="del-sector-btn bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-xs font-bold px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer"
                           title="Eliminar Sector Temático"
                         >
                           <Trash2 className="w-3.5 h-3.5 text-rose-400" /> Eliminar Sector
@@ -2838,20 +2838,20 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                     </div>
 
                     {/* Variables Table / Cards */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 variables-grid">
                       {currentSector.variables.map((variable) => (
                         <div
                           key={variable.id}
-                          className="bg-[#051325] border border-cyan-500/20 rounded-2xl p-3.5 space-y-2.5 flex flex-col justify-between hover:border-cyan-400/40 transition-all shadow-md"
+                          className="variable-card bg-[#051325] border border-cyan-500/20 rounded-2xl p-3.5 space-y-2.5 flex flex-col justify-between hover:border-cyan-400/40 transition-all shadow-md"
                         >
                           <div className="space-y-2">
                             <div className="flex items-start justify-between gap-2">
-                              <strong className="text-slate-100 text-xs font-bold leading-tight">{variable.name}</strong>
+                              <strong className="variable-name text-slate-100 text-xs font-bold leading-tight">{variable.name}</strong>
                               <div className="flex items-center gap-1 shrink-0">
                                 <button
                                   type="button"
                                   onClick={() => handleOpenEditVariableModal(currentSector.id, variable)}
-                                  className="p-1 text-cyan-400 hover:text-white bg-cyan-950/80 border border-cyan-500/30 hover:bg-cyan-900 rounded-lg transition-all cursor-pointer"
+                                  className="edit-var-btn p-1 text-cyan-400 hover:text-white bg-cyan-950/80 border border-cyan-500/30 hover:bg-cyan-900 rounded-lg transition-all cursor-pointer"
                                   title="Editar Indicador, Línea Base y Meta"
                                 >
                                   <Edit3 className="w-3.5 h-3.5" />
@@ -2859,12 +2859,12 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => handleToggleVariableStatus(currentSector.id, variable.id)}
-                                  className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border cursor-pointer transition-all ${
+                                  className={`variable-status-pill text-[10px] font-extrabold px-2 py-0.5 rounded-full border cursor-pointer transition-all ${
                                     variable.status === 'Crítico'
-                                      ? 'bg-rose-950 text-rose-300 border-rose-500/40 hover:bg-rose-900'
+                                      ? 'status-critico bg-rose-950 text-rose-300 border-rose-500/40 hover:bg-rose-900'
                                       : variable.status === 'Regular'
-                                      ? 'bg-amber-950 text-amber-300 border-amber-500/40 hover:bg-amber-900'
-                                      : 'bg-emerald-950 text-emerald-300 border-emerald-500/40 hover:bg-emerald-900'
+                                      ? 'status-regular bg-amber-950 text-amber-300 border-amber-500/40 hover:bg-amber-900'
+                                      : 'status-optimo bg-emerald-950 text-emerald-300 border-emerald-500/40 hover:bg-emerald-900'
                                   }`}
                                 >
                                   {variable.status} ↺
@@ -2872,7 +2872,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => handleDeleteVariable(currentSector.id, variable.id)}
-                                  className="p-1 text-slate-400 hover:text-rose-400 hover:bg-rose-500/20 rounded-lg transition-all cursor-pointer"
+                                  className="del-var-btn p-1 text-slate-400 hover:text-rose-400 hover:bg-rose-500/20 rounded-lg transition-all cursor-pointer"
                                   title="Eliminar Variable"
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
@@ -2881,8 +2881,8 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                             </div>
 
                             {/* INDICADORES Y LÍNEA BASE COMPONENT */}
-                            <div className="bg-[#071930] border border-cyan-500/25 rounded-xl p-2.5 space-y-2">
-                              <div className="text-[10px] text-cyan-300 font-bold flex items-center justify-between border-b border-cyan-500/20 pb-1">
+                            <div className="indicadores-box bg-[#071930] border border-cyan-500/25 rounded-xl p-2.5 space-y-2">
+                              <div className="indicadores-header text-[10px] text-cyan-300 font-bold flex items-center justify-between border-b border-cyan-500/20 pb-1">
                                 <span className="flex items-center gap-1 text-cyan-400">
                                   <Activity className="w-3.5 h-3.5" />
                                   Indicadores ({getVariableIndicadores(variable).length}):
@@ -2890,7 +2890,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => handleOpenEditVariableModal(currentSector.id, variable)}
-                                  className="text-[10px] text-cyan-400 hover:text-cyan-200 flex items-center gap-0.5 cursor-pointer font-extrabold hover:underline"
+                                  className="manage-ind-btn text-[10px] text-cyan-400 hover:text-cyan-200 flex items-center gap-0.5 cursor-pointer font-extrabold hover:underline"
                                 >
                                   + Administrar
                                 </button>
@@ -2898,25 +2898,25 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
 
                               <div className="space-y-2">
                                 {getVariableIndicadores(variable).map((ind, idx) => (
-                                  <div key={ind.id || idx} className="bg-[#031121] p-2 rounded-lg border border-cyan-500/20 space-y-1">
-                                    <div className="text-[10px] text-slate-200 font-semibold truncate" title={ind.nombre}>
+                                  <div key={ind.id || idx} className="indicador-item bg-[#031121] p-2 rounded-lg border border-cyan-500/20 space-y-1">
+                                    <div className="indicador-name text-[10px] text-slate-200 font-semibold truncate" title={ind.nombre}>
                                       📊 <span className="text-cyan-200 font-bold">{ind.nombre}</span>
                                     </div>
                                     <div className="grid grid-cols-2 gap-1.5 text-[10px]">
-                                      <div className="bg-[#010914] p-1.5 rounded-md border border-amber-500/30 flex flex-col justify-center">
+                                      <div className="indicador-linea-base bg-[#010914] p-1.5 rounded-md border border-amber-500/30 flex flex-col justify-center">
                                         <span className="text-amber-400 font-extrabold text-[8px] flex items-center gap-1 uppercase tracking-wider">
                                           📍 Línea Base
                                         </span>
-                                        <span className="text-amber-200 font-black text-xs mt-0.5">
+                                        <span className="indicador-linea-val text-amber-200 font-black text-xs mt-0.5">
                                           {ind.lineaBase || 'N/A'}
                                         </span>
                                       </div>
 
-                                      <div className="bg-[#010914] p-1.5 rounded-md border border-emerald-500/30 flex flex-col justify-center">
+                                      <div className="indicador-meta bg-[#010914] p-1.5 rounded-md border border-emerald-500/30 flex flex-col justify-center">
                                         <span className="text-emerald-400 font-extrabold text-[8px] flex items-center gap-1 uppercase tracking-wider">
                                           🎯 Meta
                                         </span>
-                                        <span className="text-emerald-200 font-black text-xs mt-0.5">
+                                        <span className="indicador-meta-val text-emerald-200 font-black text-xs mt-0.5">
                                           {ind.meta || 'N/A'}
                                         </span>
                                       </div>
@@ -2926,12 +2926,12 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                               </div>
                             </div>
 
-                            <p className="text-[11px] text-slate-400 leading-relaxed">
+                            <p className="variable-sondeo-text text-[11px] text-slate-400 leading-relaxed">
                               Sondeo: <span className="text-slate-200">{variable.pollPerception}</span>
                             </p>
                           </div>
 
-                          <div className="pt-2 border-t border-cyan-500/10 flex items-center justify-between text-[10px] text-cyan-300/80 font-mono">
+                          <div className="variable-footer pt-2 border-t border-cyan-500/10 flex items-center justify-between text-[10px] text-cyan-300/80 font-mono">
                             <span>Módulo Sondeos Votantes</span>
                             <span>Sincronizado AI</span>
                           </div>
@@ -2944,10 +2944,10 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
             </div>
 
             {/* 2. MICRO-TERRITORIAL DIAGNOSTIC SECTION (COMMUNES & NEIGHBORHOODS) */}
-            <div className="pt-4 border-t border-cyan-500/20 space-y-4">
+            <div className="micro-territorial-section pt-4 border-t border-cyan-500/20 space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <h5 className="text-sm font-black text-white flex items-center gap-2">
+                  <h5 className="micro-section-title text-sm font-black text-white flex items-center gap-2">
                     <MapPin className="w-4 h-4 text-cyan-400" /> 2. Fichas de Diagnóstico Territorial Micro-Local (Por Comuna / Corregimiento)
                   </h5>
                 </div>
@@ -2955,20 +2955,20 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowAddNeedModal(true)}
-                  className="bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-slate-950 font-black text-xs px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 shadow-md shrink-0 cursor-pointer"
+                  className="register-micro-btn bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-slate-950 font-black text-xs px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 shadow-md shrink-0 cursor-pointer"
                 >
                   <Plus className="w-4 h-4" /> Registrar Ficha Comunal
                 </button>
               </div>
 
               {/* Filter Bar */}
-              <div className="flex min-w-0 flex-wrap items-center justify-between gap-3 overflow-hidden bg-[#081d38] p-3 rounded-2xl border border-cyan-500/20 text-xs">
+              <div className="micro-filter-bar flex min-w-0 flex-wrap items-center justify-between gap-3 overflow-hidden bg-[#081d38] p-3 rounded-2xl border border-cyan-500/20 text-xs">
                 <div className="flex w-full min-w-0 flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:items-center">
-                  <span className="font-bold text-slate-300">Filtrar por Comuna/Sector:</span>
+                  <span className="font-bold text-slate-300 filter-label">Filtrar por Comuna/Sector:</span>
                   <select
                     value={selectedComunaFilter}
                     onChange={(e) => setSelectedComunaFilter(e.target.value)}
-                    className="block w-full min-w-0 max-w-full box-border bg-[#051325] border border-cyan-500/30 rounded-xl px-3 py-1.5 text-white outline-none focus:border-cyan-400 font-medium sm:w-auto sm:max-w-[20rem]"
+                    className="micro-filter-select block w-full min-w-0 max-w-full box-border bg-[#051325] border border-cyan-500/30 rounded-xl px-3 py-1.5 text-white outline-none focus:border-cyan-400 font-medium sm:w-auto sm:max-w-[20rem]"
                   >
                     <option value="Todos">Todas las Comunas / Corregimientos</option>
                     <option value="Comuna 1 - Popular">Comuna 1 - Popular</option>
@@ -2978,14 +2978,14 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                   </select>
                 </div>
 
-                <span className="text-[11px] text-slate-400 font-mono">
+                <span className="micro-count-badge text-[11px] text-slate-400 font-mono">
                   {territorialNeeds.filter(n => selectedComunaFilter === 'Todos' || n.comunaSector === selectedComunaFilter).length} Fichas Mapeadas
                 </span>
               </div>
 
               {/* Needs & Programmatic Proposals Cards */}
               {territorialNeeds.filter(need => selectedComunaFilter === 'Todos' || need.comunaSector === selectedComunaFilter).length === 0 && (
-                <div className="rounded-2xl border border-dashed border-cyan-500/30 bg-[#030e21]/70 px-6 py-8 text-center">
+                <div className="micro-empty-state rounded-2xl border border-dashed border-cyan-500/30 bg-[#030e21]/70 px-6 py-8 text-center">
                   <MapPin className="mx-auto mb-3 h-7 w-7 text-cyan-400/70" />
                   <p className="text-sm font-bold text-white">0 fichas comunales registradas</p>
                   <p className="mt-1 text-xs text-slate-400">Las fichas aparecerán únicamente cuando el candidato o un administrador registre información real.</p>
@@ -2998,33 +2998,33 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                   </button>
                 </div>
               )}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 micro-needs-grid">
                 {territorialNeeds
                   .filter(need => selectedComunaFilter === 'Todos' || need.comunaSector === selectedComunaFilter)
                   .map((need) => (
-                    <div key={need.id} className="bg-[#081d38] border border-cyan-500/30 rounded-2xl p-4 space-y-3 flex flex-col justify-between hover:border-cyan-400/50 transition-all shadow-md">
+                    <div key={need.id} className="micro-need-card bg-[#081d38] border border-cyan-500/30 rounded-2xl p-4 space-y-3 flex flex-col justify-between hover:border-cyan-400/50 transition-all shadow-md">
                       <div className="space-y-2">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="font-extrabold text-cyan-300 text-xs flex items-center gap-1.5">
+                          <span className="micro-comuna-title font-extrabold text-cyan-300 text-xs flex items-center gap-1.5">
                             <MapPin className="w-3.5 h-3.5 text-cyan-400" /> {need.comunaSector}
                           </span>
                           <div className="flex items-center gap-1.5">
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-teal-950 text-teal-300 border border-teal-500/30">
+                            <span className="micro-cat-badge text-[10px] font-bold px-2 py-0.5 rounded-md bg-teal-950 text-teal-300 border border-teal-500/30">
                               {need.category}
                             </span>
-                            <span className={`text-[10px] font-black px-2 py-0.5 rounded-md border ${
+                            <span className={`micro-impact-badge text-[10px] font-black px-2 py-0.5 rounded-md border ${
                               need.impactLevel === 'Crítico'
-                                ? 'bg-rose-950 text-rose-300 border-rose-500/40'
+                                ? 'impact-critico bg-rose-950 text-rose-300 border-rose-500/40'
                                 : need.impactLevel === 'Alto'
-                                ? 'bg-amber-950 text-amber-300 border-amber-500/40'
-                                : 'bg-slate-900 text-slate-300 border-slate-700'
+                                ? 'impact-alto bg-amber-950 text-amber-300 border-amber-500/40'
+                                : 'impact-medio bg-slate-900 text-slate-300 border-slate-700'
                             }`}>
                               Impacto {need.impactLevel}
                             </span>
                             <button
                               type="button"
                               onClick={() => handleDeleteTerritorialNeed(need.id)}
-                              className="p-1 text-slate-400 hover:text-rose-400 hover:bg-rose-500/20 rounded-lg transition-all cursor-pointer"
+                              className="micro-del-btn p-1 text-slate-400 hover:text-rose-400 hover:bg-rose-500/20 rounded-lg transition-all cursor-pointer"
                               title="Eliminar Ficha Comunal"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -3033,18 +3033,18 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                         </div>
 
                         <div className="space-y-1">
-                          <strong className="text-slate-100 text-xs block font-bold">Problema Diagnosticado:</strong>
-                          <p className="text-slate-300 text-xs leading-relaxed bg-[#051325] p-2.5 rounded-xl border border-cyan-500/10">
+                          <strong className="micro-problem-label text-slate-100 text-xs block font-bold">Problema Diagnosticado:</strong>
+                          <p className="micro-problem-text text-slate-300 text-xs leading-relaxed bg-[#051325] p-2.5 rounded-xl border border-cyan-500/10">
                             {need.problemDescription}
                           </p>
                         </div>
                       </div>
 
-                      <div className="pt-2 border-t border-cyan-500/20 space-y-1 bg-emerald-950/30 p-2.5 rounded-xl border border-emerald-500/30">
-                        <strong className="text-emerald-300 text-[11px] block font-bold flex items-center gap-1">
+                      <div className="micro-solution-box pt-2 border-t border-cyan-500/20 space-y-1 bg-emerald-950/30 p-2.5 rounded-xl border border-emerald-500/30">
+                        <strong className="micro-solution-label text-emerald-300 text-[11px] block font-bold flex items-center gap-1">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Propuesta Programática (Insumo Plan de Gobierno):
                         </strong>
-                        <p className="text-slate-200 text-xs font-medium leading-relaxed">
+                        <p className="micro-solution-text text-slate-200 text-xs font-medium leading-relaxed">
                           {need.programmaticProposal}
                         </p>
                       </div>
@@ -3069,24 +3069,24 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
 
       {/* TAB 4: PERFIL GENERAL & DATOS DEL CANDIDATO */}
       {activeTab === 'perfil' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start perfil-candidato-view">
           
           {/* Avatar & Key Badge Card */}
-          <div className="lg:col-span-4 bg-[#05162a] border border-cyan-500/30 rounded-3xl p-5 space-y-4 text-center flex flex-col items-center shadow-xl self-start h-fit min-w-[200px]">
+          <div className="lg:col-span-4 bg-[#05162a] border border-cyan-500/30 rounded-3xl p-5 space-y-4 text-center flex flex-col items-center shadow-xl self-start h-fit min-w-[200px] perfil-avatar-card">
             <div className="w-full flex flex-col items-center">
               <div className="relative group">
                 {candidateProfile.avatarUrl ? (
                   <img
                     src={candidateProfile.avatarUrl}
                     alt={candidateProfile.fullName || 'Candidato'}
-                    className="w-36 h-36 rounded-full border-4 border-emerald-400 object-cover shadow-2xl"
+                    className="w-36 h-36 rounded-full border-4 border-emerald-400 object-cover shadow-2xl perfil-avatar-img"
                   />
                 ) : (
-                  <div className="w-36 h-36 rounded-full border-4 border-emerald-400/70 bg-[#081d38] flex items-center justify-center shadow-2xl">
+                  <div className="w-36 h-36 rounded-full border-4 border-emerald-400/70 bg-[#081d38] flex items-center justify-center shadow-2xl perfil-avatar-placeholder">
                     <UserCheck className="w-14 h-14 text-emerald-400/70" />
                   </div>
                 )}
-                <label className="absolute bottom-1 right-1 bg-emerald-500 hover:bg-emerald-400 text-slate-950 p-2 rounded-full cursor-pointer shadow-lg transition-transform hover:scale-110">
+                <label className="absolute bottom-1 right-1 bg-emerald-500 hover:bg-emerald-400 text-slate-950 p-2 rounded-full cursor-pointer shadow-lg transition-transform hover:scale-110 perfil-avatar-edit-btn">
                   <Edit3 className="w-4 h-4" />
                   <input
                     type="file"
@@ -3115,73 +3115,73 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                 </label>
               </div>
 
-              <h3 className="text-base font-black text-white mt-3 break-words w-full text-center leading-tight">{candidateProfile.fullName}</h3>
-              <p className="text-xs font-bold text-emerald-400 break-words text-center">{candidateProfile.politicalName}</p>
+              <h3 className="text-base font-black text-white mt-3 break-words w-full text-center leading-tight perfil-name">{candidateProfile.fullName}</h3>
+              <p className="text-xs font-bold text-emerald-400 break-words text-center perfil-political-name">{candidateProfile.politicalName}</p>
 
-              <div className="mt-3 px-3 py-1 rounded-full bg-teal-950 border border-teal-500/40 text-teal-300 font-semibold text-xs inline-flex items-center gap-1.5">
+              <div className="mt-3 px-3 py-1 rounded-full bg-teal-950 border border-teal-500/40 text-teal-300 font-semibold text-xs inline-flex items-center gap-1.5 perfil-office-badge">
                 <Award className="w-3.5 h-3.5 text-emerald-400" />
                 <span>Candidato Oficial a {candidateProfile.candidateOffice}</span>
               </div>
 
-              <div className="w-full border-t border-cyan-500/20 my-4" />
+              <div className="w-full border-t border-cyan-500/20 my-4 perfil-divider" />
 
-              <div className="w-full text-left space-y-2 text-xs text-slate-300">
+              <div className="w-full text-left space-y-2 text-xs text-slate-300 perfil-quick-info">
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-slate-400">Territorio:</span>
-                  <span className="font-bold text-white break-words">{candidateProfile.territory}</span>
+                  <span className="text-slate-400 perfil-info-label">Territorio:</span>
+                  <span className="font-bold text-white break-words perfil-info-val">{candidateProfile.territory}</span>
                 </div>
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-slate-400">Cédula de Ciudadanía:</span>
-                  <span className="font-mono text-cyan-300 font-bold break-all">{candidateProfile.cedula}</span>
+                  <span className="text-slate-400 perfil-info-label">Cédula de Ciudadanía:</span>
+                  <span className="font-mono text-cyan-300 font-bold break-all perfil-info-val perfil-cedula-val">{candidateProfile.cedula}</span>
                 </div>
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-slate-400">Sello Inhabilidades:</span>
-                  <span className="text-amber-300 font-bold flex items-center gap-1">
+                  <span className="text-slate-400 perfil-info-label">Sello Inhabilidades:</span>
+                  <span className="text-amber-300 font-bold flex items-center gap-1 perfil-seal-badge">
                     <ShieldCheck className="w-3.5 h-3.5 shrink-0" /> <span className="break-words">Pendiente de verificación oficial</span>
                   </span>
                 </div>
               </div>
             </div>
 
-            <div className="w-full bg-[#081d38] p-3 rounded-2xl border border-cyan-500/20 text-left space-y-2">
+            <div className="w-full bg-[#081d38] p-3 rounded-2xl border border-cyan-500/20 text-left space-y-2 perfil-slogan-card">
               <div>
-                <span className="text-[10px] text-slate-400 uppercase font-black tracking-wider block mb-0.5">Eslogan de Campaña:</span>
-                <p className="text-xs font-bold text-amber-300 italic">"{candidateProfile.slogan}"</p>
+                <span className="text-[10px] text-slate-400 uppercase font-black tracking-wider block mb-0.5 perfil-slogan-label">Eslogan de Campaña:</span>
+                <p className="text-xs font-bold text-amber-300 italic perfil-slogan-val">"{candidateProfile.slogan}"</p>
               </div>
 
               {candidateProfile.professionalSummary && (
-                <div className="pt-2 border-t border-cyan-500/15">
-                  <span className="text-[10px] text-emerald-400 uppercase font-black tracking-wider block mb-0.5">Resumen Perfil Profesional:</span>
-                  <p className="text-[11px] text-slate-300 line-clamp-3 font-normal leading-snug">{candidateProfile.professionalSummary}</p>
+                <div className="pt-2 border-t border-cyan-500/15 perfil-summary-preview">
+                  <span className="text-[10px] text-emerald-400 uppercase font-black tracking-wider block mb-0.5 perfil-summary-label">Resumen Perfil Profesional:</span>
+                  <p className="text-[11px] text-slate-300 line-clamp-3 font-normal leading-snug perfil-summary-text">{candidateProfile.professionalSummary}</p>
                 </div>
               )}
 
               {candidateProfile.candidateBio && (
-                <div className="pt-2 border-t border-cyan-500/15">
-                  <span className="text-[10px] text-cyan-400 uppercase font-black tracking-wider block mb-0.5">Reseña del Candidato:</span>
-                  <p className="text-[11px] text-slate-300 line-clamp-3 font-normal leading-snug">{candidateProfile.candidateBio}</p>
+                <div className="pt-2 border-t border-cyan-500/15 perfil-bio-preview">
+                  <span className="text-[10px] text-cyan-400 uppercase font-black tracking-wider block mb-0.5 perfil-bio-label">Reseña del Candidato:</span>
+                  <p className="text-[11px] text-slate-300 line-clamp-3 font-normal leading-snug perfil-bio-text">{candidateProfile.candidateBio}</p>
                 </div>
               )}
 
               {/* Candidate DOFA Summary Box */}
-              <div className="pt-2.5 border-t border-cyan-500/20 space-y-1.5">
-                <span className="text-[10px] text-amber-400 uppercase font-black tracking-wider flex items-center gap-1">
+              <div className="pt-2.5 border-t border-cyan-500/20 space-y-1.5 perfil-dofa-summary-box">
+                <span className="text-[10px] text-amber-400 uppercase font-black tracking-wider flex items-center gap-1 perfil-dofa-summary-label">
                   <PieChart className="w-3 h-3 text-emerald-400" /> Matriz DOFA Resumida:
                 </span>
                 <div className="grid grid-cols-1 gap-1.5 text-[10px]">
-                  <div className="bg-emerald-950/60 border border-emerald-500/30 p-1.5 rounded-lg">
+                  <div className="bg-emerald-950/60 border border-emerald-500/30 p-1.5 rounded-lg dofa-mini-strength">
                     <span className="font-bold text-emerald-300 block mb-0.5">Fortalezas:</span>
                     <p className="text-slate-300 line-clamp-2 leading-tight">{candidateProfile.dofaStrengths}</p>
                   </div>
-                  <div className="bg-cyan-950/60 border border-cyan-500/30 p-1.5 rounded-lg">
+                  <div className="bg-cyan-950/60 border border-cyan-500/30 p-1.5 rounded-lg dofa-mini-opportunity">
                     <span className="font-bold text-cyan-300 block mb-0.5">Oportunidades:</span>
                     <p className="text-slate-300 line-clamp-2 leading-tight">{candidateProfile.dofaOpportunities}</p>
                   </div>
-                  <div className="bg-amber-950/60 border border-amber-500/30 p-1.5 rounded-lg">
+                  <div className="bg-amber-950/60 border border-amber-500/30 p-1.5 rounded-lg dofa-mini-weakness">
                     <span className="font-bold text-amber-300 block mb-0.5">Debilidades:</span>
                     <p className="text-slate-300 line-clamp-2 leading-tight">{candidateProfile.dofaWeaknesses}</p>
                   </div>
-                  <div className="bg-rose-950/60 border border-rose-500/30 p-1.5 rounded-lg">
+                  <div className="bg-rose-950/60 border border-rose-500/30 p-1.5 rounded-lg dofa-mini-threat">
                     <span className="font-bold text-rose-300 block mb-0.5">Amenazas:</span>
                     <p className="text-slate-300 line-clamp-2 leading-tight">{candidateProfile.dofaThreats}</p>
                   </div>
@@ -3191,15 +3191,15 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
           </div>
 
           {/* Detailed Editable Profile Form */}
-          <div className="lg:col-span-8 bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 space-y-5 shadow-xl min-w-0">
-            <h3 className="text-lg font-bold text-white flex items-center gap-2 border-b border-cyan-500/20 pb-3">
+          <div className="lg:col-span-8 bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 space-y-5 shadow-xl min-w-0 perfil-form-card">
+            <h3 className="text-lg font-bold text-white flex items-center gap-2 border-b border-cyan-500/20 pb-3 perfil-form-title">
               <UserCheck className="w-5 h-5 text-emerald-400" />
               Configuración Completa del Candidato
             </h3>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs perfil-form-grid">
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Nombre Completo (Registro CNE):</label>
+                <label className="block text-slate-300 font-semibold mb-1 perfil-form-label">Nombre Completo (Registro CNE):</label>
                 <input
                   type="text"
                   value={candidateProfile.fullName}
@@ -3213,26 +3213,26 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                       // ignore
                     }
                   }}
-                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white font-medium focus:border-emerald-400 outline-none"
+                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white font-medium focus:border-emerald-400 outline-none perfil-form-input"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Nombre Político / Seudónimo:</label>
+                <label className="block text-slate-300 font-semibold mb-1 perfil-form-label">Nombre Político / Seudónimo:</label>
                 <input
                   type="text"
                   value={candidateProfile.politicalName}
                   onChange={(e) => setCandidateProfile({ ...candidateProfile, politicalName: e.target.value })}
-                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white font-medium focus:border-emerald-400 outline-none"
+                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white font-medium focus:border-emerald-400 outline-none perfil-form-input"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Cargo de Elección Popular al que Aspira:</label>
+                <label className="block text-slate-300 font-semibold mb-1 perfil-form-label">Cargo de Elección Popular al que Aspira:</label>
                 <select
                   value={candidateProfile.candidateOffice}
                   onChange={(e) => setCandidateProfile({ ...candidateProfile, candidateOffice: e.target.value })}
-                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white font-medium focus:border-emerald-400 outline-none"
+                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white font-medium focus:border-emerald-400 outline-none perfil-form-select"
                 >
                   <option value="">Seleccione el cargo</option>
                   <option value="Alcaldía">Alcaldía Municipal/Distrital</option>
@@ -3247,93 +3247,93 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Partido / Coalición / Grupo Significativo:</label>
+                <label className="block text-slate-300 font-semibold mb-1 perfil-form-label">Partido / Coalición / Grupo Significativo:</label>
                 <input
                   type="text"
                   value={candidateProfile.partyAlliance}
                   onChange={(e) => setCandidateProfile({ ...candidateProfile, partyAlliance: e.target.value })}
-                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white font-medium focus:border-emerald-400 outline-none"
+                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white font-medium focus:border-emerald-400 outline-none perfil-form-input"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Municipio / Departamento:</label>
+                <label className="block text-slate-300 font-semibold mb-1 perfil-form-label">Municipio / Departamento:</label>
                 <input
                   type="text"
                   value={candidateProfile.territory}
                   readOnly
                   title="Este territorio proviene de la campaña creada en Global Admin"
-                  className="w-full bg-[#061326] border border-cyan-500/30 rounded-xl px-3 py-2 text-slate-300 font-medium cursor-not-allowed"
+                  className="w-full bg-[#061326] border border-cyan-500/30 rounded-xl px-3 py-2 text-slate-300 font-medium cursor-not-allowed perfil-form-input-readonly"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Cédula de Ciudadanía:</label>
+                <label className="block text-slate-300 font-semibold mb-1 perfil-form-label">Cédula de Ciudadanía:</label>
                 <input
                   type="text"
                   value={candidateProfile.cedula}
                   onChange={(e) => setCandidateProfile({ ...candidateProfile, cedula: e.target.value })}
-                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white font-medium focus:border-emerald-400 outline-none"
+                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white font-medium focus:border-emerald-400 outline-none perfil-form-input"
                 />
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-slate-300 font-semibold mb-1">Eslogan Principal de Campaña:</label>
+                <label className="block text-slate-300 font-semibold mb-1 perfil-form-label">Eslogan Principal de Campaña:</label>
                 <input
                   type="text"
                   value={candidateProfile.slogan}
                   onChange={(e) => setCandidateProfile({ ...candidateProfile, slogan: e.target.value })}
-                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white font-bold focus:border-emerald-400 outline-none"
+                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white font-bold focus:border-emerald-400 outline-none perfil-form-input"
                 />
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-slate-300 font-semibold mb-1">Resumen del Perfil Profesional:</label>
+                <label className="block text-slate-300 font-semibold mb-1 perfil-form-label">Resumen del Perfil Profesional:</label>
                 <textarea
                   rows={3}
                   value={candidateProfile.professionalSummary}
                   onChange={(e) => setCandidateProfile({ ...candidateProfile, professionalSummary: e.target.value })}
                   placeholder="Síntesis de experiencia académica, cargos directivos, gestión pública o privada..."
-                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white text-xs leading-relaxed focus:border-emerald-400 outline-none resize-none"
+                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white text-xs leading-relaxed focus:border-emerald-400 outline-none resize-none perfil-form-textarea"
                 />
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-slate-300 font-semibold mb-1">Reseña del Candidato (Biografía & Trayectoria):</label>
+                <label className="block text-slate-300 font-semibold mb-1 perfil-form-label">Reseña del Candidato (Biografía & Trayectoria):</label>
                 <textarea
                   rows={4}
                   value={candidateProfile.candidateBio}
                   onChange={(e) => setCandidateProfile({ ...candidateProfile, candidateBio: e.target.value })}
                   placeholder="Reseña histórica, origen territorial, liderazgo comunitario, causas principales y logros destacados del candidato..."
-                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white text-xs leading-relaxed focus:border-emerald-400 outline-none resize-none"
+                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white text-xs leading-relaxed focus:border-emerald-400 outline-none resize-none perfil-form-textarea"
                 />
               </div>
             </div>
 
             {/* Candidate DOFA / SWOT Matrix Section */}
-            <h4 className="text-sm font-bold text-emerald-300 pt-3 border-t border-cyan-500/20 flex items-center gap-2">
+            <h4 className="text-sm font-bold text-emerald-300 pt-3 border-t border-cyan-500/20 flex items-center gap-2 perfil-dofa-section-title">
               <PieChart className="w-4 h-4 text-emerald-400" /> Matriz DOFA / SWOT del Candidato
             </h4>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs perfil-dofa-grid">
               {/* Fortalezas */}
-              <div className="bg-[#041224] p-3.5 rounded-2xl border border-emerald-500/30 space-y-2 flex flex-col justify-between">
+              <div className="bg-[#041224] p-3.5 rounded-2xl border border-emerald-500/30 space-y-2 flex flex-col justify-between perfil-dofa-card dofa-fortalezas-card">
                 <div className="space-y-1.5">
-                  <label className="block font-extrabold text-emerald-400 text-xs flex items-center justify-between">
+                  <label className="block font-extrabold text-emerald-400 text-xs flex items-center justify-between dofa-card-label">
                     <span>Fortalezas (Internas):</span>
-                    <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-md font-mono">Ventajas</span>
+                    <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-md font-mono dofa-card-badge">Ventajas</span>
                   </label>
                   <textarea
                     rows={3}
                     value={candidateProfile.dofaStrengths}
                     onChange={(e) => setCandidateProfile({ ...candidateProfile, dofaStrengths: e.target.value })}
                     placeholder="Puntos fuertes, trayectoria ética, preparación, atributos diferenciadores..."
-                    className="w-full bg-[#081d38] border border-emerald-500/30 rounded-xl px-3 py-2 text-white text-xs leading-relaxed focus:border-emerald-400 outline-none resize-none"
+                    className="w-full bg-[#081d38] border border-emerald-500/30 rounded-xl px-3 py-2 text-white text-xs leading-relaxed focus:border-emerald-400 outline-none resize-none dofa-card-textarea"
                   />
                 </div>
-                <div className="pt-2 border-t border-emerald-500/20 space-y-2">
-                  <span className="text-[10px] font-extrabold text-emerald-300/80 block uppercase tracking-wider">Variables Evaluables (Haz clic para seleccionar o quitar):</span>
-                  <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto pr-1 custom-scrollbar">
+                <div className="pt-2 border-t border-emerald-500/20 space-y-2 dofa-card-vars-section">
+                  <span className="text-[10px] font-extrabold text-emerald-300/80 block uppercase tracking-wider dofa-vars-header">Variables Evaluables (Haz clic para seleccionar o quitar):</span>
+                  <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto pr-1 custom-scrollbar dofa-chips-container">
                     {candidateDofaVars.strengths.map((item, idx) => {
                       const isSelected = candidateProfile.dofaStrengths?.toLowerCase().includes(item.toLowerCase().slice(0, 20));
                       return (
@@ -3341,9 +3341,9 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                           key={idx}
                           type="button"
                           onClick={() => toggleCandidateDofaVar('dofaStrengths', item)}
-                          className={`text-[10px] px-2 py-1 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 text-left leading-tight ${
+                          className={`text-[10px] px-2 py-1 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 text-left leading-tight dofa-var-chip ${
                             isSelected
-                              ? 'bg-emerald-500/25 text-emerald-300 border-emerald-400/60 font-bold shadow-sm'
+                              ? 'bg-emerald-500/25 text-emerald-300 border-emerald-400/60 font-bold shadow-sm dofa-var-chip-active'
                               : 'bg-[#081d38] text-slate-300 border-emerald-500/20 hover:border-emerald-400/40 hover:text-white'
                           }`}
                         >
@@ -3355,7 +3355,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                   </div>
 
                   {/* Add Custom Variable Input */}
-                  <div className="flex gap-1.5 pt-1">
+                  <div className="flex gap-1.5 pt-1 dofa-add-box">
                     <input
                       type="text"
                       value={newDofaInputs.strengths}
@@ -3367,12 +3367,12 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                         }
                       }}
                       placeholder="+ Agregar nueva variable de fortaleza..."
-                      className="flex-1 bg-[#081d38] border border-emerald-500/30 rounded-lg px-2.5 py-1 text-[11px] text-white placeholder-slate-400 focus:border-emerald-400 outline-none"
+                      className="flex-1 bg-[#081d38] border border-emerald-500/30 rounded-lg px-2.5 py-1 text-[11px] text-white placeholder-slate-400 focus:border-emerald-400 outline-none dofa-add-input"
                     />
                     <button
                       type="button"
                       onClick={() => handleAddCustomDofaVar('strengths', 'dofaStrengths')}
-                      className="bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 shrink-0"
+                      className="bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 shrink-0 dofa-add-btn"
                     >
                       <Plus className="w-3 h-3" /> Agregar
                     </button>
@@ -3381,23 +3381,23 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
               </div>
 
               {/* Oportunidades */}
-              <div className="bg-[#041224] p-3.5 rounded-2xl border border-cyan-500/30 space-y-2 flex flex-col justify-between">
+              <div className="bg-[#041224] p-3.5 rounded-2xl border border-cyan-500/30 space-y-2 flex flex-col justify-between perfil-dofa-card dofa-oportunidades-card">
                 <div className="space-y-1.5">
-                  <label className="block font-extrabold text-cyan-400 text-xs flex items-center justify-between">
+                  <label className="block font-extrabold text-cyan-400 text-xs flex items-center justify-between dofa-card-label">
                     <span>Oportunidades (Externas):</span>
-                    <span className="text-[10px] bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded-md font-mono">Entorno</span>
+                    <span className="text-[10px] bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded-md font-mono dofa-card-badge">Entorno</span>
                   </label>
                   <textarea
                     rows={3}
                     value={candidateProfile.dofaOpportunities}
                     onChange={(e) => setCandidateProfile({ ...candidateProfile, dofaOpportunities: e.target.value })}
                     placeholder="Factores del contexto político, alianzas, coyuntura electoral a aprovechar..."
-                    className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white text-xs leading-relaxed focus:border-cyan-400 outline-none resize-none"
+                    className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white text-xs leading-relaxed focus:border-cyan-400 outline-none resize-none dofa-card-textarea"
                   />
                 </div>
-                <div className="pt-2 border-t border-cyan-500/20 space-y-2">
-                  <span className="text-[10px] font-extrabold text-cyan-300/80 block uppercase tracking-wider">Variables Evaluables (Haz clic para seleccionar o quitar):</span>
-                  <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto pr-1 custom-scrollbar">
+                <div className="pt-2 border-t border-cyan-500/20 space-y-2 dofa-card-vars-section">
+                  <span className="text-[10px] font-extrabold text-cyan-300/80 block uppercase tracking-wider dofa-vars-header">Variables Evaluables (Haz clic para seleccionar o quitar):</span>
+                  <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto pr-1 custom-scrollbar dofa-chips-container">
                     {candidateDofaVars.opportunities.map((item, idx) => {
                       const isSelected = candidateProfile.dofaOpportunities?.toLowerCase().includes(item.toLowerCase().slice(0, 20));
                       return (
@@ -3405,9 +3405,9 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                           key={idx}
                           type="button"
                           onClick={() => toggleCandidateDofaVar('dofaOpportunities', item)}
-                          className={`text-[10px] px-2 py-1 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 text-left leading-tight ${
+                          className={`text-[10px] px-2 py-1 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 text-left leading-tight dofa-var-chip ${
                             isSelected
-                              ? 'bg-cyan-500/25 text-cyan-300 border-cyan-400/60 font-bold shadow-sm'
+                              ? 'bg-cyan-500/25 text-cyan-300 border-cyan-400/60 font-bold shadow-sm dofa-var-chip-active'
                               : 'bg-[#081d38] text-slate-300 border-cyan-500/20 hover:border-cyan-400/40 hover:text-white'
                           }`}
                         >
@@ -3419,7 +3419,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                   </div>
 
                   {/* Add Custom Variable Input */}
-                  <div className="flex gap-1.5 pt-1">
+                  <div className="flex gap-1.5 pt-1 dofa-add-box">
                     <input
                       type="text"
                       value={newDofaInputs.opportunities}
@@ -3431,12 +3431,12 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                         }
                       }}
                       placeholder="+ Agregar nueva variable de oportunidad..."
-                      className="flex-1 bg-[#081d38] border border-cyan-500/30 rounded-lg px-2.5 py-1 text-[11px] text-white placeholder-slate-400 focus:border-cyan-400 outline-none"
+                      className="flex-1 bg-[#081d38] border border-cyan-500/30 rounded-lg px-2.5 py-1 text-[11px] text-white placeholder-slate-400 focus:border-cyan-400 outline-none dofa-add-input"
                     />
                     <button
                       type="button"
                       onClick={() => handleAddCustomDofaVar('opportunities', 'dofaOpportunities')}
-                      className="bg-cyan-600 hover:bg-cyan-500 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 shrink-0"
+                      className="bg-cyan-600 hover:bg-cyan-500 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 shrink-0 dofa-add-btn"
                     >
                       <Plus className="w-3 h-3" /> Agregar
                     </button>
@@ -3445,23 +3445,23 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
               </div>
 
               {/* Debilidades */}
-              <div className="bg-[#041224] p-3.5 rounded-2xl border border-amber-500/30 space-y-2 flex flex-col justify-between">
+              <div className="bg-[#041224] p-3.5 rounded-2xl border border-amber-500/30 space-y-2 flex flex-col justify-between perfil-dofa-card dofa-debilidades-card">
                 <div className="space-y-1.5">
-                  <label className="block font-extrabold text-amber-400 text-xs flex items-center justify-between">
+                  <label className="block font-extrabold text-amber-400 text-xs flex items-center justify-between dofa-card-label">
                     <span>Debilidades (Internas):</span>
-                    <span className="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-md font-mono">A reforzar</span>
+                    <span className="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-md font-mono dofa-card-badge">A reforzar</span>
                   </label>
                   <textarea
                     rows={3}
                     value={candidateProfile.dofaWeaknesses}
                     onChange={(e) => setCandidateProfile({ ...candidateProfile, dofaWeaknesses: e.target.value })}
                     placeholder="Áreas de mejora, brechas de conocimiento o reconocimiento territorial..."
-                    className="w-full bg-[#081d38] border border-amber-500/30 rounded-xl px-3 py-2 text-white text-xs leading-relaxed focus:border-amber-400 outline-none resize-none"
+                    className="w-full bg-[#081d38] border border-amber-500/30 rounded-xl px-3 py-2 text-white text-xs leading-relaxed focus:border-amber-400 outline-none resize-none dofa-card-textarea"
                   />
                 </div>
-                <div className="pt-2 border-t border-amber-500/20 space-y-2">
-                  <span className="text-[10px] font-extrabold text-amber-300/80 block uppercase tracking-wider">Variables Evaluables (Haz clic para seleccionar o quitar):</span>
-                  <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto pr-1 custom-scrollbar">
+                <div className="pt-2 border-t border-amber-500/20 space-y-2 dofa-card-vars-section">
+                  <span className="text-[10px] font-extrabold text-amber-300/80 block uppercase tracking-wider dofa-vars-header">Variables Evaluables (Haz clic para seleccionar o quitar):</span>
+                  <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto pr-1 custom-scrollbar dofa-chips-container">
                     {candidateDofaVars.weaknesses.map((item, idx) => {
                       const isSelected = candidateProfile.dofaWeaknesses?.toLowerCase().includes(item.toLowerCase().slice(0, 20));
                       return (
@@ -3469,9 +3469,9 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                           key={idx}
                           type="button"
                           onClick={() => toggleCandidateDofaVar('dofaWeaknesses', item)}
-                          className={`text-[10px] px-2 py-1 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 text-left leading-tight ${
+                          className={`text-[10px] px-2 py-1 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 text-left leading-tight dofa-var-chip ${
                             isSelected
-                              ? 'bg-amber-500/25 text-amber-300 border-amber-400/60 font-bold shadow-sm'
+                              ? 'bg-amber-500/25 text-amber-300 border-amber-400/60 font-bold shadow-sm dofa-var-chip-active'
                               : 'bg-[#081d38] text-slate-300 border-amber-500/20 hover:border-amber-400/40 hover:text-white'
                           }`}
                         >
@@ -3483,7 +3483,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                   </div>
 
                   {/* Add Custom Variable Input */}
-                  <div className="flex gap-1.5 pt-1">
+                  <div className="flex gap-1.5 pt-1 dofa-add-box">
                     <input
                       type="text"
                       value={newDofaInputs.weaknesses}
@@ -3495,12 +3495,12 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                         }
                       }}
                       placeholder="+ Agregar nueva variable de debilidad..."
-                      className="flex-1 bg-[#081d38] border border-amber-500/30 rounded-lg px-2.5 py-1 text-[11px] text-white placeholder-slate-400 focus:border-amber-400 outline-none"
+                      className="flex-1 bg-[#081d38] border border-amber-500/30 rounded-lg px-2.5 py-1 text-[11px] text-white placeholder-slate-400 focus:border-amber-400 outline-none dofa-add-input"
                     />
                     <button
                       type="button"
                       onClick={() => handleAddCustomDofaVar('weaknesses', 'dofaWeaknesses')}
-                      className="bg-amber-600 hover:bg-amber-500 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 shrink-0"
+                      className="bg-amber-600 hover:bg-amber-500 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 shrink-0 dofa-add-btn"
                     >
                       <Plus className="w-3 h-3" /> Agregar
                     </button>
@@ -3509,23 +3509,23 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
               </div>
 
               {/* Amenazas */}
-              <div className="bg-[#041224] p-3.5 rounded-2xl border border-rose-500/30 space-y-2 flex flex-col justify-between">
+              <div className="bg-[#041224] p-3.5 rounded-2xl border border-rose-500/30 space-y-2 flex flex-col justify-between perfil-dofa-card dofa-amenazas-card">
                 <div className="space-y-1.5">
-                  <label className="block font-extrabold text-rose-400 text-xs flex items-center justify-between">
+                  <label className="block font-extrabold text-rose-400 text-xs flex items-center justify-between dofa-card-label">
                     <span>Amenazas (Externas):</span>
-                    <span className="text-[10px] bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded-md font-mono">Riesgos</span>
+                    <span className="text-[10px] bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded-md font-mono dofa-card-badge">Riesgos</span>
                   </label>
                   <textarea
                     rows={3}
                     value={candidateProfile.dofaThreats}
                     onChange={(e) => setCandidateProfile({ ...candidateProfile, dofaThreats: e.target.value })}
                     placeholder="Ataques de oposición, abstencionismo, maquinarias rivales, desinformación..."
-                    className="w-full bg-[#081d38] border border-rose-500/30 rounded-xl px-3 py-2 text-white text-xs leading-relaxed focus:border-rose-400 outline-none resize-none"
+                    className="w-full bg-[#081d38] border border-rose-500/30 rounded-xl px-3 py-2 text-white text-xs leading-relaxed focus:border-rose-400 outline-none resize-none dofa-card-textarea"
                   />
                 </div>
-                <div className="pt-2 border-t border-rose-500/20 space-y-2">
-                  <span className="text-[10px] font-extrabold text-rose-300/80 block uppercase tracking-wider">Variables Evaluables (Haz clic para seleccionar o quitar):</span>
-                  <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto pr-1 custom-scrollbar">
+                <div className="pt-2 border-t border-rose-500/20 space-y-2 dofa-card-vars-section">
+                  <span className="text-[10px] font-extrabold text-rose-300/80 block uppercase tracking-wider dofa-vars-header">Variables Evaluables (Haz clic para seleccionar o quitar):</span>
+                  <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto pr-1 custom-scrollbar dofa-chips-container">
                     {candidateDofaVars.threats.map((item, idx) => {
                       const isSelected = candidateProfile.dofaThreats?.toLowerCase().includes(item.toLowerCase().slice(0, 20));
                       return (
@@ -3533,9 +3533,9 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                           key={idx}
                           type="button"
                           onClick={() => toggleCandidateDofaVar('dofaThreats', item)}
-                          className={`text-[10px] px-2 py-1 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 text-left leading-tight ${
+                          className={`text-[10px] px-2 py-1 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 text-left leading-tight dofa-var-chip ${
                             isSelected
-                              ? 'bg-rose-500/25 text-rose-300 border-rose-400/60 font-bold shadow-sm'
+                              ? 'bg-rose-500/25 text-rose-300 border-rose-400/60 font-bold shadow-sm dofa-var-chip-active'
                               : 'bg-[#081d38] text-slate-300 border-rose-500/20 hover:border-rose-400/40 hover:text-white'
                           }`}
                         >
@@ -3547,7 +3547,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                   </div>
 
                   {/* Add Custom Variable Input */}
-                  <div className="flex gap-1.5 pt-1">
+                  <div className="flex gap-1.5 pt-1 dofa-add-box">
                     <input
                       type="text"
                       value={newDofaInputs.threats}
@@ -3559,12 +3559,12 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                         }
                       }}
                       placeholder="+ Agregar nueva variable de amenaza..."
-                      className="flex-1 bg-[#081d38] border border-rose-500/30 rounded-lg px-2.5 py-1 text-[11px] text-white placeholder-slate-400 focus:border-rose-400 outline-none"
+                      className="flex-1 bg-[#081d38] border border-rose-500/30 rounded-lg px-2.5 py-1 text-[11px] text-white placeholder-slate-400 focus:border-rose-400 outline-none dofa-add-input"
                     />
                     <button
                       type="button"
                       onClick={() => handleAddCustomDofaVar('threats', 'dofaThreats')}
-                      className="bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 shrink-0"
+                      className="bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 shrink-0 dofa-add-btn"
                     >
                       <Plus className="w-3 h-3" /> Agregar
                     </button>
@@ -3574,49 +3574,49 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
             </div>
 
             {/* Official Contact Channels */}
-            <h4 className="text-sm font-bold text-cyan-300 pt-3 border-t border-cyan-500/20 flex items-center gap-2">
+            <h4 className="text-sm font-bold text-cyan-300 pt-3 border-t border-cyan-500/20 flex items-center gap-2 perfil-contact-title">
               <Globe className="w-4 h-4 text-emerald-400" /> Canales Oficiales de Contacto
             </h4>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs perfil-contact-grid">
               <div>
-                <label className="block text-slate-400 text-[11px] mb-1">Sitio Web Oficial:</label>
+                <label className="block text-slate-400 text-[11px] mb-1 perfil-contact-label">Sitio Web Oficial:</label>
                 <input
                   type="text"
                   value={candidateProfile.website}
                   onChange={(e) => setCandidateProfile({ ...candidateProfile, website: e.target.value })}
-                  className="w-full bg-[#081d38] border border-cyan-500/20 rounded-lg px-2.5 py-1.5 text-white"
+                  className="w-full bg-[#081d38] border border-cyan-500/20 rounded-lg px-2.5 py-1.5 text-white perfil-contact-input"
                 />
               </div>
               <div>
-                <label className="block text-slate-400 text-[11px] mb-1">Correo Electrónico Oficial:</label>
+                <label className="block text-slate-400 text-[11px] mb-1 perfil-contact-label">Correo Electrónico Oficial:</label>
                 <input
                   type="email"
                   value={candidateProfile.email}
                   onChange={(e) => setCandidateProfile({ ...candidateProfile, email: e.target.value })}
-                  className="w-full bg-[#081d38] border border-cyan-500/20 rounded-lg px-2.5 py-1.5 text-white"
+                  className="w-full bg-[#081d38] border border-cyan-500/20 rounded-lg px-2.5 py-1.5 text-white perfil-contact-input"
                 />
               </div>
               <div>
-                <label className="block text-slate-400 text-[11px] mb-1">Teléfono Directo de Prensa:</label>
+                <label className="block text-slate-400 text-[11px] mb-1 perfil-contact-label">Teléfono Directo de Prensa:</label>
                 <input
                   type="text"
                   value={candidateProfile.phone}
                   onChange={(e) => setCandidateProfile({ ...candidateProfile, phone: e.target.value })}
-                  className="w-full bg-[#081d38] border border-cyan-500/20 rounded-lg px-2.5 py-1.5 text-white"
+                  className="w-full bg-[#081d38] border border-cyan-500/20 rounded-lg px-2.5 py-1.5 text-white perfil-contact-input"
                 />
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-cyan-500/20">
-              <span className={`text-xs font-semibold ${candidateProfileMessage.toLowerCase().includes('guardado') ? 'text-emerald-400' : 'text-amber-300'}`}>
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-cyan-500/20 perfil-footer-bar">
+              <span className={`text-xs font-semibold perfil-status-msg ${candidateProfileMessage.toLowerCase().includes('guardado') ? 'text-emerald-400' : 'text-amber-300'}`}>
                 {candidateProfileMessage}
               </span>
               <button
                 type="button"
                 onClick={() => void saveCandidateProfile()}
                 disabled={candidateProfileSaving || !candidateCampaignId}
-                className="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:brightness-110 disabled:opacity-50 text-slate-950 font-black rounded-xl flex items-center gap-2 cursor-pointer"
+                className="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:brightness-110 disabled:opacity-50 text-slate-950 font-black rounded-xl flex items-center gap-2 cursor-pointer perfil-save-btn"
               >
                 <Save className="w-4 h-4" />
                 {candidateProfileSaving ? 'Guardando...' : 'Guardar perfil del candidato'}
@@ -3628,14 +3628,14 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
 
       {/* TAB 2: CARGA Y ANÁLISIS DE HOJA DE VIDA (CV) */}
       {activeTab === 'hoja_vida' && (
-        <div className="space-y-6">
+        <div className="space-y-6 cv-analisis-view">
           
           {/* Resume Upload Dropzone & AI Parser Trigger */}
-          <div className="bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 shadow-xl relative overflow-hidden">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-cyan-500/20 pb-4 mb-4">
+          <div className="cv-header-card bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 shadow-xl relative overflow-hidden">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-cyan-500/20 pb-4 mb-4 cv-header-top">
               <div>
-                <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-emerald-400" />
+                <h3 className="cv-header-title text-lg font-bold text-white flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-emerald-400 cv-header-icon" />
                   Módulo de Carga y Lectura Inteligente de Hoja de Vida (CV)
                 </h3>
               </div>
@@ -3643,7 +3643,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
               <button
                 onClick={() => void handleAnalyzeCv()}
                 disabled={isParsingCv || !cvStoragePath}
-                className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-300 hover:to-teal-300 text-slate-950 font-extrabold text-xs rounded-xl shadow-lg shadow-emerald-500/20 transition-all cursor-pointer shrink-0 disabled:opacity-50"
+                className="cv-scan-btn flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-300 hover:to-teal-300 text-slate-950 font-extrabold text-xs rounded-xl shadow-lg shadow-emerald-500/20 transition-all cursor-pointer shrink-0 disabled:opacity-50"
               >
                 <Sparkles className={`w-4 h-4 ${isParsingCv ? 'animate-spin' : ''}`} />
                 <span>{isParsingCv ? 'Analizando con IA...' : 'Escanear Hoja de Vida con IA'}</span>
@@ -3651,12 +3651,28 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
             </div>
 
             {/* Drag and Drop Zone */}
-            <div className="border-2 border-dashed border-cyan-500/40 hover:border-emerald-400 bg-[#081d38]/60 p-8 rounded-2xl flex flex-col items-center justify-center text-center transition-all group">
-              <UploadCloud className="w-12 h-12 text-cyan-400 group-hover:scale-110 transition-transform mb-3" />
-              <p className="text-sm font-bold text-white mb-4">
+            <div
+              onDragOver={(e) => { e.preventDefault(); }}
+              onDrop={(e) => {
+                e.preventDefault();
+                const file = e.dataTransfer.files?.[0];
+                if (file) {
+                  const syntheticEvent = {
+                    target: {
+                      files: [file],
+                      value: ''
+                    }
+                  } as unknown as React.ChangeEvent<HTMLInputElement>;
+                  void handleFileUpload(syntheticEvent);
+                }
+              }}
+              className="cv-dropzone border-2 border-dashed border-cyan-500/40 hover:border-emerald-400 bg-[#081d38]/60 p-8 rounded-2xl flex flex-col items-center justify-center text-center transition-all group"
+            >
+              <UploadCloud className="cv-dropzone-icon w-12 h-12 text-cyan-400 group-hover:scale-110 transition-transform mb-3" />
+              <p className="cv-dropzone-text text-sm font-bold text-white mb-4">
                 Arrastre aquí su archivo de Hoja de Vida (PDF, DOCX) o haga clic para seleccionar
               </p>
-              <label className="px-4 py-2 bg-cyan-900/80 hover:bg-cyan-800 text-cyan-200 border border-cyan-400/40 rounded-xl text-xs font-bold cursor-pointer transition-all">
+              <label className="cv-select-btn px-4 py-2 bg-cyan-900/80 hover:bg-cyan-800 text-cyan-200 border border-cyan-400/40 rounded-xl text-xs font-bold cursor-pointer transition-all">
                 Seleccionar Archivo PDF
                 <input
                   type="file"
@@ -3667,61 +3683,61 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
               </label>
 
               {cvFileName && (
-                <div className="mt-4 px-3 py-1.5 rounded-lg bg-emerald-950/80 border border-emerald-400/40 text-emerald-300 text-xs font-mono flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-emerald-400" />
-                  <span>{cvFileName} ({cvUploadedAt ? new Date(cvUploadedAt).toLocaleString('es-CO') : ''})</span>
-                  <span className={`text-[10px] font-black px-1.5 py-0.5 rounded ml-2 ${cvAnalysisStatus === 'Analizado con IA' ? 'bg-emerald-500 text-slate-950' : 'bg-amber-500/20 text-amber-300'}`}>{cvAnalysisStatus}</span>
+                <div className="cv-file-badge mt-4 px-3 py-1.5 rounded-lg bg-emerald-950/80 border border-emerald-400/40 text-emerald-300 text-xs font-mono flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span className="cv-file-name">{cvFileName} ({cvUploadedAt ? new Date(cvUploadedAt).toLocaleString('es-CO') : ''})</span>
+                  <span className={`cv-file-status-pill text-[10px] font-black px-1.5 py-0.5 rounded ml-2 ${cvAnalysisStatus === 'Analizado con IA' ? 'bg-emerald-500 text-slate-950 cv-status-analyzed' : 'bg-amber-500/20 text-amber-300 cv-status-pending'}`}>{cvAnalysisStatus}</span>
                 </div>
               )}
-              {!cvFileName && <p className="mt-4 text-xs text-slate-400">No hay una hoja de vida cargada para esta campaña.</p>}
-              {cvMessage && <p className={`mt-4 text-xs font-bold ${/guardado|cargado|completado/i.test(cvMessage) ? 'text-emerald-300' : 'text-amber-300'}`}>{cvMessage}</p>}
+              {!cvFileName && <p className="cv-empty-text mt-4 text-xs text-slate-400">No hay una hoja de vida cargada para esta campaña.</p>}
+              {cvMessage && <p className={`cv-feedback-msg mt-4 text-xs font-bold ${/guardado|cargado|completado|asociado/i.test(cvMessage) ? 'text-emerald-300 cv-msg-success' : 'text-amber-300 cv-msg-alert'}`}>{cvMessage}</p>}
             </div>
           </div>
 
           {/* Background & Ineligibility Check Panel */}
-          <div className="bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 shadow-xl space-y-4">
-            <h4 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2 border-b border-cyan-500/20 pb-3">
+          <div className="cv-background-card bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 shadow-xl space-y-4">
+            <h4 className="cv-section-title text-sm font-black text-white uppercase tracking-wider flex items-center gap-2 border-b border-cyan-500/20 pb-3">
               <ShieldCheck className="w-5 h-5 text-emerald-400" />
               Semáforo de Antecedentes e Inhabilidades (Procuraduría, Contraloría, PONAL, CNE)
             </h4>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-[#081d38] p-4 rounded-2xl border border-emerald-500/30">
-                <div className="text-[10px] font-extrabold uppercase text-slate-400">Procuraduría General</div>
-                <div className="text-sm font-black text-amber-300 mt-1 flex items-center gap-1">
-                  <AlertTriangle className="w-4 h-4" /> Pendiente de verificación
+            <div className="cv-background-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="cv-check-card bg-[#081d38] p-4 rounded-2xl border border-emerald-500/30">
+                <div className="cv-check-entity text-[10px] font-extrabold uppercase text-slate-400">Procuraduría General</div>
+                <div className="cv-check-status text-sm font-black text-amber-300 mt-1 flex items-center gap-1">
+                  <AlertTriangle className="w-4 h-4 text-amber-400" /> Pendiente de verificación
                 </div>
-                <p className="text-[11px] text-slate-300 mt-1">
+                <p className="cv-check-details text-[11px] text-slate-300 mt-1">
                   {backgroundChecks.procuraduria || 'Sin certificado oficial registrado.'}
                 </p>
               </div>
 
-              <div className="bg-[#081d38] p-4 rounded-2xl border border-emerald-500/30">
-                <div className="text-[10px] font-extrabold uppercase text-slate-400">Contraloría General</div>
-                <div className="text-sm font-black text-amber-300 mt-1 flex items-center gap-1">
-                  <AlertTriangle className="w-4 h-4" /> Pendiente de verificación
+              <div className="cv-check-card bg-[#081d38] p-4 rounded-2xl border border-emerald-500/30">
+                <div className="cv-check-entity text-[10px] font-extrabold uppercase text-slate-400">Contraloría General</div>
+                <div className="cv-check-status text-sm font-black text-amber-300 mt-1 flex items-center gap-1">
+                  <AlertTriangle className="w-4 h-4 text-amber-400" /> Pendiente de verificación
                 </div>
-                <p className="text-[11px] text-slate-300 mt-1">
+                <p className="cv-check-details text-[11px] text-slate-300 mt-1">
                   {backgroundChecks.contraloria || 'Sin certificado oficial registrado.'}
                 </p>
               </div>
 
-              <div className="bg-[#081d38] p-4 rounded-2xl border border-emerald-500/30">
-                <div className="text-[10px] font-extrabold uppercase text-slate-400">Policía & Judicial (PONAL)</div>
-                <div className="text-sm font-black text-amber-300 mt-1 flex items-center gap-1">
-                  <AlertTriangle className="w-4 h-4" /> Pendiente de verificación
+              <div className="cv-check-card bg-[#081d38] p-4 rounded-2xl border border-emerald-500/30">
+                <div className="cv-check-entity text-[10px] font-extrabold uppercase text-slate-400">Policía & Judicial (PONAL)</div>
+                <div className="cv-check-status text-sm font-black text-amber-300 mt-1 flex items-center gap-1">
+                  <AlertTriangle className="w-4 h-4 text-amber-400" /> Pendiente de verificación
                 </div>
-                <p className="text-[11px] text-slate-300 mt-1">
+                <p className="cv-check-details text-[11px] text-slate-300 mt-1">
                   {backgroundChecks.fiscalia || 'Sin certificado oficial registrado.'}
                 </p>
               </div>
 
-              <div className="bg-[#081d38] p-4 rounded-2xl border border-emerald-500/30">
-                <div className="text-[10px] font-extrabold uppercase text-slate-400">Consejo Nacional Electoral (CNE)</div>
-                <div className="text-sm font-black text-amber-300 mt-1 flex items-center gap-1">
-                  <AlertTriangle className="w-4 h-4" /> Pendiente de verificación
+              <div className="cv-check-card bg-[#081d38] p-4 rounded-2xl border border-emerald-500/30">
+                <div className="cv-check-entity text-[10px] font-extrabold uppercase text-slate-400">Consejo Nacional Electoral (CNE)</div>
+                <div className="cv-check-status text-sm font-black text-amber-300 mt-1 flex items-center gap-1">
+                  <AlertTriangle className="w-4 h-4 text-amber-400" /> Pendiente de verificación
                 </div>
-                <p className="text-[11px] text-slate-300 mt-1">
+                <p className="cv-check-details text-[11px] text-slate-300 mt-1">
                   {backgroundChecks.cneStatus || 'Sin certificación electoral registrada.'}
                 </p>
               </div>
@@ -3729,32 +3745,32 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
           </div>
 
           {/* Academic Degrees & Professional Formation */}
-          <div className="bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 shadow-xl space-y-4">
-            <div className="flex items-center justify-between border-b border-cyan-500/20 pb-3">
-              <h4 className="text-base font-bold text-white flex items-center gap-2">
+          <div className="cv-degrees-card bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 shadow-xl space-y-4">
+            <div className="cv-section-header flex items-center justify-between border-b border-cyan-500/20 pb-3">
+              <h4 className="cv-section-title text-base font-bold text-white flex items-center gap-2">
                 <GraduationCap className="w-5 h-5 text-emerald-400" />
                 Formación Académica & Títulos Universitarios
               </h4>
               <button
                 onClick={() => setShowAddDegreeModal(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 hover:bg-emerald-500/30 text-xs font-bold cursor-pointer transition-all"
+                className="cv-add-item-btn flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 hover:bg-emerald-500/30 text-xs font-bold cursor-pointer transition-all"
               >
                 <Plus className="w-4 h-4" /> Agregar Título
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="cv-degrees-grid grid grid-cols-1 md:grid-cols-3 gap-4">
               {academicDegrees.map(deg => (
-                <div key={deg.id} className="bg-[#081d38] p-4 rounded-2xl border border-cyan-500/20 flex flex-col justify-between relative group">
+                <div key={deg.id} className="cv-degree-card bg-[#081d38] p-4 rounded-2xl border border-cyan-500/20 flex flex-col justify-between relative group">
                   <div>
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-extrabold px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-500/30">
+                      <span className="cv-degree-level text-[10px] font-extrabold px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-500/30">
                         {deg.level}
                       </span>
-                      <span className="text-xs font-mono text-slate-400">{deg.year}</span>
+                      <span className="cv-degree-year text-xs font-mono text-slate-400">{deg.year}</span>
                     </div>
-                    <h5 className="font-extrabold text-white text-sm mt-2">{deg.title}</h5>
-                    <p className="text-xs text-teal-300 font-medium mt-1">{deg.institution}</p>
+                    <h5 className="cv-degree-title font-extrabold text-white text-sm mt-2">{deg.title}</h5>
+                    <p className="cv-degree-institution text-xs text-teal-300 font-medium mt-1">{deg.institution}</p>
                   </div>
                   <button
                     onClick={() => {
@@ -3762,46 +3778,46 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                       setAcademicDegrees(next);
                       void saveCandidateCv({ academicDegrees: next }).catch((error: any) => setCvMessage(error?.message || 'No fue posible eliminar el título.'));
                     }}
-                    className="absolute top-2 right-2 text-rose-400 opacity-0 group-hover:opacity-100 p-1 hover:bg-rose-950/60 rounded transition-all"
+                    className="cv-degree-del-btn absolute top-2 right-2 text-rose-400 opacity-0 group-hover:opacity-100 p-1 hover:bg-rose-950/60 rounded transition-all"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
               ))}
-              {academicDegrees.length === 0 && <p className="text-xs text-slate-400 md:col-span-3">No hay títulos académicos registrados.</p>}
+              {academicDegrees.length === 0 && <p className="cv-empty-text text-xs text-slate-400 md:col-span-3">No hay títulos académicos registrados.</p>}
             </div>
           </div>
 
           {/* Work & Political Experience */}
-          <div className="bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 shadow-xl space-y-4">
-            <div className="flex items-center justify-between border-b border-cyan-500/20 pb-3">
-              <h4 className="text-base font-bold text-white flex items-center gap-2">
+          <div className="cv-experience-card bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 shadow-xl space-y-4">
+            <div className="cv-section-header flex items-center justify-between border-b border-cyan-500/20 pb-3">
+              <h4 className="cv-section-title text-base font-bold text-white flex items-center gap-2">
                 <Briefcase className="w-5 h-5 text-emerald-400" />
                 Experiencia en Sector Público, Privado y Trayectoria Política
               </h4>
               <button
                 onClick={() => setShowAddExpModal(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 hover:bg-emerald-500/30 text-xs font-bold cursor-pointer transition-all"
+                className="cv-add-item-btn flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 hover:bg-emerald-500/30 text-xs font-bold cursor-pointer transition-all"
               >
                 <Plus className="w-4 h-4" /> Agregar Experiencia
               </button>
             </div>
 
-            <div className="space-y-3">
+            <div className="cv-experience-list space-y-3">
               {experienceItems.map(exp => (
-                <div key={exp.id} className="bg-[#081d38] p-4 rounded-2xl border border-cyan-500/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div key={exp.id} className="cv-exp-card bg-[#081d38] p-4 rounded-2xl border border-cyan-500/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded ${
-                        exp.type === 'Público' ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/30' : 'bg-sky-950 text-sky-300 border border-sky-500/30'
+                      <span className={`cv-exp-type text-[10px] font-extrabold px-2 py-0.5 rounded ${
+                        exp.type === 'Público' ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/30 cv-type-publico' : 'bg-sky-950 text-sky-300 border border-sky-500/30 cv-type-privado'
                       }`}>
                         {exp.type}
                       </span>
-                      <span className="text-xs font-mono text-cyan-300 font-bold">{exp.period}</span>
+                      <span className="cv-exp-period text-xs font-mono text-cyan-300 font-bold">{exp.period}</span>
                     </div>
-                    <h5 className="font-extrabold text-white text-sm">{exp.role}</h5>
-                    <p className="text-xs font-semibold text-slate-300">{exp.entityCompany}</p>
-                    <p className="text-xs text-slate-400 mt-1">{exp.achievements}</p>
+                    <h5 className="cv-exp-role font-extrabold text-white text-sm">{exp.role}</h5>
+                    <p className="cv-exp-entity text-xs font-semibold text-slate-300">{exp.entityCompany}</p>
+                    <p className="cv-exp-achievements text-xs text-slate-400 mt-1">{exp.achievements}</p>
                   </div>
                   <button
                     onClick={() => {
@@ -3809,55 +3825,55 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                       setExperienceItems(next);
                       void saveCandidateCv({ experienceItems: next }).catch((error: any) => setCvMessage(error?.message || 'No fue posible eliminar la experiencia.'));
                     }}
-                    className="text-rose-400 hover:bg-rose-950/60 p-2 rounded-xl transition-all self-end md:self-center"
+                    className="cv-exp-del-btn text-rose-400 hover:bg-rose-950/60 p-2 rounded-xl transition-all self-end md:self-center"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               ))}
-              {experienceItems.length === 0 && <p className="text-xs text-slate-400">No hay experiencia laboral o política registrada.</p>}
+              {experienceItems.length === 0 && <p className="cv-empty-text text-xs text-slate-400">No hay experiencia laboral o política registrada.</p>}
             </div>
           </div>
 
           {/* Financial Assets & Tax Return Declaration */}
-          <div className="bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 shadow-xl space-y-4">
-            <h4 className="text-base font-bold text-white flex items-center gap-2 border-b border-cyan-500/20 pb-3">
+          <div className="cv-financial-card bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 shadow-xl space-y-4">
+            <h4 className="cv-section-title text-base font-bold text-white flex items-center gap-2 border-b border-cyan-500/20 pb-3">
               <DollarSign className="w-5 h-5 text-emerald-400" />
               Declaración Juramentada de Bienes e Inmuebles (Ley 2013 / CNE)
             </h4>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-              <div className="bg-[#081d38] p-4 rounded-2xl border border-cyan-500/20">
-                <span className="text-slate-400 font-semibold">Total Activos Declarados:</span>
-                <p className="text-xl font-extrabold text-emerald-400 mt-1 font-mono">
+            <div className="cv-financial-grid grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+              <div className="cv-financial-metric-card bg-[#081d38] p-4 rounded-2xl border border-cyan-500/20">
+                <span className="cv-financial-label text-slate-400 font-semibold">Total Activos Declarados:</span>
+                <p className="cv-financial-value cv-financial-assets text-xl font-extrabold text-emerald-400 mt-1 font-mono">
                   ${financialDeclaration.totalAssets.toLocaleString('es-CO')} COP
                 </p>
               </div>
 
-              <div className="bg-[#081d38] p-4 rounded-2xl border border-cyan-500/20">
-                <span className="text-slate-400 font-semibold">Total Pasivos / Deudas:</span>
-                <p className="text-xl font-extrabold text-amber-400 mt-1 font-mono">
+              <div className="cv-financial-metric-card bg-[#081d38] p-4 rounded-2xl border border-cyan-500/20">
+                <span className="cv-financial-label text-slate-400 font-semibold">Total Pasivos / Deudas:</span>
+                <p className="cv-financial-value cv-financial-liabilities text-xl font-extrabold text-amber-400 mt-1 font-mono">
                   ${financialDeclaration.totalLiabilities.toLocaleString('es-CO')} COP
                 </p>
               </div>
 
-              <div className="bg-[#081d38] p-4 rounded-2xl border border-cyan-500/20">
-                <span className="text-slate-400 font-semibold">Patrimonio Neto Fiscal:</span>
-                <p className="text-xl font-extrabold text-cyan-300 mt-1 font-mono">
+              <div className="cv-financial-metric-card bg-[#081d38] p-4 rounded-2xl border border-cyan-500/20">
+                <span className="cv-financial-label text-slate-400 font-semibold">Patrimonio Neto Fiscal:</span>
+                <p className="cv-financial-value cv-financial-networth text-xl font-extrabold text-cyan-300 mt-1 font-mono">
                   ${financialDeclaration.netWorth.toLocaleString('es-CO')} COP
                 </p>
               </div>
             </div>
             {financialDeclaration.totalAssets === 0 && financialDeclaration.totalLiabilities === 0 && !financialDeclaration.declarationStatus && (
-              <p className="text-xs text-slate-400">No hay una declaración patrimonial registrada. Los valores permanecen en cero hasta que se agregue información real.</p>
+              <p className="cv-empty-text text-xs text-slate-400">No hay una declaración patrimonial registrada. Los valores permanecen en cero hasta que se agregue información real.</p>
             )}
           </div>
 
-          <div className="flex justify-end">
+          <div className="cv-footer-bar flex justify-end">
             <button
               onClick={() => void handleSaveCandidateCv()}
               disabled={isSavingCv || !candidateCampaignId}
-              className="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-cyan-500 disabled:opacity-50 text-slate-950 font-black rounded-xl flex items-center gap-2"
+              className="cv-save-expediente-btn px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-cyan-500 disabled:opacity-50 text-slate-950 font-black rounded-xl flex items-center gap-2 cursor-pointer"
             >
               <Save className="w-4 h-4" /> {isSavingCv ? 'Guardando...' : 'Guardar expediente de hoja de vida'}
             </button>
@@ -3868,12 +3884,12 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
 
       {/* TAB 3: MATRIZ DOFA / SWOT ESTRATÉGICA */}
       {activeTab === 'dofa' && (
-        <div className="space-y-6">
-          <div className="bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 shadow-xl space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-cyan-500/20 pb-4">
+        <div className="space-y-6 dofa-matriz-view">
+          <div className="dofa-main-card bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 shadow-xl space-y-5">
+            <div className="dofa-header-row flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-cyan-500/20 pb-4">
               <div>
-                <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  <PieChart className="w-5 h-5 text-emerald-400" />
+                <h3 className="dofa-header-title text-lg font-bold text-white flex items-center gap-2">
+                  <PieChart className="w-5 h-5 text-emerald-400 dofa-header-icon" />
                   Matriz DOFA / SWOT Estratégica
                 </h3>
               </div>
@@ -3881,7 +3897,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
               <button
                 onClick={() => void handleGenerateSwot()}
                 disabled={isGeneratingSwot || !candidateCampaignId}
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-400 to-teal-400 disabled:opacity-50 text-slate-950 font-extrabold text-xs rounded-xl shadow-md transition-all cursor-pointer"
+                className="dofa-generate-btn flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-400 to-teal-400 disabled:opacity-50 text-slate-950 font-extrabold text-xs rounded-xl shadow-md transition-all cursor-pointer"
               >
                 <Sparkles className={`w-4 h-4 ${isGeneratingSwot ? 'animate-spin' : ''}`} />
                 <span>{isGeneratingSwot ? 'Analizando campaña...' : 'Generar matriz con IA'}</span>
@@ -3889,108 +3905,112 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
             </div>
 
             {/* SWOT 4 Quadrants Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="dofa-quadrants-grid grid grid-cols-1 md:grid-cols-2 gap-5">
               
               {/* Fortalezas (Strengths) */}
-              <div className="bg-sky-950/40 border border-sky-500/40 rounded-3xl p-5 space-y-3">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-extrabold text-sm text-sky-300 flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4 text-sky-400" /> Fortalezas (Strengths)
+              <div className="dofa-quadrant-card dofa-quadrant-strengths bg-sky-950/40 border border-sky-500/40 rounded-3xl p-5 space-y-3">
+                <div className="flex items-center justify-between dofa-quadrant-header">
+                  <h4 className="dofa-quadrant-title font-extrabold text-sm flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 dofa-quadrant-icon" /> Fortalezas (Strengths)
                   </h4>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-sky-900 text-sky-200">
+                  <span className="dofa-count-badge text-[10px] font-bold px-2.5 py-0.5 rounded">
                     {swotData.strengths.length} Factores
                   </span>
                 </div>
-                <ul className="space-y-2 text-xs text-sky-100">
+                <p className="dofa-quadrant-desc text-xs">Factores internos positivos y ventajas competitivas del candidato y campaña.</p>
+                <ul className="dofa-items-list space-y-2 text-xs">
                   {swotData.strengths.map((st, i) => (
-                    <li key={i} className="flex items-start justify-between gap-2 bg-[#081d38]/80 p-2.5 rounded-xl border border-sky-500/20">
-                      <span>• {st}</span>
-                      <button onClick={() => handleRemoveSwotItem('strengths', i)} className="text-sky-400 hover:text-rose-400 cursor-pointer shrink-0">
+                    <li key={i} className="dofa-item-row flex items-start justify-between gap-2 p-3 rounded-xl border">
+                      <span className="dofa-item-text">• {st}</span>
+                      <button onClick={() => handleRemoveSwotItem('strengths', i)} className="dofa-item-del-btn cursor-pointer shrink-0 p-1 rounded transition-all" title="Eliminar factor">
                         <X className="w-3.5 h-3.5" />
                       </button>
                     </li>
                   ))}
-                  {swotData.strengths.length === 0 && <li className="text-slate-400">Sin fortalezas registradas.</li>}
+                  {swotData.strengths.length === 0 && <li className="dofa-empty-item text-xs">Sin fortalezas registradas.</li>}
                 </ul>
               </div>
 
               {/* Debilidades (Weaknesses) */}
-              <div className="bg-amber-950/40 border border-amber-500/40 rounded-3xl p-5 space-y-3">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-extrabold text-sm text-amber-300 flex items-center gap-2">
-                    <TrendingDown className="w-4 h-4 text-amber-400" /> Debilidades (Weaknesses)
+              <div className="dofa-quadrant-card dofa-quadrant-weaknesses bg-amber-950/40 border border-amber-500/40 rounded-3xl p-5 space-y-3">
+                <div className="flex items-center justify-between dofa-quadrant-header">
+                  <h4 className="dofa-quadrant-title font-extrabold text-sm flex items-center gap-2">
+                    <TrendingDown className="w-5 h-5 dofa-quadrant-icon" /> Debilidades (Weaknesses)
                   </h4>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-900 text-amber-200">
+                  <span className="dofa-count-badge text-[10px] font-bold px-2.5 py-0.5 rounded">
                     {swotData.weaknesses.length} Factores
                   </span>
                 </div>
-                <ul className="space-y-2 text-xs text-amber-100">
+                <p className="dofa-quadrant-desc text-xs">Factores internos limitantes, brechas y áreas que requieren fortalecimiento.</p>
+                <ul className="dofa-items-list space-y-2 text-xs">
                   {swotData.weaknesses.map((wk, i) => (
-                    <li key={i} className="flex items-start justify-between gap-2 bg-[#081d38]/80 p-2.5 rounded-xl border border-amber-500/20">
-                      <span>• {wk}</span>
-                      <button onClick={() => handleRemoveSwotItem('weaknesses', i)} className="text-amber-400 hover:text-rose-400 cursor-pointer shrink-0">
+                    <li key={i} className="dofa-item-row flex items-start justify-between gap-2 p-3 rounded-xl border">
+                      <span className="dofa-item-text">• {wk}</span>
+                      <button onClick={() => handleRemoveSwotItem('weaknesses', i)} className="dofa-item-del-btn cursor-pointer shrink-0 p-1 rounded transition-all" title="Eliminar factor">
                         <X className="w-3.5 h-3.5" />
                       </button>
                     </li>
                   ))}
-                  {swotData.weaknesses.length === 0 && <li className="text-slate-400">Sin debilidades registradas.</li>}
+                  {swotData.weaknesses.length === 0 && <li className="dofa-empty-item text-xs">Sin debilidades registradas.</li>}
                 </ul>
               </div>
 
               {/* Oportunidades (Opportunities) */}
-              <div className="bg-emerald-950/40 border border-emerald-500/40 rounded-3xl p-5 space-y-3">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-extrabold text-sm text-emerald-300 flex items-center gap-2">
-                    <Lightbulb className="w-4 h-4 text-emerald-400" /> Oportunidades (Opportunities)
+              <div className="dofa-quadrant-card dofa-quadrant-opportunities bg-emerald-950/40 border border-emerald-500/40 rounded-3xl p-5 space-y-3">
+                <div className="flex items-center justify-between dofa-quadrant-header">
+                  <h4 className="dofa-quadrant-title font-extrabold text-sm flex items-center gap-2">
+                    <Lightbulb className="w-5 h-5 dofa-quadrant-icon" /> Oportunidades (Opportunities)
                   </h4>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-900 text-emerald-200">
+                  <span className="dofa-count-badge text-[10px] font-bold px-2.5 py-0.5 rounded">
                     {swotData.opportunities.length} Factores
                   </span>
                 </div>
-                <ul className="space-y-2 text-xs text-emerald-100">
+                <p className="dofa-quadrant-desc text-xs">Factores externos favorables, coyunturas electorales y tendencias del entorno.</p>
+                <ul className="dofa-items-list space-y-2 text-xs">
                   {swotData.opportunities.map((op, i) => (
-                    <li key={i} className="flex items-start justify-between gap-2 bg-[#081d38]/80 p-2.5 rounded-xl border border-emerald-500/20">
-                      <span>• {op}</span>
-                      <button onClick={() => handleRemoveSwotItem('opportunities', i)} className="text-emerald-400 hover:text-rose-400 cursor-pointer shrink-0">
+                    <li key={i} className="dofa-item-row flex items-start justify-between gap-2 p-3 rounded-xl border">
+                      <span className="dofa-item-text">• {op}</span>
+                      <button onClick={() => handleRemoveSwotItem('opportunities', i)} className="dofa-item-del-btn cursor-pointer shrink-0 p-1 rounded transition-all" title="Eliminar factor">
                         <X className="w-3.5 h-3.5" />
                       </button>
                     </li>
                   ))}
-                  {swotData.opportunities.length === 0 && <li className="text-slate-400">Sin oportunidades registradas.</li>}
+                  {swotData.opportunities.length === 0 && <li className="dofa-empty-item text-xs">Sin oportunidades registradas.</li>}
                 </ul>
               </div>
 
               {/* Amenazas (Threats) */}
-              <div className="bg-rose-950/40 border border-rose-500/40 rounded-3xl p-5 space-y-3">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-extrabold text-sm text-rose-300 flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4 text-rose-400" /> Amenazas (Threats)
+              <div className="dofa-quadrant-card dofa-quadrant-threats bg-rose-950/40 border border-rose-500/40 rounded-3xl p-5 space-y-3">
+                <div className="flex items-center justify-between dofa-quadrant-header">
+                  <h4 className="dofa-quadrant-title font-extrabold text-sm flex items-center gap-2">
+                    <AlertTriangle className="w-5 h-5 dofa-quadrant-icon" /> Amenazas (Threats)
                   </h4>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-rose-900 text-rose-200">
+                  <span className="dofa-count-badge text-[10px] font-bold px-2.5 py-0.5 rounded">
                     {swotData.threats.length} Factores
                   </span>
                 </div>
-                <ul className="space-y-2 text-xs text-rose-100">
+                <p className="dofa-quadrant-desc text-xs">Factores externos desfavorables, riesgos electorales y dinámicas de adversarios.</p>
+                <ul className="dofa-items-list space-y-2 text-xs">
                   {swotData.threats.map((th, i) => (
-                    <li key={i} className="flex items-start justify-between gap-2 bg-[#081d38]/80 p-2.5 rounded-xl border border-rose-500/20">
-                      <span>• {th}</span>
-                      <button onClick={() => handleRemoveSwotItem('threats', i)} className="text-rose-400 hover:text-rose-300 cursor-pointer shrink-0">
+                    <li key={i} className="dofa-item-row flex items-start justify-between gap-2 p-3 rounded-xl border">
+                      <span className="dofa-item-text">• {th}</span>
+                      <button onClick={() => handleRemoveSwotItem('threats', i)} className="dofa-item-del-btn cursor-pointer shrink-0 p-1 rounded transition-all" title="Eliminar factor">
                         <X className="w-3.5 h-3.5" />
                       </button>
                     </li>
                   ))}
-                  {swotData.threats.length === 0 && <li className="text-slate-400">Sin amenazas registradas.</li>}
+                  {swotData.threats.length === 0 && <li className="dofa-empty-item text-xs">Sin amenazas registradas.</li>}
                 </ul>
               </div>
 
             </div>
 
             {/* Quick Add SWOT Item Bar */}
-            <div className="bg-[#081d38] p-4 rounded-2xl border border-cyan-500/20 flex flex-col sm:flex-row items-center gap-3 mt-4">
+            <div className="dofa-add-bar bg-[#081d38] p-4 rounded-2xl border border-cyan-500/20 flex flex-col sm:flex-row items-center gap-3 mt-4">
               <select
                 value={swotCategory}
                 onChange={(e) => setSwotCategory(e.target.value as any)}
-                className="bg-[#05162a] border border-cyan-500/30 text-xs text-white rounded-xl px-3 py-2 outline-none font-semibold cursor-pointer"
+                className="dofa-add-select bg-[#05162a] border border-cyan-500/30 text-xs text-white rounded-xl px-3 py-2 outline-none font-semibold cursor-pointer"
               >
                 <option value="strengths">Fortaleza</option>
                 <option value="weaknesses">Debilidad</option>
@@ -4004,150 +4024,255 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                 value={newItemText}
                 onChange={(e) => setNewItemText(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleAddSwotItem()}
-                className="flex-1 bg-[#05162a] border border-cyan-500/30 text-xs text-white rounded-xl px-3 py-2 outline-none"
+                className="dofa-add-input flex-1 bg-[#05162a] border border-cyan-500/30 text-xs text-white rounded-xl px-3 py-2 outline-none"
               />
 
               <button
                 onClick={handleAddSwotItem}
-                className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold rounded-xl cursor-pointer transition-all shrink-0"
+                className="dofa-add-btn px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold rounded-xl cursor-pointer transition-all shrink-0 shadow-md"
               >
                 Agregar a Matriz
               </button>
             </div>
-            {swotMessage && <p className={`text-xs font-bold ${/guardad|generada|eliminado/i.test(swotMessage) ? 'text-emerald-300' : 'text-amber-300'}`}>{swotMessage}</p>}
+            {swotMessage && <p className={`dofa-feedback-msg text-xs font-bold ${/guardad|generada|eliminado/i.test(swotMessage) ? 'text-emerald-300 dofa-msg-success' : 'text-amber-300 dofa-msg-alert'}`}>{swotMessage}</p>}
           </div>
         </div>
       )}
 
       {/* TAB 4: NARRATIVA, DISCURSO & MAPA POLÍTICO */}
       {activeTab === 'discurso' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 narrativa-discurso-view">
           
           {/* Campaign Narrative & Base Message */}
-          <div className="lg:col-span-7 bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 space-y-5 shadow-xl">
-            <h3 className="text-lg font-bold text-white flex items-center gap-2 border-b border-cyan-500/20 pb-3">
-              <MessageSquare className="w-5 h-5 text-emerald-400" />
-              Identidad Estratégica & Argumentario Base
-            </h3>
+          <div className="lg:col-span-7 bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 space-y-5 shadow-xl narrativa-editor-card">
+            <div className="flex items-center justify-between border-b border-cyan-500/20 pb-3 narrativa-header-box">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2 narrativa-editor-title">
+                <MessageSquare className="w-5 h-5 text-emerald-400 narrativa-editor-icon" />
+                <span>Identidad Estratégica & Argumentario Base</span>
+              </h3>
+              <span className="narrativa-header-badge text-[11px] font-bold px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
+                Redacción Oficial
+              </span>
+            </div>
 
-            <div>
-              <label className="block text-xs font-bold text-emerald-300 uppercase tracking-wider mb-2">
-                Narrativa Estratégica de Campaña:
-              </label>
+            <div className="narrativa-field-group">
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-xs font-bold text-emerald-300 uppercase tracking-wider narrativa-editor-label">
+                  Narrativa Estratégica de Campaña:
+                </label>
+                <span className="narrativa-char-count text-[11px] text-slate-400 font-mono">
+                  {strategicIdentity.narrative.length} caracteres
+                </span>
+              </div>
               <textarea
-                rows={4}
+                rows={5}
                 value={strategicIdentity.narrative}
                 onChange={(e) => setStrategicIdentity({ ...strategicIdentity, narrative: e.target.value })}
-                className="w-full bg-[#081d38] border border-cyan-500/30 rounded-2xl p-3 text-xs text-white font-medium focus:border-emerald-400 outline-none leading-relaxed"
+                placeholder="Escriba la historia, propósito y narrativa central que conecta la candidatura con los anhelos ciudadanos..."
+                className="w-full bg-[#081d38] border border-cyan-500/30 rounded-2xl p-4 text-xs text-white font-medium focus:border-emerald-400 outline-none leading-relaxed resize-y narrativa-textarea"
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-cyan-300 uppercase tracking-wider mb-2">
-                Mensaje Fuerza / Eje del Discurso:
-              </label>
+            <div className="narrativa-field-group">
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-xs font-bold text-cyan-300 uppercase tracking-wider narrativa-editor-label">
+                  Mensaje Fuerza / Eje del Discurso:
+                </label>
+                <span className="narrativa-char-count text-[11px] text-slate-400 font-mono">
+                  {strategicIdentity.baseMessage.length} caracteres
+                </span>
+              </div>
               <textarea
                 rows={3}
                 value={strategicIdentity.baseMessage}
                 onChange={(e) => setStrategicIdentity({ ...strategicIdentity, baseMessage: e.target.value })}
-                className="w-full bg-[#081d38] border border-cyan-500/30 rounded-2xl p-3 text-xs text-white font-medium focus:border-emerald-400 outline-none leading-relaxed"
+                placeholder="Escriba el argumento central y consigna de debate repetible en plazas, medios y debates..."
+                className="w-full bg-[#081d38] border border-cyan-500/30 rounded-2xl p-4 text-xs text-white font-medium focus:border-emerald-400 outline-none leading-relaxed resize-y narrativa-textarea"
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
+            <div className="narrativa-field-group">
+              <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 narrativa-editor-label">
                 Valores de Marca Política:
               </label>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 narrativa-tags-container">
                 {strategicIdentity.coreValues.map((val, idx) => (
-                  <span key={idx} className="px-3 py-1 rounded-xl bg-teal-950 text-teal-300 border border-teal-500/30 text-xs font-bold">
+                  <span key={idx} className="px-3 py-1 rounded-xl bg-teal-950 text-teal-300 border border-teal-500/30 text-xs font-bold narrativa-tag-badge">
                     {val}
                   </span>
                 ))}
-                {strategicIdentity.coreValues.length === 0 && <span className="text-xs text-slate-400">Sin valores registrados.</span>}
+                {strategicIdentity.coreValues.length === 0 && <span className="text-xs text-slate-400 narrativa-empty-tags">Sin valores registrados.</span>}
               </div>
               <input
                 type="text"
                 value={strategicIdentity.coreValues.join(', ')}
                 onChange={(e) => setStrategicIdentity({ ...strategicIdentity, coreValues: e.target.value.split(',').map(value => value.trim()).filter(Boolean) })}
-                placeholder="Escriba valores separados por comas"
-                className="mt-3 w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white outline-none"
+                placeholder="Escriba valores separados por comas (ej. Honestidad, Innovación, Cercanía)"
+                className="mt-3 w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white outline-none narrativa-input"
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">Eslogan de campaña:</label>
+            <div className="narrativa-field-group">
+              <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 narrativa-editor-label">
+                Eslogan de campaña:
+              </label>
               <input
                 type="text"
                 value={strategicIdentity.slogan}
                 onChange={(e) => setStrategicIdentity({ ...strategicIdentity, slogan: e.target.value })}
-                placeholder="Escriba el eslogan aprobado"
-                className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white outline-none"
+                placeholder="Escriba el eslogan aprobado (ej. ¡Medellín Avanza con Seguridad y Oportunidades!)"
+                className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white outline-none narrativa-input"
               />
             </div>
 
-            <button
-              onClick={() => void handleSaveNarrative()}
-              disabled={narrativeSaving || !candidateCampaignId}
-              className="px-4 py-2 bg-emerald-500 disabled:opacity-50 text-slate-950 text-xs font-black rounded-xl flex items-center gap-2"
-            >
-              <Save className="w-4 h-4" /> {narrativeSaving ? 'Guardando...' : 'Guardar narrativa'}
-            </button>
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => void handleSaveNarrative()}
+                disabled={narrativeSaving || !candidateCampaignId}
+                className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 text-xs font-black rounded-xl flex items-center gap-2 cursor-pointer transition-all shadow-md narrativa-save-btn"
+              >
+                <Save className={`w-4 h-4 ${narrativeSaving ? 'animate-spin' : ''}`} /> 
+                <span>{narrativeSaving ? 'Guardando...' : 'Guardar narrativa'}</span>
+              </button>
+            </div>
           </div>
 
           {/* Political Competitors & Allies Matrix */}
-          <div className="lg:col-span-5 bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 space-y-4 shadow-xl">
-            <h3 className="text-lg font-bold text-white flex items-center gap-2 border-b border-cyan-500/20 pb-3">
-              <Users className="w-5 h-5 text-emerald-400" />
-              Mapa de Competidores & Aliados
-            </h3>
+          <div className="lg:col-span-5 bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 space-y-4 shadow-xl mapa-politico-card">
+            <div className="flex items-center justify-between border-b border-cyan-500/20 pb-3 mapa-header-box">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2 mapa-politico-title">
+                <Users className="w-5 h-5 text-emerald-400 mapa-politico-icon" />
+                <span>Mapa de Competidores & Aliados</span>
+              </h3>
+              <span className="mapa-count-badge text-[11px] font-bold px-2.5 py-1 rounded-lg bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
+                {actorsList.length} Actores
+              </span>
+            </div>
 
-            <div className="space-y-3">
+            <div className="space-y-3 mapa-actors-list">
               {actorsList.map(actor => (
-                <div key={actor.id} className="bg-[#081d38] p-4 rounded-2xl border border-cyan-500/20 space-y-2 relative group">
-                  <div className="flex items-center justify-between">
-                    <span className="font-extrabold text-white text-sm">{actor.name}</span>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                      actor.role === 'Competidor Directo' ? 'bg-rose-950 text-rose-300 border border-rose-500/30' : 'bg-emerald-950 text-emerald-300 border border-emerald-500/30'
+                <div key={actor.id} className="bg-[#081d38] p-4 rounded-2xl border border-cyan-500/20 space-y-2 relative group mapa-actor-card">
+                  <div className="flex items-center justify-between pr-6">
+                    <span className="font-extrabold text-white text-sm mapa-actor-name">{actor.name}</span>
+                    <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full mapa-actor-badge ${
+                      actor.role === 'Competidor Directo' 
+                        ? 'actor-badge-competidor bg-rose-950 text-rose-300 border border-rose-500/30' 
+                        : actor.role === 'Aliado Político'
+                        ? 'actor-badge-aliado bg-emerald-950 text-emerald-300 border border-emerald-500/30'
+                        : 'actor-badge-neutral bg-sky-950 text-sky-300 border border-sky-500/30'
                     }`}>
                       {actor.role}
                     </span>
                   </div>
 
-                  <div className="flex justify-between text-xs text-slate-300">
-                    <span>{actor.party}</span>
-                    {actor.estimatedVoteShare > 0 && <span className="font-bold text-cyan-300 font-mono">Intención: {actor.estimatedVoteShare}%</span>}
+                  <div className="flex justify-between text-xs text-slate-300 mapa-actor-party-row">
+                    <span className="mapa-actor-party">{actor.party}</span>
+                    {actor.estimatedVoteShare > 0 && (
+                      <span className="font-bold text-cyan-300 font-mono mapa-actor-votes">
+                        Intención: {actor.estimatedVoteShare}%
+                      </span>
+                    )}
                   </div>
 
-                  <p className="text-[11px] text-slate-400 italic">
+                  <p className="text-[11px] text-slate-400 italic mapa-actor-notes">
                     {actor.notes || 'Sin observaciones.'}
                   </p>
-                  <p className="text-[10px] text-cyan-300">Fuente: {actor.source || 'No registrada'} · Actualizado: {actor.updatedAt ? new Date(actor.updatedAt).toLocaleDateString('es-CO') : 'Sin fecha'}</p>
-                  <button onClick={() => void handleRemovePoliticalActor(actor.id)} className="absolute top-2 right-2 text-rose-400 opacity-0 group-hover:opacity-100"><Trash2 className="w-4 h-4" /></button>
+                  <p className="text-[10px] text-cyan-300 mapa-actor-source">
+                    Fuente: {actor.source || 'No registrada'} · Actualizado: {actor.updatedAt ? new Date(actor.updatedAt).toLocaleDateString('es-CO') : 'Sin fecha'}
+                  </p>
+                  <button 
+                    type="button"
+                    onClick={() => void handleRemovePoliticalActor(actor.id)} 
+                    className="absolute top-3 right-3 text-rose-400 opacity-0 group-hover:opacity-100 hover:text-rose-300 transition-opacity p-1 cursor-pointer mapa-actor-del-btn"
+                    title="Eliminar actor"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               ))}
-              {actorsList.length === 0 && <p className="text-xs text-slate-400">No hay competidores, aliados o líderes neutrales registrados.</p>}
+              {actorsList.length === 0 && (
+                <div className="text-center py-6 px-4 bg-[#081d38]/50 rounded-2xl border border-dashed border-cyan-500/20 text-xs text-slate-400 mapa-empty-state">
+                  No hay competidores, aliados o líderes neutrales registrados.
+                </div>
+              )}
             </div>
 
-            <div className="border-t border-cyan-500/20 pt-4 space-y-3">
-              <h4 className="text-xs font-black text-cyan-300 uppercase">Registrar actor político</h4>
+            <div className="border-t border-cyan-500/20 pt-4 space-y-3 mapa-register-box">
+              <h4 className="text-xs font-black text-cyan-300 uppercase tracking-wider mapa-register-title">
+                Registrar actor político
+              </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <input value={newActor.name} onChange={(e) => setNewActor({ ...newActor, name: e.target.value })} placeholder="Nombre completo *" className="bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white" />
-                <select value={newActor.role} onChange={(e) => setNewActor({ ...newActor, role: e.target.value as PoliticalActor['role'] })} className="bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white">
+                <input 
+                  value={newActor.name} 
+                  onChange={(e) => setNewActor({ ...newActor, name: e.target.value })} 
+                  placeholder="Nombre completo *" 
+                  className="bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white outline-none mapa-register-input" 
+                />
+                <select 
+                  value={newActor.role} 
+                  onChange={(e) => setNewActor({ ...newActor, role: e.target.value as PoliticalActor['role'] })} 
+                  className="bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white outline-none mapa-register-select"
+                >
                   <option value="Competidor Directo">Competidor directo</option>
                   <option value="Aliado Político">Aliado político</option>
                   <option value="Líder Neutral">Líder neutral</option>
                 </select>
-                <input value={newActor.party} onChange={(e) => setNewActor({ ...newActor, party: e.target.value })} placeholder="Partido, movimiento o coalición" className="bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white" />
-                <input type="number" min="0" max="100" step="0.1" value={newActor.estimatedVoteShare || ''} onChange={(e) => setNewActor({ ...newActor, estimatedVoteShare: Number(e.target.value || 0) })} placeholder="Intención de voto (%)" className="bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white" />
-                <input value={newActor.source} onChange={(e) => setNewActor({ ...newActor, source: e.target.value })} placeholder="Fuente del dato *" className="sm:col-span-2 bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white" />
-                <textarea value={newActor.notes} onChange={(e) => setNewActor({ ...newActor, notes: e.target.value })} placeholder="Observaciones verificables" rows={2} className="sm:col-span-2 bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white" />
+                <input 
+                  value={newActor.party} 
+                  onChange={(e) => setNewActor({ ...newActor, party: e.target.value })} 
+                  placeholder="Partido, movimiento o coalición" 
+                  className="bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white outline-none mapa-register-input" 
+                />
+                <input 
+                  type="number" 
+                  min="0" 
+                  max="100" 
+                  step="0.1" 
+                  value={newActor.estimatedVoteShare || ''} 
+                  onChange={(e) => setNewActor({ ...newActor, estimatedVoteShare: Number(e.target.value || 0) })} 
+                  placeholder="Intención de voto (%)" 
+                  className="bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white outline-none mapa-register-input" 
+                />
+                <input 
+                  value={newActor.source} 
+                  onChange={(e) => setNewActor({ ...newActor, source: e.target.value })} 
+                  placeholder="Fuente del dato *" 
+                  className="sm:col-span-2 bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white outline-none mapa-register-input" 
+                />
+                <textarea 
+                  value={newActor.notes} 
+                  onChange={(e) => setNewActor({ ...newActor, notes: e.target.value })} 
+                  placeholder="Observaciones verificables" 
+                  rows={2} 
+                  className="sm:col-span-2 bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white outline-none resize-none mapa-register-textarea" 
+                />
               </div>
-              <button onClick={() => void handleAddPoliticalActor()} className="px-4 py-2 bg-cyan-500 text-slate-950 text-xs font-black rounded-xl flex items-center gap-2"><Plus className="w-4 h-4" /> Registrar actor</button>
+              <button 
+                type="button"
+                onClick={() => void handleAddPoliticalActor()} 
+                className="px-4 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-black rounded-xl flex items-center gap-2 cursor-pointer transition-all shadow-md mapa-register-btn"
+              >
+                <Plus className="w-4 h-4" /> 
+                <span>Registrar actor</span>
+              </button>
             </div>
           </div>
 
-          {narrativeMessage && <p className={`lg:col-span-12 text-xs font-bold ${/guardad|registrado|eliminado/i.test(narrativeMessage) ? 'text-emerald-300' : 'text-amber-300'}`}>{narrativeMessage}</p>}
+          {narrativeMessage && (
+            <div className={`lg:col-span-12 p-3.5 rounded-2xl border text-xs font-bold flex items-center gap-2 narrativa-feedback-msg ${
+              /guardad|registrado|eliminado/i.test(narrativeMessage) 
+                ? 'narrativa-msg-success bg-emerald-950/40 text-emerald-300 border-emerald-500/40' 
+                : 'narrativa-msg-alert bg-amber-950/40 text-amber-300 border-amber-500/40'
+            }`}>
+              {/guardad|registrado|eliminado/i.test(narrativeMessage) ? (
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              ) : (
+                <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
+              )}
+              <span>{narrativeMessage}</span>
+            </div>
+          )}
 
         </div>
       )}
@@ -4306,47 +4431,47 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
       {/* MODAL: AGREGAR TÍTULO ACADÉMICO */}
       {showAddDegreeModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#05162a] border border-cyan-500/40 rounded-3xl p-6 max-w-md w-full space-y-4 text-xs shadow-2xl">
+          <div className="cv-modal-card bg-[#05162a] border border-cyan-500/40 rounded-3xl p-6 max-w-md w-full space-y-4 text-xs shadow-2xl">
             <div className="flex justify-between items-center border-b border-cyan-500/20 pb-3">
-              <h4 className="font-extrabold text-white text-sm flex items-center gap-2">
+              <h4 className="cv-modal-title font-extrabold text-white text-sm flex items-center gap-2">
                 <GraduationCap className="w-4 h-4 text-emerald-400" />
                 Agregar Título Académico
               </h4>
-              <button onClick={() => setShowAddDegreeModal(false)} className="text-slate-400 hover:text-white">
+              <button onClick={() => setShowAddDegreeModal(false)} className="text-slate-400 hover:text-white cursor-pointer">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <div className="space-y-3">
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Nombre del Título:</label>
+                <label className="cv-modal-label block text-slate-300 font-semibold mb-1">Nombre del Título:</label>
                 <input
                   type="text"
                   placeholder="Ej: Especialización en Derecho Constitucional"
                   value={newDegree.title}
                   onChange={(e) => setNewDegree({ ...newDegree, title: e.target.value })}
-                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white"
+                  className="cv-modal-input w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Institución Educativa:</label>
+                <label className="cv-modal-label block text-slate-300 font-semibold mb-1">Institución Educativa:</label>
                 <input
                   type="text"
                   placeholder="Ej: Universidad Nacional de Colombia"
                   value={newDegree.institution}
                   onChange={(e) => setNewDegree({ ...newDegree, institution: e.target.value })}
-                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white"
+                  className="cv-modal-input w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white outline-none"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Nivel:</label>
+                  <label className="cv-modal-label block text-slate-300 font-semibold mb-1">Nivel:</label>
                   <select
                     value={newDegree.level}
                     onChange={(e) => setNewDegree({ ...newDegree, level: e.target.value as any })}
-                    className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white"
+                    className="cv-modal-select w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white outline-none"
                   >
                     <option value="Pregrado">Pregrado</option>
                     <option value="Posgrado">Posgrado</option>
@@ -4357,12 +4482,12 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Año de Graduación:</label>
+                  <label className="cv-modal-label block text-slate-300 font-semibold mb-1">Año de Graduación:</label>
                   <input
                     type="text"
                     value={newDegree.year}
                     onChange={(e) => setNewDegree({ ...newDegree, year: e.target.value })}
-                    className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white"
+                    className="cv-modal-input w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white outline-none"
                   />
                 </div>
               </div>
@@ -4371,7 +4496,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
             <div className="flex gap-2 pt-2">
               <button
                 onClick={() => setShowAddDegreeModal(false)}
-                className="flex-1 py-2 bg-slate-800 text-slate-300 rounded-xl font-bold cursor-pointer"
+                className="cv-modal-cancel-btn flex-1 py-2 bg-slate-800 text-slate-300 rounded-xl font-bold cursor-pointer"
               >
                 Cancelar
               </button>
@@ -4383,7 +4508,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                   void saveCandidateCv({ academicDegrees: next }).catch((error: any) => setCvMessage(error?.message || 'No fue posible guardar el título.'));
                   setShowAddDegreeModal(false);
                 }}
-                className="flex-1 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-xl font-bold cursor-pointer"
+                className="cv-modal-save-btn flex-1 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-xl font-bold cursor-pointer"
               >
                 Guardar Título
               </button>
@@ -4395,47 +4520,47 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
       {/* MODAL: AGREGAR EXPERIENCIA */}
       {showAddExpModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#05162a] border border-cyan-500/40 rounded-3xl p-6 max-w-md w-full space-y-4 text-xs shadow-2xl">
+          <div className="cv-modal-card bg-[#05162a] border border-cyan-500/40 rounded-3xl p-6 max-w-md w-full space-y-4 text-xs shadow-2xl">
             <div className="flex justify-between items-center border-b border-cyan-500/20 pb-3">
-              <h4 className="font-extrabold text-white text-sm flex items-center gap-2">
+              <h4 className="cv-modal-title font-extrabold text-white text-sm flex items-center gap-2">
                 <Briefcase className="w-4 h-4 text-emerald-400" />
                 Agregar Experiencia Laboral / Trayectoria
               </h4>
-              <button onClick={() => setShowAddExpModal(false)} className="text-slate-400 hover:text-white">
+              <button onClick={() => setShowAddExpModal(false)} className="text-slate-400 hover:text-white cursor-pointer">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <div className="space-y-3">
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Cargo Desempeñado:</label>
+                <label className="cv-modal-label block text-slate-300 font-semibold mb-1">Cargo Desempeñado:</label>
                 <input
                   type="text"
                   placeholder="Ej: Director de Planeación"
                   value={newExp.role}
                   onChange={(e) => setNewExp({ ...newExp, role: e.target.value })}
-                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white"
+                  className="cv-modal-input w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Entidad / Empresa:</label>
+                <label className="cv-modal-label block text-slate-300 font-semibold mb-1">Entidad / Empresa:</label>
                 <input
                   type="text"
                   placeholder="Ej: Gobernación de Antioquia"
                   value={newExp.entityCompany}
                   onChange={(e) => setNewExp({ ...newExp, entityCompany: e.target.value })}
-                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white"
+                  className="cv-modal-input w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white outline-none"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Sector:</label>
+                  <label className="cv-modal-label block text-slate-300 font-semibold mb-1">Sector:</label>
                   <select
                     value={newExp.type}
                     onChange={(e) => setNewExp({ ...newExp, type: e.target.value as any })}
-                    className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white"
+                    className="cv-modal-select w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white outline-none"
                   >
                     <option value="Público">Público</option>
                     <option value="Privado">Privado</option>
@@ -4444,25 +4569,25 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-slate-300 font-semibold mb-1">Periodo:</label>
+                  <label className="cv-modal-label block text-slate-300 font-semibold mb-1">Periodo:</label>
                   <input
                     type="text"
                     placeholder="Ej: 2018 - 2021"
                     value={newExp.period}
                     onChange={(e) => setNewExp({ ...newExp, period: e.target.value })}
-                    className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white"
+                    className="cv-modal-input w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white outline-none"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Logros Destacados:</label>
+                <label className="cv-modal-label block text-slate-300 font-semibold mb-1">Logros Destacados:</label>
                 <textarea
                   rows={2}
                   placeholder="Resuma logros clave..."
                   value={newExp.achievements}
                   onChange={(e) => setNewExp({ ...newExp, achievements: e.target.value })}
-                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white"
+                  className="cv-modal-textarea w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white outline-none"
                 />
               </div>
             </div>
@@ -4470,7 +4595,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
             <div className="flex gap-2 pt-2">
               <button
                 onClick={() => setShowAddExpModal(false)}
-                className="flex-1 py-2 bg-slate-800 text-slate-300 rounded-xl font-bold cursor-pointer"
+                className="cv-modal-cancel-btn flex-1 py-2 bg-slate-800 text-slate-300 rounded-xl font-bold cursor-pointer"
               >
                 Cancelar
               </button>
@@ -4482,7 +4607,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                   void saveCandidateCv({ experienceItems: next }).catch((error: any) => setCvMessage(error?.message || 'No fue posible guardar la experiencia.'));
                   setShowAddExpModal(false);
                 }}
-                className="flex-1 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-xl font-bold cursor-pointer"
+                className="cv-modal-save-btn flex-1 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-xl font-bold cursor-pointer"
               >
                 Guardar Experiencia
               </button>
@@ -4623,7 +4748,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
       {/* MODAL: AGREGAR VARIABLE A SECTOR */}
       {showAddVariableModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#05162a] border border-cyan-500/40 rounded-3xl p-6 max-w-md w-full space-y-4 text-xs shadow-2xl">
+          <div className="territorial-modal-card bg-[#05162a] border border-cyan-500/40 rounded-3xl p-6 max-w-md w-full space-y-4 text-xs shadow-2xl">
             <div className="flex justify-between items-center border-b border-cyan-500/20 pb-3">
               <h4 className="font-extrabold text-white text-sm flex items-center gap-2">
                 <Plus className="w-4 h-4 text-cyan-400" />
@@ -4727,7 +4852,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
       {/* MODAL: REGISTRAR FICHA DE DIAGNÓSTICO COMUNAL */}
       {showAddNeedModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#05162a] border border-cyan-500/40 rounded-3xl p-6 max-w-lg w-full space-y-4 text-xs shadow-2xl">
+          <div className="territorial-modal-card bg-[#05162a] border border-cyan-500/40 rounded-3xl p-6 max-w-lg w-full space-y-4 text-xs shadow-2xl">
             <div className="flex justify-between items-center border-b border-cyan-500/20 pb-3">
               <h4 className="font-extrabold text-white text-sm flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-cyan-400" />
@@ -4825,7 +4950,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
       {/* MODAL: CREAR NUEVO SECTOR TEMÁTICO */}
       {showAddSectorModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#05162a] border border-cyan-500/40 rounded-3xl p-6 max-w-lg w-full space-y-4 text-xs shadow-2xl">
+          <div className="territorial-modal-card bg-[#05162a] border border-cyan-500/40 rounded-3xl p-6 max-w-lg w-full space-y-4 text-xs shadow-2xl">
             <div className="flex justify-between items-center border-b border-cyan-500/20 pb-3">
               <h4 className="font-extrabold text-white text-sm flex items-center gap-2">
                 <BarChart3 className="w-4 h-4 text-cyan-400" />
@@ -4927,7 +5052,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
       {/* MODAL: CONFIRMAR ELIMINACIÓN DE SECTOR */}
       {sectorToDelete && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#05162a] border border-rose-500/40 rounded-3xl p-6 max-w-md w-full space-y-4 text-xs shadow-2xl">
+          <div className="territorial-modal-card bg-[#05162a] border border-rose-500/40 rounded-3xl p-6 max-w-md w-full space-y-4 text-xs shadow-2xl">
             <div className="flex justify-between items-center border-b border-rose-500/20 pb-3">
               <h4 className="font-extrabold text-white text-sm flex items-center gap-2">
                 <Trash2 className="w-4 h-4 text-rose-400" />
