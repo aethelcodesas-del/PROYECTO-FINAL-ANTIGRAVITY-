@@ -45,6 +45,41 @@ interface PresupuestoContabilidadProps {
 // Initial Colombia CNE Compliant Budget Items (Starts clean from zero for real campaign usage)
 const initialBudgetItems: BudgetItem[] = [];
 
+// 60 FPS GPU-accelerated count-up hook for KPI currency display
+const useAnimatedNumber = (target: number, duration: number = 400) => {
+  const [current, setCurrent] = useState(0);
+  const targetRef = useRef(target);
+  targetRef.current = target;
+
+  useEffect(() => {
+    if (target === 0) {
+      setCurrent(0);
+      return;
+    }
+    let startTime: number | null = null;
+    let animFrame: number;
+
+    const step = (timestamp: number) => {
+      if (!startTime) startTime = timestamp;
+      const elapsed = timestamp - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // Ease out cubic
+      const ease = 1 - Math.pow(1 - progress, 3);
+      setCurrent(Math.round(ease * targetRef.current));
+      if (progress < 1) {
+        animFrame = requestAnimationFrame(step);
+      } else {
+        setCurrent(targetRef.current);
+      }
+    };
+
+    animFrame = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(animFrame);
+  }, [target, duration]);
+
+  return current;
+};
+
 export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = ({
   onSelectView,
   transactions = [],
@@ -54,6 +89,7 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
 }) => {
   // Master Active Sub-Tab
   const [activeSubTab, setActiveSubTab] = useState<'oficial_cne' | 'gestion_items' | 'ocr_scanner'>('oficial_cne');
+  const [isRotatingRefresh, setIsRotatingRefresh] = useState(false);
   const subTabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const tabsContainerRef = useRef<HTMLDivElement | null>(null);
 
@@ -482,6 +518,12 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
   const rawPctEjecutadoTope = currentLimit > 0 ? Math.round((totalGastosEjecutados / currentLimit) * 100) : 0;
   const pctEjecutadoTope = Math.min(100, rawPctEjecutadoTope);
 
+  // Animated counters for KPI metrics (Count-up within ~0.4s)
+  const animatedLimit = useAnimatedNumber(currentLimit, 400);
+  const animatedIngresos = useAnimatedNumber(totalIngresosEjecutados, 400);
+  const animatedGastos = useAnimatedNumber(totalGastosEjecutados, 400);
+  const animatedSaldo = useAnimatedNumber(saldoDisponibleCNE, 400);
+
   const showNotification = (text: string, type: 'success' | 'info' | 'error' = 'success') => {
     setNotificationMsg({ text, type });
     setTimeout(() => {
@@ -823,13 +865,16 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
       )}
 
       {/* Top Header Bar */}
-      <div className="bg-[#030d1d] text-white rounded-2xl p-5 shadow-xl border border-slate-800 space-y-4">
+      <div 
+        className="animate-budget-stagger bg-[#030d1d] text-white rounded-2xl p-5 shadow-xl border border-slate-800 space-y-4"
+        style={{ animationDelay: '0s' }}
+      >
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
             <h2 className="text-xl md:text-2xl font-black tracking-tight text-white flex items-center gap-2">
               <span>Presupuesto de Campaña & Rendición Oficial</span>
               {isSignedCNE && (
-                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 px-2 py-0.5 rounded-full font-mono font-bold flex items-center gap-1">
+                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 px-2 py-0.5 rounded-full font-mono font-bold flex items-center gap-1 shadow-[0_0_12px_rgba(16,185,129,0.25)]">
                   <Check className="w-3 h-3 text-emerald-400" /> Certificado CNE Activo
                 </span>
               )}
@@ -839,17 +884,27 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={handleExportCuentasClaras}
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs rounded-xl shadow-md hover:-translate-y-0.5 hover:shadow-[0_0_20px_rgba(16,185,129,0.25)] active:scale-[0.97] transition-all duration-100 flex items-center gap-1.5 cursor-pointer"
             >
               <Download className="w-4 h-4" />
               <span>Exportar Cuentas Claras (CSV)</span>
             </button>
             <button
-              onClick={handleResetDefaults}
-              className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl border border-slate-700 cursor-pointer"
+              onClick={() => {
+                setIsRotatingRefresh(true);
+                setTimeout(() => setIsRotatingRefresh(false), 500);
+                void handleResetDefaults();
+              }}
+              className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl border border-slate-700 cursor-pointer active:scale-95 transition-all"
               title="Restaurar valores de ejemplo CNE"
             >
-              <RefreshCw className="w-4 h-4" />
+              <RefreshCw 
+                className="w-4 h-4" 
+                style={{
+                  transform: isRotatingRefresh ? 'rotate(360deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.5s ease'
+                }}
+              />
             </button>
           </div>
         </div>
@@ -864,7 +919,7 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
             {[
               { id: 'oficial_cne', label: '1. Presupuesto Oficial CNE & Cuentas Claras', icon: <Building2 className="w-4 h-4" /> },
               { id: 'gestion_items', label: '2. Gestión Integral de Ítems (' + items.length + ')', icon: <Layers className="w-4 h-4" /> },
-              { id: 'ocr_scanner', label: '3. Escáner OCR & Comprobantes IA', icon: <Sparkles className="w-4 h-4 text-teal-300" /> }
+              { id: 'ocr_scanner', label: '3. Escáner OCR & Comprobantes IA', icon: <Sparkles className="w-4 h-4 text-teal-300 animate-pulse" /> }
             ].map(tab => {
               const isActive = activeSubTab === tab.id;
               return (
@@ -880,10 +935,10 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
                       block: 'nearest'
                     });
                   }}
-                  className={`px-4 py-2.5 rounded-xl transition-all duration-200 flex items-center gap-2.5 cursor-pointer shrink-0 select-none ${
+                  className={`px-4 py-2.5 rounded-xl transition-all duration-200 flex items-center gap-2.5 cursor-pointer shrink-0 select-none active:scale-[0.98] ${
                     isActive
-                      ? 'bg-gradient-to-r from-indigo-600 via-indigo-500 to-indigo-600 text-white shadow-[0_0_15px_rgba(99,102,241,0.35)] font-black border border-indigo-400/80 ring-1 ring-white/20'
-                      : 'bg-[#020712]/90 text-slate-300 hover:text-white hover:bg-slate-800/90 border border-slate-800 hover:border-slate-700'
+                      ? 'bg-gradient-to-r from-indigo-600 via-indigo-500 to-indigo-600 text-white shadow-[0_0_18px_rgba(99,102,241,0.3)] font-black border border-indigo-400/80 ring-1 ring-white/20'
+                      : 'bg-[#020712]/90 text-slate-300 hover:text-white hover:bg-slate-800/50 border border-slate-800 hover:border-slate-700'
                   }`}
                 >
                   <span className={isActive ? 'text-white' : 'text-slate-400'}>{tab.icon}</span>
@@ -904,11 +959,14 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
           {/* Executive Legal Limit & Progress Meter */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             
-            <div className="bg-[#030d1d] rounded-2xl p-4 sm:p-5 border border-slate-800 shadow-sm flex flex-col justify-between space-y-2.5 min-w-0">
+            <div 
+              className="budget-kpi-card animate-budget-stagger bg-[#030d1d] rounded-2xl p-4 sm:p-5 border border-slate-800 shadow-sm flex flex-col justify-between space-y-2.5 min-w-0 hover:border-slate-500/50 hover:shadow-[0_8px_24px_rgba(0,0,0,0.5)] cursor-default"
+              style={{ animationDelay: '0.04s' }}
+            >
               <span className="text-xs font-bold text-slate-400 block truncate" title="Tope Máximo CNE Ley 1475">Tope Máximo CNE Ley 1475</span>
               <div className="flex flex-wrap items-baseline gap-1.5 min-w-0">
                 <span className={`text-lg sm:text-xl xl:text-2xl font-black tracking-tight break-all sm:break-normal ${currentLimit > 0 ? 'text-white' : 'text-amber-300'}`}>
-                  {currentLimit > 0 ? `$${currentLimit.toLocaleString()}` : 'Sin definir'}
+                  {currentLimit > 0 ? `$${animatedLimit.toLocaleString()}` : 'Sin definir'}
                 </span>
                 {currentLimit > 0 && <span className="text-[11px] font-bold text-slate-400 font-mono shrink-0">COP</span>}
               </div>
@@ -919,11 +977,14 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
               </div>
             </div>
 
-            <div className="bg-[#030d1d] rounded-2xl p-4 sm:p-5 border border-slate-800 shadow-sm flex flex-col justify-between space-y-2.5 min-w-0">
+            <div 
+              className="budget-kpi-card animate-budget-stagger bg-[#030d1d] rounded-2xl p-4 sm:p-5 border border-slate-800 shadow-sm flex flex-col justify-between space-y-2.5 min-w-0 hover:border-emerald-500/40 hover:shadow-[0_0_20px_rgba(16,185,129,0.12)] cursor-default"
+              style={{ animationDelay: '0.08s' }}
+            >
               <span className="text-xs font-bold text-slate-400 block truncate" title="Ingresos Recaudados y Validados">Ingresos Recaudados y Validados</span>
               <div className="flex flex-wrap items-baseline gap-1.5 min-w-0">
                 <span className="text-lg sm:text-xl xl:text-2xl font-black text-emerald-400 tracking-tight break-all sm:break-normal">
-                  ${totalIngresosEjecutados.toLocaleString()}
+                  ${animatedIngresos.toLocaleString()}
                 </span>
                 <span className="text-[11px] font-bold text-emerald-400/80 font-mono shrink-0">COP</span>
               </div>
@@ -932,45 +993,55 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
               </div>
             </div>
 
-            <div className="bg-[#030d1d] rounded-2xl p-4 sm:p-5 border border-slate-800 shadow-sm flex flex-col justify-between space-y-2.5 min-w-0">
+            <div 
+              className={`budget-kpi-card animate-budget-stagger bg-[#030d1d] rounded-2xl p-4 sm:p-5 border border-slate-800 shadow-sm flex flex-col justify-between space-y-2.5 min-w-0 transition-all cursor-default ${
+                pctEjecutadoTope > 90 
+                  ? 'hover:border-rose-500/40 hover:shadow-[0_0_20px_rgba(244,63,94,0.12)]' 
+                  : 'hover:border-amber-500/40 hover:shadow-[0_0_20px_rgba(245,158,11,0.12)]'
+              }`}
+              style={{ animationDelay: '0.12s' }}
+            >
               <span className="text-xs font-bold text-slate-400 block truncate" title="Gastos Ejecutados Reales">Gastos Ejecutados Reales</span>
               <div className="flex flex-wrap items-baseline gap-1.5 min-w-0">
                 <span className="text-lg sm:text-xl xl:text-2xl font-black text-white tracking-tight break-all sm:break-normal">
-                  ${totalGastosEjecutados.toLocaleString()}
+                  ${animatedGastos.toLocaleString()}
                 </span>
                 <span className="text-[11px] font-bold text-slate-400 font-mono shrink-0">COP</span>
               </div>
               <div className="space-y-1">
                 <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
                   <div 
-                    className={`h-full transition-all ${pctEjecutadoTope > 90 ? 'bg-red-500' : 'bg-emerald-500'}`}
+                    className={`h-full transition-all duration-500 ${pctEjecutadoTope > 90 ? 'bg-red-500' : 'bg-emerald-500'}`}
                     style={{ width: `${pctEjecutadoTope}%` }}
                   ></div>
                 </div>
                 <div className="flex justify-between text-[10px] text-slate-400 font-bold">
                   <span>{currentLimit > 0 ? `${rawPctEjecutadoTope}% del tope ejecutado` : 'Tope pendiente de configuración'}</span>
-                  <span className={rawPctEjecutadoTope > 100 || currentLimit === 0 ? 'text-rose-400 font-black' : 'text-emerald-400 font-bold'}>
+                  <span className={`${rawPctEjecutadoTope > 100 || currentLimit === 0 ? 'text-rose-400 font-black' : 'text-emerald-400 font-bold'} ${rawPctEjecutadoTope <= 100 && currentLimit > 0 ? 'drop-shadow-[0_0_6px_rgba(16,185,129,0.4)]' : ''}`}>
                     {currentLimit === 0 ? '⚠️ SIN TOPE' : rawPctEjecutadoTope > 100 ? '⚠️ EXCEDIDO' : 'OK CNE'}
                   </span>
                 </div>
               </div>
             </div>
 
-            <div className="bg-[#030d1d] rounded-2xl p-4 sm:p-5 border border-slate-800 shadow-sm flex flex-col justify-between space-y-2.5 min-w-0">
+            <div 
+              className="budget-kpi-card animate-budget-stagger bg-[#030d1d] rounded-2xl p-4 sm:p-5 border border-slate-800 shadow-sm flex flex-col justify-between space-y-2.5 min-w-0 hover:border-cyan-500/40 hover:shadow-[0_0_20px_rgba(6,182,212,0.12)] cursor-default"
+              style={{ animationDelay: '0.16s' }}
+            >
               <span className="text-xs font-bold text-slate-400 block truncate" title="Saldo Disponible sin Exceder Tope">Saldo Disponible sin Exceder Tope</span>
               <div className="flex flex-wrap items-baseline gap-1.5 min-w-0">
                 <span className={`text-lg sm:text-xl xl:text-2xl font-black tracking-tight break-all sm:break-normal ${
                   saldoDisponibleCNE < 0 || currentLimit === 0 ? 'text-rose-400' : 'text-cyan-400'
                 }`}>
-                  {currentLimit > 0 ? `$${saldoDisponibleCNE.toLocaleString()}` : 'Sin calcular'}
+                  {currentLimit > 0 ? `$${animatedSaldo.toLocaleString()}` : 'Sin calcular'}
                 </span>
                 {currentLimit > 0 && <span className="text-[11px] font-bold text-cyan-400/80 font-mono shrink-0">COP</span>}
               </div>
               <div>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded inline-block truncate max-w-full border ${
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded inline-block truncate max-w-full border transition-all duration-200 ${
                   saldoDisponibleCNE < 0 || currentLimit === 0
                     ? 'text-rose-300 bg-rose-950/60 border-rose-700/50' 
-                    : 'text-emerald-300 bg-emerald-950/60 border-emerald-700/50'
+                    : 'text-emerald-300 bg-emerald-950/60 border-emerald-700/50 shadow-[0_0_12px_rgba(16,185,129,0.25)]'
                 }`}>
                   {currentLimit === 0 ? 'Defina el tope al crear o editar la campaña' : saldoDisponibleCNE < 0 ? 'Tope Excedido - Alerta Legal' : 'Cumplimiento CNE Garantizado'}
                 </span>
@@ -980,7 +1051,10 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
           </div>
 
           {/* Statutory CNE Rubros Table */}
-          <div className="bg-[#030d1d] rounded-2xl p-6 border border-slate-800 shadow-sm space-y-4">
+          <div 
+            className="animate-budget-stagger bg-[#030d1d] rounded-2xl p-6 border border-slate-800 shadow-sm space-y-4"
+            style={{ animationDelay: '0.20s' }}
+          >
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
               <div>
                 <h3 className="font-extrabold text-white text-base flex items-center gap-2">
@@ -992,10 +1066,10 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   onClick={handleOpenCreateModal}
-                  className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-500 text-white font-extrabold text-xs rounded-xl shadow transition-all flex items-center gap-1.5 cursor-pointer"
+                  className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-500 text-white font-extrabold text-xs rounded-xl shadow-[0_0_15px_rgba(245,158,11,0.2)] border border-amber-400/30 hover:brightness-110 hover:-translate-y-0.5 hover:shadow-[0_0_25px_rgba(245,158,11,0.35)] active:scale-[0.96] transition-all duration-200 flex items-center gap-1.5 cursor-pointer will-change-transform"
                 >
                   <Plus className="w-4 h-4" />
-                  <span>Registrar Movimiento / Ítem</span>
+                  <span>+ Registrar Movimiento / Ítem</span>
                 </button>
               </div>
             </div>
@@ -1032,12 +1106,18 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
                     const dif = asignado - ejecutado;
 
                     return (
-                      <tr key={rubro.cod} className="hover:bg-slate-800/40 transition-colors">
-                        <td className="p-3 font-mono font-bold text-amber-400">{rubro.cod}</td>
-                        <td className="p-3 font-bold text-white">{rubro.nom}</td>
+                      <tr key={rubro.cod} className="group/row hover:bg-slate-800/40 transition-colors duration-150">
+                        <td className="p-3 font-mono font-bold text-amber-400 group-hover/row:text-amber-300 group-hover/row:drop-shadow-[0_0_6px_rgba(234,179,8,0.6)] transition-all">
+                          {rubro.cod}
+                        </td>
+                        <td className="p-3 font-bold text-white group-hover/row:text-cyan-100 transition-colors">
+                          {rubro.nom}
+                        </td>
                         <td className="p-3">
-                          <span className={`px-2 py-0.5 text-[10px] font-bold rounded border whitespace-nowrap ${
-                            rubro.tipo === 'Ingreso' ? 'bg-emerald-950/60 text-emerald-300 border-emerald-700/50' : 'bg-slate-800 text-slate-300 border-slate-700'
+                          <span className={`px-2 py-0.5 text-[10px] font-bold rounded border whitespace-nowrap transition-colors duration-200 ${
+                            rubro.tipo === 'Ingreso' 
+                              ? 'bg-emerald-950/60 text-emerald-300 border-emerald-700/50 hover:border-emerald-500/60' 
+                              : 'bg-slate-800 text-slate-300 border-slate-700 hover:border-slate-600'
                           }`}>
                             {rubro.tipo}
                           </span>
@@ -1046,8 +1126,10 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
                         <td className="p-3 text-right font-mono font-bold text-white">${ejecutado.toLocaleString()}</td>
                         <td className="p-3 text-right font-mono text-emerald-400 font-bold">${dif.toLocaleString()}</td>
                         <td className="p-3 text-center min-w-[100px]">
-                          <span className={`px-2 py-0.5 text-[10px] font-bold rounded border whitespace-nowrap ${
-                            ejecutado > 0 ? 'bg-emerald-950/60 text-emerald-300 border-emerald-700/50' : 'bg-slate-900 text-slate-400 border-slate-800'
+                          <span className={`px-2 py-0.5 text-[10px] font-bold rounded border whitespace-nowrap transition-colors duration-200 ${
+                            ejecutado > 0 
+                              ? 'bg-emerald-950/60 text-emerald-300 border-emerald-700/50 hover:border-emerald-500/60' 
+                              : 'bg-slate-900 text-slate-400 border-slate-800'
                           }`}>
                             {ejecutado > 0 ? 'Auditado CNE' : 'Sin Ejecución'}
                           </span>
