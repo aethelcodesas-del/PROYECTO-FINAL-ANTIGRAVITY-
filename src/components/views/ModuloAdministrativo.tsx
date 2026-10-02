@@ -3087,7 +3087,10 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
             )}
 
             {/* Sub-tab Selector for Form Types */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-[#030d1f] p-1.5 rounded-2xl border border-cyan-500/30">
+            <div 
+              className="animate-voter-stagger flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-[#030d1f] p-1.5 rounded-2xl border border-cyan-500/30"
+              style={{ animationDelay: '0s' }}
+            >
               <button
                 type="button"
                 onClick={(e) => {
@@ -3095,10 +3098,10 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                   e.stopPropagation();
                   setFormTypeSubTab('votantes');
                 }}
-                className={`flex-1 py-2.5 px-3 sm:px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer text-center ${
+                className={`flex-1 py-2.5 px-3 sm:px-4 rounded-xl text-xs font-bold transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer text-center ${
                   formTypeSubTab === 'votantes'
-                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-extrabold shadow'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                    ? 'bg-gradient-to-r from-cyan-500/25 to-blue-500/20 text-cyan-300 border border-cyan-500/40 font-extrabold shadow-[0_0_15px_rgba(6,182,212,0.2)]'
+                    : 'text-slate-400 hover:text-cyan-300 hover:bg-slate-800/40'
                 }`}
               >
                 <Users className="w-4 h-4 text-cyan-400 shrink-0" />
@@ -3112,10 +3115,10 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                   e.stopPropagation();
                   setFormTypeSubTab('lideres_coordinadores');
                 }}
-                className={`flex-1 py-2.5 px-3 sm:px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer text-center ${
+                className={`flex-1 py-2.5 px-3 sm:px-4 rounded-xl text-xs font-bold transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer text-center ${
                   formTypeSubTab === 'lideres_coordinadores'
-                    ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40 font-extrabold shadow'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                    ? 'bg-gradient-to-r from-purple-500/25 to-indigo-500/20 text-purple-300 border border-purple-500/40 font-extrabold shadow-[0_0_15px_rgba(168,85,247,0.2)]'
+                    : 'text-slate-400 hover:text-purple-300 hover:bg-slate-800/40'
                 }`}
               >
                 <UserCheck2 className="w-4 h-4 text-purple-400 shrink-0" />
@@ -3128,10 +3131,13 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
             {/* ---------------------------------------------------------------------- */}
             {formTypeSubTab === 'votantes' && (
               <div className="bg-[#041733]/95 backdrop-blur-md rounded-2xl p-4 sm:p-6 border border-cyan-500/20 shadow-2xl space-y-5">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-cyan-500/15 pb-4">
+                <div 
+                  className="animate-voter-stagger flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-cyan-500/15 pb-4"
+                  style={{ animationDelay: '0.04s' }}
+                >
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="p-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.15)] flex items-center justify-center shrink-0">
-                      <Users className="w-5 h-5 text-cyan-400" />
+                    <div className="group/icon p-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.15)] flex items-center justify-center shrink-0 transition-transform duration-200 hover:scale-105">
+                      <Users className="w-5 h-5 text-cyan-400 drop-shadow-[0_0_8px_rgba(6,182,212,0.4)]" />
                     </div>
                     <div className="min-w-0">
                       <h3 className="text-sm sm:text-base md:text-lg font-semibold tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent break-words">
@@ -3151,7 +3157,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                         e.stopPropagation();
                         setShowAddVoterForm(!showAddVoterForm);
                       }}
-                      className="w-full sm:w-auto px-4 py-2.5 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 font-semibold text-xs sm:text-sm rounded-xl shadow-[0_0_20px_rgba(20,184,166,0.3)] hover:shadow-[0_0_25px_rgba(20,184,166,0.45)] active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer border border-teal-300/30"
+                      className="w-full sm:w-auto px-4 py-2.5 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 font-semibold text-xs sm:text-sm rounded-xl shadow-[0_0_20px_rgba(20,184,166,0.3)] hover:shadow-[0_0_25px_rgba(20,184,166,0.45)] hover:-translate-y-[1px] active:scale-[0.96] transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer border border-teal-300/30"
                     >
                       {showAddVoterForm ? (
                         <>
@@ -3386,7 +3392,10 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                 )}
 
                 {/* Duplicate Check Tool Box */}
-                <div className="bg-slate-900/40 backdrop-blur-md border border-slate-800 hover:border-slate-700/80 transition-colors duration-300 rounded-2xl p-4 sm:p-5 shadow-lg space-y-4">
+                <div 
+                  className="animate-voter-stagger bg-slate-900/40 backdrop-blur-md border border-slate-800 hover:border-slate-700/80 transition-colors duration-300 rounded-2xl p-4 sm:p-5 shadow-lg space-y-4"
+                  style={{ animationDelay: '0.08s' }}
+                >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                     <div className="flex items-center gap-2">
                       <Search className="w-4 h-4 text-cyan-400 shrink-0" />
@@ -3395,7 +3404,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                       </h4>
                     </div>
                     <div className="inline-flex items-center font-mono text-xs border border-cyan-500/30 bg-cyan-950/40 text-cyan-300 px-3 py-1 rounded-full w-fit">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse inline-block mr-1.5 shadow-[0_0_8px_#34d399]" />
+                      <span className="badge-drift-dot w-2 h-2 rounded-full bg-emerald-400 inline-block mr-1.5 shadow-[0_0_8px_#34d399]" />
                       <span>Sincronización Offline Drift / SQLite</span>
                     </div>
                   </div>
@@ -3416,13 +3425,13 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                         value={cedulaSearch}
                         onChange={(e) => setCedulaSearch(e.target.value)}
                         placeholder="Prueba de cédula para consultar en Censo Electoral y CRM (Ej: 25970436 o 1017123456)..."
-                        className="w-full bg-slate-950/70 border border-slate-800 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 rounded-xl pl-10 pr-4 py-2.5 text-xs sm:text-sm text-white font-mono placeholder:text-slate-500 transition-all outline-none"
+                        className="w-full bg-slate-950/70 border border-slate-800 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/25 rounded-xl pl-10 pr-4 py-2.5 text-xs sm:text-sm text-white font-mono placeholder:text-slate-500 transition-all outline-none"
                       />
                     </div>
                     <button
                       type="submit"
                       disabled={isValidatingCedula}
-                      className="px-4 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 active:scale-95 text-slate-950 font-bold text-xs sm:text-sm rounded-xl shadow-md hover:shadow-cyan-500/20 transition-all cursor-pointer flex items-center justify-center gap-2 shrink-0 disabled:opacity-60"
+                      className="px-4 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 hover:shadow-[0_0_15px_rgba(6,182,212,0.35)] active:scale-[0.97] text-slate-950 font-bold text-xs sm:text-sm rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 shrink-0 disabled:opacity-60"
                     >
                       {isValidatingCedula ? (
                         <RefreshCw className="w-4 h-4 animate-spin text-slate-950" />
@@ -3541,7 +3550,10 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                 </div>
 
                 {/* Table: Votantes Reales Registrados */}
-                <div className="space-y-3.5">
+                <div 
+                  className="animate-voter-stagger space-y-3.5"
+                  style={{ animationDelay: '0.12s' }}
+                >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
                       <div className="p-1.5 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
@@ -3574,7 +3586,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                           <tr>
                             <td colSpan={6} className="py-12 px-4 text-center">
                               <div className="flex flex-col items-center justify-center max-w-sm mx-auto space-y-3">
-                                <div className="w-14 h-14 rounded-2xl bg-slate-800/50 border border-slate-700/60 flex items-center justify-center text-slate-400 shadow-inner">
+                                <div className="empty-state-icon-container w-14 h-14 rounded-2xl bg-slate-800/50 border border-slate-700/60 flex items-center justify-center text-slate-400 shadow-inner">
                                   <UserCheck className="w-7 h-7 text-slate-400" />
                                 </div>
                                 <div>
@@ -3591,7 +3603,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                         ) : voters.map(voter => {
                           const isSuspended = voter.estado === 'Suspendido';
                           return (
-                            <tr key={voter.id} className="hover:bg-slate-850/40 hover:bg-cyan-950/20 transition-colors">
+                            <tr key={voter.id} className="hover:bg-slate-800/40 hover:bg-cyan-950/20 transition-colors duration-150">
                               <td className="py-3 px-4 font-mono font-medium text-cyan-400">{voter.cc}</td>
                               <td className="py-3 px-4">
                                 <button 
@@ -3620,7 +3632,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                                 <div className="flex items-center justify-center gap-2">
                                   <button 
                                     onClick={() => void togglePoliticalCrmStatus('voters', voter.id, voter.estado)} 
-                                    className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg border transition-all cursor-pointer ${
+                                    className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg border transition-all duration-150 hover:-translate-y-0.5 active:scale-95 cursor-pointer ${
                                       isSuspended
                                         ? 'bg-emerald-950/50 hover:bg-emerald-900/60 text-emerald-300 border-emerald-700/50'
                                         : 'bg-amber-950/50 hover:bg-amber-900/60 text-amber-300 border-amber-700/50'
@@ -3630,7 +3642,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                                   </button>
                                   <button 
                                     onClick={() => void deletePoliticalCrmRecord('voters', voter.id, voter.nombre)} 
-                                    className="p-1.5 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 hover:text-white border border-rose-700/40 rounded-lg transition-colors cursor-pointer" 
+                                    className="p-1.5 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 hover:text-white border border-rose-700/40 rounded-lg transition-all duration-150 hover:-translate-y-0.5 active:scale-95 cursor-pointer" 
                                     title="Eliminar votante"
                                   >
                                     <Trash2 className="w-3.5 h-3.5" />
@@ -3646,15 +3658,18 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                 </div>
 
                 {/* Field Configurator for Voters (Positioned at the end of the section) */}
-                <div className="overflow-hidden rounded-xl border border-cyan-500/30 bg-[#030d1f]">
+                <div 
+                  className="animate-voter-stagger overflow-hidden rounded-xl border border-cyan-500/30 bg-[#030d1f]"
+                  style={{ animationDelay: '0.16s' }}
+                >
                   <button
                     type="button"
                     onClick={() => setIsVoterFieldListOpen(open => !open)}
                     aria-expanded={isVoterFieldListOpen}
-                    className="flex w-full items-center justify-between gap-3 p-3 text-left transition-colors hover:bg-cyan-500/5 sm:p-4"
+                    className="group flex w-full items-center justify-between gap-3 p-3 text-left transition-colors hover:bg-cyan-500/5 sm:p-4 cursor-pointer"
                   >
                     <div className="flex min-w-0 items-center gap-2">
-                      <Settings className="h-4 w-4 shrink-0 text-cyan-400" />
+                      <Settings className="h-4 w-4 shrink-0 text-cyan-400 group-hover:rotate-45 transition-transform duration-300" />
                       <div className="min-w-0">
                         <h4 className="truncate text-xs font-bold text-white sm:text-sm">Campos para captura de información del votante</h4>
                         <p className="mt-0.5 text-[10px] text-slate-400">
@@ -3662,7 +3677,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                         </p>
                       </div>
                     </div>
-                    <ChevronDown className={`h-4 w-4 shrink-0 text-cyan-400 transition-transform ${isVoterFieldListOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`h-4 w-4 shrink-0 text-cyan-400 transition-transform duration-250 ease-[cubic-bezier(0.16,1,0.3,1)] ${isVoterFieldListOpen ? 'rotate-180' : ''}`} />
                   </button>
 
                   {isVoterFieldListOpen && (

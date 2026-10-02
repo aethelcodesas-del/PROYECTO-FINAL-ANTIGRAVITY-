@@ -1662,6 +1662,50 @@ textarea {
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
+/* Voter Registration Module Animations & Microinteractions */
+@keyframes radarPulseGreen {
+  0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5); }
+  70% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+
+.badge-drift-dot {
+  animation: radarPulseGreen 2s infinite ease-out;
+  will-change: box-shadow;
+}
+
+@keyframes subtleFloat {
+  0%, 100% {
+    transform: translateY(0) translateZ(0);
+  }
+  50% {
+    transform: translateY(-4px) translateZ(0);
+  }
+}
+
+.empty-state-icon-container {
+  animation: subtleFloat 3.5s ease-in-out infinite;
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+@keyframes voterStaggerEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px) translateZ(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) translateZ(0);
+  }
+}
+
+.animate-voter-stagger {
+  animation: voterStaggerEnter 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
+  transform: translateZ(0);
+}
+
 /* --------------------------------------------------------------------------
    E. ACCESSIBILITY & PREFERS-REDUCED-MOTION
    Respect user operating system reduced-motion preferences
