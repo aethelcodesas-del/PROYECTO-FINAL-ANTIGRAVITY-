@@ -1516,6 +1516,47 @@ button:not(:disabled),
   transform: translateZ(0);
 }
 
+/* Sidebar Nav Item Glows on hover */
+.glow-icon-emerald,
+.glow-icon-cyan,
+.glow-icon-teal,
+.glow-icon-amber,
+.glow-icon-blue,
+.glow-icon-rose,
+.glow-icon-purple {
+  transition: filter 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: filter;
+}
+
+.glow-icon-emerald:hover,
+.group:hover .glow-icon-emerald {
+  filter: drop-shadow(0 0 6px rgba(16, 185, 129, 0.65));
+}
+.glow-icon-cyan:hover,
+.group:hover .glow-icon-cyan {
+  filter: drop-shadow(0 0 6px rgba(6, 182, 212, 0.65));
+}
+.glow-icon-teal:hover,
+.group:hover .glow-icon-teal {
+  filter: drop-shadow(0 0 6px rgba(20, 184, 166, 0.65));
+}
+.glow-icon-amber:hover,
+.group:hover .glow-icon-amber {
+  filter: drop-shadow(0 0 6px rgba(234, 179, 8, 0.65));
+}
+.glow-icon-blue:hover,
+.group:hover .glow-icon-blue {
+  filter: drop-shadow(0 0 6px rgba(59, 130, 246, 0.65));
+}
+.glow-icon-rose:hover,
+.group:hover .glow-icon-rose {
+  filter: drop-shadow(0 0 6px rgba(244, 63, 94, 0.65));
+}
+.glow-icon-purple:hover,
+.group:hover .glow-icon-purple {
+  filter: drop-shadow(0 0 6px rgba(217, 70, 239, 0.65));
+}
+
 /* Fluid Table & List Row Microinteractions */
 table tbody tr {
   transition: background-color 0.15s ease, border-color 0.15s ease;

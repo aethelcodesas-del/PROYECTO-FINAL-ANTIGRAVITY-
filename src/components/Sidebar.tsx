@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useCampaignData } from '../contexts/CampaignContext';
 import { supabase } from '../lib/supabaseClient';
-import { motion } from 'motion/react';
+import { motion, LayoutGroup } from 'motion/react';
 import { ViewMode, AuthUser } from '../types';
 import { CampaignLogoBadge } from './common/CampaignLogoIcon';
 import { isViewAllowed, isViewAllowedForModule } from '../utils/rolePermissions';
@@ -275,14 +275,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   // Administrative Section Sub-Items (8 administrative functions)
   const adminMenuItems = [
-    { id: 'admin_inicio', label: 'Inicio', tab: 'inicio', icon: <Activity className="w-4 h-4 text-emerald-400" /> },
-    { id: 'admin_roles', label: 'Gestión de Roles', tab: 'roles', icon: <UserCheck className="w-4 h-4 text-cyan-400" /> },
-    { id: 'admin_lideres', label: 'Líderes / Votantes', tab: 'lideres_votantes', icon: <Users className="w-4 h-4 text-teal-400" /> },
-    { id: 'admin_presupuesto', label: 'Presupuesto / CNE', tab: 'presupuesto_cne', icon: <CreditCard className="w-4 h-4 text-amber-400" /> },
-    { id: 'admin_campana', label: 'Gestión de Campaña', tab: 'gestion_campana', icon: <Building2 className="w-4 h-4 text-blue-400" /> },
-    { id: 'admin_testigos', label: 'Gestión de Testigos', tab: 'gestion_testigos', icon: <ShieldAlert className="w-4 h-4 text-rose-400" /> },
-    { id: 'admin_jurados', label: 'Jurados Electorales', tab: 'jurados_electorales', icon: <Sliders className="w-4 h-4 text-purple-400" /> },
-    { id: 'admin_encuestas', label: 'Encuestas y Sondeos', tab: 'encuestas_sondeos', icon: <PieChart className="w-4 h-4 text-cyan-400" /> },
+    { id: 'admin_inicio', label: 'Inicio', tab: 'inicio', icon: <Activity className="w-4 h-4 text-emerald-400" />, glowClass: 'glow-icon-emerald' },
+    { id: 'admin_roles', label: 'Gestión de Roles', tab: 'roles', icon: <UserCheck className="w-4 h-4 text-cyan-400" />, glowClass: 'glow-icon-cyan' },
+    { id: 'admin_lideres', label: 'Líderes / Votantes', tab: 'lideres_votantes', icon: <Users className="w-4 h-4 text-teal-400" />, glowClass: 'glow-icon-teal' },
+    { id: 'admin_presupuesto', label: 'Presupuesto / CNE', tab: 'presupuesto_cne', icon: <CreditCard className="w-4 h-4 text-amber-400" />, glowClass: 'glow-icon-amber' },
+    { id: 'admin_campana', label: 'Gestión de Campaña', tab: 'gestion_campana', icon: <Building2 className="w-4 h-4 text-blue-400" />, glowClass: 'glow-icon-blue' },
+    { id: 'admin_testigos', label: 'Gestión de Testigos', tab: 'gestion_testigos', icon: <ShieldAlert className="w-4 h-4 text-rose-400" />, glowClass: 'glow-icon-rose' },
+    { id: 'admin_jurados', label: 'Jurados Electorales', tab: 'jurados_electorales', icon: <Sliders className="w-4 h-4 text-purple-400" />, glowClass: 'glow-icon-purple' },
+    { id: 'admin_encuestas', label: 'Encuestas y Sondeos', tab: 'encuestas_sondeos', icon: <PieChart className="w-4 h-4 text-cyan-400" />, glowClass: 'glow-icon-cyan' },
   ];
 
   // Determine current active section automatically based on currentView & user module
@@ -509,41 +509,90 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <p className={`px-3 text-[10px] font-black uppercase tracking-wider text-cyan-400/90 mb-2 ${isDesktopCollapsed ? 'lg:hidden' : ''}`}>
                 Funciones Administrativas
               </p>
-              <nav className="space-y-1">
-                {adminMenuItems.filter(item => hasPermission(item.id)).map((item) => {
-                  const isActive = currentView === 'modulo_admin' && adminTab === item.tab;
-                  
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      title={item.label}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        if (currentView !== 'modulo_admin') {
-                          onSelectView('modulo_admin');
-                        }
-                        if (item.tab && onSelectAdminTab) {
-                          onSelectAdminTab(item.tab);
-                        }
-                        if (onCloseMobile) onCloseMobile();
-                        document.querySelector('main')?.scrollTo({ top: 0, behavior: 'smooth' });
-                      }}
-                      className={`w-full flex items-center ${isDesktopCollapsed ? 'lg:justify-center lg:px-2' : 'gap-3 px-3'} min-h-[44px] py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                        isActive
-                          ? 'bg-gradient-to-r from-cyan-600 to-blue-700 text-white shadow-md shadow-cyan-950/40 border border-cyan-400/40'
-                          : 'text-slate-300 hover:text-white hover:bg-cyan-500/10'
-                      }`}
-                    >
-                      <div className={`shrink-0 transition-transform ${isActive ? 'scale-110 text-white' : 'text-slate-400'}`}>
-                        {item.icon}
-                      </div>
-                      <span className={`truncate tracking-wide text-left ${isDesktopCollapsed ? 'lg:hidden' : ''}`}>{item.label}</span>
-                    </button>
-                  );
-                })}
-              </nav>
+              <LayoutGroup id="sidebar-admin-nav">
+                <nav className="space-y-1">
+                  {adminMenuItems.filter(item => hasPermission(item.id)).map((item, index) => {
+                    const isActive = currentView === 'modulo_admin' && adminTab === item.tab;
+                    
+                    return (
+                      <motion.button
+                        key={item.id}
+                        type="button"
+                        title={item.label}
+                        initial={{ opacity: 0, x: -8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{
+                          duration: 0.22,
+                          delay: index * 0.03,
+                          ease: [0.16, 1, 0.3, 1],
+                        }}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (currentView !== 'modulo_admin') {
+                            onSelectView('modulo_admin');
+                          }
+                          if (item.tab && onSelectAdminTab) {
+                            onSelectAdminTab(item.tab);
+                          }
+                          if (onCloseMobile) onCloseMobile();
+                          document.querySelector('main')?.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        className={`group relative w-full flex items-center ${
+                          isDesktopCollapsed ? 'lg:justify-center lg:px-2' : 'gap-3 px-3'
+                        } min-h-[44px] py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-[0.98] select-none ${
+                          isActive
+                            ? 'text-white'
+                            : 'text-slate-300 hover:text-white hover:bg-slate-800/40'
+                        }`}
+                      >
+                        {/* Indicador de píldora activa deslizante (Sliding Active Indicator) */}
+                        {isActive && (
+                          <motion.div
+                            layoutId="activeAdminPill"
+                            transition={{
+                              type: 'spring',
+                              stiffness: 420,
+                              damping: 32,
+                            }}
+                            className="absolute inset-0 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 shadow-[0_0_20px_rgba(6,182,212,0.35)] border border-cyan-400/40 z-0 pointer-events-none"
+                          />
+                        )}
+
+                        {/* Contenido con desplazamiento sutil en hover (Subtle Indent) */}
+                        <div
+                          className={`relative z-10 flex items-center ${
+                            isDesktopCollapsed ? 'lg:justify-center' : 'gap-3'
+                          } w-full transition-transform duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                            !isActive ? 'group-hover:translate-x-1' : ''
+                          }`}
+                        >
+                          {/* Micro-animación en icono activo e iluminación tenue en hover */}
+                          <motion.div
+                            animate={isActive ? { scale: [1, 1.08, 1] } : { scale: 1 }}
+                            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                            className={`shrink-0 transition-all duration-200 ${
+                              isActive
+                                ? 'scale-105 drop-shadow-[0_0_8px_rgba(255,255,255,0.45)]'
+                                : (item.glowClass || '')
+                            }`}
+                          >
+                            {item.icon}
+                          </motion.div>
+
+                          <span
+                            className={`truncate tracking-wide text-left transition-colors duration-200 ${
+                              isDesktopCollapsed ? 'lg:hidden' : ''
+                            } ${isActive ? 'text-white font-extrabold' : 'text-slate-300 group-hover:text-white'}`}
+                          >
+                            {item.label}
+                          </span>
+                        </div>
+                      </motion.button>
+                    );
+                  })}
+                </nav>
+              </LayoutGroup>
             </div>
           )}
 
