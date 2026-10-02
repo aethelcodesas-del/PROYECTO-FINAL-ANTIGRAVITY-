@@ -4385,9 +4385,12 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                 </div>
               )}
               {/* Header Top Row: Title, Description & '+ Postular Jurado' Button */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+              <div 
+                className="animate-jurados-stagger flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4"
+                style={{ animationDelay: '0s' }}
+              >
                 <div className="flex items-center gap-3">
-                  <div className="p-2.5 rounded-2xl shrink-0 border bg-cyan-500/20 text-cyan-300 border-cyan-500/40">
+                  <div className="p-2.5 rounded-2xl shrink-0 border bg-cyan-500/20 text-cyan-300 border-cyan-500/40 transition-all duration-300 hover:scale-105 hover:drop-shadow-[0_0_8px_rgba(6,182,212,0.4)]">
                     <Vote className="w-6 h-6" />
                   </div>
                   <div>
@@ -4408,10 +4411,10 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                       resetJuradoForm();
                       setShowJuradoForm(!showJuradoForm);
                     }}
-                    className={`w-full sm:w-auto px-5 py-2.5 font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                    className={`w-full sm:w-auto px-5 py-2.5 font-bold text-xs rounded-xl transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 will-change-transform ${
                       showJuradoForm
-                        ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
-                        : 'bg-blue-600 hover:bg-blue-700 text-white'
+                        ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 active:scale-[0.96]'
+                        : 'bg-blue-600 hover:bg-blue-500 hover:brightness-110 hover:-translate-y-0.5 active:scale-[0.96] text-white shadow-[0_0_15px_rgba(37,99,235,0.3)] hover:shadow-[0_0_22px_rgba(37,99,235,0.45)]'
                     }`}
                   >
                     <UserPlus className="w-4 h-4" />
@@ -4421,9 +4424,12 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
               </div>
 
               {/* Header Bottom Row: Action Buttons for Export, Annex Resolution, and Confrontation */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3.5 rounded-2xl border bg-[#020b18]/80 border-cyan-500/20">
+              <div 
+                className="animate-jurados-stagger flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3.5 rounded-2xl border bg-[#020b18]/80 border-cyan-500/20"
+                style={{ animationDelay: '0.035s' }}
+              >
                 <div className="text-xs font-bold flex items-center gap-2 px-1 shrink-0 text-cyan-200">
-                  <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse shrink-0"></span>
+                  <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shrink-0 shadow-[0_0_8px_rgba(6,182,212,0.8)]"></span>
                   <span className="whitespace-nowrap">Acciones de Resolución y Exportación:</span>
                 </div>
 
@@ -4432,7 +4438,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                   <button
                     type="button"
                     onClick={handleExportJuradosExcel}
-                    className="px-4 py-2 font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer flex items-center gap-2 border bg-emerald-950/60 hover:bg-emerald-900 text-emerald-300 border-emerald-500/40"
+                    className="px-4 py-2 font-bold text-xs rounded-xl shadow-sm transition-all duration-150 cursor-pointer flex items-center gap-2 border bg-emerald-950/60 hover:bg-emerald-900/80 hover:border-emerald-400 hover:shadow-[0_0_16px_rgba(16,185,129,0.25)] hover:-translate-y-0.5 active:scale-[0.97] text-emerald-300 border-emerald-500/40 will-change-transform"
                     title="Exportar archivo CSV/Excel listo para enviar a la Registraduría"
                   >
                     <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
@@ -4444,7 +4450,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                     type="button"
                     onClick={() => resolutionFileInputRef.current?.click()}
                     disabled={isReadingResolution}
-                    className="px-4 py-2 font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer flex items-center gap-2 border disabled:opacity-50 bg-cyan-950/60 hover:bg-cyan-900 text-cyan-300 border-cyan-500/40"
+                    className="px-4 py-2 font-bold text-xs rounded-xl shadow-sm transition-all duration-150 cursor-pointer flex items-center gap-2 border disabled:opacity-50 bg-cyan-950/60 hover:bg-cyan-900/80 hover:border-cyan-400 hover:shadow-[0_0_16px_rgba(6,182,212,0.25)] hover:-translate-y-0.5 active:scale-[0.97] text-cyan-300 border-cyan-500/40 will-change-transform"
                     title="Anexar documento de Resolución emitida por la Registraduría (PDF/Excel) para lectura"
                   >
                     {isReadingResolution ? (
@@ -4459,21 +4465,24 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                   <button
                     type="button"
                     onClick={() => setShowConfrontationModal(!showConfrontationModal)}
-                    className="px-4 py-2 font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+                    className="group px-4 py-2 font-bold text-xs rounded-xl transition-all duration-150 cursor-pointer flex items-center gap-2 bg-blue-600 hover:bg-blue-500 hover:-translate-y-0.5 active:scale-[0.97] text-white shadow-[0_0_18px_rgba(37,99,235,0.35)] hover:shadow-[0_0_25px_rgba(59,130,246,0.5)] will-change-transform"
                     title="Cargar y confrontar resolución oficial de sorteo emitida por la Registraduría"
                   >
-                    <Scale className="w-4 h-4 text-cyan-200" />
+                    <Scale className="w-4 h-4 text-cyan-200 group-hover:rotate-12 transition-transform duration-200" />
                     <span>Confrontar Resolución Sorteo</span>
                   </button>
                 </div>
               </div>
 
               {/* KPI Summary Metrics Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="p-4 rounded-2xl border space-y-1 bg-[#020b18]/90 border-cyan-500/30 text-white">
-                  <div className="flex items-center justify-between text-xs font-bold text-slate-400">
+              <div 
+                className="animate-jurados-stagger grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+                style={{ animationDelay: '0.070s' }}
+              >
+                <div className="jurados-kpi-card group cursor-default p-4 rounded-2xl border space-y-1 bg-[#020b18]/90 hover:bg-[#04152d] border-cyan-500/30 hover:border-cyan-400/50 text-white shadow-md hover:shadow-[0_0_20px_rgba(6,182,212,0.15)]">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-400 group-hover:text-cyan-300 transition-colors">
                     <span>Total Candidatos Postulados</span>
-                    <Users className="w-4 h-4 text-cyan-400" />
+                    <Users className="w-4 h-4 text-cyan-400 group-hover:scale-110 group-hover:drop-shadow-[0_0_8px_currentColor] transition-all duration-200" />
                   </div>
                   <div className="text-2xl font-black text-white">{jurados.length}</div>
                   <div className="text-[10px] font-medium text-slate-400">
@@ -4481,10 +4490,10 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                   </div>
                 </div>
 
-                <div className="p-4 rounded-2xl border space-y-1 bg-emerald-950/40 border-emerald-500/40 text-emerald-300">
+                <div className="jurados-kpi-card group cursor-default p-4 rounded-2xl border space-y-1 bg-emerald-950/40 hover:bg-emerald-950/60 border-emerald-500/40 hover:border-emerald-500/70 text-emerald-300 shadow-md hover:shadow-[0_0_20px_rgba(16,185,129,0.18)]">
                   <div className="flex items-center justify-between text-xs font-bold text-emerald-300">
                     <span>Seleccionados en Resolución</span>
-                    <CheckCircle className="w-4 h-4 text-emerald-400" />
+                    <CheckCircle className="w-4 h-4 text-emerald-400 group-hover:scale-110 group-hover:drop-shadow-[0_0_8px_currentColor] transition-all duration-200" />
                   </div>
                   <div className="text-2xl font-black text-emerald-400">
                     {jurados.filter(j => j.estadoSorteo.includes('Seleccionado')).length}
@@ -4494,10 +4503,10 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                   </div>
                 </div>
 
-                <div className="p-4 rounded-2xl border space-y-1 bg-[#020b18]/90 border-slate-700/80 text-slate-200">
-                  <div className="flex items-center justify-between text-xs font-bold text-slate-400">
+                <div className="jurados-kpi-card group cursor-default p-4 rounded-2xl border space-y-1 bg-[#020b18]/90 hover:bg-[#04152d] border-slate-700/80 hover:border-slate-500/60 text-slate-200 shadow-md hover:shadow-[0_0_15px_rgba(148,163,184,0.1)]">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-400 group-hover:text-slate-300 transition-colors">
                     <span>No Seleccionados en Sorteo</span>
-                    <XCircle className="w-4 h-4 text-slate-500" />
+                    <XCircle className="w-4 h-4 text-slate-500 group-hover:text-slate-300 group-hover:scale-110 group-hover:drop-shadow-[0_0_8px_currentColor] transition-all duration-200" />
                   </div>
                   <div className="text-2xl font-black text-slate-300">
                     {jurados.filter(j => j.estadoSorteo === 'No Seleccionado').length}
@@ -4507,10 +4516,10 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                   </div>
                 </div>
 
-                <div className="p-4 rounded-2xl border space-y-1 bg-cyan-950/40 border-cyan-500/40 text-cyan-300">
+                <div className="jurados-kpi-card group cursor-default p-4 rounded-2xl border space-y-1 bg-cyan-950/40 hover:bg-cyan-950/60 border-cyan-500/40 hover:border-cyan-400/70 text-cyan-300 shadow-md hover:shadow-[0_0_20px_rgba(6,182,212,0.18)]">
                   <div className="flex items-center justify-between text-xs font-bold text-cyan-300">
                     <span>Tasa Efectividad en Sorteo</span>
-                    <Award className="w-4 h-4 text-cyan-400" />
+                    <Award className="w-4 h-4 text-cyan-400 group-hover:scale-110 group-hover:drop-shadow-[0_0_8px_currentColor] transition-all duration-200" />
                   </div>
                   <div className="text-2xl font-black text-cyan-400">
                     {jurados.length > 0 
@@ -4802,7 +4811,10 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
               )}
 
               {/* Barra de Filtros y Búsqueda */}
-              <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 pt-1">
+              <div 
+                className="animate-jurados-stagger flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 pt-1"
+                style={{ animationDelay: '0.105s' }}
+              >
                 <div className="flex flex-wrap items-center gap-2 flex-1">
                   {/* Búsqueda */}
                   <div className="relative flex-1 min-w-[200px]">
@@ -4812,7 +4824,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                       placeholder="Buscar por candidato, cédula o puesto..."
                       value={juradoSearchQuery}
                       onChange={(e) => setJuradoSearchQuery(e.target.value)}
-                      className="w-full pl-9 pr-3 py-2 rounded-xl text-xs font-medium focus:outline-none transition-all bg-[#020712] border border-slate-700 text-white placeholder:text-slate-500 focus:border-cyan-400"
+                      className="w-full pl-9 pr-3 py-2 rounded-xl text-xs font-medium focus:outline-none transition-all duration-150 bg-[#020712] border border-slate-700 text-white placeholder:text-slate-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/25"
                     />
                   </div>
 
@@ -4820,7 +4832,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                   <select
                     value={juradoPartidoFilter}
                     onChange={(e) => setJuradoPartidoFilter(e.target.value)}
-                    className="p-2 min-w-[160px] rounded-xl text-xs font-bold focus:outline-none transition-all bg-[#020712] border border-slate-700 text-slate-200 focus:border-cyan-400"
+                    className="p-2 min-w-[160px] rounded-xl text-xs font-bold focus:outline-none transition-all duration-150 cursor-pointer bg-[#020712] border border-slate-700 text-slate-200 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/25"
                   >
                     <option value="Todos">Todos los Partidos</option>
                     {partidosPoliticosOpt.map((p, idx) => (
@@ -4832,7 +4844,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                   <select
                     value={juradoSorteoFilter}
                     onChange={(e) => setJuradoSorteoFilter(e.target.value)}
-                    className="p-2 min-w-[200px] rounded-xl text-xs font-bold focus:outline-none transition-all bg-[#020712] border border-slate-700 text-slate-200 focus:border-cyan-400"
+                    className="p-2 min-w-[200px] rounded-xl text-xs font-bold focus:outline-none transition-all duration-150 cursor-pointer bg-[#020712] border border-slate-700 text-slate-200 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/25"
                   >
                     <option value="Todos">Todos los Estados de Sorteo</option>
                     <option value="Seleccionado en Resolución">Seleccionados en Resolución ✅</option>
@@ -4841,8 +4853,8 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                   </select>
                 </div>
 
-                <div className="text-xs font-semibold self-center text-slate-400">
-                  Mostrando: <strong className="text-white font-extrabold">{
+                <div className="text-xs font-semibold self-center text-slate-400 transition-colors duration-200">
+                  Mostrando: <strong className="text-cyan-300 font-mono font-bold">{
                     jurados.filter(j => {
                       if (juradoPartidoFilter !== 'Todos' && j.partido !== juradoPartidoFilter) return false;
                       if (juradoSorteoFilter !== 'Todos' && j.estadoSorteo !== juradoSorteoFilter) return false;
@@ -4857,7 +4869,10 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
               </div>
 
               {/* Tabla Principal de Postulados y Confrontación */}
-              <div className="table-responsive-container border rounded-2xl shadow-xl border-cyan-500/30 bg-[#020b18]/80">
+              <div 
+                className="animate-jurados-stagger table-responsive-container border rounded-2xl shadow-xl border-cyan-500/30 bg-[#020b18]/80"
+                style={{ animationDelay: '0.140s' }}
+              >
                 <table className="w-full text-left text-xs border-collapse min-w-[700px]">
                   <thead>
                     <tr className="font-bold border-b bg-[#031326] text-slate-300 border-slate-700/80">
@@ -4886,7 +4901,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                           <tr>
                             <td colSpan={7} className="p-8 text-center text-slate-400">
                               <div className="flex flex-col items-center gap-2">
-                                <Vote className="w-7 h-7 text-cyan-400/50" />
+                                <Vote className="empty-jurados-icon w-8 h-8 text-cyan-400" />
                                 <span className="font-bold text-slate-300">
                                   {jurados.length === 0
                                     ? 'No hay candidatos a jurado postulados en la base de datos'
@@ -4903,7 +4918,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                         );
                       }
                       return filteredJurados.map((j) => (
-                        <tr key={j.id} className="transition-colors hover:bg-[#041733]/40">
+                        <tr key={j.id} className="transition-colors hover:bg-[#041733]/50">
                           <td className="p-3.5">
                             <div className="font-bold text-white">{j.nombre}</div>
                             <div className="text-[10px] font-mono font-bold text-cyan-400">CC: {j.cc}</div>
