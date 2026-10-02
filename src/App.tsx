@@ -24,7 +24,7 @@ import { RedSunBeeCampaignLanding } from './components/RedSunBeeCampaignLanding'
 import { ModuleSelectPage } from './components/ModuleSelectPage';
 
 const Sidebar = lazy(() => import('./components/Sidebar').then(module => ({ default: module.Sidebar })));
-const BottomNavBar = lazy(() => import('./components/BottomNavBar').then(module => ({ default: module.BottomNavBar })));
+const BottomNavBar = lazy(() => import('./components/BottomNavBar').then(module => ({ default: module.BottomNavBar || module.default })));
 const Modals = lazy(() => import('./components/common/Modals').then(module => ({ default: module.Modals })));
 
 // Heavy private modules are downloaded only on demand when opened
