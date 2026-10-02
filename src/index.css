@@ -1434,8 +1434,8 @@ button:not(:disabled),
 }
 
 /* --------------------------------------------------------------------------
-   D. VIEW & TAB TRANSITIONS
-   Zero Cumulative Layout Shift (CLS = 0) fast 0.15s GPU fade-in
+   D. VIEW & TAB TRANSITIONS (FLUID ZERO-CLS TRANSITIONS)
+   Fast, organic GPU entrances for views, tabs, modals and dynamic lists
    -------------------------------------------------------------------------- */
 @keyframes viewFadeIn {
   from {
@@ -1448,13 +1448,73 @@ button:not(:disabled),
   }
 }
 
+@keyframes slideDownEnter {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) translateZ(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) translateZ(0);
+  }
+}
+
+@keyframes slideUpEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px) translateZ(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) translateZ(0);
+  }
+}
+
+@keyframes spinSlow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 .view-transition-enter,
 .tab-content-enter,
-.animate-fade-in {
-  animation: viewFadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+.animate-fade-in,
+.animate-fadeIn,
+.animate-in {
+  animation: viewFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
   will-change: transform, opacity;
   transform: translateZ(0);
   backface-visibility: hidden;
+}
+
+.animate-slideDown {
+  animation: slideDownEnter 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.animate-slide-up {
+  animation: slideUpEnter 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.animate-spin-slow {
+  animation: spinSlow 12s linear infinite !important;
+  will-change: transform;
+}
+
+/* Fluid Table & List Row Microinteractions */
+table tbody tr {
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+/* Smooth input focus states */
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
 /* --------------------------------------------------------------------------
