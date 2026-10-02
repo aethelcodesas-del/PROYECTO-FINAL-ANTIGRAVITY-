@@ -9,6 +9,7 @@ import { ChecklistCNEModal } from '../campana/ChecklistCNEModal';
 import { ExpedienteImprimibleModal } from '../campana/ExpedienteImprimibleModal';
 import { supabase } from '../../lib/supabase';
 import { isExpectedEmptyCampaignState } from '../../lib/campaignSetupState';
+import { confirmModal, showToast as showGlobalToast } from '../common/ConfirmModal';
 import { 
   Building2, 
   MapPin, 
@@ -414,7 +415,7 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
       if (current.length > 1) {
         updateDossier({ partidosCoalicion: current.filter(p => p !== party) });
       } else {
-        alert('Una coalición requiere al menos 1 partido registrado.');
+        showGlobalToast('Una coalición requiere al menos 1 partido registrado.', 'warning');
       }
     } else {
       updateDossier({ partidosCoalicion: [...current, party] });
@@ -447,8 +448,15 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
     showToast(`Nueva Lista Creada: ${generatedName}`);
   };
 
-  const handleDeleteAliada = (id: string, nombre: string) => {
-    if (confirm(`¿Está seguro de eliminar la lista "${nombre}" y todos sus candidatos inscritos?`)) {
+  const handleDeleteAliada = async (id: string, nombre: string) => {
+    const confirmed = await confirmModal({
+      title: 'Eliminar lista aliada',
+      message: `¿Está seguro de eliminar la lista "${nombre}" y todos sus candidatos inscritos? Esta acción no se puede deshacer.`,
+      confirmText: 'Sí, eliminar lista',
+      cancelText: 'Cancelar',
+      variant: 'danger'
+    });
+    if (confirmed) {
       const updated = (activeDossier.campanasAliadas || []).filter(c => c.id !== id);
       updateDossier({ campanasAliadas: updated });
       if (selectedAliadaId === id) {
@@ -512,7 +520,7 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
     e.preventDefault();
     if (!selectedAliadaId) return;
     if (!candNombre.trim() || !candCedula.trim()) {
-      alert('Por favor complete al menos el Nombre y la Cédula del candidato.');
+      showGlobalToast('Por favor complete al menos el Nombre y la Cédula del candidato.', 'warning');
       return;
     }
 
@@ -600,7 +608,7 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
   // Section 2 Candidate Photo & Form Validation Handlers
   const handlePhotoFile = (file: File) => {
     if (!file || !file.type.startsWith('image/')) {
-      alert('Por favor suba un archivo de imagen válido (JPG, PNG o WEBP).');
+      showGlobalToast('Por favor suba un archivo de imagen válido (JPG, PNG o WEBP).', 'warning');
       return;
     }
     const reader = new FileReader();
@@ -807,18 +815,24 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
       {/* ========================================================================= */}
       {/* HEADER BANNER - CANDIDATO PRINCIPAL */}
       {/* ========================================================================= */}
-      <div className="bg-[#040e21] rounded-2xl p-5 shadow-xl border border-cyan-500/20 space-y-4">
+      {/* ========================================================================= */}
+      {/* HEADER BANNER - CANDIDATO PRINCIPAL */}
+      {/* ========================================================================= */}
+      <div 
+        className="animate-campaign-stagger bg-[#040e21] rounded-2xl p-5 shadow-xl border border-cyan-500/20 space-y-4"
+        style={{ animationDelay: '0s' }}
+      >
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-3 min-w-0 flex-1">
-            <div className="p-2.5 bg-emerald-500/10 rounded-xl border border-emerald-500/30 text-emerald-400 shrink-0">
-              <Building2 className="w-5 h-5" />
+            <div className="p-2.5 bg-emerald-500/10 rounded-xl border border-emerald-500/30 text-emerald-400 shrink-0 hover:scale-105 transition-transform duration-200">
+              <Building2 className="w-5 h-5 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-lg sm:text-xl font-black text-white tracking-tight">
                   Gestión & Expediente de Campaña Oficial
                 </h2>
-                <span className="px-2 py-0.5 bg-cyan-500/15 border border-cyan-400/30 rounded-md text-[10px] font-bold text-cyan-300 shrink-0">
+                <span className="px-2 py-0.5 bg-cyan-500/15 border border-cyan-400/30 rounded-md text-[10px] font-bold text-cyan-300 shrink-0 shadow-[0_0_10px_rgba(6,182,212,0.15)]">
                   CNE Colombia • Registraduría
                 </span>
               </div>
@@ -830,7 +844,7 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
             <button
               type="button"
               onClick={() => setShowChecklistModal(true)}
-              className="px-3 py-2 bg-[#051833] hover:bg-[#09254d] text-emerald-400 text-xs font-bold rounded-xl border border-emerald-500/40 flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+              className="px-3 py-2 bg-[#051833] hover:bg-slate-800/60 hover:-translate-y-0.5 text-emerald-400 hover:text-emerald-300 text-xs font-bold rounded-xl border border-emerald-500/40 hover:border-cyan-500/40 active:scale-[0.97] flex items-center gap-1.5 transition-all duration-150 cursor-pointer shadow-sm"
               title="Auditoría de requisitos legales CNE"
             >
               <ShieldCheck className="w-4 h-4" />
@@ -840,7 +854,7 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
             <button
               type="button"
               onClick={() => setShowPrintModal(true)}
-              className="px-3 py-2 bg-[#051833] hover:bg-[#09254d] text-cyan-300 text-xs font-bold rounded-xl border border-cyan-500/40 flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+              className="px-3 py-2 bg-[#051833] hover:bg-slate-800/60 hover:-translate-y-0.5 text-cyan-300 hover:text-cyan-200 text-xs font-bold rounded-xl border border-cyan-500/40 hover:border-cyan-400/60 active:scale-[0.97] flex items-center gap-1.5 transition-all duration-150 cursor-pointer shadow-sm"
               title="Generar informe ejecutivo del expediente oficial en PDF"
             >
               <Printer className="w-4 h-4 text-emerald-400" />
@@ -851,7 +865,7 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
               type="button"
               onClick={() => void handleSaveFullDossier()}
               disabled={campaignLoading || campaignSaving || !activeCampaignId}
-              className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0"
+              className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 hover:brightness-110 hover:-translate-y-0.5 active:scale-[0.96] text-slate-950 font-black text-xs rounded-xl shadow-[0_0_15px_rgba(16,185,129,0.25)] hover:shadow-[0_0_22px_rgba(16,185,129,0.45)] transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer shrink-0 will-change-transform"
             >
               <Save className="w-4 h-4" />
               <span>{campaignSaving ? 'Sincronizando...' : 'Guardar Expediente'}</span>
@@ -861,28 +875,41 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
 
         {/* Only show campaign data after a real campaign has been loaded. */}
         {activeCampaignId && !campaignLoading && (
-        <div className="bg-[#020712] p-3 rounded-xl border border-slate-800/80 grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+        <div 
+          className="animate-campaign-stagger bg-[#020712] p-3 rounded-xl border border-slate-800/80 grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs"
+          style={{ animationDelay: '0.035s' }}
+        >
           <div className="space-y-0.5">
             <span className="text-slate-500 block text-[10px] font-bold uppercase tracking-wider">Elección & Territorio</span>
-            <span className="font-extrabold text-amber-300 block truncate" title={`${activeDossier.tipoProcesoEleccion} - ${activeDossier.corporacion} (${entidadTerritorialTexto})`}>
+            <span 
+              className="font-extrabold text-amber-300 block truncate hover:drop-shadow-[0_0_6px_currentColor] transition-all duration-200 cursor-default" 
+              title={`${activeDossier.tipoProcesoEleccion} - ${activeDossier.corporacion} (${entidadTerritorialTexto})`}
+            >
               {activeDossier.corporacion} • {entidadTerritorialTexto}
             </span>
           </div>
           <div className="space-y-0.5">
             <span className="text-slate-500 block text-[10px] font-bold uppercase tracking-wider">Candidato Oficial</span>
-            <span className="font-extrabold text-white block truncate" title={activeDossier.nombreCandidato}>
+            <span 
+              className="font-extrabold text-white block truncate hover:drop-shadow-[0_0_6px_currentColor] transition-all duration-200 cursor-default" 
+              title={activeDossier.nombreCandidato}
+            >
               {activeDossier.nombreCandidato || 'Por definir'}
             </span>
           </div>
           <div className="space-y-0.5">
             <span className="text-slate-500 block text-[10px] font-bold uppercase tracking-wider">Respaldo Político</span>
-            <span className="font-extrabold text-emerald-400 block truncate">
+            <span 
+              className="font-extrabold text-emerald-400 block truncate hover:drop-shadow-[0_0_6px_currentColor] transition-all duration-200 cursor-default"
+            >
               {activeDossier.modalidadAval === 'Partido' ? activeDossier.partidoUnico : activeDossier.modalidadAval === 'Firmas' ? activeDossier.nombreGrupoFirmas : activeDossier.nombreCoalicion}
             </span>
           </div>
           <div className="space-y-0.5">
             <span className="text-slate-500 block text-[10px] font-bold uppercase tracking-wider">Tope Legal CNE (Campaña Actual)</span>
-            <span className="font-extrabold text-cyan-300 block font-mono">
+            <span 
+              className="font-extrabold text-cyan-300 block font-mono hover:drop-shadow-[0_0_6px_currentColor] transition-all duration-200 cursor-default"
+            >
               {campaignBudgetLimit && campaignBudgetLimit > 0
                 ? `$${campaignBudgetLimit.toLocaleString('es-CO')} COP`
                 : 'Pendiente de configuración'}
@@ -892,7 +919,10 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
         )}
 
         {/* Section Navigation Tabs */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-t border-cyan-500/15 pt-3 text-xs no-scrollbar scrollbar-none scroll-smooth">
+        <div 
+          className="animate-campaign-stagger flex items-center gap-1.5 overflow-x-auto pb-1 border-t border-cyan-500/15 pt-3 text-xs no-scrollbar scrollbar-none scroll-smooth"
+          style={{ animationDelay: '0.070s' }}
+        >
           {[
             { id: 'territorio', label: '1. Territorio & Elección', icon: MapPin },
             { id: 'candidato', label: '2. Candidato', icon: User },
@@ -915,13 +945,13 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
                     block: 'nearest'
                   });
                 }}
-                className={`px-3 py-2 rounded-xl font-bold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
+                className={`group px-3 py-2 rounded-xl font-bold whitespace-nowrap transition-all duration-200 flex items-center gap-1.5 cursor-pointer shrink-0 active:scale-[0.98] ${
                   isCurrent
-                    ? 'bg-[#092244] text-emerald-300 border border-emerald-400 shadow-sm'
-                    : 'bg-[#030d1f] text-slate-400 hover:text-white hover:bg-[#051833] border border-cyan-500/20'
+                    ? 'bg-[#092244] text-emerald-300 border border-emerald-400 shadow-[0_0_15px_rgba(6,182,212,0.25)]'
+                    : 'bg-[#030d1f] text-slate-400 hover:text-white hover:bg-slate-800/50 border border-cyan-500/20'
                 }`}
               >
-                <Icon className={`w-3.5 h-3.5 ${isCurrent ? 'text-emerald-400' : 'text-slate-400'}`} />
+                <Icon className={`w-3.5 h-3.5 transition-colors duration-200 ${isCurrent ? 'text-emerald-400' : 'text-slate-400 group-hover:text-emerald-300'}`} />
                 <span>{tab.label}</span>
               </button>
             );
@@ -958,7 +988,10 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
 
         {/* SECTION 1: ELECCIÓN, CORPORACIÓN Y TERRITORIO */}
         {activeTab === 'territorio' && (
-          <div className="bg-[#041733]/90 rounded-2xl p-6 border border-cyan-500/30 shadow-xl space-y-5 animate-fadeIn">
+          <div 
+            className="animate-campaign-stagger bg-[#041733]/90 rounded-2xl p-6 border border-cyan-500/30 shadow-xl space-y-5 animate-fadeIn"
+            style={{ animationDelay: '0.105s' }}
+          >
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-cyan-500/20 pb-4">
               <div>
                 <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 rounded-md text-[10px] font-extrabold uppercase mb-1">
@@ -973,7 +1006,7 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
               <button
                 type="button"
                 onClick={() => void handleSaveSection1()}
-                className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold rounded-xl shadow-lg transition-all flex items-center gap-2 cursor-pointer shrink-0 self-start sm:self-auto"
+                className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 hover:brightness-110 hover:-translate-y-0.5 active:scale-[0.96] text-slate-950 text-xs font-bold rounded-xl shadow-[0_0_15px_rgba(16,185,129,0.25)] hover:shadow-[0_0_22px_rgba(16,185,129,0.45)] transition-all duration-200 flex items-center gap-2 cursor-pointer shrink-0 self-start sm:self-auto will-change-transform"
               >
                 <Save className="w-3.5 h-3.5" />
                 <span>Guardar Sección 1</span>
@@ -991,10 +1024,10 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
               
               {/* 1.1 Tipo de Elección */}
-              <div className="p-3.5 bg-[#030d1f] rounded-xl border border-cyan-500/20 space-y-2">
+              <div className="campaign-field-card p-3.5 bg-[#030d1f] rounded-xl border border-cyan-500/20 hover:border-cyan-500/40 space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="block font-extrabold text-cyan-200">Tipo de Elección *</label>
-                  <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded border uppercase tracking-wider ${
+                  <span className={`text-[9px] font-extrabold px-2 py-0.5 rounded border uppercase tracking-wider transition-all duration-200 shadow-[0_0_8px_rgba(16,185,129,0.2)] ${
                     activeDossier.tipoProcesoEleccion === 'Atípica'
                       ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
                       : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
@@ -1006,10 +1039,10 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
                   <button
                     type="button"
                     onClick={() => updateDossier({ tipoProcesoEleccion: 'Ordinaria' })}
-                    className={`py-2 px-3 rounded-xl border font-bold text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                    className={`py-2 px-3 rounded-xl border font-bold text-center transition-all duration-200 active:scale-[0.98] cursor-pointer flex items-center justify-center gap-1.5 ${
                       activeDossier.tipoProcesoEleccion === 'Ordinaria'
-                        ? 'bg-[#092244] text-white border-emerald-400 shadow-md ring-1 ring-emerald-400/40'
-                        : 'bg-[#051833] text-slate-300 border-cyan-500/30 hover:bg-cyan-500/20'
+                        ? 'bg-[#092244] text-white border-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.25)] ring-1 ring-emerald-400/40'
+                        : 'bg-[#051833] text-slate-300 border-cyan-500/30 hover:bg-cyan-500/20 hover:border-cyan-400/50'
                     }`}
                   >
                     <span>🏛️ Ordinaria</span>
@@ -1017,10 +1050,10 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
                   <button
                     type="button"
                     onClick={() => updateDossier({ tipoProcesoEleccion: 'Atípica' })}
-                    className={`py-2 px-3 rounded-xl border font-bold text-center transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                    className={`py-2 px-3 rounded-xl border font-bold text-center transition-all duration-200 active:scale-[0.98] cursor-pointer flex items-center justify-center gap-1.5 ${
                       activeDossier.tipoProcesoEleccion === 'Atípica'
-                        ? 'bg-[#291705] text-amber-300 border-amber-400 shadow-md ring-1 ring-amber-400/40'
-                        : 'bg-[#051833] text-slate-300 border-cyan-500/30 hover:bg-cyan-500/20'
+                        ? 'bg-[#291705] text-amber-300 border-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.25)] ring-1 ring-amber-400/40'
+                        : 'bg-[#051833] text-slate-300 border-cyan-500/30 hover:bg-cyan-500/20 hover:border-cyan-400/50'
                     }`}
                   >
                     <span>⚡ Atípica</span>
@@ -1034,7 +1067,7 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
               </div>
 
               {/* 1.2 Fecha Elección */}
-              <div className="min-w-0 overflow-hidden p-3.5 bg-[#030d1f] rounded-xl border border-cyan-500/20 space-y-1.5">
+              <div className="campaign-field-card min-w-0 overflow-hidden p-3.5 bg-[#030d1f] rounded-xl border border-cyan-500/20 hover:border-cyan-500/40 space-y-1.5">
                 <label className="block font-extrabold text-cyan-200">Fecha de las Elecciones (Día E) *</label>
                 <div className="relative min-w-0 overflow-hidden pt-1">
                   <Calendar className="w-4 h-4 text-emerald-400 absolute left-3 top-3.5" />
@@ -1043,14 +1076,14 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
                     required
                     value={activeDossier.fechaEleccion}
                     onChange={(e) => updateDossier({ fechaEleccion: e.target.value })}
-                    className="block w-full min-w-0 max-w-full box-border bg-[#051833] border border-cyan-500/30 rounded-xl pl-9 pr-3 py-2 text-white font-bold font-mono focus:outline-none focus:border-emerald-400"
+                    className="block w-full min-w-0 max-w-full box-border bg-[#051833] border border-cyan-500/30 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/25 rounded-xl pl-9 pr-3 py-2 text-white font-bold font-mono transition-all outline-none"
                   />
                 </div>
                 <p className="text-[10px] text-slate-400">Fecha oficial fijada por la Registraduría / CNE.</p>
               </div>
 
               {/* 1.3 Corporación */}
-              <div className="p-3.5 bg-[#030d1f] rounded-xl border border-cyan-500/20 space-y-1.5">
+              <div className="campaign-field-card p-3.5 bg-[#030d1f] rounded-xl border border-cyan-500/20 hover:border-cyan-500/40 space-y-1.5">
                 <label className="block font-extrabold text-cyan-200">Corporación / Cargo *</label>
                 <select
                   value={activeDossier.corporacion}
@@ -1062,7 +1095,7 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
                       updateDossier({ corporacion: val, circunscripcionTerritorial: 'Municipio' });
                     }
                   }}
-                  className="w-full bg-[#051833] border border-cyan-500/30 rounded-xl px-3 py-2 font-bold text-white focus:outline-none focus:border-emerald-400 mt-1"
+                  className="w-full bg-[#051833] border border-cyan-500/30 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/25 rounded-xl px-3 py-2 font-bold text-white transition-all outline-none mt-1"
                 >
                   <option value="Gobernación">Gobernación Departamental</option>
                   <option value="Asamblea">Asamblea Departamental</option>
@@ -1074,12 +1107,12 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
               </div>
 
               {/* 1.4 Circunscripción Territorial */}
-              <div className="p-3.5 bg-[#030d1f] rounded-xl border border-cyan-500/20 space-y-1.5">
+              <div className="campaign-field-card p-3.5 bg-[#030d1f] rounded-xl border border-cyan-500/20 hover:border-cyan-500/40 space-y-1.5">
                 <label className="block font-extrabold text-cyan-200">Circunscripción Territorial *</label>
                 <select
                   value={activeDossier.circunscripcionTerritorial}
                   onChange={(e) => handleCircunscripcionChange(e.target.value as any)}
-                  className="w-full bg-[#051833] border border-cyan-500/30 rounded-xl px-3 py-2 font-bold text-white focus:outline-none focus:border-emerald-400 mt-1"
+                  className="w-full bg-[#051833] border border-cyan-500/30 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/25 rounded-xl px-3 py-2 font-bold text-white transition-all outline-none mt-1"
                 >
                   <option value="Municipio">Municipio / Distrito</option>
                   <option value="Departamento">Departamento</option>
@@ -1088,10 +1121,10 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
               </div>
 
               {/* 1.5 Entidad Territorial Dynamic Cascade */}
-              <div className="p-3.5 bg-[#030d1f] rounded-xl border border-cyan-500/30 space-y-1.5 md:col-span-2 lg:col-span-2">
+              <div className="campaign-field-card p-3.5 bg-[#030d1f] rounded-xl border border-cyan-500/30 hover:border-cyan-500/50 space-y-1.5 md:col-span-2 lg:col-span-2">
                 <label className="block font-extrabold text-cyan-200 flex items-center justify-between">
                   <span>Entidad Territorial (Base Completa Oficial de Colombia) *</span>
-                  <span className="text-[10px] font-bold text-emerald-300 bg-emerald-500/20 border border-emerald-500/40 px-2 py-0.5 rounded">
+                  <span className="text-[10px] font-bold text-emerald-300 bg-emerald-500/20 border border-emerald-500/40 px-2 py-0.5 rounded shadow-[0_0_8px_rgba(16,185,129,0.35)]">
                     Circunscripción: {activeDossier.circunscripcionTerritorial}
                   </span>
                 </label>
@@ -1104,7 +1137,7 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
                       <select
                         value={activeDossier.departamento}
                         onChange={(e) => handleDepartmentChange(e.target.value)}
-                        className="w-full bg-[#051833] border border-cyan-500/30 rounded-xl pl-9 pr-3 py-2 font-bold text-white focus:outline-none focus:border-emerald-400"
+                        className="w-full bg-[#051833] border border-cyan-500/30 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/25 rounded-xl pl-9 pr-3 py-2 font-bold text-white transition-all outline-none"
                       >
                         {Object.keys(colombiaTerritorialData).sort().map(dep => (
                           <option key={dep} value={dep}>{dep}</option>
@@ -1124,7 +1157,7 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
                       <select
                         value={activeDossier.departamento}
                         onChange={(e) => handleDepartmentChange(e.target.value)}
-                        className="w-full bg-[#051833] border border-cyan-500/30 rounded-xl px-3 py-2 font-bold text-white focus:outline-none focus:border-emerald-400"
+                        className="w-full bg-[#051833] border border-cyan-500/30 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/25 rounded-xl px-3 py-2 font-bold text-white transition-all outline-none"
                       >
                         {Object.keys(colombiaTerritorialData).sort().map(dep => (
                           <option key={dep} value={dep}>{dep}</option>
@@ -1139,7 +1172,7 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
                       <select
                         value={activeDossier.municipio}
                         onChange={(e) => updateDossier({ municipio: e.target.value })}
-                        className="w-full bg-[#051833] border border-cyan-500/30 rounded-xl px-3 py-2 font-bold text-white focus:outline-none focus:border-emerald-400"
+                        className="w-full bg-[#051833] border border-cyan-500/30 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/25 rounded-xl px-3 py-2 font-bold text-white transition-all outline-none"
                       >
                         {(colombiaTerritorialData[activeDossier.departamento] || []).map(mun => (
                           <option key={mun} value={mun}>{mun}</option>
@@ -1151,12 +1184,12 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
               </div>
 
               {/* 1.6 Modalidad Candidatura */}
-              <div className="p-3.5 bg-[#030d1f] rounded-xl border border-cyan-500/20 space-y-1.5">
+              <div className="campaign-field-card p-3.5 bg-[#030d1f] rounded-xl border border-cyan-500/20 hover:border-cyan-500/40 space-y-1.5">
                 <label className="block font-extrabold text-cyan-200">Modalidad de Candidatura *</label>
                 <select
                   value={activeDossier.modalidadCandidatura}
                   onChange={(e) => updateDossier({ modalidadCandidatura: e.target.value as any })}
-                  className="w-full bg-[#051833] border border-cyan-500/30 rounded-xl px-3 py-2 font-bold text-white focus:outline-none focus:border-emerald-400 mt-1"
+                  className="w-full bg-[#051833] border border-cyan-500/30 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/25 rounded-xl px-3 py-2 font-bold text-white transition-all outline-none mt-1"
                 >
                   <option value="Uninominal">Uninominal (Candidato Único a Alcaldía/Gobernación)</option>
                   <option value="Lista Abierta">Lista Abierta (Voto Preferente)</option>
@@ -1165,14 +1198,14 @@ export const GestionConfiguracionCampana: React.FC<GestionConfiguracionCampanaPr
               </div>
 
               {/* 1.7 Posición en Tarjetón */}
-              <div className="p-3.5 bg-[#030d1f] rounded-xl border border-cyan-500/20 space-y-1.5">
+              <div className="campaign-field-card p-3.5 bg-[#030d1f] rounded-xl border border-cyan-500/20 hover:border-cyan-500/40 space-y-1.5">
                 <label className="block font-extrabold text-cyan-200">Número / Posición en Tarjetón</label>
                 <input
                   type="text"
                   value={activeDossier.posicionTarjeton}
                   onChange={(e) => updateDossier({ posicionTarjeton: e.target.value })}
                   placeholder="Ej. 01 / Casilla Principal"
-                  className="w-full bg-[#051833] border border-cyan-500/30 rounded-xl px-3 py-2 font-bold text-white focus:outline-none focus:border-emerald-400 mt-1"
+                  className="w-full bg-[#051833] border border-cyan-500/30 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/25 rounded-xl px-3 py-2 font-bold text-white transition-all outline-none mt-1 font-mono"
                 />
               </div>
 
