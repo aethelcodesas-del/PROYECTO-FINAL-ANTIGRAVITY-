@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { GlobalAdminRole, GlobalAdminPermission } from '../../../types/globalAdmin';
 import { GlobalAdminService } from '../../../services/globalAdminService';
+import { confirmModal, showToast } from '../../common/ConfirmModal';
 import {
   Shield,
   ShieldCheck,
@@ -86,18 +87,28 @@ export const GlobalAdminRoles: React.FC = () => {
   const handleDeleteRole = async (role: GlobalAdminRole) => {
     if (role.isSystem) {
       setError('Los roles de sistema protegidos no pueden ser eliminados.');
+      showToast('Los roles de sistema protegidos no pueden ser eliminados.', 'error');
       return;
     }
-    if (!window.confirm(`¿Estás seguro de eliminar el rol "${role.name}"?`)) return;
-
-    try {
-      await GlobalAdminService.deleteRole(role.id);
-      setSuccessMsg(`Rol ${role.name} eliminado.`);
-      fetchData();
-      setTimeout(() => setSuccessMsg(null), 4000);
-    } catch (err: any) {
-      setError(err.message || 'Error al eliminar rol');
-    }
+    await confirmModal({
+      title: 'Eliminar rol del sistema',
+      message: `¿Estás seguro de eliminar el rol "${role.name}"? Esta acción no se puede deshacer.`,
+      confirmText: 'Sí, eliminar rol',
+      cancelText: 'Cancelar',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await GlobalAdminService.deleteRole(role.id);
+          setSuccessMsg(`Rol ${role.name} eliminado.`);
+          showToast(`Rol ${role.name} eliminado.`, 'success');
+          fetchData();
+          setTimeout(() => setSuccessMsg(null), 4000);
+        } catch (err: any) {
+          setError(err.message || 'Error al eliminar rol');
+          showToast(err.message || 'Error al eliminar rol', 'error');
+        }
+      }
+    });
   };
 
   const togglePermissionInForm = (code: string) => {

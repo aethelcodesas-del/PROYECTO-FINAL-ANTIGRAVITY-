@@ -372,6 +372,7 @@ const STORAGE_CUSTOM_PUESTOS_KEY = 'elecciones_custom_puestos_territorio_v2';
  * Obtener puestos personalizados guardados por el usuario
  */
 export function getCustomPuestosStored(): PuestoVotacionInfo[] {
+  if (typeof localStorage === 'undefined') return [];
   try {
     const raw = localStorage.getItem(STORAGE_CUSTOM_PUESTOS_KEY);
     if (raw) {

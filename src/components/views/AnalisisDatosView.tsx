@@ -457,7 +457,7 @@ export const AnalisisDatosView: React.FC<{
 
   const handleAddRecommendation = async () => {
     if (!newRec.title.trim() || !newRec.description.trim()) {
-      alert('Por favor complete los campos obligatorios.');
+      showToast('Por favor complete los campos obligatorios.');
       return;
     }
     const createdItem: AIRecommendation = {

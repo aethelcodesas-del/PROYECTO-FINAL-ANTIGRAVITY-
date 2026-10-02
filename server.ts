@@ -210,6 +210,7 @@ function saveDb(data: DatabaseSchema): void {
 }
 
 const app = express();
+app.set('trust proxy', true);
 const verifierUrl = (process.env.VITE_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').replace(/\/rest\/v1\/?$/, '');
 const verifierKey = String(
   process.env.VITE_SUPABASE_ANON_KEY ||
@@ -559,6 +560,7 @@ async function startAppServer(shouldListen = true) {
         display_name: String(displayName).trim(),
         role: normalizedRole,
         status: 'ACTIVE',
+        is_active: true,
         allowed_modules: Array.isArray(allowedModules) ? allowedModules : [],
         updated_at: new Date().toISOString()
       }, { onConflict: 'id' });
@@ -634,7 +636,7 @@ async function startAppServer(shouldListen = true) {
       const requesterUser = requesterData.user;
       if (!requesterUser) return res.status(401).json({ error: 'Sesión expirada.' });
 
-      const { data: requesterProfile } = await supabaseAdmin.from('profiles').select('id,role,status,client_id,campaign_id,display_name,email').eq('id', requesterUser.id).maybeSingle();
+      const { data: requesterProfile } = await supabaseAdmin.from('profiles').select('id,role,status,is_active,client_id,campaign_id,display_name,email').eq('id', requesterUser.id).maybeSingle();
       let clientId = requesterProfile?.client_id || requesterUser.user_metadata?.client_id || null;
       let campaignId = requesterProfile?.campaign_id || requesterUser.user_metadata?.campaign_id || null;
 
@@ -649,7 +651,7 @@ async function startAppServer(shouldListen = true) {
         clientId = activeCampaign.client_id || null;
       }
 
-      const { data: rawProfiles } = await supabaseAdmin.from('profiles').select('id,email,display_name,role,status,allowed_modules,client_id,campaign_id,created_at').order('created_at', { ascending: true });
+      const { data: rawProfiles } = await supabaseAdmin.from('profiles').select('id,email,display_name,role,status,is_active,allowed_modules,client_id,campaign_id,created_at').order('created_at', { ascending: true });
       const matchIds = new Set<string>();
       if (campaignId) matchIds.add(campaignId);
       if (clientId) matchIds.add(clientId);
@@ -763,9 +765,17 @@ async function startAppServer(shouldListen = true) {
         }
       }
 
-      const { status, role, allowedModules, displayName } = req.body || {};
+      const { status, is_active, role, allowedModules, displayName } = req.body || {};
       const updates: any = { updated_at: new Date().toISOString() };
-      if (status) updates.status = ['ACTIVE', 'ACTIVO'].includes(String(status).toUpperCase()) ? 'ACTIVE' : 'SUSPENDED';
+      if (status !== undefined) {
+        const isAct = ['ACTIVE', 'ACTIVO'].includes(String(status).toUpperCase());
+        updates.status = isAct ? 'ACTIVE' : 'SUSPENDED';
+        updates.is_active = isAct;
+      }
+      if (typeof is_active === 'boolean') {
+        updates.is_active = is_active;
+        updates.status = is_active ? 'ACTIVE' : 'SUSPENDED';
+      }
       if (role) updates.role = String(role).toUpperCase();
       if (Array.isArray(allowedModules)) updates.allowed_modules = allowedModules;
       if (displayName) updates.display_name = String(displayName).trim();
@@ -941,7 +951,23 @@ async function startAppServer(shouldListen = true) {
       if (!requesterUser) return res.status(401).json({ error: 'Sesión expirada.' });
 
       const { table, data } = req.body || {};
-      const ALLOWED = ['voters', 'leaders', 'budget_items'];
+      const ALLOWED = [
+        'voters',
+        'leaders',
+        'budget_items',
+        'witnesses',
+        'jurors',
+        'surveys',
+        'survey_studies',
+        'survey_pollsters',
+        'survey_responses',
+        'polling_stations',
+        'campaigns',
+        'campaign_activities',
+        'swot_matrices',
+        'strategic_proposals',
+        'strategic_actors'
+      ];
       if (!ALLOWED.includes(table)) {
         return res.status(400).json({ error: 'Tabla no válida.' });
       }
@@ -949,25 +975,23 @@ async function startAppServer(shouldListen = true) {
         return res.status(400).json({ error: 'Datos no válidos.' });
       }
 
-      if (table === 'budget_items' || table === 'voters' || table === 'leaders') {
-        const sanitizeClient = async (item: any) => {
-          if (!item || typeof item !== 'object') return item;
-          if (item.client_id) {
-            const { data: clientExists } = await supabaseAdmin.from('clients').select('id').eq('id', item.client_id).maybeSingle();
-            if (!clientExists) {
-              item.client_id = null;
-            }
+      const sanitizeClient = async (item: any) => {
+        if (!item || typeof item !== 'object') return item;
+        if (item.client_id) {
+          const { data: clientExists } = await supabaseAdmin.from('clients').select('id').eq('id', item.client_id).maybeSingle();
+          if (!clientExists) {
+            item.client_id = null;
           }
-          return item;
-        };
-
-        if (Array.isArray(data)) {
-          for (const item of data) {
-            await sanitizeClient(item);
-          }
-        } else {
-          await sanitizeClient(data);
         }
+        return item;
+      };
+
+      if (Array.isArray(data)) {
+        for (const item of data) {
+          await sanitizeClient(item);
+        }
+      } else {
+        await sanitizeClient(data);
       }
 
       let { data: inserted, error } = await supabaseAdmin.from(table).insert(data).select();
@@ -999,17 +1023,31 @@ async function startAppServer(shouldListen = true) {
       if (!accessToken) return res.status(401).json({ error: 'Sesión requerida.' });
 
       const { table, id, data } = req.body || {};
-      const ALLOWED = ['voters', 'leaders', 'budget_items'];
+      const ALLOWED = [
+        'voters',
+        'leaders',
+        'budget_items',
+        'witnesses',
+        'jurors',
+        'surveys',
+        'survey_studies',
+        'survey_pollsters',
+        'survey_responses',
+        'polling_stations',
+        'campaigns',
+        'campaign_activities',
+        'swot_matrices',
+        'strategic_proposals',
+        'strategic_actors'
+      ];
       if (!ALLOWED.includes(table) || !id) {
         return res.status(400).json({ error: 'Parámetros no válidos.' });
       }
 
-      if (table === 'budget_items' || table === 'voters' || table === 'leaders') {
-        if (data && typeof data === 'object' && data.client_id) {
-          const { data: clientExists } = await supabaseAdmin.from('clients').select('id').eq('id', data.client_id).maybeSingle();
-          if (!clientExists) {
-            data.client_id = null;
-          }
+      if (data && typeof data === 'object' && data.client_id) {
+        const { data: clientExists } = await supabaseAdmin.from('clients').select('id').eq('id', data.client_id).maybeSingle();
+        if (!clientExists) {
+          data.client_id = null;
         }
       }
 
@@ -1038,7 +1076,22 @@ async function startAppServer(shouldListen = true) {
       if (!accessToken) return res.status(401).json({ error: 'Sesión requerida.' });
 
       const { table, id, ids, campaign_id } = req.body || {};
-      const ALLOWED = ['voters', 'leaders', 'budget_items'];
+      const ALLOWED = [
+        'voters',
+        'leaders',
+        'budget_items',
+        'witnesses',
+        'jurors',
+        'surveys',
+        'survey_studies',
+        'survey_pollsters',
+        'survey_responses',
+        'polling_stations',
+        'campaign_activities',
+        'swot_matrices',
+        'strategic_proposals',
+        'strategic_actors'
+      ];
       if (!ALLOWED.includes(table)) {
         return res.status(400).json({ error: 'Parámetros no válidos.' });
       }
@@ -2030,13 +2083,17 @@ async function startAppServer(shouldListen = true) {
   });
 
   // Serve static files in production or Vite middleware in development
-  if (process.env.NODE_ENV === 'development') {
+  if (process.env.NODE_ENV !== 'production') {
     // Keep Vite out of the production serverless bundle. It is only required by
     // the local development server.
     const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       configLoader: 'runner',
-      server: { middlewareMode: true },
+      server: {
+        middlewareMode: true,
+        allowedHosts: true,
+        cors: true,
+      },
       appType: 'spa'
     });
     app.use(vite.middlewares);

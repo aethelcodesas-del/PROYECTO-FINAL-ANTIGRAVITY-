@@ -131,21 +131,21 @@ export const GlobalAdminGuard: React.FC<GlobalAdminGuardProps> = ({ onBackToApp 
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#0f172a15_1px,transparent_1px),linear-gradient(to_bottom,#0f172a15_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
 
       {/* Main Security Card */}
-      <div className="w-full max-w-md bg-slate-900/90 border border-slate-800/90 rounded-2xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl relative z-10">
+      <div className="w-full max-w-[min(92vw,440px)] mx-auto bg-slate-900/90 border border-slate-800/90 rounded-2xl p-5 sm:p-8 shadow-2xl backdrop-blur-xl relative z-10 box-border">
         {/* Security Badge Header */}
-        <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-800/70">
+        <div className="flex items-center justify-between mb-5 pb-4 border-b border-slate-800/70">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-cyan-950/70 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shadow-inner">
+            <div className="w-10 h-10 rounded-xl bg-cyan-950/70 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shadow-inner shrink-0">
               <ShieldAlert className="w-5 h-5" />
             </div>
-            <div>
-              <h1 className="text-base font-extrabold tracking-tight text-white flex items-center gap-1.5 font-display">
-                TERMINAL PRIVADO <span className="text-[10px] font-mono bg-cyan-500/20 text-cyan-300 px-1.5 py-0.5 rounded border border-cyan-500/30">L10</span>
+            <div className="min-w-0">
+              <h1 className="text-sm sm:text-base font-extrabold tracking-tight text-white flex items-center gap-1.5 font-display truncate">
+                TERMINAL PRIVADO <span className="text-[10px] font-mono bg-cyan-500/20 text-cyan-300 px-1.5 py-0.5 rounded border border-cyan-500/30 shrink-0">L10</span>
               </h1>
-              <p className="text-xs text-slate-400 font-sans">Acceso Restringido - Master System</p>
+              <p className="text-xs text-slate-400 font-sans truncate">Acceso Restringido - Master System</p>
             </div>
           </div>
-          <div className="flex items-center space-x-1.5">
+          <div className="flex items-center space-x-1.5 shrink-0">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             <span className="text-[11px] font-mono text-emerald-400">TLS 1.3</span>
           </div>
@@ -166,14 +166,14 @@ export const GlobalAdminGuard: React.FC<GlobalAdminGuardProps> = ({ onBackToApp 
         {error && !accessDenied && (
           <div className="mb-5 p-3.5 rounded-xl bg-rose-950/40 border border-rose-500/40 text-rose-300 text-xs font-sans flex items-start gap-2.5">
             <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-            <span>{error}</span>
+            <span className="break-words min-w-0">{error}</span>
           </div>
         )}
 
         {recoveryMessage && (
           <div className="mb-5 flex items-start gap-2.5 rounded-xl border border-emerald-500/40 bg-emerald-950/40 p-3.5 text-xs text-emerald-200">
             <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
-            <span>{recoveryMessage}</span>
+            <span className="break-words min-w-0">{recoveryMessage}</span>
           </div>
         )}
 
@@ -187,13 +187,14 @@ export const GlobalAdminGuard: React.FC<GlobalAdminGuardProps> = ({ onBackToApp 
               <input
                 type="email"
                 required
+                autoComplete="username email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Correo electrónico registrado"
                 spellCheck={false}
                 autoCapitalize="none"
                 style={{ fontFamily: 'Consolas, "Courier New", monospace', letterSpacing: '0.02em' }}
-                className="w-full bg-slate-950/80 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all"
+                className="w-full bg-slate-950/80 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-base sm:text-sm font-medium text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all dark-autofill min-h-[44px]"
               />
             </div>
           </div>
@@ -207,7 +208,7 @@ export const GlobalAdminGuard: React.FC<GlobalAdminGuardProps> = ({ onBackToApp 
                 type="button"
                 onClick={handlePasswordRecovery}
                 disabled={submitting}
-                className="text-[11px] font-semibold text-cyan-400 hover:text-cyan-300 disabled:opacity-50"
+                className="text-[11px] font-semibold text-cyan-400 hover:text-cyan-300 disabled:opacity-50 cursor-pointer"
               >
                 Restablecer contraseña
               </button>
@@ -216,11 +217,12 @@ export const GlobalAdminGuard: React.FC<GlobalAdminGuardProps> = ({ onBackToApp 
               <input
                 type={showPassword ? 'text' : 'password'}
                 required
+                autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••••••••••"
                 style={{ fontFamily: 'Consolas, "Courier New", monospace', letterSpacing: '0.03em' }}
-                className="w-full bg-slate-950/80 border border-slate-700/80 rounded-xl pl-3.5 pr-11 py-2.5 text-sm font-medium text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all"
+                className="w-full bg-slate-950/80 border border-slate-700/80 rounded-xl pl-3.5 pr-11 py-2.5 text-base sm:text-sm font-medium text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 focus:border-cyan-500 transition-all dark-autofill min-h-[44px]"
               />
               <button
                 type="button"
@@ -231,7 +233,7 @@ export const GlobalAdminGuard: React.FC<GlobalAdminGuardProps> = ({ onBackToApp 
                 }}
                 title={showPassword ? "Ocultar clave maestra" : "Mostrar clave maestra"}
                 aria-label={showPassword ? "Ocultar clave maestra" : "Mostrar clave maestra"}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-slate-800/60 active:scale-95 transition-all cursor-pointer z-20 focus:outline-none"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-slate-800/60 active:scale-95 transition-all cursor-pointer z-20 focus:outline-none min-h-[38px] min-w-[38px] flex items-center justify-center"
               >
                 {showPassword ? (
                   <EyeOff className="w-4 h-4 pointer-events-none" />

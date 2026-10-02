@@ -12,15 +12,19 @@ export function useAutoLogout(
   onLogout: () => void
 ) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastWriteRef = useRef<number>(0);
 
-  const resetTimer = useCallback(() => {
+  const resetTimer = useCallback((forceWrite = false) => {
     if (!isActive) return;
 
     const now = Date.now();
-    try {
-      localStorage.setItem(LAST_ACTIVITY_KEY, now.toString());
-    } catch {
-      // ignore storage errors
+    if (forceWrite || now - lastWriteRef.current > 5000) {
+      lastWriteRef.current = now;
+      try {
+        localStorage.setItem(LAST_ACTIVITY_KEY, now.toString());
+      } catch {
+        // ignore storage errors
+      }
     }
 
     if (timerRef.current) {
@@ -38,25 +42,17 @@ export function useAutoLogout(
         clearTimeout(timerRef.current);
         timerRef.current = null;
       }
+      try {
+        localStorage.removeItem(LAST_ACTIVITY_KEY);
+      } catch {
+        // ignore
+      }
       return;
     }
 
-    // Check if session was already expired from a previous background tab/window
-    try {
-      const savedTime = localStorage.getItem(LAST_ACTIVITY_KEY);
-      if (savedTime) {
-        const diff = Date.now() - parseInt(savedTime, 10);
-        if (diff >= INACTIVITY_TIMEOUT_MS) {
-          onLogout();
-          return;
-        }
-      }
-    } catch {
-      // ignore
-    }
-
-    // Start initial timer
-    resetTimer();
+    // Initialize fresh activity timestamp when entering active state so a stale
+    // timestamp from a previous session never bounces the first click back to landing
+    resetTimer(true);
 
     // Activity event listeners across DOM
     const activityEvents = [
@@ -70,7 +66,7 @@ export function useAutoLogout(
     ];
 
     const handleUserActivity = () => {
-      resetTimer();
+      resetTimer(false);
     };
 
     activityEvents.forEach(event => {
@@ -92,7 +88,7 @@ export function useAutoLogout(
         } catch {
           // ignore
         }
-        resetTimer();
+        resetTimer(true);
       }
     };
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { authenticatedFetch } from '../../lib/authenticatedFetch';
+import { confirmModal } from '../common/ConfirmModal';
 import {
   Activity,
   Building2,
@@ -166,7 +167,7 @@ export const PanelAdministrativoSaaS: React.FC<PanelAdministrativoSaaSProps> = (
   onImpersonateCampaign
 }) => {
   const [activeTab, setActiveTab] = useState<SaaSMenuTab>('dashboard');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
@@ -412,16 +413,24 @@ export const PanelAdministrativoSaaS: React.FC<PanelAdministrativoSaaSProps> = (
   };
 
   const handleDeleteSuperUser = async (id: string) => {
-    if (!confirm('¿Está seguro de revocar el acceso a este superusuario?')) return;
-    try {
-      const res = await authenticatedFetch(`/api/saas/superusers/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        triggerToast('Superusuario revocado de la plataforma.');
-        fetchAllData();
+    await confirmModal({
+      title: 'Revocar acceso de superusuario',
+      message: '¿Está seguro de revocar el acceso a este superusuario de la plataforma SaaS?',
+      confirmText: 'Sí, revocar acceso',
+      cancelText: 'Cancelar',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          const res = await authenticatedFetch(`/api/saas/superusers/${id}`, { method: 'DELETE' });
+          if (res.ok) {
+            triggerToast('Superusuario revocado de la plataforma.');
+            fetchAllData();
+          }
+        } catch (err) {
+          console.error('Error deleting superuser:', err);
+        }
       }
-    } catch (err) {
-      console.error('Error deleting superuser:', err);
-    }
+    });
   };
 
   // Impersonate / Switch Campaign Context
@@ -489,16 +498,24 @@ export const PanelAdministrativoSaaS: React.FC<PanelAdministrativoSaaSProps> = (
   };
 
   const handleClearAuditLogs = async () => {
-    if (!confirm('¿Confirma reiniciar el registro de auditoría de seguridad?')) return;
-    try {
-      const res = await authenticatedFetch('/api/saas/audit-logs', { method: 'DELETE' });
-      if (res.ok) {
-        setAuditLogs([]);
-        triggerToast('Logs de auditoría reiniciados.');
+    await confirmModal({
+      title: 'Reiniciar registro de auditoría',
+      message: '¿Confirma reiniciar el registro de auditoría de seguridad? Esta acción no se puede deshacer.',
+      confirmText: 'Sí, reiniciar logs',
+      cancelText: 'Cancelar',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          const res = await authenticatedFetch('/api/saas/audit-logs', { method: 'DELETE' });
+          if (res.ok) {
+            setAuditLogs([]);
+            triggerToast('Logs de auditoría reiniciados.');
+          }
+        } catch (err) {
+          console.error('Error clearing logs:', err);
+        }
       }
-    } catch (err) {
-      console.error('Error clearing logs:', err);
-    }
+    });
   };
 
   // Calculations for KPI Cards
@@ -738,16 +755,13 @@ export const PanelAdministrativoSaaS: React.FC<PanelAdministrativoSaaSProps> = (
         </AnimatePresence>
 
         {/* Content Workspace Area */}
-        <div className="p-4 sm:p-6 md:p-8 flex-1">
-          {loading ? (
-            <div className="h-96 flex flex-col items-center justify-center gap-3">
-              <RefreshCw className="w-10 h-10 text-indigo-400 animate-spin" />
-              <p className="text-sm text-slate-400 font-bold">
-                Sincronizando estado global del sistema y base de datos...
-              </p>
+        <div className="p-4 sm:p-6 md:p-8 flex-1 relative">
+          {loading && (
+            <div className="fixed top-0 left-0 right-0 z-[9999] pointer-events-none">
+              <div className="h-[2px] w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-cyan-500 animate-pulse" />
             </div>
-          ) : (
-            <div className="space-y-6">
+          )}
+          <div className="space-y-6">
               {/* Header Info & Global Action Buttons */}
               <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-indigo-950/50 pb-5">
                 <div>
@@ -1736,7 +1750,6 @@ export const PanelAdministrativoSaaS: React.FC<PanelAdministrativoSaaSProps> = (
                 </div>
               )}
             </div>
-          )}
         </div>
       </div>
 

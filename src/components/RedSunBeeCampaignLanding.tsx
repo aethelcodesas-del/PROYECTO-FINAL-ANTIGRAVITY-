@@ -58,10 +58,7 @@ interface RedSunBeeCampaignLandingProps {
 
 export const RedSunBeeCampaignLanding: React.FC<RedSunBeeCampaignLandingProps> = ({ onLogin }) => {
   const landingRootRef = useRef<HTMLDivElement>(null);
-  const [showCinematicIntro, setShowCinematicIntro] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return !window.matchMedia('(prefers-reduced-motion: reduce)').matches && !sessionStorage.getItem('cg_cinematic_intro_v1');
-  });
+  const [showCinematicIntro, setShowCinematicIntro] = useState(false);
   // Navigation & Drawer State
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeTabDemo, setActiveTabDemo] = useState<'ai' | 'crm' | 'territory' | 'e14'>('ai');
@@ -83,18 +80,7 @@ export const RedSunBeeCampaignLanding: React.FC<RedSunBeeCampaignLandingProps> =
     const returnToLandingStart = () => window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
     returnToLandingStart();
 
-    // Algunos navegadores restauran la posición después del primer render.
-    // Se repite al terminar de pintar y cuando la página vuelve desde caché.
-    const firstFrame = window.requestAnimationFrame(() => {
-      window.requestAnimationFrame(returnToLandingStart);
-    });
-    window.addEventListener('load', returnToLandingStart);
-    window.addEventListener('pageshow', returnToLandingStart);
-
     return () => {
-      window.cancelAnimationFrame(firstFrame);
-      window.removeEventListener('load', returnToLandingStart);
-      window.removeEventListener('pageshow', returnToLandingStart);
       window.history.scrollRestoration = previousScrollRestoration;
     };
   }, []);
@@ -105,39 +91,18 @@ export const RedSunBeeCampaignLanding: React.FC<RedSunBeeCampaignLandingProps> =
       if (frame) return;
       frame = window.requestAnimationFrame(() => {
         frame = 0;
+        const scrollY = window.scrollY;
+        const shouldShow = scrollY > 300;
+        setShowScrollTop(prev => (prev !== shouldShow ? shouldShow : prev));
         const root = landingRootRef.current;
         if (!root) return;
         const maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
-        const progress = Math.min(1, Math.max(0, window.scrollY / maxScroll));
+        const progress = Math.min(1, Math.max(0, scrollY / maxScroll));
         root.style.setProperty('--landing-scroll-progress', String(progress));
       });
     };
     syncLandingMotion();
     window.addEventListener('scroll', syncLandingMotion, { passive: true });
-    return () => {
-      window.removeEventListener('scroll', syncLandingMotion);
-      if (frame) window.cancelAnimationFrame(frame);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!showCinematicIntro) return;
-    const timer = window.setTimeout(() => {
-      sessionStorage.setItem('cg_cinematic_intro_v1', 'seen');
-      setShowCinematicIntro(false);
-    }, 2500);
-    return () => window.clearTimeout(timer);
-  }, [showCinematicIntro]);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      if (window.scrollY > 300) {
-        setShowScrollTop(true);
-      } else {
-        setShowScrollTop(false);
-      }
-    };
-    window.addEventListener('scroll', handleScroll);
 
     // Initial hash scroll handler
     const rawHash = (window.location.hash || '').replace(/^#\/?/, '').trim();
@@ -147,10 +112,13 @@ export const RedSunBeeCampaignLanding: React.FC<RedSunBeeCampaignLandingProps> =
         if (targetEl) {
           targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
-      }, 150);
+      }, 100);
     }
 
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', syncLandingMotion);
+      if (frame) window.cancelAnimationFrame(frame);
+    };
   }, []);
 
   const scrollToTop = () => {
@@ -450,7 +418,11 @@ export const RedSunBeeCampaignLanding: React.FC<RedSunBeeCampaignLandingProps> =
             <button
               type="button"
               id="btn-nav-iniciar-sesion"
-              onClick={() => onLogin?.()}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onLogin?.();
+              }}
               aria-label="Iniciar Sesión"
               className="px-4 sm:px-5 py-2 rounded-full bg-gradient-to-r from-[#FF4D4D] via-[#FF7A3D] to-[#FF6B81] hover:brightness-110 active:scale-[0.98] text-white font-extrabold text-xs shadow-lg shadow-red-950/60 cursor-pointer flex items-center gap-2 border border-white/20 transition-all hover:scale-[1.03] whitespace-nowrap"
             >
@@ -459,7 +431,12 @@ export const RedSunBeeCampaignLanding: React.FC<RedSunBeeCampaignLandingProps> =
             </button>
 
             <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setMobileMenuOpen(!mobileMenuOpen);
+              }}
               className="lg:hidden p-2 rounded-xl bg-white/5 hover:bg-white/10 active:bg-white/15 border border-white/10 text-white cursor-pointer transition-colors shrink-0"
               aria-label="Abrir menú"
             >
@@ -485,7 +462,12 @@ export const RedSunBeeCampaignLanding: React.FC<RedSunBeeCampaignLandingProps> =
               <span className="text-base font-extrabold text-white">Campaña Ganadora AI</span>
             </div>
             <button
-              onClick={() => setMobileMenuOpen(false)}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setMobileMenuOpen(false);
+              }}
               className="p-2 rounded-xl bg-white/10 text-white"
             >
               <X className="w-5 h-5" />
@@ -526,7 +508,9 @@ export const RedSunBeeCampaignLanding: React.FC<RedSunBeeCampaignLandingProps> =
           <div className="space-y-3 pt-6 border-t border-white/10">
             <button
               type="button"
-              onClick={() => {
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 setMobileMenuOpen(false);
                 onLogin?.();
               }}
@@ -537,7 +521,9 @@ export const RedSunBeeCampaignLanding: React.FC<RedSunBeeCampaignLandingProps> =
             </button>
             <button
               type="button"
-              onClick={() => {
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 setMobileMenuOpen(false);
                 setIsModalOpen(true);
               }}
@@ -551,11 +537,7 @@ export const RedSunBeeCampaignLanding: React.FC<RedSunBeeCampaignLandingProps> =
       )}
 
       {/* SECTION 2: HERO SECTION */}
-      <motion.section
-        initial={{ opacity: 0, y: 40 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: '-40px' }}
-        transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+      <section
         className="relative min-h-[calc(100svh-5rem)] px-4 py-12 sm:px-6 lg:px-8 z-10 flex items-center justify-center overflow-hidden"
       >
         <div className="lusion-hero-sculpture" aria-hidden="true">
@@ -568,29 +550,48 @@ export const RedSunBeeCampaignLanding: React.FC<RedSunBeeCampaignLandingProps> =
         </div>
         <div className="relative z-10 w-full text-center space-y-7 max-w-[1500px] mx-auto">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-500/10 border border-red-500/30 text-[#FF7A3D] text-xs font-bold shadow-lg">
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
+            style={{ willChange: 'transform, opacity' }}
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-500/10 border border-red-500/30 text-[#FF7A3D] text-xs font-bold shadow-lg"
+          >
             <Sparkles className="w-3.5 h-3.5 text-[#FF4D4D]" />
             <span>Suite Integral para Ganar Elecciones en Colombia</span>
-          </div>
+          </motion.div>
 
           {/* Fluid Cinematic Headline */}
-          <motion.h1
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.15 }}
+          <h1
+            style={{ willChange: 'transform, opacity' }}
             className="lusion-campaign-hero font-black text-white uppercase"
           >
-            <motion.span initial={{ opacity: 0, y: 70 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.12, duration: 0.9, ease: [0.16, 1, 0.3, 1] }} className="lusion-hero-word lusion-hero-word-top block">Campaña</motion.span>
-            <motion.span initial={{ opacity: 0, y: 70 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.24, duration: 0.9, ease: [0.16, 1, 0.3, 1] }} className="lusion-hero-word lusion-hero-word-bottom block text-redsun-gradient">Ganadora<span className="lusion-ai-mark">AI</span></motion.span>
-          </motion.h1>
+            <motion.span
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0, duration: 0.38, ease: [0.16, 1, 0.3, 1] }}
+              style={{ willChange: 'transform, opacity' }}
+              className="lusion-hero-word lusion-hero-word-top block"
+            >
+              Campaña
+            </motion.span>
+            <motion.span
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1, duration: 0.38, ease: [0.16, 1, 0.3, 1] }}
+              style={{ willChange: 'transform, opacity' }}
+              className="lusion-hero-word lusion-hero-word-bottom block text-redsun-gradient"
+            >
+              Ganadora<span className="lusion-ai-mark">AI</span>
+            </motion.span>
+          </h1>
 
           {/* Subheadline */}
           <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.2 }}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.38, delay: 0.14, ease: [0.16, 1, 0.3, 1] }}
+            style={{ willChange: 'transform, opacity' }}
             className="text-base sm:text-lg md:text-xl text-zinc-400 font-normal max-w-2xl mx-auto leading-relaxed"
           >
             Tecnología electoral con Inteligencia Artificial para convertir estrategia, territorio y datos en una campaña ganadora.
@@ -598,14 +599,19 @@ export const RedSunBeeCampaignLanding: React.FC<RedSunBeeCampaignLandingProps> =
 
           {/* CTA Buttons */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.25 }}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.38, delay: 0.18, ease: [0.16, 1, 0.3, 1] }}
+            style={{ willChange: 'transform, opacity' }}
             className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4"
           >
             <button
-              onClick={() => onLogin?.()}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onLogin?.();
+              }}
               className="redsun-btn-primary w-full sm:w-auto text-sm sm:text-base py-4 px-8"
             >
               <span>Acceder al Sistema</span>
@@ -624,12 +630,12 @@ export const RedSunBeeCampaignLanding: React.FC<RedSunBeeCampaignLandingProps> =
           href="#pilares"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.9, duration: 0.8 }}
+          transition={{ delay: 0.25, duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
           className="absolute bottom-5 right-5 hidden items-center gap-3 text-[10px] font-bold uppercase tracking-[0.28em] text-zinc-500 transition-colors hover:text-white sm:flex"
         >
           Desliza para explorar <span className="lusion-scroll-line" />
         </motion.a>
-      </motion.section>
+      </section>
 
       {/* SECTION 3: TRUST MARQUEE */}
       <motion.section
@@ -1208,7 +1214,17 @@ export const RedSunBeeCampaignLanding: React.FC<RedSunBeeCampaignLandingProps> =
                     <div className="flex items-baseline gap-1"><span className="text-3xl font-black text-white sm:text-4xl">{plan.currency === 'USD' ? '$' : ''}{(billingCycle === 'annual' ? plan.annualMonthlyPrice : plan.monthlyPrice).toLocaleString('es-CO')}</span><span className="text-xs font-semibold text-zinc-400">{plan.currency} {plan.billingLabel}</span></div>
                     <ul className="space-y-3 text-xs text-zinc-300">{plan.features.filter(Boolean).map((feature, featureIndex) => <li key={`${plan.id}-${featureIndex}`} className="flex items-start gap-2.5"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#FF4D4D]"/><span>{feature}</span></li>)}</ul>
                   </div>
-                  <button onClick={() => onLogin?.()} className={plan.highlighted ? 'redsun-btn-primary w-full text-xs' : 'redsun-btn-secondary w-full text-xs'}>{plan.buttonLabel || 'Seleccionar plan'}</button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onLogin?.();
+                    }}
+                    className={plan.highlighted ? 'redsun-btn-primary w-full text-xs' : 'redsun-btn-secondary w-full text-xs'}
+                  >
+                    {plan.buttonLabel || 'Seleccionar plan'}
+                  </button>
                 </motion.div>
               ))}
           </div>
@@ -1254,7 +1270,12 @@ export const RedSunBeeCampaignLanding: React.FC<RedSunBeeCampaignLandingProps> =
             </div>
 
             <button
-              onClick={() => onLogin?.()}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onLogin?.();
+              }}
               className="redsun-btn-secondary w-full text-xs cursor-pointer"
             >
               Seleccionar Starter
@@ -1307,7 +1328,12 @@ export const RedSunBeeCampaignLanding: React.FC<RedSunBeeCampaignLandingProps> =
             </div>
 
             <button
-              onClick={() => onLogin?.()}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onLogin?.();
+              }}
               className="redsun-btn-primary w-full text-xs cursor-pointer"
             >
               Iniciar Campaña Ganadora Pro
@@ -1352,7 +1378,12 @@ export const RedSunBeeCampaignLanding: React.FC<RedSunBeeCampaignLandingProps> =
             </div>
 
             <button
-              onClick={() => onLogin?.()}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onLogin?.();
+              }}
               className="redsun-btn-secondary w-full text-xs cursor-pointer"
             >
               Contactar Asesor Especializado
@@ -1389,6 +1420,7 @@ export const RedSunBeeCampaignLanding: React.FC<RedSunBeeCampaignLandingProps> =
                 className="rounded-2xl bg-[#111111] border border-white/10 overflow-hidden transition-all duration-300"
               >
                 <button
+                  type="button"
                   onClick={() => toggleFaq(index)}
                   className="w-full p-6 text-left flex items-center justify-between gap-4 font-bold text-sm sm:text-base text-white hover:text-[#FF4D4D] transition cursor-pointer"
                 >
@@ -1429,7 +1461,12 @@ export const RedSunBeeCampaignLanding: React.FC<RedSunBeeCampaignLandingProps> =
             </p>
             <div className="pt-4 flex justify-center">
               <button
-                onClick={() => onLogin?.()}
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onLogin?.();
+                }}
                 className="px-8 py-4 rounded-full bg-white text-black font-extrabold text-sm hover:bg-zinc-100 transition shadow-xl cursor-pointer"
               >
                 Ingresar al Sistema Ahora
@@ -1443,7 +1480,12 @@ export const RedSunBeeCampaignLanding: React.FC<RedSunBeeCampaignLandingProps> =
       <footer className="mt-10 border-t border-white/10 bg-[#050505] px-4 py-12 sm:px-6 lg:px-8">
         <div className="mx-auto grid max-w-7xl grid-cols-1 gap-10 md:grid-cols-[1.4fr_1fr_1fr]">
           <div className="max-w-md space-y-4">
-            <a href="#" className="inline-flex items-center gap-3" aria-label="Volver al inicio">
+            <button
+              type="button"
+              onClick={scrollToTop}
+              className="inline-flex items-center gap-3 text-left cursor-pointer"
+              aria-label="Volver al inicio"
+            >
               <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-[#FF4D4D] to-[#FF7A3D] p-0.5 shadow-lg shadow-red-950/40">
                 <div className="flex h-full w-full items-center justify-center rounded-[14px] bg-[#080808]">
                   <BallotBrainIcon className="h-7 w-7 text-[#FF6A52]" />
@@ -1453,7 +1495,7 @@ export const RedSunBeeCampaignLanding: React.FC<RedSunBeeCampaignLandingProps> =
                 <p className="text-base font-black text-white">Campaña Ganadora AI</p>
                 <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#FF6A52]">Tecnología electoral</p>
               </div>
-            </a>
+            </button>
             <p className="text-sm leading-6 text-zinc-400">
               Plataforma para organizar la estrategia, el territorio, los equipos y la operación electoral desde un solo lugar.
             </p>
@@ -1486,8 +1528,12 @@ export const RedSunBeeCampaignLanding: React.FC<RedSunBeeCampaignLandingProps> =
             <p className="mb-4 text-sm leading-6 text-zinc-400">Ingrese de forma segura al panel de control de su campaña.</p>
             <button
               type="button"
-              onClick={() => onLogin?.()}
-              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#FF4D4D] via-[#FF7A3D] to-[#FF6B81] px-5 py-2.5 text-xs font-black text-white shadow-lg shadow-red-950/40 transition hover:brightness-110"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onLogin?.();
+              }}
+              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#FF4D4D] via-[#FF7A3D] to-[#FF6B81] px-5 py-2.5 text-xs font-black text-white shadow-lg shadow-red-950/40 transition hover:brightness-110 cursor-pointer"
             >
               <Lock className="h-3.5 w-3.5" />
               Iniciar sesión
@@ -1525,7 +1571,10 @@ export const RedSunBeeCampaignLanding: React.FC<RedSunBeeCampaignLandingProps> =
               className="bg-[#0d0d0d] border border-white/15 rounded-[32px] p-8 max-w-md w-full space-y-6 relative shadow-2xl"
             >
               <button
-                onClick={() => {
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
                   setIsModalOpen(false);
                   setModalSubmitted(false);
                   setModalError(null);
@@ -1555,7 +1604,10 @@ export const RedSunBeeCampaignLanding: React.FC<RedSunBeeCampaignLandingProps> =
                     <p className="text-xs text-zinc-300">Tu espacio seguro ha sido aprovisionado. Ingresando al panel...</p>
                   </div>
                   <button
-                    onClick={() => {
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
                       setIsModalOpen(false);
                       onLogin?.();
                     }}
@@ -1658,7 +1710,9 @@ export const RedSunBeeCampaignLanding: React.FC<RedSunBeeCampaignLandingProps> =
                     ¿Ya tienes cuenta?{' '}
                     <button
                       type="button"
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
                         setIsModalOpen(false);
                         onLogin?.();
                       }}

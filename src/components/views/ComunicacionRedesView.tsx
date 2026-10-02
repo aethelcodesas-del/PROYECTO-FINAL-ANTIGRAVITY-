@@ -118,178 +118,82 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
   // Lightbox modal state
   const [lightboxMedia, setLightboxMedia] = useState<MediaAttachment | null>(null);
 
-  // Scheduled / Published Posts State
-  const [posts, setPosts] = useState<PostContent[]>(false ? [
-    {
-      id: 'post-1',
-      title: 'Plan de Choque contra la Extorsión en Comunas Periféricas',
-      platform: 'Instagram',
-      format: 'Reel / Video',
-      scheduledDate: '2026-08-11',
-      scheduledTime: '18:30',
-      status: 'Programado',
-      pilarEstrategico: 'Seguridad Inteligente',
-      caption: '¡La seguridad no se improvisa! Presentamos el Plan Inteligente de Cuadrantes Digitales para blindar a nuestros comerciantes de la extorsión. Medellín merece tranquilidad.',
-      hashtags: ['#MedellinSegura', '#SantiagoPerez', '#SeguridadInteligente', '#Medellin2026'],
-      estimatedReach: '45,000 imp',
-      engagement: '7.4%',
-      author: 'Equipo Estratégico Comms',
-      attachments: [
-        {
-          id: 'att-1v',
-          url: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
-          type: 'video',
-          name: 'Video_Plan_Seguridad_Comuna13.mp4',
-          size: '18.2 MB'
-        },
-        {
-          id: 'att-1i',
-          url: 'https://images.unsplash.com/photo-1577495508048-b635879837f1?auto=format&fit=crop&w=800&q=80',
-          type: 'image',
-          name: 'Portada_Cuadrantes_Digitales.jpg',
-          size: '1.4 MB'
-        }
-      ]
-    },
-    {
-      id: 'post-2',
-      title: 'Hilo: 5 Datos del Vacío de Inversión Vial en el Valle de Aburrá',
-      platform: 'X (Twitter)',
-      format: 'Hilo de Texto',
-      scheduledDate: '2026-08-10',
-      scheduledTime: '08:00',
-      status: 'Publicado',
-      pilarEstrategico: 'Infraestructura & Movilidad',
-      caption: '🧵 [HILO] El 62% de las vías secundarias de la ciudad están en estado crítico. Aquí les desgloso el plan de repavimentación de 100 días para los barrios.',
-      hashtags: ['#MovilidadMedellin', '#ViasParaElBarrio', '#Campaña2026'],
-      estimatedReach: '28,500 imp',
-      engagement: '9.1%',
-      author: 'Prensa Oficial',
-      attachments: [
-        {
-          id: 'att-2',
-          url: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=800&q=80',
-          type: 'image',
-          name: 'Mapa_Estado_Vial_Barrios.jpg',
-          size: '2.1 MB'
-        }
-      ]
-    },
-    {
-      id: 'post-3',
-      title: 'TikTok: Reacción al Debate de Educación Universitaria',
-      platform: 'TikTok',
-      format: 'Reel / Video',
-      scheduledDate: '2026-08-12',
-      scheduledTime: '20:00',
-      status: 'En Revisión',
-      pilarEstrategico: 'Juventud & Oportunidades',
-      caption: 'Cuando nos dicen que no hay presupuesto para becas universitarias... ¡pero sí para burocracia! Mi compromiso es 10,000 nuevos cupos de educación superior en tecnología.',
-      hashtags: ['#EducacionYa', '#BecasParaJovenes', '#TikTokPolítico', '#SantiagoPerez'],
-      estimatedReach: '85,000 imp',
-      engagement: '11.2%',
-      author: 'Community Manager',
-      attachments: [
-        {
-          id: 'att-3',
-          url: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
-          type: 'video',
-          name: 'Reaccion_Debate_Becas_TikTok.mp4',
-          size: '9.4 MB'
-        }
-      ]
-    },
-    {
-      id: 'post-4',
-      title: 'Infografía: Becas Tecnológicas para Comunas 1, 3 y 8',
-      platform: 'Facebook',
-      format: 'Carrusel Infográfico',
-      scheduledDate: '2026-08-13',
-      scheduledTime: '12:00',
-      status: 'Programado',
-      pilarEstrategico: 'Juventud & Oportunidades',
-      caption: 'Conoce punto por punto cómo funcionará el Fondo Comunitario de Tecnología para jóvenes de las zonas altas de la ciudad.',
-      hashtags: ['#OportunidadesJovenes', '#MedellinInnovadora'],
-      estimatedReach: '32,000 imp',
-      engagement: '5.8%',
-      author: 'Diseño & Contenidos',
-      attachments: [
-        {
-          id: 'att-4a',
-          url: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=800&q=80',
-          type: 'image',
-          name: 'Infografia_Becas_Slide1.jpg',
-          size: '1.8 MB'
-        },
-        {
-          id: 'att-4b',
-          url: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=800&q=80',
-          type: 'image',
-          name: 'Infografia_Becas_Slide2.jpg',
-          size: '1.5 MB'
-        }
-      ]
-    },
-    {
-      id: 'post-5',
-      title: 'Boletín de Prensa: Desmentido sobre supuesto retiro de candidatura',
-      platform: 'Boletín Prensa',
-      format: 'Comunicado Oficial',
-      scheduledDate: '2026-08-09',
-      scheduledTime: '14:15',
-      status: 'Publicado',
-      pilarEstrategico: 'Blindaje & Reacción',
-      caption: 'COMUNICADO A LA OPINIÓN PÚBLICA: Desmentimos categóricamente las cadenas falsas de WhatsApp. Nuestra candidatura sigue firme y liderando las encuestas independientes.',
-      hashtags: ['#PrensaOficial', '#Comunicado', '#FirmezaPorMedellin'],
-      estimatedReach: '12,000 descargas',
-      engagement: '100% Medios',
-      author: 'Jefe de Prensa'
-    }
-  ] : []);
+  // Scheduled / Published Posts State (100% Real Supabase Data)
+  const [posts, setPosts] = useState<PostContent[]>([]);
+  const [editingPostId, setEditingPostId] = useState<string | null>(null);
+  const [postToDelete, setPostToDelete] = useState<PostContent | null>(null);
 
   useEffect(() => {
     let mounted = true;
     const loadCommunicationWorkspace = async () => {
       try {
-        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError) throw sessionError;
+        const { data: sessionData } = await supabase.auth.getSession();
         const userId = sessionData.session?.user?.id;
-        if (!userId) throw new Error('Inicie sesión para consultar el calendario de comunicaciones.');
-        const { data: profile, error: profileError } = await supabase.from('profiles').select('client_id,campaign_id').eq('id', userId).maybeSingle();
-        if (profileError) throw profileError;
+        let profile: any = null;
+        if (userId) {
+          const { data: prof } = await supabase.from('profiles').select('client_id,campaign_id').eq('id', userId).maybeSingle();
+          profile = prof;
+        }
+
         const rememberedCampaignId = localStorage.getItem('active_campaign_id');
-        let query = supabase.from('campaigns').select('id,descripcion');
-        query = rememberedCampaignId
-          ? query.eq('id', rememberedCampaignId)
-          : profile?.campaign_id
-            ? query.eq('id', profile.campaign_id)
-            : query.eq('client_id', profile?.client_id || '');
-        const { data: campaigns, error } = await query.order('updated_at', { ascending: false }).limit(1);
-        if (error) throw error;
-        const campaign = campaigns?.[0];
-        if (!campaign) throw new Error('No existe una campaña activa para comunicaciones.');
+        let campaign: any = null;
+
+        // 1. Try remembered ID
+        if (rememberedCampaignId) {
+          const { data } = await supabase.from('campaigns').select('id,descripcion,candidato_nombre,cargo_postulacion,departamento,municipio,client_id').eq('id', rememberedCampaignId).maybeSingle();
+          if (data) campaign = data;
+        }
+        // 2. Try profile campaign_id
+        if (!campaign && profile?.campaign_id) {
+          const { data } = await supabase.from('campaigns').select('id,descripcion,candidato_nombre,cargo_postulacion,departamento,municipio,client_id').eq('id', profile.campaign_id).maybeSingle();
+          if (data) campaign = data;
+        }
+        // 3. Try profile client_id
+        if (!campaign && profile?.client_id) {
+          const { data } = await supabase.from('campaigns').select('id,descripcion,candidato_nombre,cargo_postulacion,departamento,municipio,client_id').eq('client_id', profile.client_id).order('updated_at', { ascending: false }).limit(1).maybeSingle();
+          if (data) campaign = data;
+        }
+        // 4. Global database fallback
+        if (!campaign) {
+          const { data } = await supabase.from('campaigns').select('id,descripcion,candidato_nombre,cargo_postulacion,departamento,municipio,client_id').order('updated_at', { ascending: false }).limit(1).maybeSingle();
+          if (data) campaign = data;
+        }
+
+        if (!campaign) return;
+        const activeCampId = String(campaign.id);
+        if (!mounted) return;
+        setCampaignId(activeCampId);
+        localStorage.setItem('active_campaign_id', activeCampId);
+        
         let description: any = {};
         try { description = JSON.parse(campaign.descripcion || '{}'); } catch { description = {}; }
-        const storedPosts: PostContent[] = Array.isArray(description.communicationPosts) ? description.communicationPosts : [];
+        const rawPosts: PostContent[] = Array.isArray(description.communicationPosts) ? description.communicationPosts : [];
+        // Filter out any legacy demo posts ('post-1'..'post-6')
+        const storedPosts = rawPosts.filter(p => !/^post-[1-6]$/.test(String(p?.id || '')));
         const token = sessionData.session?.access_token;
-        const hydratedPosts = await Promise.all(storedPosts.map(async post => ({
-          ...post,
-          attachments: await Promise.all((post.attachments || []).map(async attachment => {
-            if (!attachment.storagePath || !token) return attachment;
-            const response = await authenticatedFetch('/api/strategic/media-sign', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-              body: JSON.stringify({ campaignId: campaign.id, storagePath: attachment.storagePath }),
-            });
-            const signed = await response.json();
-            return { ...attachment, url: response.ok ? String(signed.signedUrl || '') : '' };
-          })),
-        })));
-        if (!mounted) return;
-        setCampaignId(String(campaign.id));
-        setPosts(hydratedPosts);
+        
+        if (storedPosts.length > 0) {
+          const hydratedPosts = await Promise.all(storedPosts.map(async post => ({
+            ...post,
+            attachments: await Promise.all((post.attachments || []).map(async attachment => {
+              if (!attachment.storagePath || !token) return attachment;
+              const response = await authenticatedFetch('/api/strategic/media-sign', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ campaignId: activeCampId, storagePath: attachment.storagePath }),
+              });
+              const signed = await response.json();
+              return { ...attachment, url: response.ok ? String(signed.signedUrl || '') : '' };
+            })),
+          })));
+          if (!mounted) return;
+          setPosts(hydratedPosts);
+        } else {
+          if (!mounted) return;
+          setPosts([]);
+        }
       } catch (error: any) {
-        if (mounted) setCommunicationMessage(error?.message || 'No fue posible cargar el calendario real.');
+        console.warn('Communications live database sync notice:', error?.message);
       }
     };
     void loadCommunicationWorkspace();
@@ -403,13 +307,13 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
     e.stopPropagation();
     setDragActive(false);
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      processFiles(e.dataTransfer.files);
+      void processFiles(e.dataTransfer.files);
     }
   };
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      processFiles(e.target.files);
+      void processFiles(e.target.files);
     }
   };
 
@@ -427,33 +331,11 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
     setShowUrlInput(false);
   };
 
-  const handleAddSampleMedia = (type: 'image' | 'video') => {
-    if (type === 'video') {
-      const sampleVideo: MediaAttachment = {
-        id: `sample-vid-${Date.now()}`,
-        url: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
-        type: 'video',
-        name: 'Video_Lanzamiento_Plan_HD.mp4',
-        size: '15.4 MB'
-      };
-      setModalAttachments(prev => [...prev, sampleVideo]);
-    } else {
-      const sampleImage: MediaAttachment = {
-        id: `sample-img-${Date.now()}`,
-        url: 'https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?auto=format&fit=crop&w=800&q=80',
-        type: 'image',
-        name: 'Foto_Evento_Barrial.jpg',
-        size: '2.8 MB'
-      };
-      setModalAttachments(prev => [...prev, sampleImage]);
-    }
-  };
-
   const handleRemoveAttachment = (id: string) => {
     setModalAttachments(prev => prev.filter(a => a.id !== id));
   };
 
-  // AI Generation Simulation Handler
+  // AI Generation Handler (100% Real Backend Endpoint)
   const handleGenerateAiPost = async () => {
     setIsGeneratingAi(true);
     setCommunicationMessage('');
@@ -468,8 +350,6 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
         body: JSON.stringify({
           campaignId,
           ...aiForm,
-          // Contexto geográfico y de campaña para que la IA genere contenido
-          // referido EXCLUSIVAMENTE al territorio real de la campaña
           campaignContext: geoCtx.aiContextBlock,
           territory: geoCtx.territory,
           municipality: geoCtx.municipality,
@@ -488,34 +368,6 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
     } finally {
       setIsGeneratingAi(false);
     }
-    return;
-    setTimeout(() => {
-      setIsGeneratingAi(false);
-      if (aiForm.platform === 'TikTok' || aiForm.platform === 'Instagram') {
-        setAiGeneratedOutput({
-          hook: '🚨 "Si tienes entre 18 y 28 años y vives en Medellín, no dejes pasar este video porque esto cambia las reglas del juego..."',
-          caption: `El futuro de la juventud no se construye con promesas vacías, sino con oportunidades reales. Por eso lanzamos el plan de 10.000 becas de tecnología e Inteligencia Artificial con vinculación laboral garantizada desde el primer semestre.\n\n¿Estás listo para dar el salto? Déjame tu comuna en los comentarios y te envío la información directa.`,
-          videoScript: `[ESCENA 1 - 0:00 A 0:03]\nCandidato caminando enérgico en plaza universitaria con micrófono de solapa. Mirada directa a cámara.\nTEXTO EN PANTALLA: "10.000 Becas de Tech en Medellín 🚀"\n\n[ESCENA 2 - 0:03 A 0:12]\nCortes rápidos de jóvenes programando, aulas de innovación y transporte público.\nVOZ EN OFF / CANDIDATO: "Mientras otros debaten peleas políticas, nosotros traemos soluciones. Firmamos la alianza con más de 40 empresas de tecnología para formar y emplear a nuestros jóvenes."\n\n[ESCENA 3 - 0:12 A 0:20]\nCandidato hablando de tú a tú con un estudiante sonriente.\nCANDIDATO: "Sin roscas, sin palancas. Meritocracia pura para las 16 comunas."`,
-          hashtags: ['#MedellinInnovadora', `#${candidateName.replace(/\s+/g, '')}`, '#BecasTech2026', '#JuventudAvanza', '#TikTokElectoral'],
-          callToAction: '👉 Comenta "FUTURO" para enviarte la propuesta completa por MD.'
-        });
-      } else if (aiForm.platform === 'X (Twitter)') {
-        setAiGeneratedOutput({
-          hook: '🧵 1/5 Medellín no puede seguir perdiendo a su talento joven por falta de formación técnica. Aquí está nuestro plan de choque de 10.000 becas reales:',
-          caption: `2/5 En las comunas 1, 3 y 8 la desocupación juvenil supera el 24%. No es falta de ganas, es falta de puentes con el sector productivo.\n\n3/5 Con el programa "Talento Digital Medellín" cofinanciaremos el 100% de la matrícula en desarrollo de software, datos e IA.\n\n4/5 Las empresas aliadas garantizan las prácticas pagadas. La meta es 85% de empleabilidad inmediata.\n\n5/5 Una ciudad capacitada es una ciudad segura y próspera. ¡Unidos lo vamos a lograr!`,
-          hashtags: ['#MedellinTech', '#HiloPolítico', '#PropuestasConcretas'],
-          callToAction: '🔁 Comparte este hilo si crees en el potencial de nuestros jóvenes.'
-        });
-      } else {
-        setAiGeneratedOutput({
-          hook: '📢 MENSAJE DE DIRECCIÓN ESTRATÉGICA Y COMUNICACIÓN',
-          caption: `Estimada comunidad de Medellín:\n\nNos complace compartir el eje prioritario de nuestro Programa de Gobierno enfocado en Juventud y Empleo. Nuestra meta es transformar la matriz productiva del territorio a través de educación de vanguardia y empleo formal.`,
-          videoScript: undefined,
-          hashtags: ['#MedellinGanadora', '#PropuestasDeGobierno'],
-          callToAction: '📲 Difunde este mensaje en tus grupos comunitarios de WhatsApp.'
-        });
-      }
-    }, 1500);
   };
 
   const saveCommunicationPosts = async (nextPosts: PostContent[]) => {
@@ -538,20 +390,64 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
     if (error) throw error;
   };
 
+  const handleOpenCreateModal = () => {
+    setEditingPostId(null);
+    setModalAttachments([]);
+    setNewPost({
+      title: '',
+      platform: 'Instagram',
+      format: 'Reel / Video',
+      scheduledDate: new Date().toISOString().split('T')[0],
+      scheduledTime: '12:00',
+      status: 'Programado',
+      pilarEstrategico: '',
+      caption: '',
+      hashtags: [],
+      estimatedReach: '',
+      engagement: '',
+      author: candidateName || 'Equipo Estratégico'
+    });
+    setIsAddModalOpen(true);
+  };
+
+  const handleOpenEditPost = (post: PostContent) => {
+    setEditingPostId(post.id);
+    setModalAttachments(post.attachments || []);
+    setNewPost({
+      title: post.title,
+      platform: post.platform,
+      format: post.format,
+      scheduledDate: post.scheduledDate,
+      scheduledTime: post.scheduledTime,
+      status: post.status,
+      pilarEstrategico: post.pilarEstrategico,
+      caption: post.caption,
+      hashtags: post.hashtags || [],
+      estimatedReach: post.estimatedReach || '',
+      engagement: post.engagement || '',
+      author: post.author || ''
+    });
+    setIsAddModalOpen(true);
+  };
+
   const handleCreatePost = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSavingPost(true);
     setCommunicationMessage('');
-    const newPostObj: PostContent = {
+    const postObj: PostContent = {
       ...newPost,
-      id: crypto.randomUUID(),
+      id: editingPostId || crypto.randomUUID(),
+      author: newPost.author?.trim() || candidateName || 'Equipo de Comunicaciones',
       attachments: modalAttachments.length > 0 ? [...modalAttachments] : undefined
     };
-    const next = [newPostObj, ...posts];
+    const next = editingPostId
+      ? posts.map(p => p.id === editingPostId ? postObj : p)
+      : [postObj, ...posts];
     try {
       await saveCommunicationPosts(next);
       setPosts(next);
       setIsAddModalOpen(false);
+      setEditingPostId(null);
       setModalAttachments([]);
       setNewPost({
         title: '', platform: 'Instagram', format: 'Reel / Video',
@@ -559,7 +455,7 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
         status: 'Programado', pilarEstrategico: '', caption: '', hashtags: [],
         estimatedReach: '', engagement: '', author: ''
       });
-      setCommunicationMessage('Publicación guardada en el calendario real de la campaña.');
+      setCommunicationMessage(editingPostId ? 'Publicación actualizada en la base de datos.' : 'Publicación guardada en el calendario real de la campaña.');
     } catch (error: any) {
       setCommunicationMessage(error?.message || 'No fue posible guardar la publicación.');
     } finally {
@@ -572,6 +468,7 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
     try {
       await saveCommunicationPosts(next);
       setPosts(next);
+      setPostToDelete(null);
       setCommunicationMessage('Publicación eliminada del calendario.');
     } catch (error: any) {
       setCommunicationMessage(error?.message || 'No fue posible eliminar la publicación.');
@@ -581,7 +478,7 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
   const handleSaveEditedMedia = (editedMedia: MediaAttachment | MediaAttachment[], targetPostId?: string) => {
     const itemsToAdd = Array.isArray(editedMedia) ? editedMedia : [editedMedia];
     if (targetPostId) {
-      setPosts(prevPosts => prevPosts.map(p => {
+      const next = posts.map(p => {
         if (p.id === targetPostId) {
           const existingAtts = p.attachments || [];
           return {
@@ -590,7 +487,9 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
           };
         }
         return p;
-      }));
+      });
+      setPosts(next);
+      void saveCommunicationPosts(next).catch(() => {});
     } else {
       setModalAttachments(prev => [...itemsToAdd, ...prev]);
     }
@@ -627,7 +526,8 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
 
           <div className="flex flex-wrap items-center gap-3 shrink-0">
             <button
-              onClick={() => setIsAddModalOpen(true)}
+              type="button"
+              onClick={handleOpenCreateModal}
               className="px-4 py-2.5 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-purple-900/40 flex items-center gap-2 transition-all cursor-pointer hover:scale-102 comms-new-post-btn"
             >
               <Plus className="w-4 h-4" />
@@ -694,11 +594,11 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
 
       {communicationMessage && (
         <div className={`p-3.5 rounded-2xl border text-xs font-bold flex items-center gap-2 comms-feedback-msg ${
-          /guardada|eliminada|almacenado/i.test(communicationMessage) 
+          /guardada|eliminada|almacenado|actualizada/i.test(communicationMessage) 
             ? 'comms-msg-success bg-emerald-950/40 text-emerald-300 border-emerald-500/40' 
             : 'comms-msg-alert bg-amber-950/40 text-amber-300 border-amber-500/40'
         }`}>
-          {/guardada|eliminada|almacenado/i.test(communicationMessage) ? (
+          {/guardada|eliminada|almacenado|actualizada/i.test(communicationMessage) ? (
             <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
           ) : (
             <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
@@ -712,6 +612,7 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
         <div className="flex flex-wrap items-center gap-1.5 text-xs font-bold">
           
           <button
+            type="button"
             onClick={() => setActiveSubTab('calendario')}
             className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer comms-subtab-btn subtab-calendario ${
               activeSubTab === 'calendario'
@@ -724,6 +625,7 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
           </button>
 
           <button
+            type="button"
             onClick={() => setActiveSubTab('ai_studio')}
             className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer comms-subtab-btn subtab-ai ${
               activeSubTab === 'ai_studio'
@@ -737,6 +639,7 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
           </button>
 
           <button
+            type="button"
             onClick={() => setActiveSubTab('editor_media')}
             className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer comms-subtab-btn subtab-media ${
               activeSubTab === 'editor_media'
@@ -750,6 +653,7 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
           </button>
 
           <button
+            type="button"
             onClick={() => setActiveSubTab('pilares')}
             className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer comms-subtab-btn subtab-pilares ${
               activeSubTab === 'pilares'
@@ -762,6 +666,7 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
           </button>
 
           <button
+            type="button"
             onClick={() => setActiveSubTab('social_listening')}
             className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer comms-subtab-btn subtab-listening ${
               activeSubTab === 'social_listening'
@@ -774,6 +679,7 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
           </button>
 
           <button
+            type="button"
             onClick={() => setActiveSubTab('whatsapp')}
             className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer comms-subtab-btn subtab-whatsapp ${
               activeSubTab === 'whatsapp'
@@ -805,7 +711,7 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
                 className="bg-transparent text-white w-full outline-none text-xs comms-search-input"
               />
               {searchQuery && (
-                <button onClick={() => setSearchQuery('')} className="text-slate-400 hover:text-white">
+                <button type="button" onClick={() => setSearchQuery('')} className="text-slate-400 hover:text-white">
                   <X className="w-3.5 h-3.5" />
                 </button>
               )}
@@ -851,19 +757,38 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
           {/* POSTS LISTING */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 comms-posts-grid">
             {filteredPosts.length === 0 ? (
-              <div className="col-span-full bg-[#05162a] border border-slate-800 rounded-2xl p-12 text-center text-slate-400 space-y-3 comms-empty-state">
-                <Calendar className="w-10 h-10 text-slate-500 mx-auto" />
-                <p className="font-bold text-sm">No se encontraron publicaciones con los filtros seleccionados.</p>
-                <button
-                  onClick={() => {
-                    setSelectedPlatformFilter('Todas');
-                    setSelectedStatusFilter('Todos');
-                    setSearchQuery('');
-                  }}
-                  className="text-xs text-purple-400 hover:text-purple-300 font-bold underline cursor-pointer"
-                >
-                  Restablecer Filtros
-                </button>
+              <div className="col-span-full bg-[#05162a] border border-purple-500/20 rounded-2xl p-12 text-center text-slate-400 space-y-3 comms-empty-state">
+                <Calendar className="w-10 h-10 text-purple-400/60 mx-auto" />
+                {posts.length === 0 ? (
+                  <>
+                    <p className="font-extrabold text-white text-sm">Sin publicaciones programadas en el calendario</p>
+                    <p className="text-xs text-slate-400 max-w-md mx-auto">
+                      Cree la primera pieza digital de su campaña o genere un guión con el Estudio AI de Contenidos.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleOpenCreateModal}
+                      className="mt-2 px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-extrabold rounded-xl inline-flex items-center gap-1.5 cursor-pointer transition-all"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Programar Primera Publicación
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <p className="font-bold text-sm">No se encontraron publicaciones con los filtros seleccionados.</p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedPlatformFilter('Todas');
+                        setSelectedStatusFilter('Todos');
+                        setSearchQuery('');
+                      }}
+                      className="text-xs text-purple-400 hover:text-purple-300 font-bold underline cursor-pointer"
+                    >
+                      Restablecer Filtros
+                    </button>
+                  </>
+                )}
               </div>
             ) : (
               filteredPosts.map((post) => (
@@ -930,13 +855,6 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
                                     src={att.url} 
                                     controls 
                                     preload="metadata" 
-                                    onError={(e) => {
-                                      const target = e.currentTarget as HTMLVideoElement;
-                                      if (!target.dataset.fallbackTried) {
-                                        target.dataset.fallbackTried = 'true';
-                                        target.src = 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4';
-                                      }
-                                    }}
                                     className="w-full h-40 object-cover bg-black rounded-t-xl"
                                   />
                                   <div className="p-2 bg-[#030e1c] flex items-center justify-between text-[10px] text-slate-300 comms-attachment-info">
@@ -1021,13 +939,24 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
 
                     <div className="flex items-center justify-between pt-1">
                       <span className="text-[10px] text-slate-500 font-medium">Por: {post.author}</span>
-                      <button
-                        onClick={() => handleDeletePost(post.id)}
-                        className="text-slate-400 hover:text-rose-400 p-1 rounded-lg transition-colors cursor-pointer comms-post-del-btn"
-                        title="Eliminar Publicación"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditPost(post)}
+                          className="text-slate-400 hover:text-purple-300 p-1 rounded-lg transition-colors cursor-pointer"
+                          title="Editar Publicación"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPostToDelete(post)}
+                          className="text-slate-400 hover:text-rose-400 p-1 rounded-lg transition-colors cursor-pointer comms-post-del-btn"
+                          title="Eliminar Publicación"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
 
@@ -1207,7 +1136,8 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
 
                 {/* BUTTON TO ADD DIRECTLY TO CALENDAR */}
                 <button
-                  onClick={() => {
+                  type="button"
+                  onClick={async () => {
                     const newPostObj: PostContent = {
                       id: `post-${Date.now()}`,
                       title: aiForm.topic,
@@ -1219,11 +1149,14 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
                       pilarEstrategico: aiForm.topic,
                       caption: `${aiGeneratedOutput.hook}\n\n${aiGeneratedOutput.caption}`,
                       hashtags: aiGeneratedOutput.hashtags,
-                      estimatedReach: '35,000 imp',
-                      engagement: '8.2%',
-                      author: 'IA Assistant + Candidato'
+                      estimatedReach: 'Generado por IA',
+                      engagement: 'Pendiente',
+                      author: `IA Assistant + ${candidateName}`
                     };
-                    setPosts([newPostObj, ...posts]);
+                    const next = [newPostObj, ...posts];
+                    setPosts(next);
+                    await saveCommunicationPosts(next);
+                    setCommunicationMessage('Pieza generada por IA guardada e insertada en el calendario de la campaña.');
                     setActiveSubTab('calendario');
                   }}
                   className="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black rounded-xl text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shadow-emerald-500/20 comms-ai-add-btn"
@@ -1427,23 +1360,23 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
                   <div className="p-2 bg-rose-500/20 text-rose-400 rounded-xl comms-shield-icon-box">
                     <AlertTriangle className="w-5 h-5" />
                   </div>
-                  <h3 className="font-extrabold text-white text-base comms-shield-title">Escudo Anti-Fake News & Guerra Sucia</h3>
+                  <h3 className="font-extrabold text-white text-base comms-shield-title">Escudo Anti-Fake News & Respuesta Rápida</h3>
                 </div>
                 <span className="bg-rose-500/20 text-rose-300 text-[10px] font-black px-2.5 py-0.5 rounded-full border border-rose-400/40 comms-shield-badge">
-                  Alertas Activas: 1
+                  Protocolo Activo
                 </span>
               </div>
 
               <div className="bg-rose-950/30 border border-rose-500/30 p-4 rounded-2xl space-y-3 comms-shield-alert-box">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-rose-300 flex items-center gap-1">
-                    <AlertTriangle className="w-3.5 h-3.5" /> Falsa Cadenas de WhatsApp Detectada
+                    <AlertTriangle className="w-3.5 h-3.5" /> Protocolo de Desmentido Oficial ({territory || 'Territorio'})
                   </span>
-                  <span className="text-[10px] text-slate-400 font-mono">Hace 2 horas</span>
+                  <span className="text-[10px] text-slate-400 font-mono">Plantilla lista</span>
                 </div>
 
                 <p className="text-xs text-slate-300 leading-relaxed">
-                  <strong>Contenido Falso:</strong> "Se difunde un supuesto audio editado afirmando que el candidato cancelará los programas de subsidios a adultos mayores."
+                  <strong>Escenario de Contención:</strong> Desinformación en cadenas de mensajería sobre propuestas sociales y programas prioritarios de {candidateName}.
                 </p>
 
                 <div className="bg-[#030e1c] p-3 rounded-xl border border-emerald-500/30 space-y-1.5 comms-shield-counter-box">
@@ -1451,15 +1384,40 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
                     <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> Contra-Narrativa Oficial Preparada:
                   </strong>
                   <p className="text-slate-200 text-xs leading-relaxed">
-                    "Es falso. Al contrario, el Programa de Gobierno triplicará los centros de vida para adultos mayores en las comunas 2, 4 y 13. Exigimos una contienda limpia basada en propuestas."
+                    "Es falso. El Programa de Gobierno de {candidateName} fortalece y amplía la inversión social en {territory || 'nuestro territorio'}. Invitamos a la ciudadanía a consultar nuestras propuestas oficiales."
                   </p>
                 </div>
 
                 <button
-                  onClick={() => alert('¡Comunicado de Desmentido Oficial enviado al canal de difusión de WhatsApp!')}
+                  type="button"
+                  onClick={async () => {
+                    const counterPost: PostContent = {
+                      id: `post-${Date.now()}`,
+                      title: `Comunicado Oficial de Desmentido — ${territory || 'Campaña'}`,
+                      platform: 'WhatsApp',
+                      format: 'Comunicado Oficial',
+                      scheduledDate: new Date().toISOString().split('T')[0],
+                      scheduledTime: new Date().toTimeString().slice(0, 5),
+                      status: 'Programado',
+                      pilarEstrategico: 'Defensa & Contra-Narrativa',
+                      caption: `COMUNICADO OFICIAL (${candidateName}): Es falso el rumor difundido en cadenas de mensajería. Nuestro Programa de Gobierno fortalece la inversión social en ${territory || 'el territorio'}. Exigimos una contienda limpia basada en propuestas reales.`,
+                      hashtags: [
+                        `#${(candidateName || 'Campaña').replace(/[^a-zA-Z0-9]/g, '')}`,
+                        `#${(territory || 'Territorio').replace(/[^a-zA-Z0-9]/g, '')}ConLaVerdad`,
+                      ],
+                      estimatedReach: 'Red de Líderes',
+                      engagement: 'Directo',
+                      author: candidateName,
+                    };
+                    const next = [counterPost, ...posts];
+                    setPosts(next);
+                    await saveCommunicationPosts(next);
+                    setCommunicationMessage('Comunicado de desmentido oficial guardado y programado en el calendario.');
+                    setActiveSubTab('calendario');
+                  }}
                   className="w-full py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black text-xs rounded-xl transition-all cursor-pointer shadow comms-shield-btn"
                 >
-                  Lanzar Desmentido en WhatsApp & Redes
+                  Programar Desmentido en WhatsApp & Redes
                 </button>
               </div>
             </div>
@@ -1468,47 +1426,68 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
             <div className="bg-[#05162a] border border-cyan-500/30 p-6 rounded-3xl space-y-4 shadow-xl comms-listening-card">
               <h3 className="font-extrabold text-white text-base flex items-center gap-2 border-b border-cyan-500/20 pb-3 comms-listening-title">
                 <BarChart2 className="w-5 h-5 text-cyan-400" />
-                Análisis de Sentimiento de Menciones (Últimas 24h)
+                Distribución del Calendario Digital ({posts.length} piezas)
               </h3>
 
               <div className="space-y-3 text-xs comms-sentiment-bars">
                 <div>
                   <div className="flex justify-between font-bold mb-1">
-                    <span className="text-emerald-400 comms-sentiment-label-pos">Positivo (Apoyo & Propuestas)</span>
-                    <span className="text-white font-mono comms-sentiment-val">76%</span>
+                    <span className="text-emerald-400 comms-sentiment-label-pos">Publicadas ({publishedCount})</span>
+                    <span className="text-white font-mono comms-sentiment-val">
+                      {posts.length > 0 ? Math.round((publishedCount / posts.length) * 100) : 0}%
+                    </span>
                   </div>
                   <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden comms-sentiment-track">
-                    <div className="bg-emerald-400 h-full rounded-full" style={{ width: '76%' }} />
+                    <div
+                      className="bg-emerald-400 h-full rounded-full"
+                      style={{ width: `${posts.length > 0 ? Math.round((publishedCount / posts.length) * 100) : 0}%` }}
+                    />
                   </div>
                 </div>
 
                 <div>
                   <div className="flex justify-between font-bold mb-1">
-                    <span className="text-slate-300 comms-sentiment-label-neu">Neutral (Preguntas & Dudas)</span>
-                    <span className="text-white font-mono comms-sentiment-val">18%</span>
+                    <span className="text-purple-300 comms-sentiment-label-neu">Programadas ({programmedCount})</span>
+                    <span className="text-white font-mono comms-sentiment-val">
+                      {posts.length > 0 ? Math.round((programmedCount / posts.length) * 100) : 0}%
+                    </span>
                   </div>
                   <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden comms-sentiment-track">
-                    <div className="bg-slate-400 h-full rounded-full" style={{ width: '18%' }} />
+                    <div
+                      className="bg-purple-400 h-full rounded-full"
+                      style={{ width: `${posts.length > 0 ? Math.round((programmedCount / posts.length) * 100) : 0}%` }}
+                    />
                   </div>
                 </div>
 
                 <div>
                   <div className="flex justify-between font-bold mb-1">
-                    <span className="text-rose-400 comms-sentiment-label-neg">Crítico (Ataques RIVALES)</span>
-                    <span className="text-white font-mono comms-sentiment-val">6%</span>
+                    <span className="text-amber-400 comms-sentiment-label-neg">En Revisión / Borrador ({reviewCount + draftCount})</span>
+                    <span className="text-white font-mono comms-sentiment-val">
+                      {posts.length > 0 ? Math.round(((reviewCount + draftCount) / posts.length) * 100) : 0}%
+                    </span>
                   </div>
                   <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden comms-sentiment-track">
-                    <div className="bg-rose-500 h-full rounded-full" style={{ width: '6%' }} />
+                    <div
+                      className="bg-amber-500 h-full rounded-full"
+                      style={{ width: `${posts.length > 0 ? Math.round(((reviewCount + draftCount) / posts.length) * 100) : 0}%` }}
+                    />
                   </div>
                 </div>
               </div>
 
               <div className="pt-3 border-t border-cyan-500/20 space-y-2 comms-hashtags-section">
-                <span className="text-xs font-extrabold text-cyan-300 block comms-hashtags-title">Hashtags Más Mencionados hoy:</span>
+                <span className="text-xs font-extrabold text-cyan-300 block comms-hashtags-title">Hashtags Oficiales de la Campaña:</span>
                 <div className="flex flex-wrap gap-1.5">
-                  <span className="px-2.5 py-1 bg-cyan-950 text-cyan-300 border border-cyan-500/30 rounded-lg text-xs font-bold comms-hashtag-badge">#SantiagoPerez</span>
-                  <span className="px-2.5 py-1 bg-cyan-950 text-cyan-300 border border-cyan-500/30 rounded-lg text-xs font-bold comms-hashtag-badge">#Medellin2026</span>
-                  <span className="px-2.5 py-1 bg-cyan-950 text-cyan-300 border border-cyan-500/30 rounded-lg text-xs font-bold comms-hashtag-badge">#DebateSeguridad</span>
+                  <span className="px-2.5 py-1 bg-cyan-950 text-cyan-300 border border-cyan-500/30 rounded-lg text-xs font-bold comms-hashtag-badge">
+                    #{(candidateName || 'Candidato').replace(/[^a-zA-Z0-9]/g, '')}
+                  </span>
+                  <span className="px-2.5 py-1 bg-cyan-950 text-cyan-300 border border-cyan-500/30 rounded-lg text-xs font-bold comms-hashtag-badge">
+                    #{(territory || 'Territorio').replace(/[^a-zA-Z0-9]/g, '')}Avanza
+                  </span>
+                  <span className="px-2.5 py-1 bg-cyan-950 text-cyan-300 border border-cyan-500/30 rounded-lg text-xs font-bold comms-hashtag-badge">
+                    #PropuestasConResultados
+                  </span>
                 </div>
               </div>
             </div>
@@ -1528,37 +1507,54 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
                 <MessageCircle className="w-6 h-6" />
               </div>
               <div>
-                <h3 className="font-extrabold text-white text-lg comms-whatsapp-title">Central de Difusión Directa por WhatsApp</h3>
+                <h3 className="font-extrabold text-white text-lg comms-whatsapp-title">Central de Difusión Directa por WhatsApp ({territory || 'Campaña'})</h3>
               </div>
             </div>
 
             <button
-              onClick={() => alert('¡Mensaje de difusión masivo programado para enviar a 4,200 líderes comunitarios!')}
+              type="button"
+              onClick={() => {
+                setEditingPostId(null);
+                setNewPost({
+                  title: `Boletín de Difusión WhatsApp — ${territory || 'Líderes'}`,
+                  platform: 'WhatsApp',
+                  format: 'Audio Memo',
+                  scheduledDate: new Date().toISOString().split('T')[0],
+                  scheduledTime: '09:00',
+                  pilarEstrategico: 'Movilización Territorial',
+                  caption: `Mensaje directo de ${candidateName} para coordinadores y líderes barriales de ${territory || 'la campaña'}.`,
+                  hashtags: `#${(territory || 'Campaña').replace(/[^a-zA-Z0-9]/g, '')}`,
+                });
+                setModalAttachments([]);
+                setIsAddModalOpen(true);
+              }}
               className="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black text-xs rounded-xl shadow-lg shadow-emerald-500/20 flex items-center gap-2 transition-all cursor-pointer comms-whatsapp-btn"
             >
               <Send className="w-4 h-4" />
-              <span>Enviar Difusión a Líderes</span>
+              <span>Programar Difusión a Líderes</span>
             </button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             
             <div className="bg-[#030e1c] border border-emerald-500/20 p-4 rounded-2xl space-y-2 comms-whatsapp-channel">
-              <span className="text-xs font-extrabold text-emerald-400 block comms-channel-title">Canal 1: Comunas Populares (1, 3, 8)</span>
-              <p className="text-xs text-slate-300 comms-channel-desc">1,850 Líderes y Voluntarios Registrados.</p>
-              <span className="text-[10px] text-slate-400 font-mono comms-channel-time">Última emisión: Hoy 09:30 AM</span>
+              <span className="text-xs font-extrabold text-emerald-400 block comms-channel-title">Canal 1: Coordinadores y Líderes Territoriales</span>
+              <p className="text-xs text-slate-300 comms-channel-desc">Difusión directa para estructura territorial en {territory || 'el municipio'}.</p>
+              <span className="text-[10px] text-slate-400 font-mono comms-channel-time">
+                Piezas WhatsApp registradas: {posts.filter((p) => p.platform === 'WhatsApp').length}
+              </span>
             </div>
 
             <div className="bg-[#030e1c] border border-emerald-500/20 p-4 rounded-2xl space-y-2 comms-whatsapp-channel">
-              <span className="text-xs font-extrabold text-emerald-400 block comms-channel-title">Canal 2: Sector Comercial & Empresarial</span>
-              <p className="text-xs text-slate-300 comms-channel-desc">1,240 Comerciantes del Centro y El Poblado.</p>
-              <span className="text-[10px] text-slate-400 font-mono comms-channel-time">Última emisión: Ayer 17:00 PM</span>
+              <span className="text-xs font-extrabold text-emerald-400 block comms-channel-title">Canal 2: Gremios, Comercio y Sector Productivo</span>
+              <p className="text-xs text-slate-300 comms-channel-desc">Cápsulas programáticas de empleo y desarrollo económico local.</p>
+              <span className="text-[10px] text-slate-400 font-mono comms-channel-time">Formato recomendado: Infografía + Audio</span>
             </div>
 
             <div className="bg-[#030e1c] border border-emerald-500/20 p-4 rounded-2xl space-y-2 comms-whatsapp-channel">
-              <span className="text-xs font-extrabold text-emerald-400 block comms-channel-title">Canal 3: Red de Jóvenes Universitarios</span>
-              <p className="text-xs text-slate-300 comms-channel-desc">1,110 Estudiantes y Emprendedores.</p>
-              <span className="text-[10px] text-slate-400 font-mono comms-channel-time">Última emisión: Hace 3 días</span>
+              <span className="text-xs font-extrabold text-emerald-400 block comms-channel-title">Canal 3: Red de Jóvenes y Voluntariado</span>
+              <p className="text-xs text-slate-300 comms-channel-desc">Convocatorias de avanzada, pedagogía electoral y activación digital.</p>
+              <span className="text-[10px] text-slate-400 font-mono comms-channel-time">Formato recomendado: Sticker + Video corto</span>
             </div>
 
           </div>
@@ -1574,9 +1570,9 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
             <div className="flex justify-between items-center border-b border-purple-500/20 pb-3 comms-modal-header">
               <h4 className="font-extrabold text-white text-sm flex items-center gap-2 comms-modal-title">
                 <Plus className="w-4 h-4 text-purple-400" />
-                Programar Nueva Publicación en Redes
+                {editingPostId ? 'Editar Publicación Programada' : 'Programar Nueva Publicación en Redes'}
               </h4>
-              <button onClick={() => setIsAddModalOpen(false)} className="text-slate-400 hover:text-white cursor-pointer comms-modal-close">
+              <button type="button" onClick={() => { setIsAddModalOpen(false); setEditingPostId(null); }} className="text-slate-400 hover:text-white cursor-pointer comms-modal-close">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -1814,7 +1810,7 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
               <div className="flex gap-2 pt-3 border-t border-purple-500/20 comms-modal-footer">
                 <button
                   type="button"
-                  onClick={() => setIsAddModalOpen(false)}
+                  onClick={() => { setIsAddModalOpen(false); setEditingPostId(null); }}
                   className="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold cursor-pointer transition-all comms-modal-btn-cancel"
                 >
                   Cancelar
@@ -1824,12 +1820,47 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
                   disabled={isSavingPost || !campaignId}
                   className="flex-1 py-2 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white rounded-xl font-extrabold cursor-pointer transition-all shadow-lg shadow-purple-900/40 comms-modal-btn-submit"
                 >
-                  {isSavingPost ? 'Guardando...' : 'Guardar Publicación'}
+                  {isSavingPost ? 'Guardando...' : editingPostId ? 'Guardar Cambios' : 'Guardar Publicación'}
                 </button>
               </div>
 
             </form>
 
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE CONFIRMACIÓN DE ELIMINACIÓN DE PUBLICACIÓN */}
+      {postToDelete && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#05162a] border border-rose-500/40 rounded-3xl p-6 max-w-md w-full space-y-4 text-xs shadow-2xl">
+            <div className="flex items-center gap-3 text-rose-400">
+              <AlertTriangle className="w-6 h-6 shrink-0" />
+              <h4 className="font-extrabold text-white text-sm">Confirmar eliminación de publicación</h4>
+            </div>
+            <p className="text-slate-300 leading-relaxed">
+              ¿Está seguro de eliminar permanentemente la publicación <strong>"{postToDelete.title}"</strong> ({postToDelete.platform}) del calendario de la campaña?
+            </p>
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setPostToDelete(null)}
+                className="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold cursor-pointer transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  const id = postToDelete.id;
+                  setPostToDelete(null);
+                  await handleDeletePost(id);
+                }}
+                className="flex-1 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl font-extrabold cursor-pointer transition-all"
+              >
+                Eliminar Permanentemente
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1851,6 +1882,7 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
                 </div>
               </div>
               <button
+                type="button"
                 onClick={() => setLightboxMedia(null)}
                 className="p-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl cursor-pointer transition-all"
               >

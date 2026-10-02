@@ -22,6 +22,7 @@ import {
 import { supabase } from '../../lib/supabase';
 import { useModuleColorMode } from '../../utils/themeColorMode';
 import { ColorModeToggle } from '../common/ColorModeToggle';
+import { confirmModal, showToast } from '../common/ConfirmModal';
 
 interface EncuestasViewProps {
   onSelectView: (view: ViewMode) => void;
@@ -44,7 +45,14 @@ interface Encuesta {
 
 export const EncuestasView: React.FC<EncuestasViewProps> = ({ onSelectView, authUser }) => {
   const { colorMode, isWhiteMode } = useModuleColorMode('gestion_territorial');
-  const [encuestas, setEncuestas] = useState<Encuesta[]>([]);
+  const [encuestas, setEncuestas] = useState<Encuesta[]>(() => {
+    try {
+      const cached = localStorage.getItem('encuestas_cache');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
   const [campaignId, setCampaignId] = useState('');
   const [surveyId, setSurveyId] = useState('');
   const [pollsterId, setPollsterId] = useState<string | null>(null);
@@ -52,7 +60,7 @@ export const EncuestasView: React.FC<EncuestasViewProps> = ({ onSelectView, auth
   const [candidateOptions, setCandidateOptions] = useState<string[]>([]);
   const [locationOptions, setLocationOptions] = useState<string[]>([]);
   const [metaDiaria, setMetaDiaria] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [dataError, setDataError] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -118,6 +126,11 @@ export const EncuestasView: React.FC<EncuestasViewProps> = ({ onSelectView, auth
       setCampaignId(resolvedCampaignId); setSurveyId(String(study.id)); setSurveyTitle(study.title);
       setPollsterId(assigned?.id ? String(assigned.id) : null); setMetaDiaria(Number(assigned?.daily_goal || 0));
       setCandidateOptions(candidates); setLocationOptions(zones); setEncuestas(mapped);
+      try {
+        localStorage.setItem('encuestas_cache', JSON.stringify(mapped));
+      } catch {
+        // ignore
+      }
       setIntencionVoto(prev => candidates.includes(prev) ? prev : (candidates[0] || ''));
       setComuna(prev => zones.includes(prev) ? prev : (zones[0] || ''));
     } catch (error: any) {
@@ -153,12 +166,27 @@ export const EncuestasView: React.FC<EncuestasViewProps> = ({ onSelectView, auth
   const handleDeletEncuesta = async (id: string) => {
     // Only administrators or coordinators can delete
     if (authUser?.role === 'puntero_territorial' || authUser?.role === 'lider') {
-      alert('Error: Los usuarios de campo no tienen permisos para eliminar encuestas.');
+      showToast('Los usuarios de campo no tienen permisos para eliminar encuestas.', 'error');
       return;
     }
-    const { error } = await supabase.from('survey_responses').delete().eq('id', id).eq('campaign_id', campaignId);
-    if (error) return setDataError(error.message);
-    setEncuestas(prev => prev.filter(e => e.id !== id));
+    const target = encuestas.find(e => e.id === id);
+    await confirmModal({
+      title: 'Eliminar respuesta de encuesta',
+      message: `¿Está seguro de eliminar el registro de "${target?.nombre || 'este ciudadano'}"? Esta acción no se puede deshacer.`,
+      confirmText: 'Sí, eliminar',
+      cancelText: 'Cancelar',
+      variant: 'danger',
+      onConfirm: async () => {
+        const { error } = await supabase.from('survey_responses').delete().eq('id', id).eq('campaign_id', campaignId);
+        if (error) {
+          setDataError(error.message);
+          showToast(error.message, 'error');
+          return false;
+        }
+        setEncuestas(prev => prev.filter(e => e.id !== id));
+        showToast('Registro de encuesta eliminado.', 'success');
+      }
+    });
   };
 
   // Metrics calculations
@@ -185,8 +213,13 @@ export const EncuestasView: React.FC<EncuestasViewProps> = ({ onSelectView, auth
     <div 
       data-module="encuestas"
       data-color-mode={isWhiteMode ? 'white' : 'established'}
-      className="responsive-view encuestas-campo-view min-h-[calc(100dvh-60px)] w-full min-w-0 bg-[#030712] text-slate-100 p-3 sm:p-4 md:p-8 space-y-4 sm:space-y-6 max-w-7xl mx-auto overflow-x-hidden"
+      className="responsive-view encuestas-campo-view min-h-[calc(100dvh-60px)] w-full min-w-0 bg-[#030712] text-slate-100 p-3 sm:p-4 md:p-8 space-y-4 sm:space-y-6 max-w-7xl mx-auto overflow-x-hidden relative"
     >
+      {loading && (
+        <div className="fixed top-0 left-0 right-0 z-[9999] pointer-events-none">
+          <div className="h-[2px] w-full bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500 animate-pulse" />
+        </div>
+      )}
       {dataError && <div className="rounded-xl border border-amber-500/40 bg-amber-950/30 px-4 py-3 text-sm text-amber-200 flex justify-between gap-3"><span>{dataError}</span><button type="button" onClick={() => void loadRealSurveys()} className="font-bold text-cyan-300">Reintentar</button></div>}
       
       {/* Header Banner */}

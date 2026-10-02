@@ -17,6 +17,7 @@ import {
   updateArchivedVoterDoc,
   deleteArchivedVoterDoc
 } from '../../lib/firestoreService';
+import { confirmModal, showToast as showGlobalToast } from '../common/ConfirmModal';
 import { 
   Search, 
   ShieldCheck, 
@@ -614,18 +615,18 @@ _Documento Oficial de Auditoría Electoral - Campaña Ganadora AI_`;
     e.preventDefault();
 
     if (!isAdmin) {
-      alert('🔒 ACCESO RESTRINGIDO: Solo los usuarios con Rol Administrativo tienen permisos para registrar votantes en el padrón electoral y asignarles el líder correspondiente.');
+      showGlobalToast('🔒 ACCESO RESTRINGIDO: Solo los usuarios con Rol Administrativo tienen permisos para registrar votantes en el padrón electoral y asignarles el líder correspondiente.', 'error');
       showToast('🔒 Permiso denegado: El registro de votantes y asignación de líderes es exclusivo del Rol Administrativo.');
       return;
     }
 
     if (!consultaResult || !consultaResult.encontrado || !consultaResult.esCircunscripcionPermitida) {
-      alert('🔒 BLOQUEO DE SEGURIDAD: Solo se pueden registrar ciudadanos validados en el censo electoral de la campaña.');
+      showGlobalToast('🔒 BLOQUEO DE SEGURIDAD: Solo se pueden registrar ciudadanos validados en el censo electoral de la campaña.', 'error');
       return;
     }
 
     if (!formData.nombreCompleto.trim() || !formData.telefono.trim()) {
-      alert('Por favor complete el Nombre Completo y Teléfono del votante.');
+      showGlobalToast('Por favor complete el Nombre Completo y Teléfono del votante.', 'warning');
       return;
     }
 
@@ -690,7 +691,7 @@ _Documento Oficial de Auditoría Electoral - Campaña Ganadora AI_`;
   // Archive Rejected Voter Workflow
   const handleArchivarCiudadano = async () => {
     if (!isAdmin) {
-      alert('🔒 ACCESO RESTRINGIDO: Solo los usuarios con Rol Administrativo tienen permisos para archivar votantes y asignarles el líder correspondiente.');
+      showGlobalToast('🔒 ACCESO RESTRINGIDO: Solo los usuarios con Rol Administrativo tienen permisos para archivar votantes y asignarles el líder correspondiente.', 'error');
       showToast('🔒 Permiso denegado: El archivo de votantes y asignación de líderes es exclusivo del Rol Administrativo.');
       return;
     }
@@ -698,7 +699,7 @@ _Documento Oficial de Auditoría Electoral - Campaña Ganadora AI_`;
     if (!consultaResult) return;
 
     if (!archiveForm.nombreCompleto.trim() || !archiveForm.telefono.trim()) {
-      alert('Por favor ingrese el Nombre Completo y Teléfono de contacto para archivar.');
+      showGlobalToast('Por favor ingrese el Nombre Completo y Teléfono de contacto para archivar.', 'warning');
       return;
     }
 
@@ -906,27 +907,47 @@ _Documento Oficial de Auditoría Electoral - Campaña Ganadora AI_`;
   };
 
   const handleDeleteVotante = async (id: string) => {
-    if (window.confirm('¿Desea eliminar este votante del registro territorial?')) {
-      try {
-        await deleteVoterDoc(id);
-        showToast('Votante eliminado del registro.');
-      } catch (error) {
-        console.error('No fue posible eliminar el votante.', error);
-        showToast('No fue posible eliminar el votante.');
+    const target = votantes.find(v => v.id === id);
+    await confirmModal({
+      title: 'Eliminar votante del padrón',
+      message: `¿Desea eliminar a "${target?.nombreCompleto || 'este votante'}" del registro territorial? Esta acción no se puede deshacer.`,
+      confirmText: 'Sí, eliminar',
+      cancelText: 'Cancelar',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await deleteVoterDoc(id);
+          showToast('Votante eliminado del registro.');
+          showGlobalToast('Votante eliminado del registro territorial.', 'success');
+        } catch (error) {
+          console.error('No fue posible eliminar el votante.', error);
+          showToast('No fue posible eliminar el votante.');
+          showGlobalToast('No fue posible eliminar el votante.', 'error');
+        }
       }
-    }
+    });
   };
 
   const handleDeleteArchivado = async (id: string) => {
-    if (window.confirm('¿Desea eliminar este registro de la carpeta de archivados?')) {
-      try {
-        await deleteArchivedVoterDoc(id);
-        showToast('Registro eliminado de la carpeta de archivados.');
-      } catch (error) {
-        console.error('No fue posible eliminar el registro archivado.', error);
-        showToast('No fue posible eliminar el registro archivado.');
+    const target = archivados.find(a => a.id === id);
+    await confirmModal({
+      title: 'Eliminar registro archivado',
+      message: `¿Desea eliminar a "${target?.nombreCompleto || 'este registro'}" de la carpeta de archivados? Esta acción no se puede deshacer.`,
+      confirmText: 'Sí, eliminar',
+      cancelText: 'Cancelar',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await deleteArchivedVoterDoc(id);
+          showToast('Registro eliminado de la carpeta de archivados.');
+          showGlobalToast('Registro eliminado de la carpeta de archivados.', 'success');
+        } catch (error) {
+          console.error('No fue posible eliminar el registro archivado.', error);
+          showToast('No fue posible eliminar el registro archivado.');
+          showGlobalToast('No fue posible eliminar el registro archivado.', 'error');
+        }
       }
-    }
+    });
   };
 
   const handleExportCSV = () => {
@@ -1445,11 +1466,14 @@ _Documento Oficial de Auditoría Electoral - Campaña Ganadora AI_`;
                   <div className="flex gap-2">
                     <input
                       type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      autoComplete="off"
                       placeholder="Ej: 1017123456"
                       value={cedulaInput}
                       onChange={(e) => setCedulaInput(e.target.value.replace(/\D/g, ''))}
                       onKeyDown={(e) => e.key === 'Enter' && handleConsultarCenso()}
-                      className="registro-cedula-input registro-input w-full bg-[#020712] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-mono text-slate-100 outline-none focus:border-teal-400 transition-all"
+                      className="registro-cedula-input registro-input w-full bg-[#020712] border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm font-mono text-slate-100 outline-none focus:border-teal-400 transition-all min-h-[44px]"
                     />
                     <button
                       type="button"
@@ -1919,8 +1943,8 @@ _Documento Oficial de Auditoría Electoral - Campaña Ganadora AI_`;
             </div>
 
             {/* VOTANTES TABLE */}
-            <div className="overflow-x-auto rounded-2xl border border-slate-800">
-              <table className="w-full text-left text-xs">
+            <div className="table-responsive-container rounded-2xl border border-slate-800">
+              <table className="w-full text-left text-xs min-w-[700px]">
                 <thead className="bg-slate-900/90 text-slate-300 uppercase font-black tracking-wider text-[10px] border-b border-slate-800">
                   <tr>
                     <th className="p-3">Cédula & Votante</th>
@@ -2104,8 +2128,8 @@ _Documento Oficial de Auditoría Electoral - Campaña Ganadora AI_`;
             </div>
 
             {/* TABLE OF ARCHIVED VOTERS */}
-            <div className="overflow-x-auto rounded-2xl border border-slate-800">
-              <table className="w-full text-left text-xs">
+            <div className="table-responsive-container rounded-2xl border border-slate-800">
+              <table className="w-full text-left text-xs min-w-[700px]">
                 <thead className="bg-slate-900/90 text-slate-300 uppercase font-black tracking-wider text-[10px] border-b border-slate-800">
                   <tr>
                     <th className="p-3">Cédula & Ciudadano</th>

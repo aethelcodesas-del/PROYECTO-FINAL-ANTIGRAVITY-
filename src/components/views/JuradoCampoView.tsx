@@ -6,6 +6,7 @@ import { ElectionLocationCheckIn } from '../common/ElectionLocationCheckIn';
 import { supabase } from '../../lib/supabase';
 import { useModuleColorMode } from '../../utils/themeColorMode';
 import { ColorModeToggle } from '../common/ColorModeToggle';
+import { confirmModal, showToast } from '../common/ConfirmModal';
 import {
   Users,
   ShieldCheck,
@@ -147,7 +148,7 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
         ? { ...v, haVotado: true, horaVoto: horaActual, firmaRegistrada: !!firmaDigitalVotante }
         : v
     );
-    try { await persistFieldOperations({ padronVotantes: next }); } catch (error: any) { return alert(error.message); }
+    try { await persistFieldOperations({ padronVotantes: next }); } catch (error: any) { return showToast(error.message, 'error'); }
     setPadronVotantes(next);
     setVotanteSeleccionado(null);
     clearCanvasVotante();
@@ -187,7 +188,7 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
 
   const handleFormalizarCierre = async (e: React.FormEvent) => {
     e.preventDefault();
-    try { await persistFieldOperations({ cierreFormalizado: true, horaCierre, totalSufragantes, observacionesCierre, conteoMesas }); } catch (error: any) { return alert(error.message); }
+    try { await persistFieldOperations({ cierreFormalizado: true, horaCierre, totalSufragantes, observacionesCierre, conteoMesas }); } catch (error: any) { return showToast(error.message, 'error'); }
     setCierreFormalizado(true);
   };
 
@@ -263,7 +264,7 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
       gravedad: gravedadNovedad
     };
     const next = [nueva, ...novedadesMesa];
-    try { await persistFieldOperations({ novedadesMesa: next }); } catch (error: any) { return alert(error.message); }
+    try { await persistFieldOperations({ novedadesMesa: next }); } catch (error: any) { return showToast(error.message, 'error'); }
     setNovedadesMesa(next);
     setDetallesNovedad('');
   };
@@ -273,7 +274,7 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
 
   const handleCompleteInstallation = async () => {
     const now = horaInstalacion || new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
-    try { await persistFieldOperations({ instalacionCompleta: true, horaInstalacion: now, kitElectoralRecibido }); } catch (error: any) { return alert(error.message); }
+    try { await persistFieldOperations({ instalacionCompleta: true, horaInstalacion: now, kitElectoralRecibido }); } catch (error: any) { return showToast(error.message, 'error'); }
     setHoraInstalacion(now); setInstalacionCompleta(true);
   };
 
@@ -712,7 +713,18 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
                     </button>
                     <button
                       type="button"
-                      onClick={() => { if (window.confirm('¿Reabrir el proceso de cierre? Esto desbloqueará el conteo.')) { setCierreFormalizado(false); } }}
+                      onClick={async () => {
+                        const confirmed = await confirmModal({
+                          title: 'Reabrir proceso de cierre',
+                          message: '¿Reabrir el proceso de cierre de la mesa? Esto desbloqueará el conteo de votos para realizar ajustes.',
+                          confirmText: 'Sí, reabrir cierre',
+                          cancelText: 'Cancelar',
+                          variant: 'warning'
+                        });
+                        if (confirmed) {
+                          setCierreFormalizado(false);
+                        }
+                      }}
                       className="px-5 py-3 bg-white hover:bg-slate-50 text-amber-700 border border-amber-300 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm"
                     >
                       Reabrir Cierre

@@ -8,8 +8,9 @@ export const encuestasService = {
   async getEncuestas(): Promise<SurveyStudy[]> {
     const { data, error } = await supabase
       .from('surveys')
-      .select('*')
-      .order('created_at', { ascending: false });
+      .select('id, code, titulo, type, methodology, estado, muestra_objetivo, completed_sample, margin_of_error, confidence_level, fecha_inicio, fecha_fin, pollsters_count, location, questions_count')
+      .order('created_at', { ascending: false })
+      .limit(100);
 
     if (error) {
       console.error('Error fetching surveys:', error);

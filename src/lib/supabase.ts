@@ -1,10 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
+import type { Database } from '../types/database.types';
 
 const DEFAULT_SUPABASE_URL = 'https://cjvztlvxdsuiluybvtpl.supabase.co';
 const DEFAULT_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNqdnp0bHZ4ZHN1aWx1eWJ2dHBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg0NjU3MDAsImV4cCI6MjEwNDA0MTcwMH0.E-aIfV1P8XUDRW-lGC7lC6x6eOpwIdJeCpFDnxOI-uY';
 
-// Supabase is configured exclusively through this deployment's environment.
-const env = (import.meta as any).env || {};
+// Supabase is configured through environment variables with production fallback
+const env = (typeof import.meta !== 'undefined' && (import.meta as any).env) ? (import.meta as any).env : (typeof process !== 'undefined' && process.env ? process.env : {});
 export const IS_SUPABASE_CONFIGURED = Boolean(
   (env.VITE_SUPABASE_URL || env.NEXT_PUBLIC_SUPABASE_URL || DEFAULT_SUPABASE_URL) &&
   (env.VITE_SUPABASE_ANON_KEY || env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || DEFAULT_SUPABASE_ANON_KEY)
@@ -16,8 +17,8 @@ export const SUPABASE_ANON_KEY = env.VITE_SUPABASE_ANON_KEY || env.NEXT_PUBLIC_S
 // URL del Software Electoral al que se redirige tras el registro/login
 export const PANEL_ADMIN_URL = env.VITE_PANEL_ADMIN_URL || 'https://softwareelectoral.netlify.app/';
 
-// Initialize Supabase Client with security best practices
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+// Initialize Typed Supabase Client with security best practices
+export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
@@ -31,6 +32,40 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 });
 
 /**
+ * Authentication Helpers
+ */
+export async function signInUser(email: string, password: string) {
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: email.trim().toLowerCase(),
+    password,
+  });
+  if (error) throw error;
+  return data;
+}
+
+export async function signOutUser() {
+  const { error } = await supabase.auth.signOut();
+  if (error) throw error;
+}
+
+export async function getCurrentUserProfile() {
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) return null;
+
+  const { data: profile, error: profError } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  if (profError) {
+    console.warn('Error fetching user profile:', profError.message);
+  }
+
+  return { user, profile };
+}
+
+/**
  * Test Supabase Database Connection
  */
 export async function testSupabaseConnection(): Promise<{ success: boolean; message: string }> {
@@ -38,7 +73,7 @@ export async function testSupabaseConnection(): Promise<{ success: boolean; mess
     return { success: false, message: 'La base de datos en la nube no está configurada.' };
   }
   try {
-    const { error } = await supabase.from('campaigns').select('count', { count: 'exact', head: true });
+    const { error } = await supabase.from('campaigns').select('id', { count: 'exact', head: true });
     if (error && error.code !== 'PGRST116' && !error.message.includes('relation "public.campaigns" does not exist')) {
       console.warn('Database ping check:', error.message);
       return { success: true, message: 'Conectado a la base de datos central en la nube' };
@@ -69,7 +104,7 @@ export async function registerNewClient(data: {
     const department = (data.department || 'Colombia').trim();
 
     // 1. Create client organization record
-    const { data: clientData, error: clientError } = await supabase
+    const { data: clientData, error: clientError } = await (supabase as any)
       .from('clients')
       .insert([{
         name: data.campaignName,
@@ -96,9 +131,9 @@ export async function registerNewClient(data: {
           phone,
           department,
           role: 'ADMIN_CLIENTE',
-          client_id: clientData?.id || null
-        }
-      }
+          client_id: clientData?.id || null,
+        },
+      },
     });
 
     if (authError) {
@@ -110,7 +145,7 @@ export async function registerNewClient(data: {
 
     if (authData.user) {
       // 3. Ensure profile is upserted with ADMIN_CLIENTE role
-      await supabase.from('profiles').upsert({
+      await (supabase as any).from('profiles').upsert({
         id: authData.user.id,
         email,
         display_name: fullName,
@@ -119,20 +154,9 @@ export async function registerNewClient(data: {
         status: 'ACTIVE',
         client_id: clientData?.id || null,
         allowed_modules: ['ADMINISTRATIVE', 'TERRITORY', 'STRATEGY', 'CRM'],
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       }, { onConflict: 'id' }).catch(() => {});
     }
-
-    // 4. Save as demo lead for tracking
-    await supabase.from('demo_leads').insert([{
-      full_name: fullName,
-      email,
-      phone,
-      campaign_type: data.campaignName,
-      department,
-      notes: 'Registro automático desde landing',
-      created_at: new Date().toISOString(),
-    }]).catch(() => {});
 
     return {
       success: true,
@@ -157,24 +181,24 @@ export async function saveDemoLeadToSupabase(lead: {
   notes?: string;
 }) {
   try {
-    const { data, error } = await supabase
-      .from('demo_leads')
+    const { data, error } = await (supabase as any)
+      .from('admin_access_requests')
       .insert([
         {
           full_name: lead.fullName,
           email: lead.email,
           phone: lead.phone,
-          campaign_type: lead.campaignType,
-          department: lead.department,
-          municipality: lead.municipality || '',
-          notes: lead.notes || '',
+          requested_username: lead.email.split('@')[0],
+          reason: `Lead demo: ${lead.campaignType} - ${lead.department} ${lead.municipality || ''}. ${lead.notes || ''}`,
+          password_hash: 'PENDING_DEMO_CREATION',
+          status: 'PENDIENTE',
           created_at: new Date().toISOString(),
         },
       ])
       .select();
 
     if (error) {
-      console.warn('Could not insert to demo_leads table, logging to fallback local storage:', error.message);
+      console.warn('Could not insert to admin_access_requests table:', error.message);
       return { success: true, data: lead, warning: error.message };
     }
     return { success: true, data };

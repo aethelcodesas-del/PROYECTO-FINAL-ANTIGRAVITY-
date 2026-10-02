@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useCampaignData } from '../../contexts/CampaignContext';
 import { ViewMode, AuthUser } from '../../types';
+import { showToast } from '../common/ConfirmModal';
 import { 
   ShieldCheck, 
   AlertTriangle, 
@@ -389,7 +390,7 @@ export const PruebasElectoralesView: React.FC<PruebasElectoralesViewProps> = ({
   // Digital Transmission TC-PRE-02 Simulator
   const runTC_PRE_02 = () => {
     if (!e14FileUploaded) {
-      alert('Por favor, "cargue" la imagen escaneada del E-14 primero.');
+      showToast('Por favor, "cargue" la imagen escaneada del E-14 primero.', 'warning');
       return;
     }
     updateTestCaseStatus('TC-PRE-02', 'CORRIENDO');
@@ -515,7 +516,7 @@ export const PruebasElectoralesView: React.FC<PruebasElectoralesViewProps> = ({
   // Escrutinio Municipal TC-ESC-02 Simulator
   const resolveTC_ESC_02 = () => {
     if (!esc2Discrepancy.judgeName || !esc2Discrepancy.justification) {
-      alert('Por favor, ingrese el nombre del Juez y la justificación legal de la corrección.');
+      showToast('Por favor, ingrese el nombre del Juez y la justificación legal de la corrección.', 'warning');
       return;
     }
     updateTestCaseStatus('TC-ESC-02', 'CORRIENDO');

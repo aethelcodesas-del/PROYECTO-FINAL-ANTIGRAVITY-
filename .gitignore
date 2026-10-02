@@ -16,4 +16,10 @@ global_admin_db.json
 .npm-cache-temp/
 .env*
 .verification-build/
+.runtime-test/
+.wrangler/
+.wrangler-config/
+codex-publish-*/
+data_db.json
 *.zip
+

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { GlobalAdminSecurityEvent } from '../../../types/globalAdmin';
 import { GlobalAdminService } from '../../../services/globalAdminService';
+import { confirmModal, showToast } from '../../common/ConfirmModal';
 import {
   ShieldAlert,
   Lock,
@@ -71,15 +72,25 @@ export const GlobalAdminSecurity: React.FC = () => {
   };
 
   const handleRevokeSession = async (email: string) => {
-    if (!window.confirm(`¿Revocar todas las sesiones activas para ${email}?`)) return;
-    try {
-      await GlobalAdminService.revokeSession(email);
-      setSuccessMsg(`Sesiones revocadas para ${email}.`);
-      fetchData();
-      setTimeout(() => setSuccessMsg(null), 4000);
-    } catch (err: any) {
-      setError(err.message || 'Error al revocar sesión');
-    }
+    await confirmModal({
+      title: 'Revocar sesiones activas',
+      message: `¿Revocar todas las sesiones activas para "${email}"? El usuario deberá volver a iniciar sesión.`,
+      confirmText: 'Sí, revocar sesiones',
+      cancelText: 'Cancelar',
+      variant: 'danger',
+      onConfirm: async () => {
+        try {
+          await GlobalAdminService.revokeSession(email);
+          setSuccessMsg(`Sesiones revocadas para ${email}.`);
+          showToast(`Sesiones revocadas para ${email}.`, 'success');
+          fetchData();
+          setTimeout(() => setSuccessMsg(null), 4000);
+        } catch (err: any) {
+          setError(err.message || 'Error al revocar sesión');
+          showToast(err.message || 'Error al revocar sesión', 'error');
+        }
+      }
+    });
   };
 
   return (

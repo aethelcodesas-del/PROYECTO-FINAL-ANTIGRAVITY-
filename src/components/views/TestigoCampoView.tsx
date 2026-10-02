@@ -6,6 +6,7 @@ import { ElectionLocationCheckIn } from '../common/ElectionLocationCheckIn';
 import { supabase } from '../../lib/supabase';
 import { useModuleColorMode } from '../../utils/themeColorMode';
 import { ColorModeToggle } from '../common/ColorModeToggle';
+import { confirmModal, showToast } from '../common/ConfirmModal';
 import { 
   CheckCircle2, 
   AlertTriangle, 
@@ -243,7 +244,7 @@ export const TestigoCampoView: React.FC<TestigoCampoViewProps> = ({ onSelectView
   const handleFormalizarCierre = (e: React.FormEvent) => {
     e.preventDefault();
     if (!totalSufragantes || !nombrePresidenteMesa) {
-      alert('Complete todos los campos obligatorios para formalizar el cierre.');
+      showToast('Complete todos los campos obligatorios para formalizar el cierre.', 'warning');
       return;
     }
     setCierreFormalizado(true);
@@ -278,11 +279,19 @@ export const TestigoCampoView: React.FC<TestigoCampoViewProps> = ({ onSelectView
     }));
   };
 
-  const handleResetCuenta = () => {
-    if (!window.confirm('¿Está seguro de reiniciar todos los contadores a cero? Esta acción no se puede deshacer.')) return;
+  const handleResetCuenta = async () => {
+    const confirmed = await confirmModal({
+      title: 'Reiniciar contadores de mesa',
+      message: '¿Está seguro de reiniciar todos los contadores a cero? Esta acción no se puede deshacer.',
+      confirmText: 'Sí, reiniciar',
+      cancelText: 'Cancelar',
+      variant: 'danger'
+    });
+    if (!confirmed) return;
     setCandidatosCuenta(prev => prev.map(c => ({ ...c, votos: 0 })));
     setRegistroCuenta([]);
     setCuentaCerrada(false);
+    showToast('Contadores reiniciados a cero.', 'info');
   };
 
   const handleAgregarCandidato = () => {
@@ -415,12 +424,12 @@ export const TestigoCampoView: React.FC<TestigoCampoViewProps> = ({ onSelectView
   const handleParticipacionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!puestoAsignado.id || puestoAsignado.votantesHabilitados <= 0) {
-      alert('La mesa debe tener una asignación y un censo electoral configurados antes de reportar participación.');
+      showToast('La mesa debe tener una asignación y un censo electoral configurados antes de reportar participación.', 'warning');
       return;
     }
     const votos = parseInt(nuevoVotosAcumulados);
     if (isNaN(votos) || votos < 0 || votos > puestoAsignado.votantesHabilitados) {
-      alert('Por favor ingrese un número de votos válido.');
+      showToast('Por favor ingrese un número de votos válido.', 'warning');
       return;
     }
     const nuevoReporte: ReporteParticipacion = {
@@ -439,7 +448,7 @@ export const TestigoCampoView: React.FC<TestigoCampoViewProps> = ({ onSelectView
       updated_at: new Date().toISOString(),
     }).eq('id', puestoAsignado.id);
     if (error) {
-      alert('No fue posible guardar el reporte de participación.');
+      showToast('No fue posible guardar el reporte de participación.', 'error');
       return;
     }
     setParticipacionReportes(nextReports);
@@ -1816,7 +1825,19 @@ export const TestigoCampoView: React.FC<TestigoCampoViewProps> = ({ onSelectView
                     </button>
                     <button
                       type="button"
-                      onClick={() => { if (window.confirm('¿Reabrir el proceso de cierre? Esto reanudará el conteo.')) { setCierreFormalizado(false); setCuentaCerrada(false); } }}
+                      onClick={async () => {
+                        const confirmed = await confirmModal({
+                          title: 'Reabrir proceso de cierre',
+                          message: '¿Reabrir el proceso de cierre de la mesa? Esto reanudará el conteo de votos.',
+                          confirmText: 'Sí, reabrir cierre',
+                          cancelText: 'Cancelar',
+                          variant: 'warning'
+                        });
+                        if (confirmed) {
+                          setCierreFormalizado(false);
+                          setCuentaCerrada(false);
+                        }
+                      }}
                       className="px-5 py-3 bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-900/40 rounded-xl text-xs font-bold transition-all cursor-pointer"
                     >
                       Reabrir Cierre

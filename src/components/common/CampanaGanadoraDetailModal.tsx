@@ -105,7 +105,12 @@ export const CampanaGanadoraDetailModal: React.FC<CampanaGanadoraDetailModalProp
           {/* Header Bar with Category Gradient */}
           <div className={`p-6 sm:p-7 border-b bg-gradient-to-r ${getCategoryGradient(item.category)} relative shrink-0`}>
             <button
-              onClick={onClose}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onClose();
+              }}
               className="absolute top-5 right-5 p-2 rounded-full bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white transition cursor-pointer border border-slate-700"
               title="Cerrar ventana"
             >
@@ -214,7 +219,12 @@ export const CampanaGanadoraDetailModal: React.FC<CampanaGanadoraDetailModalProp
           {/* Footer Actions */}
           <div className="p-4 sm:p-5 border-t border-slate-800 bg-[#060b17] flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
             <button
-              onClick={onClose}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onClose();
+              }}
               className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition cursor-pointer border border-slate-700"
             >
               Cerrar Detalle
@@ -222,7 +232,10 @@ export const CampanaGanadoraDetailModal: React.FC<CampanaGanadoraDetailModalProp
 
             <div className="flex items-center gap-2.5 w-full sm:w-auto">
               <button
-                onClick={() => {
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
                   onClose();
                   if (onLogin) onLogin();
                 }}

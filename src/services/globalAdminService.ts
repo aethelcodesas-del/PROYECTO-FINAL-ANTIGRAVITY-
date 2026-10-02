@@ -219,7 +219,7 @@ export class GlobalAdminService {
       supabase.from('profiles').select('id,role,status,campaign_id,client_id', { count: 'exact' }),
       supabase.from('campaigns').select('id,nombre,estado', { count: 'exact' }),
       supabase.from('modules').select('id', { count: 'exact' }),
-      supabase.from('audit_logs').select('*').order('created_at', { ascending: false }).limit(8)
+      supabase.from('audit_logs').select('id, user_email, action, resource, details, ip_address, created_at').order('created_at', { ascending: false }).limit(8)
     ]);
 
     const firstError = profilesResult.error || campaignsResult.error || modulesResult.error;
@@ -285,7 +285,7 @@ export class GlobalAdminService {
   // 3. Users Management
   static async getUsers(): Promise<GlobalAdminUser[]> {
     const [{ data, error }, { data: campaigns, error: campaignsError }] = await Promise.all([
-      supabase.from('profiles').select('*').order('created_at', { ascending: false }),
+      supabase.from('profiles').select('id, full_name, email, role, status, campaign_id, client_id, created_at, last_login, permissions, phone').order('created_at', { ascending: false }).limit(50),
       supabase.from('campaigns').select('id,client_id,nombre')
     ]);
     if (error) throw new Error(`Servidor: ${error.message}`);

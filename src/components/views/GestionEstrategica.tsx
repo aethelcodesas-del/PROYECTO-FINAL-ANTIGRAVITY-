@@ -1,14 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { lazy, useState, useEffect, useRef } from 'react';
 import { useCampaignData } from '../../contexts/CampaignContext';
 import { useCampaignGeo } from '../../hooks/useCampaignGeo';
 import { ViewMode } from '../../types';
 import type { AuthUser } from '../../types';
 import { supabase } from '../../lib/supabaseClient';
 import { authenticatedFetch } from '../../lib/authenticatedFetch';
-import { ProgramaGobiernoView } from './ProgramaGobiernoView';
-import { ComunicacionRedesView } from './ComunicacionRedesView';
-
-import { AgendaCalendarioView } from './AgendaCalendarioView';
+const ProgramaGobiernoView = lazy(() => import('./ProgramaGobiernoView').then(m => ({ default: m.ProgramaGobiernoView })));
+const ComunicacionRedesView = lazy(() => import('./ComunicacionRedesView').then(m => ({ default: m.ComunicacionRedesView })));
+const AgendaCalendarioView = lazy(() => import('./AgendaCalendarioView').then(m => ({ default: m.AgendaCalendarioView })));
 import { useModuleColorMode } from '../../utils/themeColorMode';
 import { ColorModeToggle } from '../common/ColorModeToggle';
 import { 
@@ -48,7 +47,12 @@ import {
   Flame,
   Zap,
   BarChart3,
-  MapPin
+  MapPin,
+  Compass,
+  Layers,
+  Search,
+  SlidersHorizontal,
+  Copy
 } from 'lucide-react';
 
 // Predefined DOFA / SWOT evaluation variables for political candidate assessment
@@ -111,6 +115,8 @@ interface PoliticalActor {
   role: 'Competidor Directo' | 'Aliado Político' | 'Líder Neutral';
   party: string;
   estimatedVoteShare: number;
+  influenceLevel?: 'Alta' | 'Media' | 'Baja';
+  territorio?: string;
   notes: string;
   source: string;
   updatedAt: string;
@@ -149,9 +155,65 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
   const [diagnosticSubTab, setDiagnosticSubTab] = useState<'overview' | 'territorial' | 'audit' | 'report'>('overview');
   const [isDiagnosticScanning, setIsDiagnosticScanning] = useState(false);
   const [lastDiagnosticDate, setLastDiagnosticDate] = useState('');
+  const [diagnosticMessage, setDiagnosticMessage] = useState('');
 
-  const [diagnosticCampaign, setDiagnosticCampaign] = useState<any | null>(null);
-  const [diagnosticCampaignLoading, setDiagnosticCampaignLoading] = useState(true);
+  const [realCampaignStats, setRealCampaignStats] = useState({
+    pollingStations: 0,
+    leaders: 0,
+    voters: 0,
+    witnesses: 0,
+    budgetItems: 0,
+    surveys: 0,
+    proposals: 0,
+    activities: 0,
+  });
+
+  const [diagnosticCampaign, setDiagnosticCampaign] = useState<any | null>(() => {
+    try {
+      const cached = localStorage.getItem('diagnostic_campaign_cache');
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [diagnosticCampaignLoading, setDiagnosticCampaignLoading] = useState(false);
+
+  const fetchRealCampaignStats = async (campId: string) => {
+    if (!campId) return;
+    try {
+      const [
+        stationsRes,
+        leadersRes,
+        votersRes,
+        witnessesRes,
+        budgetRes,
+        surveysRes,
+        proposalsRes,
+        activitiesRes,
+      ] = await Promise.all([
+        supabase.from('polling_stations').select('id', { count: 'exact', head: true }).eq('campaign_id', campId),
+        supabase.from('leaders').select('id', { count: 'exact', head: true }).eq('campaign_id', campId),
+        supabase.from('voters').select('id', { count: 'exact', head: true }).eq('campaign_id', campId),
+        supabase.from('witnesses').select('id', { count: 'exact', head: true }).eq('campaign_id', campId),
+        supabase.from('budget_items').select('id', { count: 'exact', head: true }).eq('campaign_id', campId),
+        supabase.from('surveys').select('id', { count: 'exact', head: true }).eq('campaign_id', campId),
+        supabase.from('strategic_proposals').select('id', { count: 'exact', head: true }).eq('campaign_id', campId),
+        supabase.from('campaign_activities').select('id', { count: 'exact', head: true }).eq('campaign_id', campId),
+      ]);
+      setRealCampaignStats({
+        pollingStations: stationsRes.count || 0,
+        leaders: leadersRes.count || 0,
+        voters: votersRes.count || 0,
+        witnesses: witnessesRes.count || 0,
+        budgetItems: budgetRes.count || 0,
+        surveys: surveysRes.count || 0,
+        proposals: proposalsRes.count || 0,
+        activities: activitiesRes.count || 0,
+      });
+    } catch {
+      // Keep previous stats on transient failure
+    }
+  };
 
   useEffect(() => {
     const loadDiagnosticCampaign = async () => {
@@ -161,15 +223,19 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
         let query = supabase.from('campaigns').select('*');
         if (rememberedCampaignId) query = query.eq('id', rememberedCampaignId);
         else if (authUser?.clientId) query = query.eq('client_id', authUser.clientId);
-        else {
-          setDiagnosticCampaign(null);
-          return;
-        }
-        const { data, error } = await query.order('created_at', { ascending: false }).limit(1).maybeSingle();
+        const { data, error } = await query.order('updated_at', { ascending: false }).limit(1).maybeSingle();
         if (error) throw error;
-        setDiagnosticCampaign(data || null);
+        if (data) {
+          setDiagnosticCampaign(data);
+          void fetchRealCampaignStats(String(data.id));
+          try {
+            localStorage.setItem('diagnostic_campaign_cache', JSON.stringify(data));
+          } catch {
+            // ignore
+          }
+        }
       } catch {
-        setDiagnosticCampaign(null);
+        // Keep cached state if fetch fails
       } finally {
         setDiagnosticCampaignLoading(false);
       }
@@ -183,7 +249,6 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
     ? new Date(diagnosticCampaign.election_date).getFullYear()
     : new Date().getFullYear();
 
-
   // Territorial Diagnostic State (Programmatic Input)
   interface TerritorialNeed {
     id: string;
@@ -194,45 +259,13 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
     programmaticProposal: string;
   }
 
-  const [territorialNeeds, setTerritorialNeeds] = useState<TerritorialNeed[]>([
-    {
-      id: 'tn-1',
-      comunaSector: 'Comuna 1 - Popular',
-      category: 'Infraestructura',
-      problemDescription: 'Déficit de rutas alimentadoras de metrocable y deterioro severo de la malla vial secundaria.',
-      impactLevel: 'Alto',
-      programmaticProposal: 'Implementación del Plan Metropolitano de Micro-Pavimentación Comunitaria e integración tarifaria alimentadora.'
-    },
-    {
-      id: 'tn-2',
-      comunaSector: 'Comuna 3 - Manrique',
-      category: 'Seguridad',
-      problemDescription: 'Presencia de estructuras delictivas locales que extorsionan a comerciantes y transporte público.',
-      impactLevel: 'Crítico',
-      programmaticProposal: 'Despliegue de Centros Integrales de Seguridad Comunitaria con cámaras LPR de inteligencia artificial y red de apoyo gremial.'
-    },
-    {
-      id: 'tn-3',
-      comunaSector: 'Comuna 13 - San Javier',
-      category: 'Empleo',
-      problemDescription: 'Alta tasa de desempleo e informalidad juvenil (42%) con falta de centros de formación tecnológica.',
-      impactLevel: 'Alto',
-      programmaticProposal: 'Creación de la Ciudadela Tecnológica y Nodos de Emprendimiento Digital con incentivos fiscales para contratación juvenil.'
-    },
-    {
-      id: 'tn-4',
-      comunaSector: 'Corregimiento San Cristóbal',
-      category: 'Medio Ambiente',
-      problemDescription: 'Intermediación abusiva en la comercialización agrícola y falta de distritos de riego eficientes.',
-      impactLevel: 'Medio',
-      programmaticProposal: 'Constitución del Centro de Acopio Campesino y Tecnificación del Distrito Agroecológico de San Cristóbal.'
-    }
-  ].filter(() => false) as TerritorialNeed[]);
+  const [territorialNeeds, setTerritorialNeeds] = useState<TerritorialNeed[]>([]);
 
+  const defaultSectorOption = geoCtx.subdivisions?.[0]?.name || (diagnosticTerritory ? `Casco Urbano - ${diagnosticTerritory}` : 'Zona Principal');
   const [selectedComunaFilter, setSelectedComunaFilter] = useState<string>('Todos');
   const [showAddNeedModal, setShowAddNeedModal] = useState(false);
   const [newTerritorialNeed, setNewTerritorialNeed] = useState({
-    comunaSector: 'Comuna 1 - Popular',
+    comunaSector: defaultSectorOption,
     category: 'Seguridad' as 'Seguridad' | 'Infraestructura' | 'Empleo' | 'Salud' | 'Educación' | 'Medio Ambiente',
     problemDescription: '',
     impactLevel: 'Alto' as 'Alto' | 'Crítico' | 'Medio',
@@ -247,7 +280,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
     };
     setTerritorialNeeds([newEntry, ...territorialNeeds]);
     setNewTerritorialNeed({
-      comunaSector: 'Comuna 1 - Popular',
+      comunaSector: defaultSectorOption,
       category: 'Seguridad',
       impactLevel: 'Alto',
       problemDescription: '',
@@ -286,310 +319,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
     variables: SectorVariable[];
   }
 
-  // The territorial diagnosis must start empty. The examples below are retained
-  // only as a typed catalogue while the screen is migrated, but are never seeded.
-  const [sectorDiagnostics, setSectorDiagnostics] = useState<SectorDiagnostic[]>([
-    {
-      id: 'sec-seguridad',
-      category: 'Seguridad',
-      iconEmoji: '🛡️',
-      surveyPriorityPercent: 68,
-      problemSummary: 'Alta percepción de inseguridad en transporte público y zonas comerciales de comunas periféricas. Incremento en microextorsión a pequeños negocios.',
-      programmaticSolution: 'Creación de la Red Comunitaria de Inteligencia y Seguridad Digital con cámaras LPR integradas a la Policía y Centros C4 en comunas críticas.',
-      variables: [
-        { 
-          id: 'v-seg-1', 
-          name: 'Percepción de Inseguridad Nocturna', 
-          status: 'Crítico', 
-          score: 28, 
-          pollPerception: '78% de encuestados se siente inseguro de noche',
-          indicador: 'Índice de Percepción de Inseguridad Nocturna',
-          lineaBase: '78.4%',
-          meta: '32.0%'
-        },
-        { 
-          id: 'v-seg-2', 
-          name: 'Tiempo de Respuesta de Cuadrantes/Patrullas', 
-          status: 'Regular', 
-          score: 45, 
-          pollPerception: '62% exige menor tiempo de respuesta',
-          indicador: 'Tiempo promedio de atención a llamadas de emergencia',
-          lineaBase: '24.5 min',
-          meta: '8.0 min'
-        },
-        { 
-          id: 'v-seg-3', 
-          name: 'Extorsión y Cobro de Cuotas a Comercio Local', 
-          status: 'Crítico', 
-          score: 22, 
-          pollPerception: '84% califica la extorsión como grave',
-          indicador: 'Porcentaje de comerciantes víctimas de extorsión',
-          lineaBase: '38.2%',
-          meta: '8.5%'
-        },
-        { 
-          id: 'v-seg-4', 
-          name: 'Alumbrado Público e Iluminación en Parques', 
-          status: 'Regular', 
-          score: 52, 
-          pollPerception: '58% solicita iluminación LED',
-          indicador: 'Porcentaje de parques con iluminación LED funcional',
-          lineaBase: '42.0%',
-          meta: '95.0%'
-        }
-      ]
-    },
-    {
-      id: 'sec-salud',
-      category: 'Salud',
-      iconEmoji: '🏥',
-      surveyPriorityPercent: 54,
-      problemSummary: 'Congestión severa en salas de urgencias y demoras de hasta 45 días en la asignación de citas con especialistas en la red pública hospitalaria.',
-      programmaticSolution: 'Implementación de Telemedicina Municipal Prioritaria y adquisición de Unidades Móviles de Diagnóstico de Alta Complejidad.',
-      variables: [
-        { 
-          id: 'v-sal-1', 
-          name: 'Tiempo de Asignación Citas Especialistas', 
-          status: 'Crítico', 
-          score: 25, 
-          pollPerception: '82% reporta espera superior a 30 días',
-          indicador: 'Días promedio de espera para cita especializada',
-          lineaBase: '45.0 días',
-          meta: '12.0 días'
-        },
-        { 
-          id: 'v-sal-2', 
-          name: 'Oportunidad y Entrega Total de Medicamentos', 
-          status: 'Crítico', 
-          score: 30, 
-          pollPerception: '75% reporta escasez en dispensarios',
-          indicador: 'Tasa de desabastecimiento de fórmulas médicas',
-          lineaBase: '34.8%',
-          meta: '5.0%'
-        },
-        { 
-          id: 'v-sal-3', 
-          name: 'Atención en Urgencias Hospitalarias', 
-          status: 'Regular', 
-          score: 42, 
-          pollPerception: '68% pide descongestionar urgencias',
-          indicador: 'Tiempo promedio de triaje y atención primaria',
-          lineaBase: '4.2 horas',
-          meta: '1.2 horas'
-        },
-        { 
-          id: 'v-sal-4', 
-          name: 'Programas de Salud Mental y Prevención', 
-          status: 'Crítico', 
-          score: 32, 
-          pollPerception: '71% pide atención psicológica en barrios',
-          indicador: 'Centros de atención psicológica barrial por 100k hab',
-          lineaBase: '1.8 centros',
-          meta: '8.0 centros'
-        }
-      ]
-    },
-    {
-      id: 'sec-educacion',
-      category: 'Educación',
-      iconEmoji: '🎓',
-      surveyPriorityPercent: 48,
-      problemSummary: 'Deterioro en la infraestructura física de instituciones educativas públicas y deserción en educación superior por falta de becas.',
-      programmaticSolution: 'Fondo Municipal de Becas 100% Condonables para Carreras STEM e Inversión de Choque en Infraestructura Escolar.',
-      variables: [
-        { 
-          id: 'v-edu-1', 
-          name: 'Mantenimiento e Infraestructura Física Escolar', 
-          status: 'Regular', 
-          score: 48, 
-          pollPerception: '55% colegios requieren reformas urgentes',
-          indicador: 'Porcentaje de escuelas públicas con daño estructural',
-          lineaBase: '55.0%',
-          meta: '10.0%'
-        },
-        { 
-          id: 'v-edu-2', 
-          name: 'Acceso a Becas de Educación Superior / Técnica', 
-          status: 'Crítico', 
-          score: 35, 
-          pollPerception: '76% jóvenes sin cupo en educación técnica/superior',
-          indicador: 'Cobertura de becas de educación superior en est. 1 y 2',
-          lineaBase: '14.2%',
-          meta: '65.0%'
-        },
-        { 
-          id: 'v-edu-3', 
-          name: 'Calidad y Cobertura Alimentación Escolar (PAE)', 
-          status: 'Bueno', 
-          score: 72, 
-          pollPerception: '65% aprueba ración alimentaria escolar',
-          indicador: 'Cobertura efectiva del programa de alimentación escolar',
-          lineaBase: '82.5%',
-          meta: '100.0%'
-        },
-        { 
-          id: 'v-edu-4', 
-          name: 'Conectividad e Internet en Aulas Públicas', 
-          status: 'Regular', 
-          score: 50, 
-          pollPerception: '58% pide mayor ancho de banda en escuelas',
-          indicador: 'Ancho de banda promedio por estudiante',
-          lineaBase: '1.2 Mbps',
-          meta: '15.0 Mbps'
-        }
-      ]
-    },
-    {
-      id: 'sec-infraestructura',
-      category: 'Infraestructura',
-      iconEmoji: '🛣️',
-      surveyPriorityPercent: 62,
-      problemSummary: 'Malla vial secundaria deteriorada con altos niveles de acentuación de huecos en rutas de buses y congestión vehicular en corredores principales.',
-      programmaticSolution: 'Plan Escuadrón Tapa-Huecos 24/7 y Construcción de Viaductos de Descongestión en Puntos Críticos.',
-      variables: [
-        { 
-          id: 'v-inf-1', 
-          name: 'Estado de Malla Vial y Huecos en Vías', 
-          status: 'Crítico', 
-          score: 20, 
-          pollPerception: '89% califica vías en mal estado',
-          indicador: 'Porcentaje de malla vial secundaria deteriorada',
-          lineaBase: '68.4%',
-          meta: '15.0%'
-        },
-        { 
-          id: 'v-inf-2', 
-          name: 'Frecuencia y Cobertura Transporte Público', 
-          status: 'Regular', 
-          score: 46, 
-          pollPerception: '63% exige aumentar frecuencias',
-          indicador: 'Frecuencia de paso de rutas públicas en hora pico',
-          lineaBase: '28.0 min',
-          meta: '10.0 min'
-        },
-        { 
-          id: 'v-inf-3', 
-          name: 'Mantenimiento de Aceras y Espacio Peatonal', 
-          status: 'Bueno', 
-          score: 68, 
-          pollPerception: '58% aprueba caminabilidad de corredores',
-          indicador: 'Kilómetros de andenes con acceso incluyente',
-          lineaBase: '42.5 km',
-          meta: '120.0 km'
-        }
-      ]
-    },
-    {
-      id: 'sec-empleo',
-      category: 'Empleo',
-      iconEmoji: '💼',
-      surveyPriorityPercent: 59,
-      problemSummary: 'Tasa de desempleo juvenil elevada y proliferación del crédito extorsivo (gota a gota) entre comerciantes informales.',
-      programmaticSolution: 'Banco Semilla de Emprendimiento Popular al 0% de Interés y Programa Primer Empleo Joven con exención fiscal empresarial.',
-      variables: [
-        { 
-          id: 'v-emp-1', 
-          name: 'Oportunidades de Primer Empleo para Jóvenes', 
-          status: 'Crítico', 
-          score: 32, 
-          pollPerception: '81% denuncia falta de empleo juvenil',
-          indicador: 'Tasa de desempleo juvenil (18 - 28 años)',
-          lineaBase: '26.8%',
-          meta: '11.0%'
-        },
-        { 
-          id: 'v-emp-2', 
-          name: 'Acceso a Crédito Justo para Microempresas', 
-          status: 'Regular', 
-          score: 42, 
-          pollPerception: '73% pide erradicar el gota a gota',
-          indicador: 'Porcentaje de informales en crédito informal extorsivo',
-          lineaBase: '41.2%',
-          meta: '8.0%'
-        },
-        { 
-          id: 'v-emp-3', 
-          name: 'Incentivos para Inversión e Industria Local', 
-          status: 'Regular', 
-          score: 55, 
-          pollPerception: '60% apoya atracción de empresas',
-          indicador: 'Nuevas Mipymes formalizadas e incentivadas por año',
-          lineaBase: '120 empresas',
-          meta: '450 empresas'
-        }
-      ]
-    },
-    {
-      id: 'sec-ambiente',
-      category: 'Medio Ambiente',
-      iconEmoji: '🌿',
-      surveyPriorityPercent: 42,
-      problemSummary: 'Deficiencias en recolección de residuos sólidos en laderas, puntos críticos de basuras y falta de acueducto potable digno en zonas periféricas.',
-      programmaticSolution: 'Modernización del Sistema de Contenerización Inteligente y Formalización de Recicladores de Oficio.',
-      variables: [
-        { 
-          id: 'v-amb-1', 
-          name: 'Eficiencia en Recolección de Basuras', 
-          status: 'Regular', 
-          score: 51, 
-          pollPerception: '64% identifica puntos críticos de arrojo',
-          indicador: 'Número de puntos críticos clandestinos de basura',
-          lineaBase: '142 puntos',
-          meta: '20 puntos'
-        },
-        { 
-          id: 'v-amb-2', 
-          name: 'Cobertura de Agua Potable y Alcantarillado', 
-          status: 'Crítico', 
-          score: 38, 
-          pollPerception: '70% demanda acueducto digno en laderas',
-          indicador: 'Cobertura de agua potable continua en laderas',
-          lineaBase: '62.0%',
-          meta: '98.0%'
-        },
-        { 
-          id: 'v-amb-3', 
-          name: 'Protección de Parques Ecológicos y Cerros', 
-          status: 'Bueno', 
-          score: 70, 
-          pollPerception: '62% apoya conservación de cerros',
-          indicador: 'Hectáreas de áreas protegidas reforestadas y custodiadas',
-          lineaBase: '125 ha',
-          meta: '450 ha'
-        }
-      ]
-    },
-    {
-      id: 'sec-inclusion',
-      category: 'Inclusión y Deporte',
-      iconEmoji: '⚽',
-      surveyPriorityPercent: 39,
-      problemSummary: 'Falta de iluminación e infraestructura sintética en canchas barriales y desatención a centros día de adultos mayores.',
-      programmaticSolution: 'Canchas Sintéticas de Acceso Gratuito 24/7 y Red Distrital de Centros Día con Nutrición para Adultos Mayores.',
-      variables: [
-        { 
-          id: 'v-inc-1', 
-          name: 'Estado de Mantenimiento de Canchas Barriales', 
-          status: 'Regular', 
-          score: 53, 
-          pollPerception: '59% pide iluminar y arreglar canchas',
-          indicador: 'Porcentaje de canchas deportivas restauradas e iluminadas',
-          lineaBase: '38.0%',
-          meta: '90.0%'
-        },
-        { 
-          id: 'v-inc-2', 
-          name: 'Atención Integral a Adultos Mayores y Discapacidad', 
-          status: 'Regular', 
-          score: 49, 
-          pollPerception: '67% pide aumento de subsidios',
-          indicador: 'Adultos mayores atendidos en centros día de la ciudad',
-          lineaBase: '3,200 pers.',
-          meta: '8,500 pers.'
-        }
-      ]
-    }
-  ].filter(() => false) as SectorDiagnostic[]);
+  const [sectorDiagnostics, setSectorDiagnostics] = useState<SectorDiagnostic[]>([]);
 
   const [activeSectorId, setActiveSectorId] = useState<string>('');
   const [selectedSectorTab, setSelectedSectorTab] = useState<string>('');
@@ -605,21 +335,48 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
     ? `campaign:${diagnosticCampaign.id}:territorial-needs`
     : '';
 
+  const [auditAnswers, setAuditAnswers] = useState<Record<number, 'si' | 'parcial' | 'no'>>({
+    1: 'no',
+    2: 'no',
+    3: 'no',
+    4: 'no',
+    5: 'no',
+    6: 'no',
+    7: 'no',
+    8: 'no',
+    9: 'no',
+    10: 'no'
+  });
+
   useEffect(() => {
     if (diagnosticCampaignLoading) return;
     setSectorStorageReady(false);
+    setTerritorialNeedsStorageReady(false);
 
-    if (!sectorStorageKey) {
+    if (!diagnosticCampaign?.id) {
       setSectorDiagnostics([]);
+      setTerritorialNeeds([]);
       setActiveSectorId('');
       setSelectedSectorTab('');
       return;
     }
 
+    let parsedDesc: any = {};
     try {
-      const stored = localStorage.getItem(sectorStorageKey);
-      const parsed = stored ? JSON.parse(stored) as SectorDiagnostic[] : [];
-      const validSectors = Array.isArray(parsed) ? parsed : [];
+      parsedDesc = JSON.parse(diagnosticCampaign.descripcion || '{}');
+    } catch {
+      parsedDesc = {};
+    }
+
+    try {
+      const dbSectors = parsedDesc?.territorialDiagnosis?.sectors;
+      const storedSectors = sectorStorageKey ? localStorage.getItem(sectorStorageKey) : null;
+      const parsedSectors = Array.isArray(dbSectors)
+        ? dbSectors
+        : storedSectors
+          ? (JSON.parse(storedSectors) as SectorDiagnostic[])
+          : [];
+      const validSectors = Array.isArray(parsedSectors) ? parsedSectors : [];
       setSectorDiagnostics(validSectors);
       setActiveSectorId(validSectors[0]?.id || '');
       setSelectedSectorTab(validSectors[0]?.category || '');
@@ -630,36 +387,76 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
     } finally {
       setSectorStorageReady(true);
     }
-  }, [diagnosticCampaignLoading, sectorStorageKey]);
-
-  useEffect(() => {
-    if (!sectorStorageReady || !sectorStorageKey) return;
-    localStorage.setItem(sectorStorageKey, JSON.stringify(sectorDiagnostics));
-  }, [sectorDiagnostics, sectorStorageKey, sectorStorageReady]);
-
-  useEffect(() => {
-    if (diagnosticCampaignLoading) return;
-    setTerritorialNeedsStorageReady(false);
-
-    if (!territorialNeedsStorageKey) {
-      setTerritorialNeeds([]);
-      return;
-    }
 
     try {
-      const stored = localStorage.getItem(territorialNeedsStorageKey);
-      const parsed = stored ? JSON.parse(stored) as TerritorialNeed[] : [];
-      setTerritorialNeeds(Array.isArray(parsed) ? parsed : []);
+      const dbNeeds = parsedDesc?.territorialDiagnosis?.needs;
+      const storedNeeds = territorialNeedsStorageKey ? localStorage.getItem(territorialNeedsStorageKey) : null;
+      const parsedNeeds = Array.isArray(dbNeeds)
+        ? dbNeeds
+        : storedNeeds
+          ? (JSON.parse(storedNeeds) as TerritorialNeed[])
+          : [];
+      setTerritorialNeeds(Array.isArray(parsedNeeds) ? parsedNeeds : []);
     } catch {
       setTerritorialNeeds([]);
     } finally {
       setTerritorialNeedsStorageReady(true);
     }
-  }, [diagnosticCampaignLoading, territorialNeedsStorageKey]);
+
+    if (parsedDesc?.auditAnswers && typeof parsedDesc.auditAnswers === 'object') {
+      setAuditAnswers((prev) => ({ ...prev, ...parsedDesc.auditAnswers }));
+    }
+  }, [diagnosticCampaignLoading, diagnosticCampaign?.id, sectorStorageKey, territorialNeedsStorageKey]);
+
+  const persistTerritorialAndAuditToDb = async (
+    nextSectors: SectorDiagnostic[],
+    nextNeeds: TerritorialNeed[],
+    nextAudit = auditAnswers
+  ) => {
+    const campId = diagnosticCampaign?.id || candidateCampaignId;
+    if (!campId) return;
+    try {
+      const { data } = await supabase.from('campaigns').select('descripcion').eq('id', campId).maybeSingle();
+      let desc: any = {};
+      try {
+        desc = JSON.parse(data?.descripcion || '{}');
+      } catch {
+        desc = {};
+      }
+      await supabase
+        .from('campaigns')
+        .update({
+          descripcion: JSON.stringify({
+            ...desc,
+            territorialDiagnosis: {
+              sectors: nextSectors,
+              needs: nextNeeds,
+              updatedAt: new Date().toISOString(),
+            },
+            auditAnswers: nextAudit,
+          }),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', campId);
+    } catch {
+      // ignore background sync errors
+    }
+  };
+
+  useEffect(() => {
+    if (!sectorStorageReady || !sectorStorageKey) return;
+    localStorage.setItem(sectorStorageKey, JSON.stringify(sectorDiagnostics));
+    if (territorialNeedsStorageReady) {
+      void persistTerritorialAndAuditToDb(sectorDiagnostics, territorialNeeds, auditAnswers);
+    }
+  }, [sectorDiagnostics, sectorStorageKey, sectorStorageReady]);
 
   useEffect(() => {
     if (!territorialNeedsStorageReady || !territorialNeedsStorageKey) return;
     localStorage.setItem(territorialNeedsStorageKey, JSON.stringify(territorialNeeds));
+    if (sectorStorageReady) {
+      void persistTerritorialAndAuditToDb(sectorDiagnostics, territorialNeeds, auditAnswers);
+    }
   }, [territorialNeeds, territorialNeedsStorageKey, territorialNeedsStorageReady]);
 
   useEffect(() => {
@@ -902,18 +699,34 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
     }));
   };
 
-  const handleSyncSurveys = () => {
+  const handleSyncSurveys = async () => {
+    const campId = diagnosticCampaign?.id || candidateCampaignId;
+    if (!campId) return;
     setIsSyncingSurveys(true);
-    setTimeout(() => {
+    try {
+      const { data: surveysData, error } = await supabase
+        .from('surveys')
+        .select('*')
+        .eq('campaign_id', campId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      const count = Array.isArray(surveysData) ? surveysData.length : 0;
+      const nowLabel = new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+      setSurveySyncTimestamp(
+        count > 0
+          ? `Sincronizado (${nowLabel}) · ${count} encuesta(s) en Supabase`
+          : `Verificado (${nowLabel}) · 0 encuestas en Supabase`
+      );
+      setDiagnosticMessage(
+        count > 0
+          ? `Se sincronizaron ${count} encuesta(s) reales registradas en Supabase para esta campaña.`
+          : 'No hay encuestas registradas en Supabase para esta campaña aún.'
+      );
+    } catch (err: any) {
+      setDiagnosticMessage(err?.message || 'Error al consultar encuestas en Supabase.');
+    } finally {
       setIsSyncingSurveys(false);
-      setSurveySyncTimestamp('Sincronizado Ahora mismo (Sondeo Territorial N° 5)');
-      // Slightly recalibrate survey priority percent to simulate live data stream
-      setSectorDiagnostics(prev => prev.map(sec => ({
-        ...sec,
-        surveyPriorityPercent: Math.min(95, Math.max(30, sec.surveyPriorityPercent + (Math.floor(Math.random() * 5) - 2)))
-      })));
-      alert('✅ ¡Sondeos de Opinión Sincronizados con Éxito! Se actualizó la matriz de percepción ciudadana por sectores temáticos.');
-    }, 1000);
+    }
   };
 
   const handleVariableStatusChange = (sectorId: string, varId: string, newStatus: 'Crítico' | 'Regular' | 'Bueno') => {
@@ -945,19 +758,6 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
 
     setCustomVariableInput(prev => ({ ...prev, [sectorId]: '' }));
   };
-  
-  const [auditAnswers, setAuditAnswers] = useState<Record<number, 'si' | 'parcial' | 'no'>>({
-    1: 'si',       // Cartografía y censo por comunas
-    2: 'parcial',  // Testigos acreditados en el 100% de puestos
-    3: 'si',       // Soportes contables para el CNE con OCR
-    4: 'parcial',  // Monitoreo de sentimiento y desinformación
-    5: 'si',       // Identidad y discurso político
-    6: 'no',       // Plan de contingencia y transporte Día E
-    7: 'parcial',  // Sincronización con campañas aliadas
-    8: 'si',       // Cero inhabilitaciones o hallazgos
-    9: 'no',       // Estrategia anti-abstención periférica
-    10: 'si'       // Control de duplicidad de cédula en censo
-  });
 
   // Candidate Profile State
   const [candidateCampaignId, setCandidateCampaignId] = useState('');
@@ -1055,21 +855,38 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
       try {
         const { data: sessionData } = await supabase.auth.getSession();
         let userId = sessionData.session?.user?.id;
-        if (!userId) {
-          const { data: refreshed } = await supabase.auth.refreshSession();
-          userId = refreshed.session?.user?.id;
+        let profile: any = null;
+        if (userId) {
+          const { data: prof } = await supabase.from('profiles').select('client_id,campaign_id').eq('id', userId).maybeSingle();
+          profile = prof;
         }
-        if (!userId) throw new Error('Debes iniciar sesión para consultar el perfil del candidato.');
-        const { data: profile, error: profileError } = await supabase.from('profiles').select('client_id,campaign_id').eq('id', userId).maybeSingle();
-        if (profileError) throw profileError;
-        if (!profile?.client_id && !profile?.campaign_id) throw new Error('Tu usuario no tiene una campaña asignada.');
-        const rememberedCampaignId = profile?.campaign_id || localStorage.getItem('active_campaign_id');
-        let query = supabase.from('campaigns').select('id,descripcion,candidato_nombre,cargo_postulacion,departamento,municipio,circunscripcion');
-        query = rememberedCampaignId ? query.eq('id', rememberedCampaignId) : query.eq('client_id', profile.client_id);
-        const { data: campaigns, error } = await query.order('updated_at', { ascending: false }).limit(1);
-        if (error) throw error;
-        const campaign = campaigns?.[0];
-        if (!campaign) throw new Error('No existe una campaña activa para configurar el candidato.');
+
+        const rememberedCampaignId = localStorage.getItem('active_campaign_id');
+        let campaign: any = null;
+
+        // 1. Try remembered campaign ID
+        if (rememberedCampaignId) {
+          const { data } = await supabase.from('campaigns').select('id,descripcion,candidato_nombre,cargo_postulacion,departamento,municipio,circunscripcion').eq('id', rememberedCampaignId).maybeSingle();
+          if (data) campaign = data;
+        }
+        // 2. Try profile campaign_id
+        if (!campaign && profile?.campaign_id) {
+          const { data } = await supabase.from('campaigns').select('id,descripcion,candidato_nombre,cargo_postulacion,departamento,municipio,circunscripcion').eq('id', profile.campaign_id).maybeSingle();
+          if (data) campaign = data;
+        }
+        // 3. Try profile client_id
+        if (!campaign && profile?.client_id) {
+          const { data } = await supabase.from('campaigns').select('id,descripcion,candidato_nombre,cargo_postulacion,departamento,municipio,circunscripcion').eq('client_id', profile.client_id).order('updated_at', { ascending: false }).limit(1).maybeSingle();
+          if (data) campaign = data;
+        }
+        // 4. Global fallback to active campaign in database
+        if (!campaign) {
+          const { data } = await supabase.from('campaigns').select('id,descripcion,candidato_nombre,cargo_postulacion,departamento,municipio,circunscripcion').order('updated_at', { ascending: false }).limit(1).maybeSingle();
+          if (data) campaign = data;
+        }
+
+        if (!campaign) return;
+
         let savedProfile: any = {};
         try { savedProfile = JSON.parse(campaign.descripcion || '{}')?.candidateProfile || {}; } catch { savedProfile = {}; }
         const scope = String(campaign.circunscripcion || campaignCtx.circunscripcion || '').toUpperCase();
@@ -1080,6 +897,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
             : [campaign.municipio || campaignCtx.municipality, campaign.departamento || campaignCtx.department].filter(Boolean).join(', ');
         if (!mounted) return;
         setCandidateCampaignId(String(campaign.id));
+        localStorage.setItem('active_campaign_id', String(campaign.id));
         setCandidateProfile({
           fullName: savedProfile.fullName || campaign.candidato_nombre || '',
           politicalName: savedProfile.politicalName || '',
@@ -1213,6 +1031,8 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
   // SWOT / DOFA State
   const [isGeneratingSwot, setIsGeneratingSwot] = useState(false);
   const [swotMessage, setSwotMessage] = useState('');
+  const [swotSubTab, setSwotSubTab] = useState<'matriz' | 'came'>('matriz');
+  const [swotSearchTerm, setSwotSearchTerm] = useState('');
   const [swotData, setSwotData] = useState({
     strengths: [] as string[],
     weaknesses: [] as string[],
@@ -1225,18 +1045,34 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
     let mounted = true;
     const loadSwot = async () => {
       try {
-        const { data, error } = await supabase.from('campaigns').select('descripcion').eq('id', candidateCampaignId).single();
+        const [{ data, error }, { data: swotRows }] = await Promise.all([
+          supabase.from('campaigns').select('descripcion').eq('id', candidateCampaignId).single(),
+          supabase.from('swot_matrices').select('*').eq('campaign_id', candidateCampaignId).order('updated_at', { ascending: false }).limit(1),
+        ]);
         if (error) throw error;
         let description: any = {};
         try { description = JSON.parse(data?.descripcion || '{}'); } catch { description = {}; }
         const saved = description?.strategicSwot || {};
+        const row = Array.isArray(swotRows) && swotRows[0] ? swotRows[0] : null;
         if (!mounted) return;
-        setSwotData({
-          strengths: Array.isArray(saved.strengths) ? saved.strengths : [],
-          weaknesses: Array.isArray(saved.weaknesses) ? saved.weaknesses : [],
-          opportunities: Array.isArray(saved.opportunities) ? saved.opportunities : [],
-          threats: Array.isArray(saved.threats) ? saved.threats : [],
-        });
+        const hasSaved = Array.isArray(saved.strengths) && (saved.strengths.length > 0 || saved.weaknesses?.length > 0 || saved.opportunities?.length > 0 || saved.threats?.length > 0);
+        if (hasSaved) {
+          setSwotData({
+            strengths: Array.isArray(saved.strengths) ? saved.strengths : [],
+            weaknesses: Array.isArray(saved.weaknesses) ? saved.weaknesses : [],
+            opportunities: Array.isArray(saved.opportunities) ? saved.opportunities : [],
+            threats: Array.isArray(saved.threats) ? saved.threats : [],
+          });
+        } else if (row) {
+          setSwotData({
+            strengths: Array.isArray(row.strengths) ? row.strengths : [],
+            weaknesses: Array.isArray(row.weaknesses) ? row.weaknesses : [],
+            opportunities: Array.isArray(row.opportunities) ? row.opportunities : [],
+            threats: Array.isArray(row.threats) ? row.threats : [],
+          });
+        } else {
+          setSwotData({ strengths: [], weaknesses: [], opportunities: [], threats: [] });
+        }
       } catch (error: any) {
         if (mounted) setSwotMessage(error?.message || 'No fue posible cargar la matriz DOFA real.');
       }
@@ -1248,6 +1084,8 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
   // Narrative & Discurso State
   const [narrativeSaving, setNarrativeSaving] = useState(false);
   const [narrativeMessage, setNarrativeMessage] = useState('');
+  const [isGeneratingNarrative, setIsGeneratingNarrative] = useState(false);
+  const [newCustomCoreValue, setNewCustomCoreValue] = useState('');
   const [strategicIdentity, setStrategicIdentity] = useState({
     narrative: '',
     baseMessage: '',
@@ -1344,8 +1182,17 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
 
   // Competitors & Allies State
   const [actorsList, setActorsList] = useState<PoliticalActor[]>([]);
+  const [editingActorId, setEditingActorId] = useState<string | null>(null);
+  const [actorToDelete, setActorToDelete] = useState<PoliticalActor | null>(null);
   const [newActor, setNewActor] = useState<Omit<PoliticalActor, 'id' | 'updatedAt'>>({
-    name: '', role: 'Competidor Directo', party: '', estimatedVoteShare: 0, notes: '', source: ''
+    name: '',
+    role: 'Competidor Directo',
+    party: '',
+    estimatedVoteShare: 0,
+    influenceLevel: 'Alta',
+    territorio: '',
+    notes: '',
+    source: ''
   });
 
   useEffect(() => {
@@ -1353,7 +1200,10 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
     let mounted = true;
     const loadNarrative = async () => {
       try {
-        const { data, error } = await supabase.from('campaigns').select('descripcion').eq('id', candidateCampaignId).single();
+        const [{ data, error }, { data: dbActors }] = await Promise.all([
+          supabase.from('campaigns').select('descripcion').eq('id', candidateCampaignId).single(),
+          supabase.from('strategic_actors').select('*').eq('campaign_id', candidateCampaignId).order('created_at', { ascending: false }),
+        ]);
         if (error) throw error;
         let description: any = {};
         try { description = JSON.parse(data?.descripcion || '{}'); } catch { description = {}; }
@@ -1365,7 +1215,29 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
           coreValues: Array.isArray(identity.coreValues) ? identity.coreValues : [],
           slogan: String(identity.slogan || ''),
         });
-        setActorsList(Array.isArray(description?.politicalActors) ? description.politicalActors : []);
+        const savedActors = Array.isArray(description?.politicalActors)
+          ? description.politicalActors.filter((a: any) => !String(a?.id || '').startsWith('actor-demo-'))
+          : [];
+        if (savedActors.length > 0) {
+          setActorsList(savedActors);
+        } else if (Array.isArray(dbActors) && dbActors.length > 0) {
+          setActorsList(
+            dbActors.map((row: any) => ({
+              id: String(row.id),
+              name: String(row.nombre || ''),
+              role: (row.afinidad === 'Aliado Político' || row.afinidad === 'Líder Neutral' ? row.afinidad : 'Competidor Directo') as PoliticalActor['role'],
+              party: String(row.organizacion_rol || ''),
+              estimatedVoteShare: Number(row.intencion_voto || 0),
+              influenceLevel: (row.influencia === 'Media' || row.influencia === 'Baja' ? row.influencia : 'Alta') as PoliticalActor['influenceLevel'],
+              territorio: String(row.territorio || ''),
+              notes: String(row.notas || ''),
+              source: String(row.fuente || ''),
+              updatedAt: String(row.updated_at || new Date().toISOString()),
+            }))
+          );
+        } else {
+          setActorsList([]);
+        }
       } catch (error: any) {
         if (mounted) setNarrativeMessage(error?.message || 'No fue posible cargar la narrativa real.');
       }
@@ -1388,7 +1260,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
   const [newDegree, setNewDegree] = useState<{ title: string; institution: string; year: string; level: 'Pregrado' | 'Posgrado' | 'Maestría' | 'Doctorado' | 'Diplomado' }>({
     title: '',
     institution: '',
-    year: '2024',
+    year: String(new Date().getFullYear()),
     level: 'Pregrado'
   });
 
@@ -1401,10 +1273,41 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
     type: 'Público'
   });
 
+  const handleAddDegree = () => {
+    if (!newDegree.title.trim() || !newDegree.institution.trim()) return;
+    const item: AcademicDegree = {
+      id: `deg-${Date.now()}`,
+      title: newDegree.title.trim(),
+      institution: newDegree.institution.trim(),
+      year: newDegree.year.trim() || String(new Date().getFullYear()),
+      level: newDegree.level
+    };
+    const updated = [item, ...academicDegrees];
+    setAcademicDegrees(updated);
+    setNewDegree({ title: '', institution: '', year: String(new Date().getFullYear()), level: 'Pregrado' });
+    setShowAddDegreeModal(false);
+    void saveCandidateCv({ academicDegrees: updated }).catch(() => {});
+  };
+
+  const handleAddExperience = () => {
+    if (!newExp.role.trim() || !newExp.entityCompany.trim()) return;
+    const item: ExperienceItem = {
+      id: `exp-${Date.now()}`,
+      role: newExp.role.trim(),
+      entityCompany: newExp.entityCompany.trim(),
+      period: newExp.period.trim() || `${new Date().getFullYear()} - Actualidad`,
+      achievements: newExp.achievements.trim(),
+      type: newExp.type
+    };
+    const updated = [item, ...experienceItems];
+    setExperienceItems(updated);
+    setNewExp({ role: '', entityCompany: '', period: '', achievements: '', type: 'Público' });
+    setShowAddExpModal(false);
+    void saveCandidateCv({ experienceItems: updated }).catch(() => {});
+  };
+
   const [newItemText, setNewItemText] = useState('');
   const [swotCategory, setSwotCategory] = useState<'strengths' | 'weaknesses' | 'opportunities' | 'threats'>('strengths');
-
-
 
   const saveCandidateCv = async (overrides: Record<string, any> = {}) => {
     if (!candidateCampaignId) throw new Error('No existe una campaña activa para guardar la hoja de vida.');
@@ -1558,6 +1461,20 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
     }
   };
 
+  const handleOpenEditActor = (actor: PoliticalActor) => {
+    setEditingActorId(actor.id);
+    setNewActor({
+      name: actor.name,
+      role: actor.role,
+      party: actor.party,
+      estimatedVoteShare: actor.estimatedVoteShare,
+      influenceLevel: actor.influenceLevel || 'Alta',
+      territorio: actor.territorio || '',
+      notes: actor.notes,
+      source: actor.source,
+    });
+  };
+
   const handleAddPoliticalActor = async () => {
     if (!newActor.name.trim() || !newActor.role || !newActor.source.trim()) {
       return setNarrativeMessage('Nombre, tipo de relación y fuente son obligatorios.');
@@ -1565,38 +1482,123 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
     if (newActor.estimatedVoteShare < 0 || newActor.estimatedVoteShare > 100) {
       return setNarrativeMessage('La intención de voto debe estar entre 0 y 100.');
     }
+    const actorId = editingActorId || crypto.randomUUID();
     const actor: PoliticalActor = {
       ...newActor,
       name: newActor.name.trim(),
       party: newActor.party.trim(),
+      influenceLevel: newActor.influenceLevel || 'Alta',
+      territorio: (newActor.territorio || '').trim() || diagnosticTerritory || 'General',
       notes: newActor.notes.trim(),
       source: newActor.source.trim(),
-      id: crypto.randomUUID(),
+      id: actorId,
       updatedAt: new Date().toISOString(),
     };
-    const next = [...actorsList, actor];
+    const next = editingActorId
+      ? actorsList.map((a) => (a.id === editingActorId ? actor : a))
+      : [...actorsList, actor];
     setActorsList(next);
-    setNewActor({ name: '', role: 'Competidor Directo', party: '', estimatedVoteShare: 0, notes: '', source: '' });
+    setEditingActorId(null);
+    setNewActor({
+      name: '',
+      role: 'Competidor Directo',
+      party: '',
+      estimatedVoteShare: 0,
+      influenceLevel: 'Alta',
+      territorio: '',
+      notes: '',
+      source: '',
+    });
     try {
       await saveNarrativeWorkspace(strategicIdentity, next);
-      setNarrativeMessage('Actor político registrado con su fuente.');
+      if (candidateCampaignId) {
+        const payload = {
+          id: actor.id,
+          campaign_id: candidateCampaignId,
+          nombre: actor.name,
+          organizacion_rol: actor.party || actor.role,
+          afinidad: actor.role,
+          influencia: actor.influenceLevel || 'Alta',
+          intencion_voto: actor.estimatedVoteShare,
+          territorio: actor.territorio || diagnosticTerritory || 'General',
+          fuente: actor.source,
+          notas: actor.notes,
+        };
+        await supabase.from('strategic_actors').upsert(payload, { onConflict: 'id' });
+      }
+      setNarrativeMessage(editingActorId ? 'Actor político actualizado en la base de datos.' : 'Actor político registrado en la base de datos.');
     } catch (error: any) {
       setNarrativeMessage(error?.message || 'No fue posible guardar el actor político.');
     }
   };
 
   const handleRemovePoliticalActor = async (actorId: string) => {
-    const next = actorsList.filter(actor => actor.id !== actorId);
+    const next = actorsList.filter((a) => a.id !== actorId);
     setActorsList(next);
     try {
       await saveNarrativeWorkspace(strategicIdentity, next);
-      setNarrativeMessage('Actor eliminado del mapa político.');
+      if (candidateCampaignId) {
+        await supabase.from('strategic_actors').delete().eq('id', actorId);
+      }
+      setNarrativeMessage('Actor político eliminado de la campaña.');
     } catch (error: any) {
       setNarrativeMessage(error?.message || 'No fue posible eliminar el actor político.');
     }
   };
 
+  const handleToggleCoreValue = (val: string) => {
+    const exists = strategicIdentity.coreValues.includes(val);
+    const updated = exists 
+      ? strategicIdentity.coreValues.filter(v => v !== val)
+      : [...strategicIdentity.coreValues, val];
+    setStrategicIdentity({ ...strategicIdentity, coreValues: updated });
+  };
 
+  const handleAddCustomCoreValue = () => {
+    if (!newCustomCoreValue.trim()) return;
+    const val = newCustomCoreValue.trim();
+    if (!strategicIdentity.coreValues.includes(val)) {
+      setStrategicIdentity({ ...strategicIdentity, coreValues: [...strategicIdentity.coreValues, val] });
+    }
+    setNewCustomCoreValue('');
+  };
+
+  const handleLoadNarrativeTemplate = async (key: 'cambio' | 'desarrollo' | 'comunal' | 'innovacion') => {
+    const templates = {
+      cambio: {
+        narrative: `Nuestra campaña surge de la convicción profunda de que nuestro territorio merece un gobierno honesto, transparente y con cero tolerancia a la corrupción. Frente al desgaste de las viejas maquinarias y el despilfarro de los recursos públicos, proponemos un liderazgo ético con rendición de cuentas en tiempo real, meritocracia en los cargos públicos y focalización de cada peso en las verdaderas prioridades de la comunidad.`,
+        baseMessage: `¡Es hora de un gobierno de la gente! Cero corrupción, inversión real en los barrios y oportunidades para quienes trabajan con honestidad.`,
+        coreValues: ['Transparencia', 'Meritocracia', 'Honestidad', 'Control Social', 'Eficiencia Fiscal'],
+        slogan: '¡Cuentas Claras, Gobierno de la Gente!'
+      },
+      desarrollo: {
+        narrative: `Creemos en el potencial transformador de nuestro territorio a través de la seguridad integral, la inversión productiva y el respaldo decidido al comerciante, emprendedor y trabajador. Proponemos un modelo gerencial que garantice orden y tranquilidad en las calles, reduzca trabas burocráticas y atraiga inversión nacional e internacional para generar empleo de calidad y progreso para todas las familias.`,
+        baseMessage: `Seguridad para vivir tranquilos y oportunidades para progresar: una administración eficiente que sabe generar empleo y proteger a los ciudadanos.`,
+        coreValues: ['Seguridad', 'Desarrollo Económico', 'Gerencia Eficaz', 'Empleo', 'Competitividad'],
+        slogan: '¡Seguridad, Trabajo y Progreso para Todos!'
+      },
+      comunal: {
+        narrative: `Esta candidatura nace en las calles, en los barrios y en las veredas, caminando junto a las Juntas de Acción Comunal, los líderes barriales y las familias trabajadoras. No somos una candidatura de escritorio: gobernaremos desde el territorio, descentralizando el presupuesto público para llevar agua potable, vías dignas, salud primaria y educación de calidad a donde más se necesita.`,
+        baseMessage: `Menos escritorio y más territorio: un gobierno cercano que escucha, cumple y prioriza a las comunidades olvidadas.`,
+        coreValues: ['Cercanía', 'Participación Ciudadana', 'Equidad Social', 'Inclusión', 'Vocación Comunal'],
+        slogan: '¡El Territorio Primero: Juntos Construimos Futuro!'
+      },
+      innovacion: {
+        narrative: `Representamos una nueva generación de liderazgo político que combina vocación social, pensamiento innovador y respeto irrestricto por nuestro patrimonio ambiental. Impulsamos una agenda de modernización digital, apoyo integral a la juventud, economía circular y energías renovables, convirtiendo a nuestra región en un referente de ciudad inteligente, verde y con futuro.`,
+        baseMessage: `Renovemos la política con ideas nuevas, tecnología al servicio ciudadano y sostenibilidad ambiental para las futuras generaciones.`,
+        coreValues: ['Innovación', 'Sostenibilidad', 'Juventud', 'Tecnología', 'Desarrollo Verde'],
+        slogan: '¡El Futuro es Ahora: Innovación y Renovación!'
+      }
+    };
+    const next = templates[key];
+    setStrategicIdentity(next);
+    try {
+      await saveNarrativeWorkspace(next, actorsList);
+      setNarrativeMessage(`Plantilla "${key.toUpperCase()}" aplicada y guardada exitosamente.`);
+    } catch (err: any) {
+      setNarrativeMessage(err?.message || 'No fue posible guardar la plantilla.');
+    }
+  };
 
   const saveStrategicSwot = async (next: typeof swotData) => {
     if (!candidateCampaignId) throw new Error('No existe una campaña activa para guardar la matriz DOFA.');
@@ -1609,6 +1611,36 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
       updated_at: new Date().toISOString(),
     }).eq('id', candidateCampaignId);
     if (error) throw error;
+    try {
+      const { data: existingSwot } = await supabase
+        .from('swot_matrices')
+        .select('id')
+        .eq('campaign_id', candidateCampaignId)
+        .limit(1)
+        .maybeSingle();
+      if (existingSwot?.id) {
+        await supabase
+          .from('swot_matrices')
+          .update({
+            strengths: next.strengths,
+            weaknesses: next.weaknesses,
+            opportunities: next.opportunities,
+            threats: next.threats,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', existingSwot.id);
+      } else {
+        await supabase.from('swot_matrices').insert({
+          campaign_id: candidateCampaignId,
+          strengths: next.strengths,
+          weaknesses: next.weaknesses,
+          opportunities: next.opportunities,
+          threats: next.threats,
+        });
+      }
+    } catch {
+      // non-fatal if table sync is handled via campaigns.descripcion
+    }
   };
 
   const handleGenerateSwot = async () => {
@@ -1665,50 +1697,144 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
     }
   };
 
+  const handleQuickAddSwotItem = async (cat: 'strengths' | 'weaknesses' | 'opportunities' | 'threats', text: string) => {
+    if (swotData[cat].includes(text)) return;
+    const next = { ...swotData, [cat]: [...swotData[cat], text] };
+    setSwotData(next);
+    try {
+      await saveStrategicSwot(next);
+      setSwotMessage('Factor agregado exitosamente a la matriz.');
+    } catch (error: any) {
+      setSwotMessage(error?.message || 'No fue posible guardar el factor.');
+    }
+  };
+
+  const handleLoadArchetype = async (key: 'baseline' | 'opinion' | 'territorial' | 'ejecutiva') => {
+    const archetypes = {
+      baseline: {
+        strengths: [
+          'Trayectoria ética intachable (0 sanciones en Procuraduría, Contraloría y Fiscalía)',
+          'Experiencia técnica y gerencial en administración pública y estructuración de proyectos',
+          'Alto nivel de reconocimiento y conexión empática con sectores sociales y comunitarios',
+          'Equipo programático cohesionado y con vocería clara en medios de comunicación'
+        ],
+        weaknesses: [
+          'Nivel de reconocimiento aún por consolidar en comunas y veredas periféricas',
+          'Estructura de movilización y testigos electorales para el Día E en proceso de formación',
+          'Presupuesto publicitario ajustado frente a maquinarias políticas tradicionales',
+          'Sobrecarga de funciones operativas en el equipo central de campaña'
+        ],
+        opportunities: [
+          'Creciente descontento ciudadano frente a la gestión saliente y rechazo al clientelismo',
+          'Expansión del voto de opinión juvenil e independiente en sectores urbanos y universidades',
+          'Coyuntura favorable para posicionar propuestas de seguridad comunitaria, empleo y tecnología',
+          'Apertura en medios digitales, podcasts y redes comunitarias de alto engagement'
+        ],
+        threats: [
+          'Campañas de desinformación, fake news y guerra sucia en redes orquestadas por rivales',
+          'Uso intensivo de recursos públicos y maquinarias clientelares por candidaturas opositoras',
+          'Riesgo de abstencionismo en puestos de votación periféricos por limitaciones de transporte',
+          'Volatilidad de votantes indecisos de última hora ante alianzas sorpresivas'
+        ]
+      },
+      opinion: {
+        strengths: [
+          'Independencia política sin compromisos burocráticos ni ataduras con maquinarias',
+          'Discurso fresco, transparente y enfocado en anticorrupción y meritocracia',
+          'Gran acogida en redes sociales, medios digitales y sectores juveniles/universitarios',
+          'Propuestas de vanguardia en sostenibilidad, tecnología y transparencia fiscal'
+        ],
+        weaknesses: [
+          'Poco arraigo en estructuras barriales tradicionales dependientes de líderes de barrio',
+          'Menor músculo financiero para publicidad exterior masiva y eventos de maquinaria',
+          'Dificultad para garantizar 100% de cobertura de testigos electorales en puestos rurales'
+        ],
+        opportunities: [
+          'Cansancio generalizado con la política tradicional y alta tasa de electores indecisos',
+          'Capacidad de viralización orgánica con contenido digital auténtico y debates públicos',
+          'Alianzas con colectivos cívicos, ambientalistas, defensores de DDHH y gremios innovadores'
+        ],
+        threats: [
+          'Maquinarias electorales con compra de votos y movilización inducida el Día E',
+          'Guerra sucia y montajes digitales para desacreditar la trayectoria del candidato',
+          'Desmotivación del electorado joven si se percibe un ambiente de polarización tóxica'
+        ]
+      },
+      territorial: {
+        strengths: [
+          'Presencia física constante y conocimiento profundo de cada barrio, vereda y corregimiento',
+          'Respaldo directo de presidentes de Juntas de Acción Comunal (JAC) y ediles (JAL)',
+          'Trayectoria demostrada en gestión de obras locales y resolución de problemas comunitarios',
+          'Red orgánica de líderes comunitarios comprometidos con la movilización directa'
+        ],
+        weaknesses: [
+          'Menor presencia y penetración en medios digitales y redes sociales de alcance municipal',
+          'Dificultad para llegar al voto de opinión de estratos altos y comunidades cerradas',
+          'Percepción de liderazgo local que debe proyectar visión integral de ciudad/departamento'
+        ],
+        opportunities: [
+          'Votantes de base que valoran el contacto personal, el diálogo directo y los compromisos cara a cara',
+          'Pactos comunitarios y asambleas barriales para co-diseñar el plan de gobierno',
+          'Descentralización de la campaña llevando propuestas a cada micro-territorio'
+        ],
+        threats: [
+          'Cooptación de líderes comunitarios por parte de maquinarias con promesas clientelares',
+          'Deterioro del orden público o bloqueos que impidan el acceso a ciertas zonas territoriales',
+          'Baja participación electoral en zonas rurales por falta de transporte el día de las elecciones'
+        ]
+      },
+      ejecutiva: {
+        strengths: [
+          'Amplia experiencia en gerencia pública o privada con resultados cuantitativos demostrables',
+          'Capacidad para estructurar megaproyectos y gestionar recursos del orden nacional o cooperación',
+          'Confianza y credibilidad ante gremios empresariales, comerciantes y academia',
+          'Dominio de temas presupuestales, hacienda pública y finanzas municipales'
+        ],
+        weaknesses: [
+          'Lenguaje técnico que en ocasiones puede distanciar al elector popular o menos informado',
+          'Riesgo de ser catalogado como candidato de las élites o distante de las bases',
+          'Menos soltura en tarimas populares y eventos masivos de alta euforia'
+        ],
+        opportunities: [
+          'Urgencia ciudadana por una administración seria, eficaz y con orden presupuestal',
+          'Atracción de inversión privada y generación de empleo como eje central del debate',
+          'Posicionamiento como el candidato más preparado frente a opciones improvisadas'
+        ],
+        threats: [
+          'Discurso populista de adversarios que apela a emociones fáciles sin sustento técnico',
+          'Ataques a decisiones tomadas en cargos públicos o privados anteriores',
+          'Desgaste por debates centrados en ataques personales en lugar de programas de gobierno'
+        ]
+      }
+    };
+
+    const next = archetypes[key];
+    setSwotData(next);
+    try {
+      await saveStrategicSwot(next);
+      setSwotMessage(`Plantilla "${key.toUpperCase()}" cargada y guardada exitosamente.`);
+    } catch (error: any) {
+      setSwotMessage(error?.message || 'No fue posible guardar la plantilla.');
+    }
+  };
+
   return (
     <div 
       className="module-theme-root responsive-view min-h-[calc(100dvh-60px)] w-full min-w-0 bg-[#071927] text-slate-100 p-3 sm:p-4 md:p-8 space-y-4 sm:space-y-6 overflow-x-hidden transition-colors duration-200"
       data-module="gestion_estrategica"
       data-color-mode={isWhiteMode ? 'white' : 'established'}
     >
-      {/* Module Header with Logo, Title & Color Mode Toggle */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-cyan-500/20">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-950 to-slate-900 border border-amber-500/40 text-amber-400 flex items-center justify-center shrink-0 shadow-md shadow-amber-950/40">
-            <Sparkles className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="font-extrabold text-lg sm:text-xl text-white tracking-tight">
-                Gestión Estratégica & IA
-              </h2>
-              <span className="text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/40">
-                Módulo 2
-              </span>
-            </div>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Diagnóstico 360°, FODA inteligente, narrativa y agenda electoral
-            </p>
-          </div>
-        </div>
 
-        <div className="flex items-center gap-3 shrink-0">
-          <ColorModeToggle moduleId="gestion_estrategica" />
-        </div>
-      </div>
-      
 
 
       {/* TAB 1: DIAGNÓSTICO DE CAMPAÑA (360° AI) */}
       {activeTab === 'diagnostico' && diagnosticCampaignLoading && (
-        <div className="min-h-[420px] flex items-center justify-center rounded-3xl border border-cyan-500/20 bg-[#06172b]">
-          <div className="flex items-center gap-3 text-cyan-200 font-bold">
-            <RefreshCw className="w-5 h-5 animate-spin" /> Verificando campaña activa…
-          </div>
+        <div className="fixed top-0 left-0 right-0 z-[9999] pointer-events-none">
+          <div className="h-[2px] w-full bg-gradient-to-r from-cyan-500 via-emerald-400 to-blue-500 animate-pulse" />
         </div>
       )}
 
-      {activeTab === 'diagnostico' && !diagnosticCampaignLoading && !diagnosticCampaign && (
+      {activeTab === 'diagnostico' && !diagnosticCampaign && !diagnosticCampaignLoading && (
         <div className="min-h-[420px] flex items-center justify-center rounded-3xl border border-cyan-500/20 bg-[#06172b] p-6">
           <div className="max-w-xl text-center space-y-4">
             <div className="mx-auto w-14 h-14 rounded-2xl border border-amber-500/30 bg-amber-500/10 flex items-center justify-center">
@@ -1729,957 +1855,550 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
         </div>
       )}
 
-      {activeTab === 'diagnostico' && !diagnosticCampaignLoading && diagnosticCampaign && (
-        <div className="space-y-6 diagnostico-360-view">
-          
-          {/* Hero Banner: Diagnostic Score & Scan Action */}
-          <div className="diagnostic-hero-banner bg-gradient-to-r from-[#081e36] via-[#0b2747] to-[#06172b] border border-cyan-500/30 rounded-3xl p-6 shadow-2xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none diagnostic-hero-glow" />
-            
-            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 relative z-10">
-              
-              <div className="space-y-2 max-w-2xl">
-                <h3 className="diagnostic-hero-title text-2xl sm:text-3xl font-black text-white tracking-tight">
-                  Sesión de Diagnóstico de Campaña{' '}
-                  <span className="diagnostic-hero-campaign-tag text-emerald-400">
-                    {diagnosticCampaignName}{diagnosticTerritory ? ` · ${diagnosticTerritory}` : ''} · {diagnosticYear}
-                  </span>
-                </h3>
-              </div>
+      {activeTab === 'diagnostico' && diagnosticCampaign && (() => {
+        const auditScore = Object.values(auditAnswers).reduce(
+          (acc: number, curr) => (curr === 'si' ? acc + 10 : curr === 'parcial' ? acc + 5 : acc),
+          0
+        );
+        const coberturaScore = Math.min(
+          100,
+          (realCampaignStats.pollingStations > 0 ? 40 : 0) +
+            Math.min(60, realCampaignStats.leaders * 10 + Math.min(30, realCampaignStats.voters))
+        );
+        const encuestasScore = realCampaignStats.surveys > 0 ? Math.min(100, 60 + realCampaignStats.surveys * 10) : 0;
+        const testigosScore =
+          realCampaignStats.pollingStations > 0
+            ? Math.min(100, Math.round((realCampaignStats.witnesses / Math.max(1, realCampaignStats.pollingStations)) * 100))
+            : realCampaignStats.witnesses > 0
+              ? 100
+              : 0;
+        const finanzasScore = realCampaignStats.budgetItems > 0 ? Math.min(100, 70 + realCampaignStats.budgetItems * 5) : 0;
+        const estrategiaScore = Math.min(
+          100,
+          (realCampaignStats.proposals > 0 ? 35 : 0) +
+            (realCampaignStats.activities > 0 ? 35 : 0) +
+            (swotData.strengths.length > 0 ? 30 : 0)
+        );
+        const censoScore = realCampaignStats.voters > 0 || realCampaignStats.leaders > 0 ? 100 : 0;
+        const overallScore = Math.round(
+          (coberturaScore + encuestasScore + testigosScore + finanzasScore + estrategiaScore + censoScore + auditScore) / 7
+        );
 
-              {/* Score & Action Button Card */}
-              <div className="diagnostic-score-box flex flex-col sm:flex-row items-center gap-4 bg-[#051325]/90 border border-cyan-500/30 p-4 rounded-2xl w-full lg:w-auto shrink-0">
-                <div className="text-center sm:text-left space-y-1">
-                  <span className="diagnostic-score-label text-[10px] font-black uppercase text-slate-400 tracking-wider">
-                    Índice de Salud de Campaña
-                  </span>
-                  <div className="flex items-baseline gap-2">
-                    <span className="diagnostic-score-value text-4xl font-black text-emerald-400 font-mono tracking-tight">84</span>
-                    <span className="diagnostic-score-max text-slate-400 font-bold text-sm">/ 100</span>
-                  </div>
-                  <span className="diagnostic-score-status inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-500/30">
-                    Nivel: Saludable con Alertas
-                  </span>
+        return (
+          <div className="space-y-6 diagnostico-360-view">
+            {/* Hero Banner: Diagnostic Score & Scan Action */}
+            <div className="diagnostic-hero-banner bg-gradient-to-r from-[#081e36] via-[#0b2747] to-[#06172b] border border-cyan-500/30 rounded-3xl p-6 shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none diagnostic-hero-glow" />
+
+              <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 relative z-10">
+                <div className="space-y-2 max-w-2xl">
+                  <h3 className="diagnostic-hero-title text-2xl sm:text-3xl font-black text-white tracking-tight">
+                    Sesión de Diagnóstico de Campaña{' '}
+                    <span className="diagnostic-hero-campaign-tag text-emerald-400">
+                      {diagnosticCampaignName}
+                      {diagnosticTerritory ? ` · ${diagnosticTerritory}` : ''} · {diagnosticYear}
+                    </span>
+                  </h3>
+                  {lastDiagnosticDate && (
+                    <p className="text-xs text-slate-400 font-mono">Última sincronización: {lastDiagnosticDate}</p>
+                  )}
                 </div>
 
-                <button
-                  onClick={() => {
-                    setIsDiagnosticScanning(true);
-                    setTimeout(() => {
-                      setIsDiagnosticScanning(false);
-                      setLastDiagnosticDate(new Date().toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }) + ' - ' + new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }) + ' UTC');
-                      alert('¡Diagnóstico Integral AI ejecutado con éxito! Se reevaluaron las 6 dimensiones de la campaña.');
-                    }, 1800);
-                  }}
-                  disabled={isDiagnosticScanning}
-                  className="diagnostic-scan-btn w-full sm:w-auto flex items-center justify-center gap-2.5 px-5 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs shadow-lg shadow-emerald-500/20 transition-all cursor-pointer disabled:opacity-50"
-                >
-                  <RefreshCw className={`w-4 h-4 ${isDiagnosticScanning ? 'animate-spin' : ''}`} />
-                  <span>{isDiagnosticScanning ? 'Escaneando Campaña...' : 'Ejecutar Diagnóstico AI'}</span>
-                </button>
-              </div>
-
-            </div>
-
-            {/* Diagnostic Sub-Tabs Navigation */}
-            <div className="diagnostic-subtabs-nav flex flex-wrap items-center gap-2 mt-6 pt-4 border-t border-cyan-500/20 text-xs font-bold">
-              <button
-                onClick={() => setDiagnosticSubTab('overview')}
-                className={`diagnostic-subtab-btn px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
-                  diagnosticSubTab === 'overview'
-                    ? 'active bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 font-extrabold shadow'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <span>📊 1. Diagnóstico de Campaña (Electoral/Operativo)</span>
-              </button>
-
-              <button
-                onClick={() => setDiagnosticSubTab('audit')}
-                className={`diagnostic-subtab-btn px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
-                  diagnosticSubTab === 'audit'
-                    ? 'active bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 font-extrabold shadow'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <span>📝 Audit Express (10 Preguntas)</span>
-              </button>
-
-              <button
-                onClick={() => setDiagnosticSubTab('report')}
-                className={`diagnostic-subtab-btn px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
-                  diagnosticSubTab === 'report'
-                    ? 'active bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 font-extrabold shadow'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <span>🤖 Informe Ejecutivo IA</span>
-              </button>
-            </div>
-          </div>
-
-          {/* SUB-TAB 1: VISIÓN GENERAL DE LOS 6 PILARES */}
-          {diagnosticSubTab === 'overview' && (
-            <div className="functional-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 diagnostic-pillars-grid">
-              
-              {/* Pilar 1: Cobertura Territorial */}
-              <div className="functional-card diagnostic-pillar-card pilar-cobertura bg-[#05162a] border border-cyan-500/30 rounded-3xl p-5 space-y-4 shadow-xl">
-                <div className="flex justify-between items-start">
-                  <div className="flex items-center gap-2">
-                    <div className="pillar-icon-box p-2 bg-emerald-500/20 text-emerald-300 rounded-xl">
-                      <Target className="w-5 h-5" />
+                {/* Score & Action Button Card */}
+                <div className="diagnostic-score-box flex flex-col sm:flex-row items-center gap-4 bg-[#051325]/90 border border-cyan-500/30 p-4 rounded-2xl w-full lg:w-auto shrink-0">
+                  <div className="text-center sm:text-left space-y-1">
+                    <span className="diagnostic-score-label text-[10px] font-black uppercase text-slate-400 tracking-wider">
+                      Índice de Salud de Campaña
+                    </span>
+                    <div className="flex items-baseline gap-2">
+                      <span className="diagnostic-score-value text-4xl font-black text-emerald-400 font-mono tracking-tight">
+                        {overallScore}
+                      </span>
+                      <span className="diagnostic-score-max text-slate-400 font-bold text-sm">/ 100</span>
                     </div>
-                    <div>
-                      <h4 className="pillar-title font-extrabold text-white text-sm">1. Cobertura Territorial</h4>
-                      <span className="pillar-subtitle text-[10px] text-slate-400">Puestos, Mesas & Comunas</span>
-                    </div>
+                    <span className="diagnostic-score-status inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-500/30">
+                      {overallScore >= 75
+                        ? 'Nivel: Sólido en Operación'
+                        : overallScore >= 40
+                          ? 'Nivel: En Consolidación'
+                          : 'Nivel: Configuración Inicial'}
+                    </span>
                   </div>
-                  <span className="pillar-badge badge-emerald text-xs font-mono font-black text-emerald-400 bg-emerald-950 px-2.5 py-1 rounded-full border border-emerald-500/30">
-                    82 / 100
-                  </span>
-                </div>
 
-                <div className="space-y-1.5">
-                  <div className="flex justify-between text-xs text-slate-300 font-semibold pillar-metric-label">
-                    <span>Meta de Cobertura Puestos</span>
-                    <span className="pillar-metric-value text-emerald-300">82%</span>
-                  </div>
-                  <div className="pillar-progress-track w-full h-2 bg-slate-900 rounded-full overflow-hidden">
-                    <div className="pillar-progress-bar h-full bg-emerald-400 rounded-full" style={{ width: '82%' }} />
-                  </div>
-                </div>
-
-                <div className="pillar-analysis-box p-3 bg-[#081d38] rounded-2xl border border-cyan-500/20 text-xs space-y-1 text-slate-300">
-                  <strong className="text-emerald-300 font-bold block">Diagnóstico Territorial:</strong>
-                  <p className="text-[11px] leading-relaxed">
-                    Gran solidez en Comunas 11 (La Laureles) y 14 (El Poblado). Se detectaron brechas de coordinación en Comunas 1 (Popular) y 3 (Manrique).
-                  </p>
-                </div>
-              </div>
-
-              {/* Pilar 2: Traje Político & Encuestas */}
-              <div className="functional-card diagnostic-pillar-card pilar-intencion bg-[#05162a] border border-cyan-500/30 rounded-3xl p-5 space-y-4 shadow-xl">
-                <div className="flex justify-between items-start">
-                  <div className="flex items-center gap-2">
-                    <div className="pillar-icon-box p-2 bg-amber-500/20 text-amber-300 rounded-xl">
-                      <TrendingUp className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h4 className="pillar-title font-extrabold text-white text-sm">2. Intención de Voto</h4>
-                      <span className="pillar-subtitle text-[10px] text-slate-400">Tracking & Favorabilidad</span>
-                    </div>
-                  </div>
-                  <span className="pillar-badge badge-amber text-xs font-mono font-black text-amber-400 bg-amber-950 px-2.5 py-1 rounded-full border border-amber-500/30">
-                    76 / 100
-                  </span>
-                </div>
-
-                <div className="space-y-1.5">
-                  <div className="flex justify-between text-xs text-slate-300 font-semibold pillar-metric-label">
-                    <span>Intención de Voto (2° Lugar)</span>
-                    <span className="pillar-metric-value text-amber-300">28.5%</span>
-                  </div>
-                  <div className="pillar-progress-track w-full h-2 bg-slate-900 rounded-full overflow-hidden">
-                    <div className="pillar-progress-bar h-full bg-amber-400 rounded-full" style={{ width: '76%' }} />
-                  </div>
-                </div>
-
-                <div className="pillar-analysis-box p-3 bg-[#081d38] rounded-2xl border border-cyan-500/20 text-xs space-y-1 text-slate-300">
-                  <strong className="text-amber-300 font-bold block">Análisis de Competencia:</strong>
-                  <p className="text-[11px] leading-relaxed">
-                    Brecha de 4.0% con respecto al puntero (Carlos Mario Rendón 32.5%). Alto potencial de capturar voto indeciso en debates universitarios.
-                  </p>
-                </div>
-              </div>
-
-              {/* Pilar 3: Control Electoral & Día E */}
-              <div className="functional-card diagnostic-pillar-card pilar-testigos bg-[#05162a] border border-cyan-500/30 rounded-3xl p-5 space-y-4 shadow-xl">
-                <div className="flex justify-between items-start">
-                  <div className="flex items-center gap-2">
-                    <div className="pillar-icon-box p-2 bg-rose-500/20 text-rose-300 rounded-xl">
-                      <ShieldCheck className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h4 className="pillar-title font-extrabold text-white text-sm">3. Testigos & Día E</h4>
-                      <span className="pillar-subtitle text-[10px] text-slate-400">Acreditaciones Registraduría</span>
-                    </div>
-                  </div>
-                  <span className="pillar-badge badge-rose text-xs font-mono font-black text-rose-400 bg-rose-950 px-2.5 py-1 rounded-full border border-rose-500/30">
-                    68 / 100
-                  </span>
-                </div>
-
-                <div className="space-y-1.5">
-                  <div className="flex justify-between text-xs text-slate-300 font-semibold pillar-metric-label">
-                    <span>Mesas con Testigo Acreditado</span>
-                    <span className="pillar-metric-value text-rose-300">68%</span>
-                  </div>
-                  <div className="pillar-progress-track w-full h-2 bg-slate-900 rounded-full overflow-hidden">
-                    <div className="pillar-progress-bar h-full bg-rose-400 rounded-full" style={{ width: '68%' }} />
-                  </div>
-                </div>
-
-                <div className="pillar-analysis-box p-3 bg-[#081d38] rounded-2xl border border-rose-500/30 text-xs space-y-1 text-slate-300">
-                  <strong className="text-rose-300 font-bold block flex items-center gap-1">
-                    <AlertTriangle className="w-3.5 h-3.5 text-rose-400" /> Alerta Crítica Día E:
-                  </strong>
-                  <p className="text-[11px] leading-relaxed">
-                    Faltan 32% de mesas por asignar testigo titular. Se requiere acelerar la vinculación en el módulo de Operación Electoral.
-                  </p>
-                </div>
-              </div>
-
-              {/* Pilar 4: Finanzas & Cumplimiento CNE */}
-              <div className="functional-card diagnostic-pillar-card pilar-finanzas bg-[#05162a] border border-cyan-500/30 rounded-3xl p-5 space-y-4 shadow-xl">
-                <div className="flex justify-between items-start">
-                  <div className="flex items-center gap-2">
-                    <div className="pillar-icon-box p-2 bg-emerald-500/20 text-emerald-300 rounded-xl">
-                      <DollarSign className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h4 className="pillar-title font-extrabold text-white text-sm">4. Rendición Finanzas CNE</h4>
-                      <span className="pillar-subtitle text-[10px] text-slate-400">Cuentas Claras & OCR</span>
-                    </div>
-                  </div>
-                  <span className="pillar-badge badge-emerald text-xs font-mono font-black text-emerald-400 bg-emerald-950 px-2.5 py-1 rounded-full border border-emerald-500/30">
-                    94 / 100
-                  </span>
-                </div>
-
-                <div className="space-y-1.5">
-                  <div className="flex justify-between text-xs text-slate-300 font-semibold pillar-metric-label">
-                    <span>Soportes OCR Verificados</span>
-                    <span className="pillar-metric-value text-emerald-300">94%</span>
-                  </div>
-                  <div className="pillar-progress-track w-full h-2 bg-slate-900 rounded-full overflow-hidden">
-                    <div className="pillar-progress-bar h-full bg-emerald-400 rounded-full" style={{ width: '94%' }} />
-                  </div>
-                </div>
-
-                <div className="pillar-analysis-box p-3 bg-[#081d38] rounded-2xl border border-cyan-500/20 text-xs space-y-1 text-slate-300">
-                  <strong className="text-emerald-300 font-bold block">Contabilidad Oficial:</strong>
-                  <p className="text-[11px] leading-relaxed">
-                    Ejecución presupuestal limpia dentro del tope legal de Medellín ($2.5B). Cero inconsistencias de bancarización registradas.
-                  </p>
-                </div>
-              </div>
-
-              {/* Pilar 5: Comunicaciones & Sentimiento Digital */}
-              <div className="functional-card diagnostic-pillar-card pilar-estrategia bg-[#05162a] border border-cyan-500/30 rounded-3xl p-5 space-y-4 shadow-xl">
-                <div className="flex justify-between items-start">
-                  <div className="flex items-center gap-2">
-                    <div className="pillar-icon-box p-2 bg-teal-500/20 text-teal-300 rounded-xl">
-                      <MessageSquare className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h4 className="pillar-title font-extrabold text-white text-sm">5. Estrategia & Sentimiento</h4>
-                      <span className="pillar-subtitle text-[10px] text-slate-400">Redes Sociales & Prensa</span>
-                    </div>
-                  </div>
-                  <span className="pillar-badge badge-teal text-xs font-mono font-black text-teal-400 bg-teal-950 px-2.5 py-1 rounded-full border border-teal-500/30">
-                    78 / 100
-                  </span>
-                </div>
-
-                <div className="space-y-1.5">
-                  <div className="flex justify-between text-xs text-slate-300 font-semibold pillar-metric-label">
-                    <span>Aceptación Positiva Redes</span>
-                    <span className="pillar-metric-value text-teal-300">72%</span>
-                  </div>
-                  <div className="pillar-progress-track w-full h-2 bg-slate-900 rounded-full overflow-hidden">
-                    <div className="pillar-progress-bar h-full bg-teal-400 rounded-full" style={{ width: '72%' }} />
-                  </div>
-                </div>
-
-                <div className="pillar-analysis-box p-3 bg-[#081d38] rounded-2xl border border-cyan-500/20 text-xs space-y-1 text-slate-300">
-                  <strong className="text-teal-300 font-bold block">Monitoreo de Opinión:</strong>
-                  <p className="text-[11px] leading-relaxed">
-                    Excelente respuesta a videos sobre propuestas de movilidad. Se recomienda contraatacar desinformación en cadenas de WhatsApp.
-                  </p>
-                </div>
-              </div>
-
-              {/* Pilar 6: Censo & Filtro de Duplicidad */}
-              <div className="functional-card diagnostic-pillar-card pilar-censo bg-[#05162a] border border-cyan-500/30 rounded-3xl p-5 space-y-4 shadow-xl">
-                <div className="flex justify-between items-start">
-                  <div className="flex items-center gap-2">
-                    <div className="pillar-icon-box p-2 bg-emerald-500/20 text-emerald-300 rounded-xl">
-                      <Users className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h4 className="pillar-title font-extrabold text-white text-sm">6. Filtro Unificado Censo</h4>
-                      <span className="pillar-subtitle text-[10px] text-slate-400">Blindaje Duplicidad Cédula</span>
-                    </div>
-                  </div>
-                  <span className="pillar-badge badge-emerald text-xs font-mono font-black text-emerald-400 bg-emerald-950 px-2.5 py-1 rounded-full border border-emerald-500/30">
-                    90 / 100
-                  </span>
-                </div>
-
-                <div className="space-y-1.5">
-                  <div className="flex justify-between text-xs text-slate-300 font-semibold pillar-metric-label">
-                    <span>Integridad de Votantes</span>
-                    <span className="pillar-metric-value text-emerald-300">90%</span>
-                  </div>
-                  <div className="pillar-progress-track w-full h-2 bg-slate-900 rounded-full overflow-hidden">
-                    <div className="pillar-progress-bar h-full bg-emerald-400 rounded-full" style={{ width: '90%' }} />
-                  </div>
-                </div>
-
-                <div className="pillar-analysis-box p-3 bg-[#081d38] rounded-2xl border border-cyan-500/20 text-xs space-y-1 text-slate-300">
-                  <strong className="text-emerald-300 font-bold block">Regla de Negocio Aplicada:</strong>
-                  <p className="text-[11px] leading-relaxed">
-                    Cada cédula está asignada únicamente al primer líder que la registró. Se bloquearon 142 intentos de duplicado de campañas aliadas.
-                  </p>
-                </div>
-              </div>
-
-            </div>
-          )}
-
-          {/* SUB-TAB 2: DIAGNÓSTICO TERRITORIAL (INSUMO PROGRAMÁTICO / PROGRAMA DE GOBIERNO) */}
-          {diagnosticSubTab === 'territorial' && (
-            <div className="bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 shadow-xl space-y-6">
-              
-              {/* Header & Sync with Sondeos de Opinión Bar */}
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-cyan-500/20 pb-5">
-                <div>
-                  <h4 className="text-lg font-black text-white flex items-center gap-2">
-                    <MapPin className="w-5 h-5 text-cyan-400" /> Diagnóstico Territorial Sectorial (Insumo Programático)
-                  </h4>
-                </div>
-
-                {/* Sondeos Sync Action Box */}
-                <div className="flex items-center gap-2 shrink-0">
                   <button
                     type="button"
-                    onClick={handleSyncSurveys}
-                    disabled={isSyncingSurveys}
-                    className="w-full sm:w-auto bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 text-slate-950 font-black text-xs px-4 py-2 rounded-xl transition-all flex items-center justify-center gap-2 shadow-md cursor-pointer disabled:opacity-50"
+                    onClick={async () => {
+                      setIsDiagnosticScanning(true);
+                      setDiagnosticMessage('');
+                      try {
+                        await fetchRealCampaignStats(String(diagnosticCampaign.id));
+                        const nowStr =
+                          new Date().toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }) +
+                          ' · ' +
+                          new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+                        setLastDiagnosticDate(nowStr);
+                        setDiagnosticMessage(
+                          `Diagnóstico 360° actualizado desde Supabase (${nowStr}): ${realCampaignStats.pollingStations} puesto(s), ${realCampaignStats.leaders} líder(es), ${realCampaignStats.voters} votante(s), ${realCampaignStats.witnesses} testigo(s).`
+                        );
+                      } finally {
+                        setIsDiagnosticScanning(false);
+                      }
+                    }}
+                    disabled={isDiagnosticScanning}
+                    className="diagnostic-scan-btn w-full sm:w-auto flex items-center justify-center gap-2.5 px-5 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs shadow-lg shadow-emerald-500/20 transition-all cursor-pointer disabled:opacity-50"
                   >
-                    <RefreshCw className={`w-3.5 h-3.5 ${isSyncingSurveys ? 'animate-spin' : ''}`} />
-                    <span>{isSyncingSurveys ? 'Sincronizando...' : '🔄 Sincronizar Sondeos de Opinión'}</span>
+                    <RefreshCw className={`w-4 h-4 ${isDiagnosticScanning ? 'animate-spin' : ''}`} />
+                    <span>{isDiagnosticScanning ? 'Consultando Supabase...' : 'Ejecutar Diagnóstico AI'}</span>
                   </button>
                 </div>
               </div>
 
-              {/* SECTORIAL DIAGNOSTIC ENGINE: SECTOR TABS */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-black uppercase text-cyan-400 tracking-wider flex items-center gap-2">
-                    <BarChart3 className="w-4 h-4" /> 1. Sectores Temáticos y Evaluación por Variables Sugeridas
+              {diagnosticMessage && (
+                <div className="mt-4 p-3 rounded-2xl bg-emerald-950/50 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center justify-between gap-2 relative z-10">
+                  <span className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    {diagnosticMessage}
                   </span>
-                  <span className="text-[11px] text-slate-400 font-mono">
-                    Sugerencias calibradas por la IA según encuestas locales
-                  </span>
+                  <button type="button" onClick={() => setDiagnosticMessage('')} className="text-slate-400 hover:text-white">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+
+              {/* Diagnostic Sub-Tabs Navigation */}
+              <div className="diagnostic-subtabs-nav flex flex-wrap items-center gap-2 mt-6 pt-4 border-t border-cyan-500/20 text-xs font-bold">
+                <button
+                  type="button"
+                  onClick={() => setDiagnosticSubTab('overview')}
+                  className={`diagnostic-subtab-btn px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+                    diagnosticSubTab === 'overview'
+                      ? 'active bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 font-extrabold shadow'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <span>📊 1. Diagnóstico de Campaña (Electoral/Operativo)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setDiagnosticSubTab('audit')}
+                  className={`diagnostic-subtab-btn px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+                    diagnosticSubTab === 'audit'
+                      ? 'active bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 font-extrabold shadow'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <span>📝 Audit Express (10 Preguntas)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setDiagnosticSubTab('report')}
+                  className={`diagnostic-subtab-btn px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-1.5 ${
+                    diagnosticSubTab === 'report'
+                      ? 'active bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 font-extrabold shadow'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <span>🤖 Informe Ejecutivo IA</span>
+                </button>
+              </div>
+            </div>
+
+            {/* SUB-TAB 1: VISIÓN GENERAL DE LOS 6 PILARES */}
+            {diagnosticSubTab === 'overview' && (
+              <div className="functional-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 diagnostic-pillars-grid">
+                {/* Pilar 1: Cobertura Territorial */}
+                <div className="functional-card diagnostic-pillar-card pilar-cobertura bg-[#05162a] border border-cyan-500/30 rounded-3xl p-5 space-y-4 shadow-xl">
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-2">
+                      <div className="pillar-icon-box p-2 bg-emerald-500/20 text-emerald-300 rounded-xl">
+                        <Target className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="pillar-title font-extrabold text-white text-sm">1. Cobertura Territorial</h4>
+                        <span className="pillar-subtitle text-[10px] text-slate-400">Puestos, Líderes & Votantes</span>
+                      </div>
+                    </div>
+                    <span className="pillar-badge badge-emerald text-xs font-mono font-black text-emerald-400 bg-emerald-950 px-2.5 py-1 rounded-full border border-emerald-500/30">
+                      {coberturaScore} / 100
+                    </span>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-xs text-slate-300 font-semibold pillar-metric-label">
+                      <span>Puestos Registrados en Supabase</span>
+                      <span className="pillar-metric-value text-emerald-300">{realCampaignStats.pollingStations} puestos</span>
+                    </div>
+                    <div className="pillar-progress-track w-full h-2 bg-slate-900 rounded-full overflow-hidden">
+                      <div className="pillar-progress-bar h-full bg-emerald-400 rounded-full" style={{ width: `${coberturaScore}%` }} />
+                    </div>
+                  </div>
+
+                  <div className="pillar-analysis-box p-3 bg-[#081d38] rounded-2xl border border-cyan-500/20 text-xs space-y-1 text-slate-300">
+                    <strong className="text-emerald-300 font-bold block">Diagnóstico Territorial ({diagnosticTerritory || 'Campaña'}):</strong>
+                    <p className="text-[11px] leading-relaxed">
+                      {realCampaignStats.pollingStations > 0 || realCampaignStats.leaders > 0
+                        ? `Se registran ${realCampaignStats.pollingStations} puesto(s) de votación, ${realCampaignStats.leaders} líder(es) y ${realCampaignStats.voters} simpatizante(s) verificados en la base de datos.`
+                        : `Sin puestos ni estructura territorial cargada aún para ${diagnosticTerritory || 'la campaña'}. Registre líderes y votantes en el módulo Administrativo.`}
+                    </p>
+                  </div>
                 </div>
 
-                {/* Sector Tabs Navigation */}
-                <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin">
-                  {sectorDiagnostics.map((sec) => (
-                    <button
-                      key={sec.id}
-                      type="button"
-                      onClick={() => setActiveSectorId(sec.id)}
-                      className={`px-3.5 py-2.5 rounded-2xl text-xs font-extrabold transition-all shrink-0 flex items-center gap-2 border cursor-pointer ${
-                        activeSectorId === sec.id
-                          ? 'bg-gradient-to-r from-cyan-600 to-teal-600 text-white border-cyan-400 shadow-lg shadow-cyan-900/40'
-                          : 'bg-[#081d38] text-slate-300 border-cyan-500/20 hover:border-cyan-500/40 hover:text-white'
-                      }`}
-                    >
-                      <span className="text-base">{sec.iconEmoji}</span>
-                      <span>{sec.category}</span>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${
-                        activeSectorId === sec.id
-                          ? 'bg-slate-950/60 text-cyan-200 border border-cyan-400/30'
-                          : 'bg-slate-900 text-slate-400'
-                      }`}>
-                        {sec.surveyPriorityPercent}% Sondeos
+                {/* Pilar 2: Sondeos & Encuestas */}
+                <div className="functional-card diagnostic-pillar-card pilar-intencion bg-[#05162a] border border-cyan-500/30 rounded-3xl p-5 space-y-4 shadow-xl">
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-2">
+                      <div className="pillar-icon-box p-2 bg-amber-500/20 text-amber-300 rounded-xl">
+                        <TrendingUp className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="pillar-title font-extrabold text-white text-sm">2. Intención de Voto & Sondeos</h4>
+                        <span className="pillar-subtitle text-[10px] text-slate-400">Encuestas & Actores Mapeados</span>
+                      </div>
+                    </div>
+                    <span className="pillar-badge badge-amber text-xs font-mono font-black text-amber-400 bg-amber-950 px-2.5 py-1 rounded-full border border-amber-500/30">
+                      {encuestasScore} / 100
+                    </span>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-xs text-slate-300 font-semibold pillar-metric-label">
+                      <span>Encuestas / Sondeos Activos</span>
+                      <span className="pillar-metric-value text-amber-300">{realCampaignStats.surveys} registrados</span>
+                    </div>
+                    <div className="pillar-progress-track w-full h-2 bg-slate-900 rounded-full overflow-hidden">
+                      <div className="pillar-progress-bar h-full bg-amber-400 rounded-full" style={{ width: `${encuestasScore}%` }} />
+                    </div>
+                  </div>
+
+                  <div className="pillar-analysis-box p-3 bg-[#081d38] rounded-2xl border border-cyan-500/20 text-xs space-y-1 text-slate-300">
+                    <strong className="text-amber-300 font-bold block">Análisis de Competencia:</strong>
+                    <p className="text-[11px] leading-relaxed">
+                      {realCampaignStats.surveys > 0 || actorsList.length > 0
+                        ? `${realCampaignStats.surveys} sondeo(s) en Supabase y ${actorsList.length} actor(es) político(s) registrados en el Mapa de Actores Clave.`
+                        : 'Sin encuestas ni actores de competencia registrados aún. Configure encuestas en Gestión Administrativa o registre actores en Narrativa & Discurso.'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Pilar 3: Control Electoral & Día E */}
+                <div className="functional-card diagnostic-pillar-card pilar-testigos bg-[#05162a] border border-cyan-500/30 rounded-3xl p-5 space-y-4 shadow-xl">
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-2">
+                      <div className="pillar-icon-box p-2 bg-rose-500/20 text-rose-300 rounded-xl">
+                        <ShieldCheck className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="pillar-title font-extrabold text-white text-sm">3. Testigos & Día E</h4>
+                        <span className="pillar-subtitle text-[10px] text-slate-400">Acreditaciones Registraduría</span>
+                      </div>
+                    </div>
+                    <span className="pillar-badge badge-rose text-xs font-mono font-black text-rose-400 bg-rose-950 px-2.5 py-1 rounded-full border border-rose-500/30">
+                      {testigosScore} / 100
+                    </span>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-xs text-slate-300 font-semibold pillar-metric-label">
+                      <span>Testigos Acreditados</span>
+                      <span className="pillar-metric-value text-rose-300">{realCampaignStats.witnesses} testigos</span>
+                    </div>
+                    <div className="pillar-progress-track w-full h-2 bg-slate-900 rounded-full overflow-hidden">
+                      <div className="pillar-progress-bar h-full bg-rose-400 rounded-full" style={{ width: `${testigosScore}%` }} />
+                    </div>
+                  </div>
+
+                  <div className="pillar-analysis-box p-3 bg-[#081d38] rounded-2xl border border-rose-500/30 text-xs space-y-1 text-slate-300">
+                    <strong className="text-rose-300 font-bold block flex items-center gap-1">
+                      <AlertTriangle className="w-3.5 h-3.5 text-rose-400" /> Estado Día E:
+                    </strong>
+                    <p className="text-[11px] leading-relaxed">
+                      {realCampaignStats.witnesses > 0
+                        ? `Se cuenta con ${realCampaignStats.witnesses} testigo(s) electoral(es) registrado(s) para cubrir los ${realCampaignStats.pollingStations} puesto(s) de la circunscripción.`
+                        : '0 testigos electorales registrados. Vincule testigos reales en Gestión de Testigos para blindar las mesas el Día E.'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Pilar 4: Finanzas & Cumplimiento CNE */}
+                <div className="functional-card diagnostic-pillar-card pilar-finanzas bg-[#05162a] border border-cyan-500/30 rounded-3xl p-5 space-y-4 shadow-xl">
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-2">
+                      <div className="pillar-icon-box p-2 bg-emerald-500/20 text-emerald-300 rounded-xl">
+                        <DollarSign className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="pillar-title font-extrabold text-white text-sm">4. Rendición Finanzas CNE</h4>
+                        <span className="pillar-subtitle text-[10px] text-slate-400">Cuentas Claras & Presupuesto</span>
+                      </div>
+                    </div>
+                    <span className="pillar-badge badge-emerald text-xs font-mono font-black text-emerald-400 bg-emerald-950 px-2.5 py-1 rounded-full border border-emerald-500/30">
+                      {finanzasScore} / 100
+                    </span>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-xs text-slate-300 font-semibold pillar-metric-label">
+                      <span>Movimientos Contables CNE</span>
+                      <span className="pillar-metric-value text-emerald-300">{realCampaignStats.budgetItems} registros</span>
+                    </div>
+                    <div className="pillar-progress-track w-full h-2 bg-slate-900 rounded-full overflow-hidden">
+                      <div className="pillar-progress-bar h-full bg-emerald-400 rounded-full" style={{ width: `${finanzasScore}%` }} />
+                    </div>
+                  </div>
+
+                  <div className="pillar-analysis-box p-3 bg-[#081d38] rounded-2xl border border-cyan-500/20 text-xs space-y-1 text-slate-300">
+                    <strong className="text-emerald-300 font-bold block">Contabilidad Oficial:</strong>
+                    <p className="text-[11px] leading-relaxed">
+                      {realCampaignStats.budgetItems > 0
+                        ? `${realCampaignStats.budgetItems} movimiento(s) presupuestales registrados en Supabase para control de topes legales CNE en ${diagnosticTerritory || 'la campaña'}.`
+                        : 'Sin movimientos contables registrados en Presupuesto / CNE. Registre ingresos y gastos para activar la trazabilidad.'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Pilar 5: Estrategia, Propuestas & Agenda */}
+                <div className="functional-card diagnostic-pillar-card pilar-estrategia bg-[#05162a] border border-cyan-500/30 rounded-3xl p-5 space-y-4 shadow-xl">
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-2">
+                      <div className="pillar-icon-box p-2 bg-teal-500/20 text-teal-300 rounded-xl">
+                        <MessageSquare className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="pillar-title font-extrabold text-white text-sm">5. Despliegue Estratégico</h4>
+                        <span className="pillar-subtitle text-[10px] text-slate-400">Propuestas, DOFA & Agenda</span>
+                      </div>
+                    </div>
+                    <span className="pillar-badge badge-teal text-xs font-mono font-black text-teal-400 bg-teal-950 px-2.5 py-1 rounded-full border border-teal-500/30">
+                      {estrategiaScore} / 100
+                    </span>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-xs text-slate-300 font-semibold pillar-metric-label">
+                      <span>Propuestas & Hitos Activos</span>
+                      <span className="pillar-metric-value text-teal-300">
+                        {realCampaignStats.proposals} prop. · {realCampaignStats.activities} hitos
                       </span>
-                    </button>
-                  ))}
+                    </div>
+                    <div className="pillar-progress-track w-full h-2 bg-slate-900 rounded-full overflow-hidden">
+                      <div className="pillar-progress-bar h-full bg-teal-400 rounded-full" style={{ width: `${estrategiaScore}%` }} />
+                    </div>
+                  </div>
+
+                  <div className="pillar-analysis-box p-3 bg-[#081d38] rounded-2xl border border-cyan-500/20 text-xs space-y-1 text-slate-300">
+                    <strong className="text-teal-300 font-bold block">Avance Programático:</strong>
+                    <p className="text-[11px] leading-relaxed">
+                      {realCampaignStats.proposals > 0 || realCampaignStats.activities > 0
+                        ? `${realCampaignStats.proposals} propuesta(s) en el Programa de Gobierno y ${realCampaignStats.activities} hito(s) programado(s) en la Agenda Electoral.`
+                        : 'Estructure sus ejes programáticos, matriz DOFA y calendario de hitos en las pestañas estratégicas.'}
+                    </p>
+                  </div>
                 </div>
 
-                {/* Active Sector Diagnostic Panel */}
-                {(() => {
-                  const activeSec = sectorDiagnostics.find(s => s.id === activeSectorId) || sectorDiagnostics[0];
-                  return (
-                    <div className="bg-[#081d38] border border-cyan-500/30 rounded-3xl p-5 space-y-6 shadow-lg">
-                      
-                      {/* Sector Banner */}
-                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[#051325] p-4 rounded-2xl border border-cyan-500/20">
-                        <div className="flex items-center gap-3">
-                          <span className="text-3xl p-2.5 bg-cyan-950/60 rounded-2xl border border-cyan-500/30">{activeSec.iconEmoji}</span>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h5 className="text-base font-black text-white">Sector {activeSec.category}</h5>
-                              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-teal-950 text-teal-300 border border-teal-500/30">
-                                Prioridad en Sondeos: {activeSec.surveyPriorityPercent}% de Preocupación Ciudadana
-                              </span>
-                            </div>
-                            <p className="text-xs text-slate-400 mt-0.5">
-                              Matriz de variables diagnósticas alimentada por sondeos de opinión para insumo del Plan de Gobierno.
-                            </p>
-                          </div>
-                        </div>
+                {/* Pilar 6: Censo & Filtro de Duplicidad */}
+                <div className="functional-card diagnostic-pillar-card pilar-censo bg-[#05162a] border border-cyan-500/30 rounded-3xl p-5 space-y-4 shadow-xl">
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-2">
+                      <div className="pillar-icon-box p-2 bg-emerald-500/20 text-emerald-300 rounded-xl">
+                        <Users className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="pillar-title font-extrabold text-white text-sm">6. Filtro Unificado Censo</h4>
+                        <span className="pillar-subtitle text-[10px] text-slate-400">Blindaje Duplicidad Cédula</span>
+                      </div>
+                    </div>
+                    <span className="pillar-badge badge-emerald text-xs font-mono font-black text-emerald-400 bg-emerald-950 px-2.5 py-1 rounded-full border border-emerald-500/30">
+                      {censoScore} / 100
+                    </span>
+                  </div>
 
-                        <div className="flex items-center gap-2 text-xs font-bold text-slate-300 shrink-0 bg-[#081d38] px-3.5 py-2 rounded-xl border border-cyan-500/20">
-                          <Users className="w-4 h-4 text-cyan-400" />
-                          <span>Muestra de Sondeo: 1.240 Respuestas</span>
-                        </div>
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-xs text-slate-300 font-semibold pillar-metric-label">
+                      <span>Simpatizantes Verificados</span>
+                      <span className="pillar-metric-value text-emerald-300">{realCampaignStats.voters} votantes</span>
+                    </div>
+                    <div className="pillar-progress-track w-full h-2 bg-slate-900 rounded-full overflow-hidden">
+                      <div className="pillar-progress-bar h-full bg-emerald-400 rounded-full" style={{ width: `${censoScore}%` }} />
+                    </div>
+                  </div>
+
+                  <div className="pillar-analysis-box p-3 bg-[#081d38] rounded-2xl border border-cyan-500/20 text-xs space-y-1 text-slate-300">
+                    <strong className="text-emerald-300 font-bold block">Regla de Negocio Activa:</strong>
+                    <p className="text-[11px] leading-relaxed">
+                      Restricción única de cédula por campaña activa en PostgreSQL (`voters` y `leaders`). Total actual: {realCampaignStats.voters} votante(s) y {realCampaignStats.leaders} líder(es).
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {diagnosticSubTab === 'audit' && (
+              <div className="diagnostic-audit-card bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 shadow-xl space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-cyan-500/20 pb-4 audit-header">
+                  <div>
+                    <h4 className="audit-title text-lg font-black text-white flex items-center gap-2">
+                      <CheckSquare className="w-5 h-5 text-emerald-400" /> Cuestionario de Diagnóstico Operativo Express
+                    </h4>
+                  </div>
+
+                  <div className="audit-score-widget bg-[#081d38] border border-cyan-500/30 px-4 py-2 rounded-2xl text-center shrink-0">
+                    <span className="audit-score-label text-[10px] text-slate-400 font-bold uppercase block">Puntaje Audit:</span>
+                    <span className="audit-score-number text-2xl font-black text-emerald-400 font-mono">
+                      {auditScore} / 100
+                    </span>
+                  </div>
+                </div>
+
+                {/* 10 Questions List */}
+                <div className="functional-grid space-y-3 text-xs audit-questions-list">
+                  {[
+                    { id: 1, title: '1. Cartografía & Censo:', text: '¿Tienen dividida la meta de votos por zona, puesto y mesa en el censo oficial?' },
+                    { id: 2, title: '2. Testigos Día E:', text: '¿Cuentan con testigos asignados y acreditados para al menos el 90% de las mesas?' },
+                    { id: 3, title: '3. Cuentas Claras CNE:', text: '¿Se cuenta con libro contable al día y facturación respaldada con soporte digital?' },
+                    { id: 4, title: '4. Inteligencia Digital:', text: '¿Disponen de monitoreo diario de redes para detección de cadenas falsas y desinformación?' },
+                    { id: 5, title: '5. Identidad & Discurso:', text: '¿La narrativa de campaña y el mensaje base están unificados entre el candidato y voceros?' },
+                    { id: 6, title: '6. Movilización Día E:', text: '¿Existe un plan logístico de transporte, refrigerios y reportes en tiempo real para el Día E?' },
+                    { id: 7, title: '7. Jerarquía Aliada:', text: '¿Las campañas vinculadas comparten censo sin duplicidad de electores?' },
+                    { id: 8, title: '8. Antecedentes & Legal:', text: '¿Se verificaron antecedentes penales, fiscales y disciplinarios sin inhabilitaciones CNE?' },
+                    { id: 9, title: '9. Estrategia Anti-Abstención:', text: '¿Tienen identificados los sectores con mayor riesgo de abstencionismo?' },
+                    { id: 10, title: '10. Registro Unificado:', text: '¿Todo votante registrado está asociado obligatoriamente a una cédula única de líder?' }
+                  ].map((q) => (
+                    <div key={q.id} className="functional-card audit-question-row p-3.5 bg-[#081d38] border border-cyan-500/20 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="space-y-0.5 max-w-xl">
+                        <span className="audit-q-title font-bold text-emerald-300">{q.title}</span>
+                        <p className="audit-q-text text-slate-200">{q.text}</p>
                       </div>
 
-                      {/* Evaluative Variables Grid / Table */}
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between text-xs font-bold text-slate-300">
-                          <span className="text-cyan-300 flex items-center gap-1.5">
-                            <CheckSquare className="w-4 h-4 text-cyan-400" /> Variables Sugeridas de Evaluación Sectorial
-                          </span>
-                          <span className="text-[11px] text-slate-400">
-                            Haz clic en el estado para re-evaluar la condición actual
-                          </span>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          {activeSec.variables.map((variable) => (
-                            <div key={variable.id} className="bg-[#051325] border border-cyan-500/20 p-3.5 rounded-2xl space-y-3 hover:border-cyan-500/40 transition-all shadow-md">
-                              <div className="flex items-start justify-between gap-2">
-                                <span className="font-extrabold text-white text-xs leading-snug">
-                                  {variable.name}
-                                </span>
-                                
-                                <div className="flex items-center gap-1.5 shrink-0">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleOpenEditVariableModal(activeSec.id, variable)}
-                                    className="p-1 text-cyan-400 hover:text-white bg-cyan-950/80 border border-cyan-500/30 hover:bg-cyan-900 rounded-lg transition-all cursor-pointer"
-                                    title="Editar Indicador, Línea Base y Meta"
-                                  >
-                                    <Edit3 className="w-3.5 h-3.5" />
-                                  </button>
-
-                                  {/* Status Toggle Dropdown */}
-                                  <select
-                                    value={variable.status}
-                                    onChange={(e) => handleVariableStatusChange(activeSec.id, variable.id, e.target.value as any)}
-                                    className={`text-[11px] font-black px-2.5 py-1 rounded-lg outline-none border cursor-pointer ${
-                                      variable.status === 'Crítico'
-                                        ? 'bg-rose-950 text-rose-300 border-rose-500/50'
-                                        : variable.status === 'Regular'
-                                        ? 'bg-amber-950 text-amber-300 border-amber-500/50'
-                                        : 'bg-emerald-950 text-emerald-300 border-emerald-500/50'
-                                    }`}
-                                  >
-                                    <option value="Crítico">🔴 Crítico</option>
-                                    <option value="Regular">🟡 Regular</option>
-                                    <option value="Bueno">🟢 Bueno</option>
-                                  </select>
-                                </div>
-                              </div>
-
-                              {/* INDICADORES Y LÍNEA BASE COMPONENT */}
-                              <div className="bg-[#071930] border border-cyan-500/25 rounded-xl p-2.5 space-y-2">
-                                <div className="text-[10px] text-cyan-300 font-bold flex items-center justify-between border-b border-cyan-500/20 pb-1">
-                                  <span className="flex items-center gap-1 text-cyan-400">
-                                    <Activity className="w-3.5 h-3.5" />
-                                    Indicadores ({getVariableIndicadores(variable).length}):
-                                  </span>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleOpenEditVariableModal(activeSec.id, variable)}
-                                    className="text-[10px] text-cyan-400 hover:text-cyan-200 flex items-center gap-0.5 cursor-pointer font-extrabold hover:underline"
-                                  >
-                                    + Administrar
-                                  </button>
-                                </div>
-
-                                <div className="space-y-2">
-                                  {getVariableIndicadores(variable).map((ind, idx) => (
-                                    <div key={ind.id || idx} className="bg-[#031121] p-2 rounded-lg border border-cyan-500/20 space-y-1">
-                                      <div className="text-[10px] text-slate-200 font-semibold truncate" title={ind.nombre}>
-                                        📊 <span className="text-cyan-200 font-bold">{ind.nombre}</span>
-                                      </div>
-                                      <div className="grid grid-cols-2 gap-1.5 text-[10px]">
-                                        <div className="bg-[#010914] p-1.5 rounded-md border border-amber-500/30 flex flex-col justify-center">
-                                          <span className="text-amber-400 font-extrabold text-[8px] flex items-center gap-1 uppercase tracking-wider">
-                                            📍 Línea Base
-                                          </span>
-                                          <span className="text-amber-200 font-black text-xs mt-0.5">
-                                            {ind.lineaBase || 'N/A'}
-                                          </span>
-                                        </div>
-
-                                        <div className="bg-[#010914] p-1.5 rounded-md border border-emerald-500/30 flex flex-col justify-center">
-                                          <span className="text-emerald-400 font-extrabold text-[8px] flex items-center gap-1 uppercase tracking-wider">
-                                            🎯 Meta
-                                          </span>
-                                          <span className="text-emerald-200 font-black text-xs mt-0.5">
-                                            {ind.meta || 'N/A'}
-                                          </span>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-
-                              {/* Progress / Satisfaction Score Bar */}
-                              <div className="space-y-1">
-                                <div className="flex justify-between text-[10px] font-mono font-bold text-slate-400">
-                                  <span>Puntaje de Desempeño:</span>
-                                  <span className={variable.score < 35 ? 'text-rose-400' : variable.score < 65 ? 'text-amber-400' : 'text-emerald-400'}>
-                                    {variable.score} / 100
-                                  </span>
-                                </div>
-                                <div className="w-full h-1.5 bg-slate-900 rounded-full overflow-hidden">
-                                  <div
-                                    className={`h-full transition-all duration-500 rounded-full ${
-                                      variable.score < 35 ? 'bg-rose-500' : variable.score < 65 ? 'bg-amber-500' : 'bg-emerald-400'
-                                    }`}
-                                    style={{ width: `${variable.score}%` }}
-                                  />
-                                </div>
-                              </div>
-
-                              {/* Survey Poll Perception Feed */}
-                              <div className="p-2 bg-[#081d38] rounded-xl border border-cyan-500/15 text-[11px] text-slate-300 flex items-center justify-between gap-2">
-                                <span className="font-medium truncate text-cyan-200/90">
-                                  📊 Sondeos: {variable.pollPerception}
-                                </span>
-                                <span className="text-[9px] font-bold text-teal-400 bg-teal-950 px-1.5 py-0.5 rounded border border-teal-500/30 shrink-0">
-                                  Sondeo Real
-                                </span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-
-                        {/* Form to Add Custom Variable */}
-                        <div className="pt-2 flex items-center gap-2">
-                          <input
-                            type="text"
-                            value={customVariableInput[activeSec.id] || ''}
-                            onChange={(e) => setCustomVariableInput({ ...customVariableInput, [activeSec.id]: e.target.value })}
-                            placeholder={`+ Agregar variable sugerida o indicador personalizado para ${activeSec.category}...`}
-                            className="flex-1 bg-[#051325] border border-cyan-500/30 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 outline-none focus:border-cyan-400"
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') handleAddCustomVariable(activeSec.id);
-                            }}
-                          />
-                          <button
-                            type="button"
-                            onClick={() => handleAddCustomVariable(activeSec.id)}
-                            className="bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs px-4 py-2 rounded-xl transition-all cursor-pointer shrink-0"
-                          >
-                            + Agregar
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Qualitative Problem & Programmatic Solution Feed */}
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-2 border-t border-cyan-500/20">
-                        {/* Problem Summary */}
-                        <div className="space-y-2">
-                          <label className="block text-xs font-bold text-amber-400 flex items-center gap-1.5">
-                            <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
-                            Diagnóstico Cualitativo de la Problemática ({activeSec.category})
-                          </label>
-                          <textarea
-                            rows={3}
-                            value={activeSec.problemSummary}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              setSectorDiagnostics(prev => prev.map(s => s.id === activeSec.id ? { ...s, problemSummary: val } : s));
-                            }}
-                            className="w-full bg-[#051325] border border-cyan-500/30 rounded-2xl p-3 text-xs text-slate-200 outline-none focus:border-cyan-400 resize-none leading-relaxed"
-                          />
-                        </div>
-
-                        {/* Programmatic Solution */}
-                        <div className="space-y-2">
-                          <label className="block text-xs font-bold text-emerald-400 flex items-center gap-1.5">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                            Solución Programática Sugerida (Para Plan de Gobierno CNE)
-                          </label>
-                          <textarea
-                            rows={3}
-                            value={activeSec.programmaticSolution}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              setSectorDiagnostics(prev => prev.map(s => s.id === activeSec.id ? { ...s, programmaticSolution: val } : s));
-                            }}
-                            className="w-full bg-[#051325] border border-emerald-500/30 rounded-2xl p-3 text-xs text-emerald-100 outline-none focus:border-emerald-400 resize-none leading-relaxed"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="flex justify-end pt-2">
+                      <div className="audit-options-container flex items-center gap-1.5 shrink-0 bg-[#051325] p-1 rounded-xl border border-cyan-500/20">
                         <button
                           type="button"
-                          onClick={() => alert(`✅ Solución programática de ${activeSec.category} sincronizada exitosamente con el Módulo de Programa de Gobierno para la Registraduría.`)}
-                          className="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-extrabold px-4 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer shadow-md"
+                          onClick={() => {
+                            const next = { ...auditAnswers, [q.id]: 'si' as const };
+                            setAuditAnswers(next);
+                            void persistTerritorialAndAuditToDb(sectorDiagnostics, territorialNeeds, next);
+                          }}
+                          className={`audit-btn px-3 py-1.5 rounded-lg font-bold text-[11px] transition-all cursor-pointer ${
+                            auditAnswers[q.id] === 'si'
+                              ? 'active-si bg-emerald-500 text-slate-950 font-black shadow'
+                              : 'text-slate-400 hover:text-white'
+                          }`}
                         >
-                          <FileCheck className="w-4 h-4 text-emerald-400" />
-                          <span>Sincronizar esta propuesta al Programa de Gobierno Registraduría</span>
+                          Sí (10p)
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const next = { ...auditAnswers, [q.id]: 'parcial' as const };
+                            setAuditAnswers(next);
+                            void persistTerritorialAndAuditToDb(sectorDiagnostics, territorialNeeds, next);
+                          }}
+                          className={`audit-btn px-3 py-1.5 rounded-lg font-bold text-[11px] transition-all cursor-pointer ${
+                            auditAnswers[q.id] === 'parcial'
+                              ? 'active-parcial bg-amber-500 text-slate-950 font-black shadow'
+                              : 'text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          Parcial (5p)
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const next = { ...auditAnswers, [q.id]: 'no' as const };
+                            setAuditAnswers(next);
+                            void persistTerritorialAndAuditToDb(sectorDiagnostics, territorialNeeds, next);
+                          }}
+                          className={`audit-btn px-3 py-1.5 rounded-lg font-bold text-[11px] transition-all cursor-pointer ${
+                            auditAnswers[q.id] === 'no'
+                              ? 'active-no bg-rose-500 text-white font-black shadow'
+                              : 'text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          No (0p)
                         </button>
                       </div>
-
                     </div>
-                  );
-                })()}
+                  ))}
+                </div>
               </div>
+            )}
 
-              {/* 2. MICRO-TERRITORIAL DIAGNOSTIC SECTION (COMMUNES & NEIGHBORHOODS) */}
-              <div className="pt-4 border-t border-cyan-500/20 space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            {/* SUB-TAB 3: INFORME EJECUTIVO & PLAN DE ACCIÓN IA */}
+            {diagnosticSubTab === 'report' && (
+              <div className="diagnostic-report-card bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 shadow-xl space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-cyan-500/20 pb-4 report-header">
                   <div>
-                    <h5 className="text-sm font-black text-white flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-cyan-400" /> 2. Fichas de Diagnóstico Territorial Micro-Local (Por Comuna / Corregimiento)
+                    <h4 className="report-title text-lg font-black text-white flex items-center gap-2">
+                      <Sparkles className="w-5 h-5 text-emerald-400" /> Informe Ejecutivo de Diagnóstico & Recomendaciones IA ({diagnosticCampaignName})
+                    </h4>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => window.print()}
+                    className="report-export-btn px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/30 font-bold text-xs flex items-center gap-2 cursor-pointer transition-all"
+                  >
+                    <FileText className="w-4 h-4" />
+                    <span>Imprimir / Exportar Informe PDF</span>
+                  </button>
+                </div>
+
+                <div className="functional-grid grid grid-cols-1 lg:grid-cols-2 gap-6 text-xs report-sections-grid">
+                  {/* Fortalezas Destacadas */}
+                  <div className="functional-card report-section-card report-strengths p-4 bg-[#081d38] border border-emerald-500/30 rounded-2xl space-y-3">
+                    <h5 className="font-extrabold text-emerald-300 text-sm flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Indicadores Consolidados en Base de Datos
                     </h5>
+                    <ul className="space-y-2 text-slate-200 list-disc list-inside">
+                      <li>
+                        Infraestructura Territorial ({diagnosticTerritory || 'Circunscripción'}): {realCampaignStats.pollingStations} puesto(s) de votación oficiales vinculados.
+                      </li>
+                      <li>
+                        Estructura Electoral: {realCampaignStats.leaders} líder(es) y {realCampaignStats.voters} votante(s) con validación de cédula única.
+                      </li>
+                      <li>
+                        Planeación Estratégica: {realCampaignStats.proposals} propuesta(s) programática(s) y {realCampaignStats.activities} actividad(es) en agenda.
+                      </li>
+                    </ul>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => setShowAddNeedModal(true)}
-                    className="bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-slate-950 font-black text-xs px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 shadow-md shrink-0 cursor-pointer"
-                  >
-                    <Plus className="w-4 h-4" /> Registrar Ficha Comunal
-                  </button>
-                </div>
-
-                {/* Filter Bar */}
-                <div className="flex min-w-0 flex-wrap items-center justify-between gap-3 overflow-hidden bg-[#081d38] p-3 rounded-2xl border border-cyan-500/20 text-xs">
-                  <div className="flex w-full min-w-0 flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:items-center">
-                    <span className="font-bold text-slate-300">Filtrar por Comuna/Sector:</span>
-                    <select
-                      value={selectedComunaFilter}
-                      onChange={(e) => setSelectedComunaFilter(e.target.value)}
-                      className="block w-full min-w-0 max-w-full box-border bg-[#051325] border border-cyan-500/30 rounded-xl px-3 py-1.5 text-white outline-none focus:border-cyan-400 font-medium sm:w-auto sm:max-w-[20rem]"
-                    >
-                      <option value="Todos">Todas las Comunas / Corregimientos</option>
-                      <option value="Comuna 1 - Popular">Comuna 1 - Popular</option>
-                      <option value="Comuna 3 - Manrique">Comuna 3 - Manrique</option>
-                      <option value="Comuna 13 - San Javier">Comuna 13 - San Javier</option>
-                      <option value="Corregimiento San Cristóbal">Corregimiento San Cristóbal</option>
-                    </select>
-                  </div>
-
-                  <span className="text-[11px] text-slate-400 font-mono">
-                    {territorialNeeds.filter(n => selectedComunaFilter === 'Todos' || n.comunaSector === selectedComunaFilter).length} Fichas Mapeadas
-                  </span>
-                </div>
-
-              {/* Needs & Programmatic Proposals Cards */}
-              {territorialNeeds.filter(need => selectedComunaFilter === 'Todos' || need.comunaSector === selectedComunaFilter).length === 0 && (
-                <div className="rounded-2xl border border-dashed border-cyan-500/30 bg-[#030e21]/70 px-6 py-8 text-center">
-                  <MapPin className="mx-auto mb-3 h-7 w-7 text-cyan-400/70" />
-                  <p className="text-sm font-bold text-white">0 fichas comunales registradas</p>
-                  <p className="mt-1 text-xs text-slate-400">Las fichas aparecerán únicamente cuando el candidato o un administrador registre información real.</p>
-                  <button
-                    type="button"
-                    onClick={() => setShowAddNeedModal(true)}
-                    className="mt-4 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 px-4 py-2 text-xs font-black text-slate-950"
-                  >
-                    <Plus className="h-3.5 w-3.5" /> Registrar primera ficha
-                  </button>
-                </div>
-              )}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {territorialNeeds
-                    .filter(need => selectedComunaFilter === 'Todos' || need.comunaSector === selectedComunaFilter)
-                    .map((need) => (
-                      <div key={need.id} className="bg-[#081d38] border border-cyan-500/30 rounded-2xl p-4 space-y-3 flex flex-col justify-between hover:border-cyan-400/50 transition-all shadow-md">
-                        <div className="space-y-2">
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="font-extrabold text-cyan-300 text-xs flex items-center gap-1.5">
-                              <MapPin className="w-3.5 h-3.5 text-cyan-400" /> {need.comunaSector}
-                            </span>
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-teal-950 text-teal-300 border border-teal-500/30">
-                                {need.category}
-                              </span>
-                              <span className={`text-[10px] font-black px-2 py-0.5 rounded-md border ${
-                                need.impactLevel === 'Crítico'
-                                  ? 'bg-rose-950 text-rose-300 border-rose-500/40'
-                                  : need.impactLevel === 'Alto'
-                                  ? 'bg-amber-950 text-amber-300 border-amber-500/40'
-                                  : 'bg-slate-900 text-slate-300 border-slate-700'
-                              }`}>
-                                Impacto {need.impactLevel}
-                              </span>
-                            </div>
-                          </div>
-
-                          <div className="bg-[#051325] p-3 rounded-xl border border-cyan-500/15 text-xs text-slate-200">
-                            <strong className="text-amber-400 text-[11px] block mb-1">Problemática Ciudadana Detectada:</strong>
-                            <p className="leading-relaxed">{need.problemDescription}</p>
-                          </div>
-
-                          <div className="bg-emerald-950/40 p-3 rounded-xl border border-emerald-500/30 text-xs text-slate-200">
-                            <strong className="text-emerald-400 text-[11px] block mb-1 flex items-center gap-1">
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Propuesta para Programa de Gobierno:
-                            </strong>
-                            <p className="text-emerald-200/90 leading-relaxed font-medium">{need.programmaticProposal}</p>
-                          </div>
-                        </div>
-
-                        <div className="pt-2 border-t border-cyan-500/20 flex items-center justify-between text-[11px]">
-                          <span className="text-slate-400 text-[10px]">Insumo técnico para Plan de Gobierno Registraduría</span>
-                          <button
-                            type="button"
-                            onClick={() => alert(`Propuesta programática para ${need.comunaSector} sincronizada exitosamente con el Módulo de Programa de Gobierno.`)}
-                            className="text-cyan-400 hover:text-cyan-300 font-bold flex items-center gap-1 cursor-pointer"
-                          >
-                            Sincronizar a Programa →
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              </div>
-
-              {/* Add Territorial Need Modal */}
-              {showAddNeedModal && (
-                <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                  <div className="bg-[#05162a] border border-cyan-500/40 rounded-3xl p-6 max-w-lg w-full space-y-4 shadow-2xl">
-                    <div className="flex justify-between items-center border-b border-cyan-500/20 pb-3">
-                      <h4 className="font-black text-white text-base flex items-center gap-2">
-                        <MapPin className="w-5 h-5 text-cyan-400" /> Nueva Ficha de Diagnóstico Territorial
-                      </h4>
-                      <button
-                        type="button"
-                        onClick={() => setShowAddNeedModal(false)}
-                        className="text-slate-400 hover:text-white font-bold text-sm cursor-pointer"
-                      >
-                        ✕
-                      </button>
-                    </div>
-
-                    <div className="space-y-3 text-xs">
-                      <div>
-                        <label className="block text-slate-300 font-bold mb-1">Comuna / Corregimiento / Barrio:</label>
-                        <select
-                          value={newTerritorialNeed.comunaSector}
-                          onChange={(e) => setNewTerritorialNeed({ ...newTerritorialNeed, comunaSector: e.target.value })}
-                          className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-cyan-400"
-                        >
-                          <option value="Comuna 1 - Popular">Comuna 1 - Popular</option>
-                          <option value="Comuna 3 - Manrique">Comuna 3 - Manrique</option>
-                          <option value="Comuna 13 - San Javier">Comuna 13 - San Javier</option>
-                          <option value="Corregimiento San Cristóbal">Corregimiento San Cristóbal</option>
-                          <option value="Comuna 10 - La Candelaria">Comuna 10 - La Candelaria</option>
-                          <option value="Comuna 16 - Belén">Comuna 16 - Belén</option>
-                        </select>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="block text-slate-300 font-bold mb-1">Categoría Temática:</label>
-                          <select
-                            value={newTerritorialNeed.category}
-                            onChange={(e) => setNewTerritorialNeed({ ...newTerritorialNeed, category: e.target.value as any })}
-                            className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-cyan-400"
-                          >
-                            <option value="Seguridad">Seguridad</option>
-                            <option value="Infraestructura">Infraestructura</option>
-                            <option value="Empleo">Empleo</option>
-                            <option value="Salud">Salud</option>
-                            <option value="Educación">Educación</option>
-                            <option value="Medio Ambiente">Medio Ambiente</option>
-                          </select>
-                        </div>
-
-                        <div>
-                          <label className="block text-slate-300 font-bold mb-1">Nivel de Impacto / Urgencia:</label>
-                          <select
-                            value={newTerritorialNeed.impactLevel}
-                            onChange={(e) => setNewTerritorialNeed({ ...newTerritorialNeed, impactLevel: e.target.value as any })}
-                            className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-cyan-400"
-                          >
-                            <option value="Crítico">Crítico</option>
-                            <option value="Alto">Alto</option>
-                            <option value="Medio">Medio</option>
-                          </select>
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-slate-300 font-bold mb-1">Descripción de la Problemática Social:</label>
-                        <textarea
-                          rows={3}
-                          value={newTerritorialNeed.problemDescription}
-                          onChange={(e) => setNewTerritorialNeed({ ...newTerritorialNeed, problemDescription: e.target.value })}
-                          placeholder="Describe qué le duele a la ciudadanía en este territorio..."
-                          className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-cyan-400 resize-none"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-emerald-300 font-bold mb-1">Propuesta Programática Solución (Insumo Plan de Gobierno):</label>
-                        <textarea
-                          rows={3}
-                          value={newTerritorialNeed.programmaticProposal}
-                          onChange={(e) => setNewTerritorialNeed({ ...newTerritorialNeed, programmaticProposal: e.target.value })}
-                          placeholder="Propuesta concreta de gobierno para resolver la problemática..."
-                          className="w-full bg-[#081d38] border border-emerald-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-emerald-400 resize-none"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-end gap-3 pt-2">
-                      <button
-                        type="button"
-                        onClick={() => setShowAddNeedModal(false)}
-                        className="px-4 py-2 rounded-xl text-slate-400 hover:text-white font-bold text-xs cursor-pointer"
-                      >
-                        Cancelar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleAddTerritorialNeed}
-                        className="px-5 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 text-slate-950 font-black text-xs shadow-lg shadow-cyan-500/20 cursor-pointer"
-                      >
-                        Guardar Ficha
-                      </button>
-                    </div>
+                  {/* Acciones Prioritarias de Contingencia */}
+                  <div className="functional-card report-section-card report-actions p-4 bg-[#081d38] border border-rose-500/30 rounded-2xl space-y-3">
+                    <h5 className="font-extrabold text-rose-300 text-sm flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-rose-400" /> Prioridades Operativas Detectadas
+                    </h5>
+                    <ul className="space-y-2 text-slate-200 list-disc list-inside">
+                      {realCampaignStats.witnesses < realCampaignStats.pollingStations && (
+                        <li>
+                          Acreditar testigos electorales para cubrir la totalidad de puestos en {diagnosticTerritory || 'el municipio'} ({realCampaignStats.witnesses} registrados).
+                        </li>
+                      )}
+                      {realCampaignStats.proposals === 0 && (
+                        <li>Registrar ejes y propuestas reales en la pestaña de Programa de Gobierno.</li>
+                      )}
+                      {swotData.strengths.length === 0 && (
+                        <li>Completar la Matriz DOFA / SWOT AI para habilitar los cruces estratégicos CAME.</li>
+                      )}
+                      {realCampaignStats.activities === 0 && (
+                        <li>Programar los hitos críticos de campaña en el Calendario Electoral.</li>
+                      )}
+                      {realCampaignStats.witnesses >= realCampaignStats.pollingStations &&
+                        realCampaignStats.proposals > 0 &&
+                        swotData.strengths.length > 0 &&
+                        realCampaignStats.activities > 0 && (
+                          <li>Mantener el seguimiento semanal de metas de líderes y actualización de encuestas territoriales.</li>
+                        )}
+                    </ul>
                   </div>
                 </div>
-              )}
-
-            </div>
-          )}
-          {diagnosticSubTab === 'audit' && (
-            <div className="diagnostic-audit-card bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 shadow-xl space-y-6">
-              
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-cyan-500/20 pb-4 audit-header">
-                <div>
-                  <h4 className="audit-title text-lg font-black text-white flex items-center gap-2">
-                    <CheckSquare className="w-5 h-5 text-emerald-400" /> Cuestionario de Diagnóstico Operativo Express
-                  </h4>
-                </div>
-
-                <div className="audit-score-widget bg-[#081d38] border border-cyan-500/30 px-4 py-2 rounded-2xl text-center shrink-0">
-                  <span className="audit-score-label text-[10px] text-slate-400 font-bold uppercase block">Puntaje Audit:</span>
-                  <span className="audit-score-number text-2xl font-black text-emerald-400 font-mono">
-                    {Object.values(auditAnswers).reduce((acc: number, curr) => curr === 'si' ? acc + 10 : curr === 'parcial' ? acc + 5 : acc, 0)} / 100
-                  </span>
-                </div>
               </div>
-
-              {/* 10 Questions List */}
-              <div className="functional-grid space-y-3 text-xs audit-questions-list">
-                {[
-                  { id: 1, title: '1. Cartografía & Censo:', text: '¿Tienen dividida la meta de votos por comuna, puesto y mesa en el censo oficial?' },
-                  { id: 2, title: '2. Testigos Día E:', text: '¿Cuentan con testigos asignados y acreditados para al menos el 90% de las mesas?' },
-                  { id: 3, title: '3. Cuentas Claras CNE:', text: '¿Se cuenta con libro contable al día y facturación respaldada con soporte digital OCR?' },
-                  { id: 4, title: '4. Inteligencia Digital:', text: '¿Disponen de monitoreo diario de redes para detección de cadenas falsas y desinformación?' },
-                  { id: 5, title: '5. Identidad & Discurso:', text: '¿La narrativa de campaña y el mensaje base están unificados entre el candidato y voceros?' },
-                  { id: 6, title: '6. Movilización Día E:', text: '¿Existe un plan logístico de transporte, refrigerios y reportes en tiempo real para el Día E?' },
-                  { id: 7, title: '7. Jerarquía Aliada:', text: '¿Las campañas vinculadas (Concejo/Asamblea) comparten censo sin duplicidad de electores?' },
-                  { id: 8, title: '8. Antecedentes & Legal:', text: '¿Se verificaron antecedentes penales, fiscales y disciplinarios sin inhabilitaciones CNE?' },
-                  { id: 9, title: '9. Estrategia Anti-Abstención:', text: '¿Tienen identificados los barrios periféricos con mayor riesgo de abstencionismo?' },
-                  { id: 10, title: '10. Registro Unificado:', text: '¿Todo votante registrado está asociado obligatoriamente a una cédula única de líder?' }
-                ].map((q) => (
-                  <div key={q.id} className="functional-card audit-question-row p-3.5 bg-[#081d38] border border-cyan-500/20 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="space-y-0.5 max-w-xl">
-                      <span className="audit-q-title font-bold text-emerald-300">{q.title}</span>
-                      <p className="audit-q-text text-slate-200">{q.text}</p>
-                    </div>
-
-                    <div className="audit-options-container flex items-center gap-1.5 shrink-0 bg-[#051325] p-1 rounded-xl border border-cyan-500/20">
-                      <button
-                        onClick={() => setAuditAnswers(prev => ({ ...prev, [q.id]: 'si' }))}
-                        className={`audit-btn px-3 py-1.5 rounded-lg font-bold text-[11px] transition-all cursor-pointer ${
-                          auditAnswers[q.id] === 'si'
-                            ? 'active-si bg-emerald-500 text-slate-950 font-black shadow'
-                            : 'text-slate-400 hover:text-white'
-                        }`}
-                      >
-                        Sí (10p)
-                      </button>
-
-                      <button
-                        onClick={() => setAuditAnswers(prev => ({ ...prev, [q.id]: 'parcial' }))}
-                        className={`audit-btn px-3 py-1.5 rounded-lg font-bold text-[11px] transition-all cursor-pointer ${
-                          auditAnswers[q.id] === 'parcial'
-                            ? 'active-parcial bg-amber-500 text-slate-950 font-black shadow'
-                            : 'text-slate-400 hover:text-white'
-                        }`}
-                      >
-                        Parcial (5p)
-                      </button>
-
-                      <button
-                        onClick={() => setAuditAnswers(prev => ({ ...prev, [q.id]: 'no' }))}
-                        className={`audit-btn px-3 py-1.5 rounded-lg font-bold text-[11px] transition-all cursor-pointer ${
-                          auditAnswers[q.id] === 'no'
-                            ? 'active-no bg-rose-500 text-white font-black shadow'
-                            : 'text-slate-400 hover:text-white'
-                        }`}
-                      >
-                        No (0p)
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-            </div>
-          )}
-
-          {/* SUB-TAB 3: INFORME EJECUTIVO & PLAN DE ACCIÓN IA */}
-          {diagnosticSubTab === 'report' && (
-            <div className="diagnostic-report-card bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 shadow-xl space-y-6">
-              
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-cyan-500/20 pb-4 report-header">
-                <div>
-                  <h4 className="report-title text-lg font-black text-white flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-emerald-400" /> Informe Ejecutivo de Diagnóstico & Recomendaciones IA
-                  </h4>
-                </div>
-
-                <button
-                  onClick={() => alert('Generando PDF del Informe Ejecutivo de Diagnóstico de Campaña...')}
-                  className="report-export-btn px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/30 font-bold text-xs flex items-center gap-2 cursor-pointer transition-all"
-                >
-                  <FileText className="w-4 h-4" />
-                  <span>Exportar Informe PDF</span>
-                </button>
-              </div>
-
-              <div className="functional-grid grid grid-cols-1 lg:grid-cols-2 gap-6 text-xs report-sections-grid">
-                
-                {/* Fortalezas Destacadas */}
-                <div className="functional-card report-section-card report-strengths p-4 bg-[#081d38] border border-emerald-500/30 rounded-2xl space-y-3">
-                  <h5 className="font-extrabold text-emerald-300 text-sm flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Fortalezas Clave de la Campaña
-                  </h5>
-                  <ul className="space-y-2 text-slate-200 list-disc list-inside">
-                    <li>Transparencia Financiera CNE: Registros bancarios y comprobantes escaneados con 94% de precisión OCR.</li>
-                    <li>Narrativa y Hoja de Vida: Candidato con cero antecedentes o investigaciones penales o fiscales.</li>
-                    <li>Sólido Posicionamiento en Sectores Juveniles e Independientes en comunas urbanas centrales.</li>
-                  </ul>
-                </div>
-
-                {/* Acciones Prioritarias de Contingencia */}
-                <div className="functional-card report-section-card report-actions p-4 bg-[#081d38] border border-rose-500/30 rounded-2xl space-y-3">
-                  <h5 className="font-extrabold text-rose-300 text-sm flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4 text-rose-400" /> Plan de Acción Inmediato (30 Días)
-                  </h5>
-                  <ul className="space-y-2 text-slate-200 list-disc list-inside">
-                    <li>Reclutar y Acreditar Testigos Electorales para el 32% de mesas pendientes antes de la fecha límite CNE.</li>
-                    <li>Intensificar pauta micro-segmentada en Comunas 1 y 3 para contrarrestar la brecha en encuestas.</li>
-                    <li>Desplegar brigadas móviles de líderes de barrio para movilización y transporte el Día E.</li>
-                  </ul>
-                </div>
-
-              </div>
-
-            </div>
-          )}
-
-        </div>
-      )}
+            )}
+          </div>
+        );
+      })()}
 
       {/* TAB 2: DIAGNÓSTICO TERRITORIAL (INSUMO PROGRAMÁTICO / PROGRAMA DE GOBIERNO) */}
       {activeTab === 'diagnostico_territorial' && (
@@ -2703,7 +2422,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                   className="territorial-sync-btn w-full sm:w-auto bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 text-slate-950 font-black text-xs px-4 py-2 rounded-xl transition-all flex items-center justify-center gap-2 shadow-md cursor-pointer disabled:opacity-50"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${isSyncingSurveys ? 'animate-spin' : ''}`} />
-                  <span>{isSyncingSurveys ? 'Sincronizando...' : '🔄 Sincronizar Sondeos de Opinión'}</span>
+                  <span>{isSyncingSurveys ? 'Sincronizando...' : 'Sincronizar Sondeos de Opinión'}</span>
                 </button>
               </div>
             </div>
@@ -2718,88 +2437,101 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                   <span className="sector-count-badge text-[11px] text-slate-400 font-mono">
                     {sectorDiagnostics.length} Sectores Evaluados
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => setShowAddSectorModal(true)}
-                    className="create-sector-btn bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 text-slate-950 font-black text-xs px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 shadow-md cursor-pointer shrink-0"
-                  >
-                    <Plus className="w-3.5 h-3.5" /> Crear Sector
-                  </button>
+                  {sectorDiagnostics.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAddSectorModal(true)}
+                      className="create-sector-btn bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 text-slate-950 font-black text-xs px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 shadow-md cursor-pointer shrink-0"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Crear Sector
+                    </button>
+                  )}
                 </div>
               </div>
 
-              {/* Sector Buttons Bar */}
-              <div 
-                ref={sectorTabsContainerRef}
-                className="sector-buttons-bar bg-[#030e21]/90 p-1.5 rounded-2xl border border-slate-800/80 flex items-center gap-1.5 overflow-x-auto no-scrollbar scrollbar-none shadow-lg scroll-smooth text-xs font-bold"
-              >
-                {sectorDiagnostics.map((sec) => {
-                  const isActive = selectedSectorTab === sec.category;
-                  const criticalCount = sec.variables.filter(v => v.status === 'Crítico').length;
-
-                  return (
-                    <div
-                      key={sec.id}
-                      ref={(el) => {
-                        sectorTabRefs.current[sec.category] = el;
-                      }}
-                      className={`sector-tab-item group flex items-center rounded-xl transition-all shrink-0 whitespace-nowrap border ${
-                        isActive
-                          ? 'active bg-gradient-to-r from-cyan-500/20 to-teal-500/20 text-cyan-300 border border-cyan-400/50 shadow-md shadow-cyan-950/40 font-bold'
-                          : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 border border-transparent'
-                      }`}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => setSelectedSectorTab(sec.category)}
-                        className="sector-tab-btn pl-3.5 pr-2 py-2 flex items-center gap-2 cursor-pointer text-xs"
-                      >
-                        <span>{sec.iconEmoji} {sec.category}</span>
-                        {criticalCount > 0 && (
-                          <span className="sector-crit-badge px-1.5 py-0.5 rounded-md text-[10px] font-black bg-rose-500 text-slate-950 shadow-sm">
-                            {criticalCount}
-                          </span>
-                        )}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSectorToDelete(sec);
-                        }}
-                        className="sector-del-btn pr-2 pl-1 py-1 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all opacity-40 group-hover:opacity-100 cursor-pointer mr-1"
-                        title={`Eliminar sector ${sec.category}`}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  );
-                })}
-
-                <button
-                  type="button"
-                  onClick={() => setShowAddSectorModal(true)}
-                  className="add-sector-pill-btn px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer text-xs font-bold text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10 border border-dashed border-cyan-500/30 hover:border-cyan-400/60 shrink-0"
+              {/* Sector Buttons Bar - Only displayed when sectors exist */}
+              {sectorDiagnostics.length > 0 && (
+                <div 
+                  ref={sectorTabsContainerRef}
+                  className="sector-buttons-bar bg-[#030e21]/90 p-1.5 rounded-2xl border border-slate-800/80 flex items-center gap-1.5 overflow-x-auto no-scrollbar scrollbar-none scrollbar-hide shadow-lg scroll-smooth text-xs font-bold"
                 >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>+ Crear Sector</span>
-                </button>
-              </div>
+                  {sectorDiagnostics.map((sec) => {
+                    const isActive = selectedSectorTab === sec.category;
+                    const criticalCount = sec.variables.filter(v => v.status === 'Crítico').length;
 
-              {sectorDiagnostics.length === 0 && (
-                <div className="sector-empty-state rounded-2xl border border-dashed border-cyan-500/30 bg-[#030e21]/70 px-6 py-10 text-center">
-                  <BarChart3 className="mx-auto mb-3 h-8 w-8 text-cyan-400/70" />
-                  <p className="text-sm font-bold text-white">0 sectores registrados</p>
-                  <p className="mx-auto mt-1 max-w-xl text-xs leading-relaxed text-slate-400">
-                    El diagnóstico territorial está vacío. El candidato o un administrador puede crear el primer sector y agregar sus variables e indicadores reales.
-                  </p>
+                    return (
+                      <div
+                        key={sec.id}
+                        ref={(el) => {
+                          sectorTabRefs.current[sec.category] = el;
+                        }}
+                        className={`sector-tab-item group flex items-center rounded-xl transition-all shrink-0 whitespace-nowrap border ${
+                          isActive
+                            ? 'active bg-gradient-to-r from-cyan-500/20 to-teal-500/20 text-cyan-300 border border-cyan-400/50 shadow-md shadow-cyan-950/40 font-bold'
+                            : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 border border-transparent'
+                        }`}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => setSelectedSectorTab(sec.category)}
+                          className="sector-tab-btn pl-3.5 pr-2 py-2 flex items-center gap-2 cursor-pointer text-xs"
+                        >
+                          <span>{sec.iconEmoji} {sec.category}</span>
+                          {criticalCount > 0 && (
+                            <span className="sector-crit-badge px-1.5 py-0.5 rounded-md text-[10px] font-black bg-rose-500 text-slate-950 shadow-sm">
+                              {criticalCount}
+                            </span>
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSectorToDelete(sec);
+                          }}
+                          className="sector-del-btn pr-2 pl-1 py-1 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all opacity-40 group-hover:opacity-100 cursor-pointer mr-1"
+                          title={`Eliminar sector ${sec.category}`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    );
+                  })}
+
                   <button
                     type="button"
                     onClick={() => setShowAddSectorModal(true)}
-                    className="mt-4 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 px-4 py-2 text-xs font-black text-slate-950 transition-all hover:from-teal-400 hover:to-cyan-400"
+                    className="add-sector-pill-btn px-3.5 py-2 rounded-xl transition-all flex items-center gap-1.5 whitespace-nowrap cursor-pointer text-xs font-bold text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/10 border border-dashed border-cyan-500/30 hover:border-cyan-400/60 shrink-0"
                   >
-                    <Plus className="h-3.5 w-3.5" /> Crear primer sector
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Crear Sector</span>
                   </button>
+                </div>
+              )}
+
+              {/* High-End Empty State when 0 sectors exist */}
+              {sectorDiagnostics.length === 0 && (
+                <div className="sector-empty-state rounded-3xl border border-cyan-500/30 bg-gradient-to-b from-[#04152d]/90 to-[#020b18]/95 p-8 text-center shadow-xl shadow-black/40 space-y-4">
+                  <div className="mx-auto w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shadow-md">
+                    <BarChart3 className="h-7 w-7" />
+                  </div>
+                  
+                  <div className="space-y-1.5 max-w-lg mx-auto">
+                    <h5 className="text-base font-extrabold text-white">0 Sectores Registrados</h5>
+                    <p className="text-xs leading-relaxed text-slate-300">
+                      El diagnóstico territorial está listo para ser estructurado. Comience creando un sector temático para evaluar variables e indicadores reales de su plan de gobierno.
+                    </p>
+                  </div>
+
+                  <div className="pt-2 flex items-center justify-center">
+                    <button
+                      type="button"
+                      onClick={() => setShowAddSectorModal(true)}
+                      className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 px-5 py-2.5 text-xs font-black text-slate-950 shadow-lg shadow-cyan-500/20 transition-all cursor-pointer"
+                    >
+                      <Plus className="h-4 w-4" /> Crear Primer Sector
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -2964,17 +2696,29 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
               {/* Filter Bar */}
               <div className="micro-filter-bar flex min-w-0 flex-wrap items-center justify-between gap-3 overflow-hidden bg-[#081d38] p-3 rounded-2xl border border-cyan-500/20 text-xs">
                 <div className="flex w-full min-w-0 flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:items-center">
-                  <span className="font-bold text-slate-300 filter-label">Filtrar por Comuna/Sector:</span>
+                  <span className="font-bold text-slate-300 filter-label">Filtrar por Zona / Sector ({diagnosticTerritory}):</span>
                   <select
                     value={selectedComunaFilter}
                     onChange={(e) => setSelectedComunaFilter(e.target.value)}
                     className="micro-filter-select block w-full min-w-0 max-w-full box-border bg-[#051325] border border-cyan-500/30 rounded-xl px-3 py-1.5 text-white outline-none focus:border-cyan-400 font-medium sm:w-auto sm:max-w-[20rem]"
                   >
-                    <option value="Todos">Todas las Comunas / Corregimientos</option>
-                    <option value="Comuna 1 - Popular">Comuna 1 - Popular</option>
-                    <option value="Comuna 3 - Manrique">Comuna 3 - Manrique</option>
-                    <option value="Comuna 13 - San Javier">Comuna 13 - San Javier</option>
-                    <option value="Corregimiento San Cristóbal">Corregimiento San Cristóbal</option>
+                    <option value="Todos">Todas las Zonas / Corregimientos ({diagnosticTerritory})</option>
+                    {Array.from(
+                      new Set([
+                        ...(geoCtx.subdivisions.length > 0
+                          ? geoCtx.subdivisions.map((s) => s.name)
+                          : [
+                              `Casco Urbano - ${diagnosticTerritory}`,
+                              `Zona Rural / Corregimientos - ${diagnosticTerritory}`,
+                              `Sector Comercial - ${diagnosticTerritory}`,
+                            ]),
+                        ...territorialNeeds.map((n) => n.comunaSector).filter(Boolean),
+                      ])
+                    ).map((zoneName) => (
+                      <option key={zoneName} value={zoneName}>
+                        {zoneName}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -2985,17 +2729,25 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
 
               {/* Needs & Programmatic Proposals Cards */}
               {territorialNeeds.filter(need => selectedComunaFilter === 'Todos' || need.comunaSector === selectedComunaFilter).length === 0 && (
-                <div className="micro-empty-state rounded-2xl border border-dashed border-cyan-500/30 bg-[#030e21]/70 px-6 py-8 text-center">
-                  <MapPin className="mx-auto mb-3 h-7 w-7 text-cyan-400/70" />
-                  <p className="text-sm font-bold text-white">0 fichas comunales registradas</p>
-                  <p className="mt-1 text-xs text-slate-400">Las fichas aparecerán únicamente cuando el candidato o un administrador registre información real.</p>
-                  <button
-                    type="button"
-                    onClick={() => setShowAddNeedModal(true)}
-                    className="mt-4 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 px-4 py-2 text-xs font-black text-slate-950"
-                  >
-                    <Plus className="h-3.5 w-3.5" /> Registrar primera ficha
-                  </button>
+                <div className="micro-empty-state rounded-3xl border border-cyan-500/30 bg-gradient-to-b from-[#04152d]/90 to-[#020b18]/95 p-8 text-center shadow-xl shadow-black/40 space-y-4">
+                  <div className="mx-auto w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shadow-md">
+                    <MapPin className="h-7 w-7" />
+                  </div>
+                  <div className="space-y-1.5 max-w-md mx-auto">
+                    <h6 className="text-base font-extrabold text-white">0 Fichas Comunales Registradas</h6>
+                    <p className="text-xs leading-relaxed text-slate-300">
+                      Registre necesidades identificadas en territorio para transformarlas en propuestas programáticas oficiales del plan de gobierno.
+                    </p>
+                  </div>
+                  <div className="pt-2 flex items-center justify-center">
+                    <button
+                      type="button"
+                      onClick={() => setShowAddNeedModal(true)}
+                      className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 px-5 py-2.5 text-xs font-black text-slate-950 shadow-lg shadow-cyan-500/20 transition-all cursor-pointer"
+                    >
+                      <Plus className="h-4 w-4" /> Registrar Primera Ficha Comunal
+                    </button>
+                  </div>
                 </div>
               )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 micro-needs-grid">
@@ -3072,21 +2824,21 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start perfil-candidato-view">
           
           {/* Avatar & Key Badge Card */}
-          <div className="lg:col-span-4 bg-[#05162a] border border-cyan-500/30 rounded-3xl p-5 space-y-4 text-center flex flex-col items-center shadow-xl self-start h-fit min-w-[200px] perfil-avatar-card">
+          <div className="lg:col-span-4 bg-gradient-to-b from-[#04152d]/95 via-[#030e21]/95 to-[#010814] border border-cyan-500/30 rounded-3xl p-6 space-y-5 text-center flex flex-col items-center shadow-2xl self-start h-fit min-w-[200px] perfil-avatar-card">
             <div className="w-full flex flex-col items-center">
               <div className="relative group">
                 {candidateProfile.avatarUrl ? (
                   <img
                     src={candidateProfile.avatarUrl}
                     alt={candidateProfile.fullName || 'Candidato'}
-                    className="w-36 h-36 rounded-full border-4 border-emerald-400 object-cover shadow-2xl perfil-avatar-img"
+                    className="w-32 h-32 rounded-full ring-4 ring-cyan-500/40 border-2 border-cyan-400 object-cover shadow-2xl perfil-avatar-img transition-transform duration-300 group-hover:scale-105"
                   />
                 ) : (
-                  <div className="w-36 h-36 rounded-full border-4 border-emerald-400/70 bg-[#081d38] flex items-center justify-center shadow-2xl perfil-avatar-placeholder">
-                    <UserCheck className="w-14 h-14 text-emerald-400/70" />
+                  <div className="w-32 h-32 rounded-full ring-4 ring-cyan-500/40 border-2 border-cyan-500/50 bg-gradient-to-br from-[#06182e] to-[#020b18] flex items-center justify-center shadow-2xl perfil-avatar-placeholder">
+                    <UserCheck className="w-12 h-12 text-cyan-400/80" />
                   </div>
                 )}
-                <label className="absolute bottom-1 right-1 bg-emerald-500 hover:bg-emerald-400 text-slate-950 p-2 rounded-full cursor-pointer shadow-lg transition-transform hover:scale-110 perfil-avatar-edit-btn">
+                <label className="absolute bottom-0 right-0 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 p-2.5 rounded-full cursor-pointer shadow-lg transition-transform hover:scale-110 border-2 border-[#030e21] perfil-avatar-edit-btn" title="Cambiar foto del candidato">
                   <Edit3 className="w-4 h-4" />
                   <input
                     type="file"
@@ -3115,91 +2867,148 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                 </label>
               </div>
 
-              <h3 className="text-base font-black text-white mt-3 break-words w-full text-center leading-tight perfil-name">{candidateProfile.fullName}</h3>
-              <p className="text-xs font-bold text-emerald-400 break-words text-center perfil-political-name">{candidateProfile.politicalName}</p>
+              <h3 className="text-lg font-black text-white mt-4 break-words w-full text-center leading-snug uppercase tracking-wide perfil-name">
+                {candidateProfile.fullName?.trim() || 'Nombre del Candidato'}
+              </h3>
+              
+              {Boolean(
+                candidateProfile.politicalName?.trim() &&
+                candidateProfile.fullName?.trim() &&
+                candidateProfile.politicalName.trim().toLowerCase() !== candidateProfile.fullName.trim().toLowerCase()
+              ) && (
+                <p className="text-xs font-bold text-cyan-300 break-words text-center mt-0.5 perfil-political-name">
+                  "{candidateProfile.politicalName.trim()}"
+                </p>
+              )}
 
-              <div className="mt-3 px-3 py-1 rounded-full bg-teal-950 border border-teal-500/40 text-teal-300 font-semibold text-xs inline-flex items-center gap-1.5 perfil-office-badge">
-                <Award className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Candidato Oficial a {candidateProfile.candidateOffice}</span>
+              <div className="mt-3 px-3.5 py-1.5 rounded-full bg-cyan-950/70 border border-cyan-500/40 text-cyan-300 font-bold text-xs inline-flex items-center gap-1.5 shadow-sm perfil-office-badge">
+                <Award className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Candidato Oficial {candidateProfile.candidateOffice ? `a ${candidateProfile.candidateOffice}` : ''}</span>
               </div>
 
               <div className="w-full border-t border-cyan-500/20 my-4 perfil-divider" />
 
-              <div className="w-full text-left space-y-2 text-xs text-slate-300 perfil-quick-info">
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-slate-400 perfil-info-label">Territorio:</span>
-                  <span className="font-bold text-white break-words perfil-info-val">{candidateProfile.territory}</span>
+              <div className="w-full text-left space-y-3 text-xs text-slate-300 perfil-quick-info">
+                <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-[#020b18]/60 border border-cyan-500/15">
+                  <MapPin className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-slate-400 font-medium text-[10px] uppercase tracking-wider perfil-info-label">Territorio</span>
+                    <span className="font-bold text-white break-words text-xs perfil-info-val">{candidateProfile.territory || 'Sin territorio asignado'}</span>
+                  </div>
                 </div>
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-slate-400 perfil-info-label">Cédula de Ciudadanía:</span>
-                  <span className="font-mono text-cyan-300 font-bold break-all perfil-info-val perfil-cedula-val">{candidateProfile.cedula}</span>
+
+                <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-[#020b18]/60 border border-cyan-500/15">
+                  <FileCheck className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-slate-400 font-medium text-[10px] uppercase tracking-wider perfil-info-label">Cédula de Ciudadanía</span>
+                    <span className="font-mono text-cyan-300 font-bold break-all text-xs perfil-info-val perfil-cedula-val">
+                      {candidateProfile.cedula?.trim() || 'Sin registrar'}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex flex-col gap-0.5">
-                  <span className="text-slate-400 perfil-info-label">Sello Inhabilidades:</span>
-                  <span className="text-amber-300 font-bold flex items-center gap-1 perfil-seal-badge">
-                    <ShieldCheck className="w-3.5 h-3.5 shrink-0" /> <span className="break-words">Pendiente de verificación oficial</span>
-                  </span>
+
+                <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-[#020b18]/60 border border-cyan-500/15">
+                  <ShieldCheck className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-slate-400 font-medium text-[10px] uppercase tracking-wider perfil-info-label">Sello Inhabilidades</span>
+                    <span className="text-amber-300 font-bold text-xs flex items-center gap-1 perfil-seal-badge">
+                      Pendiente de verificación oficial
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="w-full bg-[#081d38] p-3 rounded-2xl border border-cyan-500/20 text-left space-y-2 perfil-slogan-card">
+            <div className="w-full bg-[#020b18]/90 p-4 rounded-2xl border border-cyan-500/25 text-left space-y-3 perfil-slogan-card shadow-inner">
               <div>
-                <span className="text-[10px] text-slate-400 uppercase font-black tracking-wider block mb-0.5 perfil-slogan-label">Eslogan de Campaña:</span>
-                <p className="text-xs font-bold text-amber-300 italic perfil-slogan-val">"{candidateProfile.slogan}"</p>
+                <span className="text-[10px] text-slate-400 uppercase font-black tracking-wider block mb-1 perfil-slogan-label">Eslogan de Campaña:</span>
+                {candidateProfile.slogan && candidateProfile.slogan.trim() !== '' ? (
+                  <p className="text-xs font-bold text-cyan-300 italic perfil-slogan-val">"{candidateProfile.slogan.trim()}"</p>
+                ) : (
+                  <p className="text-xs text-slate-500 italic">Sin eslogan registrado</p>
+                )}
               </div>
 
-              {candidateProfile.professionalSummary && (
-                <div className="pt-2 border-t border-cyan-500/15 perfil-summary-preview">
+              {candidateProfile.professionalSummary && candidateProfile.professionalSummary.trim() !== '' && (
+                <div className="pt-2.5 border-t border-cyan-500/15 perfil-summary-preview">
                   <span className="text-[10px] text-emerald-400 uppercase font-black tracking-wider block mb-0.5 perfil-summary-label">Resumen Perfil Profesional:</span>
                   <p className="text-[11px] text-slate-300 line-clamp-3 font-normal leading-snug perfil-summary-text">{candidateProfile.professionalSummary}</p>
                 </div>
               )}
 
-              {candidateProfile.candidateBio && (
-                <div className="pt-2 border-t border-cyan-500/15 perfil-bio-preview">
+              {candidateProfile.candidateBio && candidateProfile.candidateBio.trim() !== '' && (
+                <div className="pt-2.5 border-t border-cyan-500/15 perfil-bio-preview">
                   <span className="text-[10px] text-cyan-400 uppercase font-black tracking-wider block mb-0.5 perfil-bio-label">Reseña del Candidato:</span>
                   <p className="text-[11px] text-slate-300 line-clamp-3 font-normal leading-snug perfil-bio-text">{candidateProfile.candidateBio}</p>
                 </div>
               )}
 
               {/* Candidate DOFA Summary Box */}
-              <div className="pt-2.5 border-t border-cyan-500/20 space-y-1.5 perfil-dofa-summary-box">
-                <span className="text-[10px] text-amber-400 uppercase font-black tracking-wider flex items-center gap-1 perfil-dofa-summary-label">
-                  <PieChart className="w-3 h-3 text-emerald-400" /> Matriz DOFA Resumida:
+              <div className="pt-2.5 border-t border-cyan-500/20 space-y-2 perfil-dofa-summary-box">
+                <span className="text-[10px] text-cyan-300 uppercase font-black tracking-wider flex items-center gap-1.5 perfil-dofa-summary-label">
+                  <PieChart className="w-3.5 h-3.5 text-cyan-400" /> Matriz DOFA Resumida:
                 </span>
-                <div className="grid grid-cols-1 gap-1.5 text-[10px]">
-                  <div className="bg-emerald-950/60 border border-emerald-500/30 p-1.5 rounded-lg dofa-mini-strength">
-                    <span className="font-bold text-emerald-300 block mb-0.5">Fortalezas:</span>
-                    <p className="text-slate-300 line-clamp-2 leading-tight">{candidateProfile.dofaStrengths}</p>
+                {Boolean(
+                  (candidateProfile.dofaStrengths && candidateProfile.dofaStrengths.trim() !== '') ||
+                  (candidateProfile.dofaOpportunities && candidateProfile.dofaOpportunities.trim() !== '') ||
+                  (candidateProfile.dofaWeaknesses && candidateProfile.dofaWeaknesses.trim() !== '') ||
+                  (candidateProfile.dofaThreats && candidateProfile.dofaThreats.trim() !== '')
+                ) ? (
+                  <div className="grid grid-cols-1 gap-2 text-[10px]">
+                    {candidateProfile.dofaStrengths && candidateProfile.dofaStrengths.trim() !== '' && (
+                      <div className="bg-emerald-950/60 border border-emerald-500/30 p-2.5 rounded-xl dofa-mini-strength">
+                        <span className="font-bold text-emerald-300 block mb-0.5">Fortalezas:</span>
+                        <p className="text-slate-200 line-clamp-2 leading-tight">{candidateProfile.dofaStrengths}</p>
+                      </div>
+                    )}
+                    {candidateProfile.dofaOpportunities && candidateProfile.dofaOpportunities.trim() !== '' && (
+                      <div className="bg-cyan-950/60 border border-cyan-500/30 p-2.5 rounded-xl dofa-mini-opportunity">
+                        <span className="font-bold text-cyan-300 block mb-0.5">Oportunidades:</span>
+                        <p className="text-slate-200 line-clamp-2 leading-tight">{candidateProfile.dofaOpportunities}</p>
+                      </div>
+                    )}
+                    {candidateProfile.dofaWeaknesses && candidateProfile.dofaWeaknesses.trim() !== '' && (
+                      <div className="bg-amber-950/60 border border-amber-500/30 p-2.5 rounded-xl dofa-mini-weakness">
+                        <span className="font-bold text-amber-300 block mb-0.5">Debilidades:</span>
+                        <p className="text-slate-200 line-clamp-2 leading-tight">{candidateProfile.dofaWeaknesses}</p>
+                      </div>
+                    )}
+                    {candidateProfile.dofaThreats && candidateProfile.dofaThreats.trim() !== '' && (
+                      <div className="bg-rose-950/60 border border-rose-500/30 p-2.5 rounded-xl dofa-mini-threat">
+                        <span className="font-bold text-rose-300 block mb-0.5">Amenazas:</span>
+                        <p className="text-slate-200 line-clamp-2 leading-tight">{candidateProfile.dofaThreats}</p>
+                      </div>
+                    )}
                   </div>
-                  <div className="bg-cyan-950/60 border border-cyan-500/30 p-1.5 rounded-lg dofa-mini-opportunity">
-                    <span className="font-bold text-cyan-300 block mb-0.5">Oportunidades:</span>
-                    <p className="text-slate-300 line-clamp-2 leading-tight">{candidateProfile.dofaOpportunities}</p>
+                ) : (
+                  <div className="p-3 rounded-xl bg-[#030d1d] border border-cyan-500/15 text-center text-slate-400 text-[11px]">
+                    Sin variables DOFA registradas.
                   </div>
-                  <div className="bg-amber-950/60 border border-amber-500/30 p-1.5 rounded-lg dofa-mini-weakness">
-                    <span className="font-bold text-amber-300 block mb-0.5">Debilidades:</span>
-                    <p className="text-slate-300 line-clamp-2 leading-tight">{candidateProfile.dofaWeaknesses}</p>
-                  </div>
-                  <div className="bg-rose-950/60 border border-rose-500/30 p-1.5 rounded-lg dofa-mini-threat">
-                    <span className="font-bold text-rose-300 block mb-0.5">Amenazas:</span>
-                    <p className="text-slate-300 line-clamp-2 leading-tight">{candidateProfile.dofaThreats}</p>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
 
           {/* Detailed Editable Profile Form */}
-          <div className="lg:col-span-8 bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 space-y-5 shadow-xl min-w-0 perfil-form-card">
-            <h3 className="text-lg font-bold text-white flex items-center gap-2 border-b border-cyan-500/20 pb-3 perfil-form-title">
-              <UserCheck className="w-5 h-5 text-emerald-400" />
-              Configuración Completa del Candidato
-            </h3>
+          <div className="lg:col-span-8 bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 sm:p-8 space-y-6 shadow-xl min-w-0 perfil-form-card">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-cyan-500/20 pb-4">
+              <div>
+                <h3 className="text-lg font-bold text-white flex items-center gap-2 perfil-form-title">
+                  <UserCheck className="w-5 h-5 text-emerald-400" />
+                  Configuración Completa del Candidato
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Ficha técnica oficial, identidad de campaña y análisis estratégico DOFA
+                </p>
+              </div>
+              <span className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 font-semibold text-[11px] self-start sm:self-center">
+                Registro Oficial
+              </span>
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs perfil-form-grid">
               <div>
-                <label className="block text-slate-300 font-semibold mb-1 perfil-form-label">Nombre Completo (Registro CNE):</label>
+                <label className="block text-slate-300 font-semibold mb-1.5 perfil-form-label">Nombre Completo (Registro CNE):</label>
                 <input
                   type="text"
                   value={candidateProfile.fullName}
@@ -3213,26 +3022,26 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                       // ignore
                     }
                   }}
-                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white font-medium focus:border-emerald-400 outline-none perfil-form-input"
+                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3.5 py-2.5 text-white font-medium focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 outline-none perfil-form-input transition-all"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1 perfil-form-label">Nombre Político / Seudónimo:</label>
+                <label className="block text-slate-300 font-semibold mb-1.5 perfil-form-label">Nombre Político / Seudónimo:</label>
                 <input
                   type="text"
                   value={candidateProfile.politicalName}
                   onChange={(e) => setCandidateProfile({ ...candidateProfile, politicalName: e.target.value })}
-                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white font-medium focus:border-emerald-400 outline-none perfil-form-input"
+                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3.5 py-2.5 text-white font-medium focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 outline-none perfil-form-input transition-all"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1 perfil-form-label">Cargo de Elección Popular al que Aspira:</label>
+                <label className="block text-slate-300 font-semibold mb-1.5 perfil-form-label">Cargo de Elección Popular al que Aspira:</label>
                 <select
                   value={candidateProfile.candidateOffice}
                   onChange={(e) => setCandidateProfile({ ...candidateProfile, candidateOffice: e.target.value })}
-                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white font-medium focus:border-emerald-400 outline-none perfil-form-select"
+                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3.5 py-2.5 text-white font-medium focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 outline-none perfil-form-select transition-all cursor-pointer"
                 >
                   <option value="">Seleccione el cargo</option>
                   <option value="Alcaldía">Alcaldía Municipal/Distrital</option>
@@ -3247,327 +3056,334 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1 perfil-form-label">Partido / Coalición / Grupo Significativo:</label>
+                <label className="block text-slate-300 font-semibold mb-1.5 perfil-form-label">Partido / Coalición / Grupo Significativo:</label>
                 <input
                   type="text"
                   value={candidateProfile.partyAlliance}
                   onChange={(e) => setCandidateProfile({ ...candidateProfile, partyAlliance: e.target.value })}
-                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white font-medium focus:border-emerald-400 outline-none perfil-form-input"
+                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3.5 py-2.5 text-white font-medium focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 outline-none perfil-form-input transition-all"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1 perfil-form-label">Municipio / Departamento:</label>
+                <label className="block text-slate-300 font-semibold mb-1.5 perfil-form-label">Municipio / Departamento:</label>
                 <input
                   type="text"
                   value={candidateProfile.territory}
                   readOnly
                   title="Este territorio proviene de la campaña creada en Global Admin"
-                  className="w-full bg-[#061326] border border-cyan-500/30 rounded-xl px-3 py-2 text-slate-300 font-medium cursor-not-allowed perfil-form-input-readonly"
+                  className="w-full bg-[#061326] border border-cyan-500/20 rounded-xl px-3.5 py-2.5 text-slate-300 font-medium cursor-not-allowed perfil-form-input-readonly"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-300 font-semibold mb-1 perfil-form-label">Cédula de Ciudadanía:</label>
+                <label className="block text-slate-300 font-semibold mb-1.5 perfil-form-label">Cédula de Ciudadanía:</label>
                 <input
                   type="text"
                   value={candidateProfile.cedula}
                   onChange={(e) => setCandidateProfile({ ...candidateProfile, cedula: e.target.value })}
-                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white font-medium focus:border-emerald-400 outline-none perfil-form-input"
+                  placeholder="Ej. 1.067.890.123"
+                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3.5 py-2.5 text-white font-medium focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 outline-none perfil-form-input transition-all"
                 />
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-slate-300 font-semibold mb-1 perfil-form-label">Eslogan Principal de Campaña:</label>
+                <label className="block text-slate-300 font-semibold mb-1.5 perfil-form-label">Eslogan Principal de Campaña:</label>
                 <input
                   type="text"
                   value={candidateProfile.slogan}
                   onChange={(e) => setCandidateProfile({ ...candidateProfile, slogan: e.target.value })}
-                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white font-bold focus:border-emerald-400 outline-none perfil-form-input"
+                  placeholder="Ej. Transformación, honestidad y futuro para todos"
+                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3.5 py-2.5 text-white font-bold focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 outline-none perfil-form-input transition-all"
                 />
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-slate-300 font-semibold mb-1 perfil-form-label">Resumen del Perfil Profesional:</label>
+                <label className="block text-slate-300 font-semibold mb-1.5 perfil-form-label">Resumen del Perfil Profesional:</label>
                 <textarea
                   rows={3}
                   value={candidateProfile.professionalSummary}
                   onChange={(e) => setCandidateProfile({ ...candidateProfile, professionalSummary: e.target.value })}
                   placeholder="Síntesis de experiencia académica, cargos directivos, gestión pública o privada..."
-                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white text-xs leading-relaxed focus:border-emerald-400 outline-none resize-none perfil-form-textarea"
+                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3.5 py-2.5 text-white text-xs leading-relaxed focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 outline-none resize-none perfil-form-textarea transition-all"
                 />
               </div>
 
               <div className="md:col-span-2">
-                <label className="block text-slate-300 font-semibold mb-1 perfil-form-label">Reseña del Candidato (Biografía & Trayectoria):</label>
+                <label className="block text-slate-300 font-semibold mb-1.5 perfil-form-label">Reseña del Candidato (Biografía & Trayectoria):</label>
                 <textarea
                   rows={4}
                   value={candidateProfile.candidateBio}
                   onChange={(e) => setCandidateProfile({ ...candidateProfile, candidateBio: e.target.value })}
                   placeholder="Reseña histórica, origen territorial, liderazgo comunitario, causas principales y logros destacados del candidato..."
-                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white text-xs leading-relaxed focus:border-emerald-400 outline-none resize-none perfil-form-textarea"
+                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3.5 py-2.5 text-white text-xs leading-relaxed focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 outline-none resize-none perfil-form-textarea transition-all"
                 />
               </div>
             </div>
 
             {/* Candidate DOFA / SWOT Matrix Section */}
-            <h4 className="text-sm font-bold text-emerald-300 pt-3 border-t border-cyan-500/20 flex items-center gap-2 perfil-dofa-section-title">
-              <PieChart className="w-4 h-4 text-emerald-400" /> Matriz DOFA / SWOT del Candidato
-            </h4>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs perfil-dofa-grid">
-              {/* Fortalezas */}
-              <div className="bg-[#041224] p-3.5 rounded-2xl border border-emerald-500/30 space-y-2 flex flex-col justify-between perfil-dofa-card dofa-fortalezas-card">
-                <div className="space-y-1.5">
-                  <label className="block font-extrabold text-emerald-400 text-xs flex items-center justify-between dofa-card-label">
-                    <span>Fortalezas (Internas):</span>
-                    <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-md font-mono dofa-card-badge">Ventajas</span>
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={candidateProfile.dofaStrengths}
-                    onChange={(e) => setCandidateProfile({ ...candidateProfile, dofaStrengths: e.target.value })}
-                    placeholder="Puntos fuertes, trayectoria ética, preparación, atributos diferenciadores..."
-                    className="w-full bg-[#081d38] border border-emerald-500/30 rounded-xl px-3 py-2 text-white text-xs leading-relaxed focus:border-emerald-400 outline-none resize-none dofa-card-textarea"
-                  />
-                </div>
-                <div className="pt-2 border-t border-emerald-500/20 space-y-2 dofa-card-vars-section">
-                  <span className="text-[10px] font-extrabold text-emerald-300/80 block uppercase tracking-wider dofa-vars-header">Variables Evaluables (Haz clic para seleccionar o quitar):</span>
-                  <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto pr-1 custom-scrollbar dofa-chips-container">
-                    {candidateDofaVars.strengths.map((item, idx) => {
-                      const isSelected = candidateProfile.dofaStrengths?.toLowerCase().includes(item.toLowerCase().slice(0, 20));
-                      return (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => toggleCandidateDofaVar('dofaStrengths', item)}
-                          className={`text-[10px] px-2 py-1 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 text-left leading-tight dofa-var-chip ${
-                            isSelected
-                              ? 'bg-emerald-500/25 text-emerald-300 border-emerald-400/60 font-bold shadow-sm dofa-var-chip-active'
-                              : 'bg-[#081d38] text-slate-300 border-emerald-500/20 hover:border-emerald-400/40 hover:text-white'
-                          }`}
-                        >
-                          {isSelected ? <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" /> : <Plus className="w-3 h-3 text-slate-400 shrink-0" />}
-                          <span>{item}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Add Custom Variable Input */}
-                  <div className="flex gap-1.5 pt-1 dofa-add-box">
-                    <input
-                      type="text"
-                      value={newDofaInputs.strengths}
-                      onChange={(e) => setNewDofaInputs({ ...newDofaInputs, strengths: e.target.value })}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleAddCustomDofaVar('strengths', 'dofaStrengths');
-                        }
-                      }}
-                      placeholder="+ Agregar nueva variable de fortaleza..."
-                      className="flex-1 bg-[#081d38] border border-emerald-500/30 rounded-lg px-2.5 py-1 text-[11px] text-white placeholder-slate-400 focus:border-emerald-400 outline-none dofa-add-input"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleAddCustomDofaVar('strengths', 'dofaStrengths')}
-                      className="bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 shrink-0 dofa-add-btn"
-                    >
-                      <Plus className="w-3 h-3" /> Agregar
-                    </button>
-                  </div>
-                </div>
+            <div className="pt-4 border-t border-cyan-500/20 space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-bold text-emerald-300 flex items-center gap-2 perfil-dofa-section-title">
+                  <PieChart className="w-4 h-4 text-emerald-400" /> Matriz DOFA / SWOT del Candidato
+                </h4>
+                <span className="text-[11px] text-slate-400">Diagnóstico Estratégico Cuantitativo</span>
               </div>
 
-              {/* Oportunidades */}
-              <div className="bg-[#041224] p-3.5 rounded-2xl border border-cyan-500/30 space-y-2 flex flex-col justify-between perfil-dofa-card dofa-oportunidades-card">
-                <div className="space-y-1.5">
-                  <label className="block font-extrabold text-cyan-400 text-xs flex items-center justify-between dofa-card-label">
-                    <span>Oportunidades (Externas):</span>
-                    <span className="text-[10px] bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded-md font-mono dofa-card-badge">Entorno</span>
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={candidateProfile.dofaOpportunities}
-                    onChange={(e) => setCandidateProfile({ ...candidateProfile, dofaOpportunities: e.target.value })}
-                    placeholder="Factores del contexto político, alianzas, coyuntura electoral a aprovechar..."
-                    className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white text-xs leading-relaxed focus:border-cyan-400 outline-none resize-none dofa-card-textarea"
-                  />
-                </div>
-                <div className="pt-2 border-t border-cyan-500/20 space-y-2 dofa-card-vars-section">
-                  <span className="text-[10px] font-extrabold text-cyan-300/80 block uppercase tracking-wider dofa-vars-header">Variables Evaluables (Haz clic para seleccionar o quitar):</span>
-                  <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto pr-1 custom-scrollbar dofa-chips-container">
-                    {candidateDofaVars.opportunities.map((item, idx) => {
-                      const isSelected = candidateProfile.dofaOpportunities?.toLowerCase().includes(item.toLowerCase().slice(0, 20));
-                      return (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => toggleCandidateDofaVar('dofaOpportunities', item)}
-                          className={`text-[10px] px-2 py-1 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 text-left leading-tight dofa-var-chip ${
-                            isSelected
-                              ? 'bg-cyan-500/25 text-cyan-300 border-cyan-400/60 font-bold shadow-sm dofa-var-chip-active'
-                              : 'bg-[#081d38] text-slate-300 border-cyan-500/20 hover:border-cyan-400/40 hover:text-white'
-                          }`}
-                        >
-                          {isSelected ? <CheckCircle2 className="w-3 h-3 text-cyan-400 shrink-0" /> : <Plus className="w-3 h-3 text-slate-400 shrink-0" />}
-                          <span>{item}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Add Custom Variable Input */}
-                  <div className="flex gap-1.5 pt-1 dofa-add-box">
-                    <input
-                      type="text"
-                      value={newDofaInputs.opportunities}
-                      onChange={(e) => setNewDofaInputs({ ...newDofaInputs, opportunities: e.target.value })}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleAddCustomDofaVar('opportunities', 'dofaOpportunities');
-                        }
-                      }}
-                      placeholder="+ Agregar nueva variable de oportunidad..."
-                      className="flex-1 bg-[#081d38] border border-cyan-500/30 rounded-lg px-2.5 py-1 text-[11px] text-white placeholder-slate-400 focus:border-cyan-400 outline-none dofa-add-input"
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs perfil-dofa-grid">
+                {/* Fortalezas */}
+                <div className="bg-[#041224] p-4 rounded-2xl border border-emerald-500/30 space-y-3 flex flex-col justify-between perfil-dofa-card dofa-fortalezas-card shadow-lg">
+                  <div className="space-y-1.5">
+                    <label className="block font-extrabold text-emerald-400 text-xs flex items-center justify-between dofa-card-label">
+                      <span>Fortalezas (Internas):</span>
+                      <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-md font-mono dofa-card-badge">Ventajas</span>
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={candidateProfile.dofaStrengths}
+                      onChange={(e) => setCandidateProfile({ ...candidateProfile, dofaStrengths: e.target.value })}
+                      placeholder="Puntos fuertes, trayectoria ética, preparación, atributos diferenciadores..."
+                      className="w-full bg-[#081d38] border border-emerald-500/30 rounded-xl px-3 py-2 text-white text-xs leading-relaxed focus:border-emerald-400 outline-none resize-none dofa-card-textarea"
                     />
-                    <button
-                      type="button"
-                      onClick={() => handleAddCustomDofaVar('opportunities', 'dofaOpportunities')}
-                      className="bg-cyan-600 hover:bg-cyan-500 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 shrink-0 dofa-add-btn"
-                    >
-                      <Plus className="w-3 h-3" /> Agregar
-                    </button>
+                  </div>
+                  <div className="pt-2 border-t border-emerald-500/20 space-y-2 dofa-card-vars-section">
+                    <span className="text-[10px] font-extrabold text-emerald-300/80 block uppercase tracking-wider dofa-vars-header">Variables Evaluables (Haz clic para seleccionar o quitar):</span>
+                    <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto pr-1 no-scrollbar dofa-chips-container">
+                      {candidateDofaVars.strengths.map((item, idx) => {
+                        const isSelected = candidateProfile.dofaStrengths?.toLowerCase().includes(item.toLowerCase().slice(0, 20));
+                        return (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => toggleCandidateDofaVar('dofaStrengths', item)}
+                            className={`text-[10px] px-2 py-1 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 text-left leading-tight dofa-var-chip ${
+                              isSelected
+                                ? 'bg-emerald-500/25 text-emerald-300 border-emerald-400/60 font-bold shadow-sm dofa-var-chip-active'
+                                : 'bg-[#081d38] text-slate-300 border-emerald-500/20 hover:border-emerald-400/40 hover:text-white'
+                            }`}
+                          >
+                            {isSelected ? <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" /> : <Plus className="w-3 h-3 text-slate-400 shrink-0" />}
+                            <span>{item}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Add Custom Variable Input */}
+                    <div className="flex gap-1.5 pt-1 dofa-add-box">
+                      <input
+                        type="text"
+                        value={newDofaInputs.strengths}
+                        onChange={(e) => setNewDofaInputs({ ...newDofaInputs, strengths: e.target.value })}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddCustomDofaVar('strengths', 'dofaStrengths');
+                          }
+                        }}
+                        placeholder="+ Agregar nueva variable de fortaleza..."
+                        className="flex-1 bg-[#081d38] border border-emerald-500/30 rounded-lg px-2.5 py-1 text-[11px] text-white placeholder-slate-400 focus:border-emerald-400 outline-none dofa-add-input"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleAddCustomDofaVar('strengths', 'dofaStrengths')}
+                        className="bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 shrink-0 dofa-add-btn cursor-pointer"
+                      >
+                        <Plus className="w-3 h-3" /> Agregar
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Debilidades */}
-              <div className="bg-[#041224] p-3.5 rounded-2xl border border-amber-500/30 space-y-2 flex flex-col justify-between perfil-dofa-card dofa-debilidades-card">
-                <div className="space-y-1.5">
-                  <label className="block font-extrabold text-amber-400 text-xs flex items-center justify-between dofa-card-label">
-                    <span>Debilidades (Internas):</span>
-                    <span className="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-md font-mono dofa-card-badge">A reforzar</span>
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={candidateProfile.dofaWeaknesses}
-                    onChange={(e) => setCandidateProfile({ ...candidateProfile, dofaWeaknesses: e.target.value })}
-                    placeholder="Áreas de mejora, brechas de conocimiento o reconocimiento territorial..."
-                    className="w-full bg-[#081d38] border border-amber-500/30 rounded-xl px-3 py-2 text-white text-xs leading-relaxed focus:border-amber-400 outline-none resize-none dofa-card-textarea"
-                  />
-                </div>
-                <div className="pt-2 border-t border-amber-500/20 space-y-2 dofa-card-vars-section">
-                  <span className="text-[10px] font-extrabold text-amber-300/80 block uppercase tracking-wider dofa-vars-header">Variables Evaluables (Haz clic para seleccionar o quitar):</span>
-                  <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto pr-1 custom-scrollbar dofa-chips-container">
-                    {candidateDofaVars.weaknesses.map((item, idx) => {
-                      const isSelected = candidateProfile.dofaWeaknesses?.toLowerCase().includes(item.toLowerCase().slice(0, 20));
-                      return (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => toggleCandidateDofaVar('dofaWeaknesses', item)}
-                          className={`text-[10px] px-2 py-1 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 text-left leading-tight dofa-var-chip ${
-                            isSelected
-                              ? 'bg-amber-500/25 text-amber-300 border-amber-400/60 font-bold shadow-sm dofa-var-chip-active'
-                              : 'bg-[#081d38] text-slate-300 border-amber-500/20 hover:border-amber-400/40 hover:text-white'
-                          }`}
-                        >
-                          {isSelected ? <CheckCircle2 className="w-3 h-3 text-amber-400 shrink-0" /> : <Plus className="w-3 h-3 text-slate-400 shrink-0" />}
-                          <span>{item}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Add Custom Variable Input */}
-                  <div className="flex gap-1.5 pt-1 dofa-add-box">
-                    <input
-                      type="text"
-                      value={newDofaInputs.weaknesses}
-                      onChange={(e) => setNewDofaInputs({ ...newDofaInputs, weaknesses: e.target.value })}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleAddCustomDofaVar('weaknesses', 'dofaWeaknesses');
-                        }
-                      }}
-                      placeholder="+ Agregar nueva variable de debilidad..."
-                      className="flex-1 bg-[#081d38] border border-amber-500/30 rounded-lg px-2.5 py-1 text-[11px] text-white placeholder-slate-400 focus:border-amber-400 outline-none dofa-add-input"
+                {/* Oportunidades */}
+                <div className="bg-[#041224] p-4 rounded-2xl border border-cyan-500/30 space-y-3 flex flex-col justify-between perfil-dofa-card dofa-oportunidades-card shadow-lg">
+                  <div className="space-y-1.5">
+                    <label className="block font-extrabold text-cyan-400 text-xs flex items-center justify-between dofa-card-label">
+                      <span>Oportunidades (Externas):</span>
+                      <span className="text-[10px] bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded-md font-mono dofa-card-badge">Entorno</span>
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={candidateProfile.dofaOpportunities}
+                      onChange={(e) => setCandidateProfile({ ...candidateProfile, dofaOpportunities: e.target.value })}
+                      placeholder="Factores del contexto político, alianzas, coyuntura electoral a aprovechar..."
+                      className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white text-xs leading-relaxed focus:border-cyan-400 outline-none resize-none dofa-card-textarea"
                     />
-                    <button
-                      type="button"
-                      onClick={() => handleAddCustomDofaVar('weaknesses', 'dofaWeaknesses')}
-                      className="bg-amber-600 hover:bg-amber-500 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 shrink-0 dofa-add-btn"
-                    >
-                      <Plus className="w-3 h-3" /> Agregar
-                    </button>
+                  </div>
+                  <div className="pt-2 border-t border-cyan-500/20 space-y-2 dofa-card-vars-section">
+                    <span className="text-[10px] font-extrabold text-cyan-300/80 block uppercase tracking-wider dofa-vars-header">Variables Evaluables (Haz clic para seleccionar o quitar):</span>
+                    <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto pr-1 no-scrollbar dofa-chips-container">
+                      {candidateDofaVars.opportunities.map((item, idx) => {
+                        const isSelected = candidateProfile.dofaOpportunities?.toLowerCase().includes(item.toLowerCase().slice(0, 20));
+                        return (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => toggleCandidateDofaVar('dofaOpportunities', item)}
+                            className={`text-[10px] px-2 py-1 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 text-left leading-tight dofa-var-chip ${
+                              isSelected
+                                ? 'bg-cyan-500/25 text-cyan-300 border-cyan-400/60 font-bold shadow-sm dofa-var-chip-active'
+                                : 'bg-[#081d38] text-slate-300 border-cyan-500/20 hover:border-cyan-400/40 hover:text-white'
+                            }`}
+                          >
+                            {isSelected ? <CheckCircle2 className="w-3 h-3 text-cyan-400 shrink-0" /> : <Plus className="w-3 h-3 text-slate-400 shrink-0" />}
+                            <span>{item}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Add Custom Variable Input */}
+                    <div className="flex gap-1.5 pt-1 dofa-add-box">
+                      <input
+                        type="text"
+                        value={newDofaInputs.opportunities}
+                        onChange={(e) => setNewDofaInputs({ ...newDofaInputs, opportunities: e.target.value })}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddCustomDofaVar('opportunities', 'dofaOpportunities');
+                          }
+                        }}
+                        placeholder="+ Agregar nueva variable de oportunidad..."
+                        className="flex-1 bg-[#081d38] border border-cyan-500/30 rounded-lg px-2.5 py-1 text-[11px] text-white placeholder-slate-400 focus:border-cyan-400 outline-none dofa-add-input"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleAddCustomDofaVar('opportunities', 'dofaOpportunities')}
+                        className="bg-cyan-600 hover:bg-cyan-500 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 shrink-0 dofa-add-btn cursor-pointer"
+                      >
+                        <Plus className="w-3 h-3" /> Agregar
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Amenazas */}
-              <div className="bg-[#041224] p-3.5 rounded-2xl border border-rose-500/30 space-y-2 flex flex-col justify-between perfil-dofa-card dofa-amenazas-card">
-                <div className="space-y-1.5">
-                  <label className="block font-extrabold text-rose-400 text-xs flex items-center justify-between dofa-card-label">
-                    <span>Amenazas (Externas):</span>
-                    <span className="text-[10px] bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded-md font-mono dofa-card-badge">Riesgos</span>
-                  </label>
-                  <textarea
-                    rows={3}
-                    value={candidateProfile.dofaThreats}
-                    onChange={(e) => setCandidateProfile({ ...candidateProfile, dofaThreats: e.target.value })}
-                    placeholder="Ataques de oposición, abstencionismo, maquinarias rivales, desinformación..."
-                    className="w-full bg-[#081d38] border border-rose-500/30 rounded-xl px-3 py-2 text-white text-xs leading-relaxed focus:border-rose-400 outline-none resize-none dofa-card-textarea"
-                  />
-                </div>
-                <div className="pt-2 border-t border-rose-500/20 space-y-2 dofa-card-vars-section">
-                  <span className="text-[10px] font-extrabold text-rose-300/80 block uppercase tracking-wider dofa-vars-header">Variables Evaluables (Haz clic para seleccionar o quitar):</span>
-                  <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto pr-1 custom-scrollbar dofa-chips-container">
-                    {candidateDofaVars.threats.map((item, idx) => {
-                      const isSelected = candidateProfile.dofaThreats?.toLowerCase().includes(item.toLowerCase().slice(0, 20));
-                      return (
-                        <button
-                          key={idx}
-                          type="button"
-                          onClick={() => toggleCandidateDofaVar('dofaThreats', item)}
-                          className={`text-[10px] px-2 py-1 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 text-left leading-tight dofa-var-chip ${
-                            isSelected
-                              ? 'bg-rose-500/25 text-rose-300 border-rose-400/60 font-bold shadow-sm dofa-var-chip-active'
-                              : 'bg-[#081d38] text-slate-300 border-rose-500/20 hover:border-rose-400/40 hover:text-white'
-                          }`}
-                        >
-                          {isSelected ? <CheckCircle2 className="w-3 h-3 text-rose-400 shrink-0" /> : <Plus className="w-3 h-3 text-slate-400 shrink-0" />}
-                          <span>{item}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Add Custom Variable Input */}
-                  <div className="flex gap-1.5 pt-1 dofa-add-box">
-                    <input
-                      type="text"
-                      value={newDofaInputs.threats}
-                      onChange={(e) => setNewDofaInputs({ ...newDofaInputs, threats: e.target.value })}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleAddCustomDofaVar('threats', 'dofaThreats');
-                        }
-                      }}
-                      placeholder="+ Agregar nueva variable de amenaza..."
-                      className="flex-1 bg-[#081d38] border border-rose-500/30 rounded-lg px-2.5 py-1 text-[11px] text-white placeholder-slate-400 focus:border-rose-400 outline-none dofa-add-input"
+                {/* Debilidades */}
+                <div className="bg-[#041224] p-4 rounded-2xl border border-amber-500/30 space-y-3 flex flex-col justify-between perfil-dofa-card dofa-debilidades-card shadow-lg">
+                  <div className="space-y-1.5">
+                    <label className="block font-extrabold text-amber-400 text-xs flex items-center justify-between dofa-card-label">
+                      <span>Debilidades (Internas):</span>
+                      <span className="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-md font-mono dofa-card-badge">A reforzar</span>
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={candidateProfile.dofaWeaknesses}
+                      onChange={(e) => setCandidateProfile({ ...candidateProfile, dofaWeaknesses: e.target.value })}
+                      placeholder="Áreas de mejora, brechas de conocimiento o reconocimiento territorial..."
+                      className="w-full bg-[#081d38] border border-amber-500/30 rounded-xl px-3 py-2 text-white text-xs leading-relaxed focus:border-amber-400 outline-none resize-none dofa-card-textarea"
                     />
-                    <button
-                      type="button"
-                      onClick={() => handleAddCustomDofaVar('threats', 'dofaThreats')}
-                      className="bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 shrink-0 dofa-add-btn"
-                    >
-                      <Plus className="w-3 h-3" /> Agregar
-                    </button>
+                  </div>
+                  <div className="pt-2 border-t border-amber-500/20 space-y-2 dofa-card-vars-section">
+                    <span className="text-[10px] font-extrabold text-amber-300/80 block uppercase tracking-wider dofa-vars-header">Variables Evaluables (Haz clic para seleccionar o quitar):</span>
+                    <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto pr-1 no-scrollbar dofa-chips-container">
+                      {candidateDofaVars.weaknesses.map((item, idx) => {
+                        const isSelected = candidateProfile.dofaWeaknesses?.toLowerCase().includes(item.toLowerCase().slice(0, 20));
+                        return (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => toggleCandidateDofaVar('dofaWeaknesses', item)}
+                            className={`text-[10px] px-2 py-1 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 text-left leading-tight dofa-var-chip ${
+                              isSelected
+                                ? 'bg-amber-500/25 text-amber-300 border-amber-400/60 font-bold shadow-sm dofa-var-chip-active'
+                                : 'bg-[#081d38] text-slate-300 border-amber-500/20 hover:border-amber-400/40 hover:text-white'
+                            }`}
+                          >
+                            {isSelected ? <CheckCircle2 className="w-3 h-3 text-amber-400 shrink-0" /> : <Plus className="w-3 h-3 text-slate-400 shrink-0" />}
+                            <span>{item}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Add Custom Variable Input */}
+                    <div className="flex gap-1.5 pt-1 dofa-add-box">
+                      <input
+                        type="text"
+                        value={newDofaInputs.weaknesses}
+                        onChange={(e) => setNewDofaInputs({ ...newDofaInputs, weaknesses: e.target.value })}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddCustomDofaVar('weaknesses', 'dofaWeaknesses');
+                          }
+                        }}
+                        placeholder="+ Agregar nueva variable de debilidad..."
+                        className="flex-1 bg-[#081d38] border border-amber-500/30 rounded-lg px-2.5 py-1 text-[11px] text-white placeholder-slate-400 focus:border-amber-400 outline-none dofa-add-input"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleAddCustomDofaVar('weaknesses', 'dofaWeaknesses')}
+                        className="bg-amber-600 hover:bg-amber-500 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 shrink-0 dofa-add-btn cursor-pointer"
+                      >
+                        <Plus className="w-3 h-3" /> Agregar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Amenazas */}
+                <div className="bg-[#041224] p-4 rounded-2xl border border-rose-500/30 space-y-3 flex flex-col justify-between perfil-dofa-card dofa-amenazas-card shadow-lg">
+                  <div className="space-y-1.5">
+                    <label className="block font-extrabold text-rose-400 text-xs flex items-center justify-between dofa-card-label">
+                      <span>Amenazas (Externas):</span>
+                      <span className="text-[10px] bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded-md font-mono dofa-card-badge">Riesgos</span>
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={candidateProfile.dofaThreats}
+                      onChange={(e) => setCandidateProfile({ ...candidateProfile, dofaThreats: e.target.value })}
+                      placeholder="Ataques de oposición, abstencionismo, maquinarias rivales, desinformación..."
+                      className="w-full bg-[#081d38] border border-rose-500/30 rounded-xl px-3 py-2 text-white text-xs leading-relaxed focus:border-rose-400 outline-none resize-none dofa-card-textarea"
+                    />
+                  </div>
+                  <div className="pt-2 border-t border-rose-500/20 space-y-2 dofa-card-vars-section">
+                    <span className="text-[10px] font-extrabold text-rose-300/80 block uppercase tracking-wider dofa-vars-header">Variables Evaluables (Haz clic para seleccionar o quitar):</span>
+                    <div className="flex flex-wrap gap-1 max-h-32 overflow-y-auto pr-1 no-scrollbar dofa-chips-container">
+                      {candidateDofaVars.threats.map((item, idx) => {
+                        const isSelected = candidateProfile.dofaThreats?.toLowerCase().includes(item.toLowerCase().slice(0, 20));
+                        return (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => toggleCandidateDofaVar('dofaThreats', item)}
+                            className={`text-[10px] px-2 py-1 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 text-left leading-tight dofa-var-chip ${
+                              isSelected
+                                ? 'bg-rose-500/25 text-rose-300 border-rose-400/60 font-bold shadow-sm dofa-var-chip-active'
+                                : 'bg-[#081d38] text-slate-300 border-rose-500/20 hover:border-rose-400/40 hover:text-white'
+                            }`}
+                          >
+                            {isSelected ? <CheckCircle2 className="w-3 h-3 text-rose-400 shrink-0" /> : <Plus className="w-3 h-3 text-slate-400 shrink-0" />}
+                            <span>{item}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Add Custom Variable Input */}
+                    <div className="flex gap-1.5 pt-1 dofa-add-box">
+                      <input
+                        type="text"
+                        value={newDofaInputs.threats}
+                        onChange={(e) => setNewDofaInputs({ ...newDofaInputs, threats: e.target.value })}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddCustomDofaVar('threats', 'dofaThreats');
+                          }
+                        }}
+                        placeholder="+ Agregar nueva variable de amenaza..."
+                        className="flex-1 bg-[#081d38] border border-rose-500/30 rounded-lg px-2.5 py-1 text-[11px] text-white placeholder-slate-400 focus:border-rose-400 outline-none dofa-add-input"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleAddCustomDofaVar('threats', 'dofaThreats')}
+                        className="bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 shrink-0 dofa-add-btn cursor-pointer"
+                      >
+                        <Plus className="w-3 h-3" /> Agregar
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -3580,30 +3396,33 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs perfil-contact-grid">
               <div>
-                <label className="block text-slate-400 text-[11px] mb-1 perfil-contact-label">Sitio Web Oficial:</label>
+                <label className="block text-slate-400 text-[11px] mb-1.5 perfil-contact-label">Sitio Web Oficial:</label>
                 <input
                   type="text"
+                  placeholder="https://..."
                   value={candidateProfile.website}
                   onChange={(e) => setCandidateProfile({ ...candidateProfile, website: e.target.value })}
-                  className="w-full bg-[#081d38] border border-cyan-500/20 rounded-lg px-2.5 py-1.5 text-white perfil-contact-input"
+                  className="w-full bg-[#081d38] border border-cyan-500/20 rounded-xl px-3 py-2 text-white text-xs outline-none focus:border-cyan-400 perfil-contact-input"
                 />
               </div>
               <div>
-                <label className="block text-slate-400 text-[11px] mb-1 perfil-contact-label">Correo Electrónico Oficial:</label>
+                <label className="block text-slate-400 text-[11px] mb-1.5 perfil-contact-label">Correo Electrónico Oficial:</label>
                 <input
                   type="email"
+                  placeholder="prensa@campana.co"
                   value={candidateProfile.email}
                   onChange={(e) => setCandidateProfile({ ...candidateProfile, email: e.target.value })}
-                  className="w-full bg-[#081d38] border border-cyan-500/20 rounded-lg px-2.5 py-1.5 text-white perfil-contact-input"
+                  className="w-full bg-[#081d38] border border-cyan-500/20 rounded-xl px-3 py-2 text-white text-xs outline-none focus:border-cyan-400 perfil-contact-input"
                 />
               </div>
               <div>
-                <label className="block text-slate-400 text-[11px] mb-1 perfil-contact-label">Teléfono Directo de Prensa:</label>
+                <label className="block text-slate-400 text-[11px] mb-1.5 perfil-contact-label">Teléfono Directo de Prensa:</label>
                 <input
                   type="text"
+                  placeholder="+57 300 000 0000"
                   value={candidateProfile.phone}
                   onChange={(e) => setCandidateProfile({ ...candidateProfile, phone: e.target.value })}
-                  className="w-full bg-[#081d38] border border-cyan-500/20 rounded-lg px-2.5 py-1.5 text-white perfil-contact-input"
+                  className="w-full bg-[#081d38] border border-cyan-500/20 rounded-xl px-3 py-2 text-white text-xs outline-none focus:border-cyan-400 perfil-contact-input"
                 />
               </div>
             </div>
@@ -3616,10 +3435,10 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                 type="button"
                 onClick={() => void saveCandidateProfile()}
                 disabled={candidateProfileSaving || !candidateCampaignId}
-                className="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:brightness-110 disabled:opacity-50 text-slate-950 font-black rounded-xl flex items-center gap-2 cursor-pointer perfil-save-btn"
+                className="px-6 py-2.5 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:brightness-110 disabled:opacity-50 text-slate-950 font-black rounded-xl flex items-center gap-2 cursor-pointer shadow-lg shadow-emerald-500/20 transition-all perfil-save-btn"
               >
                 <Save className="w-4 h-4" />
-                {candidateProfileSaving ? 'Guardando...' : 'Guardar perfil del candidato'}
+                {candidateProfileSaving ? 'Guardando...' : 'Guardar Perfil del Candidato'}
               </button>
             </div>
           </div>
@@ -3631,19 +3450,22 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
         <div className="space-y-6 cv-analisis-view">
           
           {/* Resume Upload Dropzone & AI Parser Trigger */}
-          <div className="cv-header-card bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 shadow-xl relative overflow-hidden">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-cyan-500/20 pb-4 mb-4 cv-header-top">
+          <div className="cv-header-card bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 sm:p-8 shadow-xl relative overflow-hidden">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-cyan-500/20 pb-5 mb-6 cv-header-top">
               <div>
-                <h3 className="cv-header-title text-lg font-bold text-white flex items-center gap-2">
+                <h3 className="cv-header-title text-lg font-bold text-white flex items-center gap-2.5">
                   <FileText className="w-5 h-5 text-emerald-400 cv-header-icon" />
                   Módulo de Carga y Lectura Inteligente de Hoja de Vida (CV)
                 </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Extracción automatizada de formación académica, trayectoria laboral y verificación de idoneidad legal mediante IA.
+                </p>
               </div>
 
               <button
                 onClick={() => void handleAnalyzeCv()}
                 disabled={isParsingCv || !cvStoragePath}
-                className="cv-scan-btn flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-300 hover:to-teal-300 text-slate-950 font-extrabold text-xs rounded-xl shadow-lg shadow-emerald-500/20 transition-all cursor-pointer shrink-0 disabled:opacity-50"
+                className="cv-scan-btn flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 hover:brightness-110 text-slate-950 font-black text-xs rounded-xl shadow-lg shadow-emerald-500/20 transition-all cursor-pointer shrink-0 disabled:opacity-50"
               >
                 <Sparkles className={`w-4 h-4 ${isParsingCv ? 'animate-spin' : ''}`} />
                 <span>{isParsingCv ? 'Analizando con IA...' : 'Escanear Hoja de Vida con IA'}</span>
@@ -3666,14 +3488,22 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                   void handleFileUpload(syntheticEvent);
                 }
               }}
-              className="cv-dropzone border-2 border-dashed border-cyan-500/40 hover:border-emerald-400 bg-[#081d38]/60 p-8 rounded-2xl flex flex-col items-center justify-center text-center transition-all group"
+              className="cv-dropzone border-2 border-dashed border-cyan-500/35 hover:border-emerald-400/80 bg-gradient-to-b from-[#06182e]/80 to-[#020b18]/90 p-8 sm:p-10 rounded-2xl flex flex-col items-center justify-center text-center transition-all group shadow-inner"
             >
-              <UploadCloud className="cv-dropzone-icon w-12 h-12 text-cyan-400 group-hover:scale-110 transition-transform mb-3" />
-              <p className="cv-dropzone-text text-sm font-bold text-white mb-4">
-                Arrastre aquí su archivo de Hoja de Vida (PDF, DOCX) o haga clic para seleccionar
+              <div className="w-16 h-16 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center mb-4 group-hover:scale-105 group-hover:bg-emerald-500/10 group-hover:border-emerald-500/40 transition-all shadow-md">
+                <UploadCloud className="cv-dropzone-icon w-8 h-8 text-cyan-400 group-hover:text-emerald-400 transition-colors" />
+              </div>
+
+              <p className="cv-dropzone-text text-sm font-bold text-white mb-1">
+                Arrastre aquí su archivo de Hoja de Vida (PDF, DOCX)
               </p>
-              <label className="cv-select-btn px-4 py-2 bg-cyan-900/80 hover:bg-cyan-800 text-cyan-200 border border-cyan-400/40 rounded-xl text-xs font-bold cursor-pointer transition-all">
-                Seleccionar Archivo PDF
+              <p className="text-xs text-slate-400 mb-5">
+                o haga clic en el botón inferior para explorar sus archivos locales
+              </p>
+
+              <label className="cv-select-btn px-5 py-2.5 bg-gradient-to-r from-cyan-900/90 to-blue-900/90 hover:from-cyan-800 hover:to-blue-800 text-cyan-200 hover:text-white border border-cyan-400/40 rounded-xl text-xs font-bold cursor-pointer transition-all shadow-md flex items-center gap-2">
+                <FileText className="w-3.5 h-3.5" />
+                Seleccionar Archivo PDF / DOCX
                 <input
                   type="file"
                   accept=".pdf,.docx,.doc"
@@ -3682,62 +3512,99 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                 />
               </label>
 
-              {cvFileName && (
-                <div className="cv-file-badge mt-4 px-3 py-1.5 rounded-lg bg-emerald-950/80 border border-emerald-400/40 text-emerald-300 text-xs font-mono flex items-center gap-2">
+              {cvFileName ? (
+                <div className="cv-file-badge mt-5 px-4 py-2 rounded-xl bg-[#020b18] border border-emerald-500/40 text-emerald-300 text-xs font-mono flex items-center gap-2.5 shadow-lg">
                   <FileText className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <span className="cv-file-name">{cvFileName} ({cvUploadedAt ? new Date(cvUploadedAt).toLocaleString('es-CO') : ''})</span>
-                  <span className={`cv-file-status-pill text-[10px] font-black px-1.5 py-0.5 rounded ml-2 ${cvAnalysisStatus === 'Analizado con IA' ? 'bg-emerald-500 text-slate-950 cv-status-analyzed' : 'bg-amber-500/20 text-amber-300 cv-status-pending'}`}>{cvAnalysisStatus}</span>
+                  <span className="cv-file-name font-sans font-semibold text-white">{cvFileName}</span>
+                  {cvUploadedAt && (
+                    <span className="text-slate-400 text-[11px] font-sans">
+                      ({new Date(cvUploadedAt).toLocaleString('es-CO')})
+                    </span>
+                  )}
+                  <span className={`cv-file-status-pill text-[10px] font-black px-2 py-0.5 rounded-full ml-1 font-sans ${cvAnalysisStatus === 'Analizado con IA' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 cv-status-analyzed' : 'bg-amber-500/20 text-amber-300 border border-amber-500/40 cv-status-pending'}`}>
+                    {cvAnalysisStatus}
+                  </span>
+                </div>
+              ) : (
+                <div className="mt-4 px-3 py-1 rounded-full bg-[#020b18]/60 border border-cyan-500/20 text-slate-400 text-[11px]">
+                  No hay una hoja de vida cargada para esta campaña
                 </div>
               )}
-              {!cvFileName && <p className="cv-empty-text mt-4 text-xs text-slate-400">No hay una hoja de vida cargada para esta campaña.</p>}
-              {cvMessage && <p className={`cv-feedback-msg mt-4 text-xs font-bold ${/guardado|cargado|completado|asociado/i.test(cvMessage) ? 'text-emerald-300 cv-msg-success' : 'text-amber-300 cv-msg-alert'}`}>{cvMessage}</p>}
+
+              {cvMessage && (
+                <p className={`cv-feedback-msg mt-3 text-xs font-bold ${/guardado|cargado|completado|asociado/i.test(cvMessage) ? 'text-emerald-300 cv-msg-success' : 'text-amber-300 cv-msg-alert'}`}>
+                  {cvMessage}
+                </p>
+              )}
             </div>
           </div>
 
           {/* Background & Ineligibility Check Panel */}
-          <div className="cv-background-card bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 shadow-xl space-y-4">
-            <h4 className="cv-section-title text-sm font-black text-white uppercase tracking-wider flex items-center gap-2 border-b border-cyan-500/20 pb-3">
-              <ShieldCheck className="w-5 h-5 text-emerald-400" />
-              Semáforo de Antecedentes e Inhabilidades (Procuraduría, Contraloría, PONAL, CNE)
-            </h4>
+          <div className="cv-background-card bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 sm:p-8 shadow-xl space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-cyan-500/20 pb-4">
+              <div>
+                <h4 className="cv-section-title text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+                  <ShieldCheck className="w-5 h-5 text-emerald-400" />
+                  Semáforo de Antecedentes e Inhabilidades Oficiales
+                </h4>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Verificación de antecedentes disciplinarios, fiscales, penales y registro ante el CNE
+                </p>
+              </div>
+              <span className="px-3 py-1 rounded-full bg-cyan-950/70 border border-cyan-500/30 text-cyan-300 font-semibold text-[11px] self-start sm:self-center">
+                4 Entidades de Control
+              </span>
+            </div>
 
             <div className="cv-background-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="cv-check-card bg-[#081d38] p-4 rounded-2xl border border-emerald-500/30">
-                <div className="cv-check-entity text-[10px] font-extrabold uppercase text-slate-400">Procuraduría General</div>
-                <div className="cv-check-status text-sm font-black text-amber-300 mt-1 flex items-center gap-1">
-                  <AlertTriangle className="w-4 h-4 text-amber-400" /> Pendiente de verificación
+              <div className="cv-check-card bg-[#04142a] p-4 rounded-2xl border border-cyan-500/25 space-y-2 hover:border-cyan-500/40 transition-colors">
+                <div className="flex items-center justify-between">
+                  <span className="cv-check-entity text-[10px] font-black uppercase text-slate-400 tracking-wider">Procuraduría General</span>
+                  <span className="text-[10px] text-cyan-400 bg-cyan-500/10 px-1.5 py-0.5 rounded font-mono">Disciplinario</span>
                 </div>
-                <p className="cv-check-details text-[11px] text-slate-300 mt-1">
+                <div className="cv-check-status text-xs font-black text-amber-300 flex items-center gap-1.5">
+                  <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" /> Pendiente de verificación
+                </div>
+                <p className="cv-check-details text-[11px] text-slate-300 leading-tight">
                   {backgroundChecks.procuraduria || 'Sin certificado oficial registrado.'}
                 </p>
               </div>
 
-              <div className="cv-check-card bg-[#081d38] p-4 rounded-2xl border border-emerald-500/30">
-                <div className="cv-check-entity text-[10px] font-extrabold uppercase text-slate-400">Contraloría General</div>
-                <div className="cv-check-status text-sm font-black text-amber-300 mt-1 flex items-center gap-1">
-                  <AlertTriangle className="w-4 h-4 text-amber-400" /> Pendiente de verificación
+              <div className="cv-check-card bg-[#04142a] p-4 rounded-2xl border border-cyan-500/25 space-y-2 hover:border-cyan-500/40 transition-colors">
+                <div className="flex items-center justify-between">
+                  <span className="cv-check-entity text-[10px] font-black uppercase text-slate-400 tracking-wider">Contraloría General</span>
+                  <span className="text-[10px] text-teal-400 bg-teal-500/10 px-1.5 py-0.5 rounded font-mono">Fiscal</span>
                 </div>
-                <p className="cv-check-details text-[11px] text-slate-300 mt-1">
+                <div className="cv-check-status text-xs font-black text-amber-300 flex items-center gap-1.5">
+                  <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" /> Pendiente de verificación
+                </div>
+                <p className="cv-check-details text-[11px] text-slate-300 leading-tight">
                   {backgroundChecks.contraloria || 'Sin certificado oficial registrado.'}
                 </p>
               </div>
 
-              <div className="cv-check-card bg-[#081d38] p-4 rounded-2xl border border-emerald-500/30">
-                <div className="cv-check-entity text-[10px] font-extrabold uppercase text-slate-400">Policía & Judicial (PONAL)</div>
-                <div className="cv-check-status text-sm font-black text-amber-300 mt-1 flex items-center gap-1">
-                  <AlertTriangle className="w-4 h-4 text-amber-400" /> Pendiente de verificación
+              <div className="cv-check-card bg-[#04142a] p-4 rounded-2xl border border-cyan-500/25 space-y-2 hover:border-cyan-500/40 transition-colors">
+                <div className="flex items-center justify-between">
+                  <span className="cv-check-entity text-[10px] font-black uppercase text-slate-400 tracking-wider">Policía & Fiscalía (PONAL)</span>
+                  <span className="text-[10px] text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded font-mono">Judicial</span>
                 </div>
-                <p className="cv-check-details text-[11px] text-slate-300 mt-1">
+                <div className="cv-check-status text-xs font-black text-amber-300 flex items-center gap-1.5">
+                  <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" /> Pendiente de verificación
+                </div>
+                <p className="cv-check-details text-[11px] text-slate-300 leading-tight">
                   {backgroundChecks.fiscalia || 'Sin certificado oficial registrado.'}
                 </p>
               </div>
 
-              <div className="cv-check-card bg-[#081d38] p-4 rounded-2xl border border-emerald-500/30">
-                <div className="cv-check-entity text-[10px] font-extrabold uppercase text-slate-400">Consejo Nacional Electoral (CNE)</div>
-                <div className="cv-check-status text-sm font-black text-amber-300 mt-1 flex items-center gap-1">
-                  <AlertTriangle className="w-4 h-4 text-amber-400" /> Pendiente de verificación
+              <div className="cv-check-card bg-[#04142a] p-4 rounded-2xl border border-cyan-500/25 space-y-2 hover:border-cyan-500/40 transition-colors">
+                <div className="flex items-center justify-between">
+                  <span className="cv-check-entity text-[10px] font-black uppercase text-slate-400 tracking-wider">Consejo Nacional Electoral</span>
+                  <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded font-mono">CNE</span>
                 </div>
-                <p className="cv-check-details text-[11px] text-slate-300 mt-1">
+                <div className="cv-check-status text-xs font-black text-amber-300 flex items-center gap-1.5">
+                  <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" /> Pendiente de verificación
+                </div>
+                <p className="cv-check-details text-[11px] text-slate-300 leading-tight">
                   {backgroundChecks.cneStatus || 'Sin certificación electoral registrada.'}
                 </p>
               </div>
@@ -3745,59 +3612,89 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
           </div>
 
           {/* Academic Degrees & Professional Formation */}
-          <div className="cv-degrees-card bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 shadow-xl space-y-4">
-            <div className="cv-section-header flex items-center justify-between border-b border-cyan-500/20 pb-3">
-              <h4 className="cv-section-title text-base font-bold text-white flex items-center gap-2">
-                <GraduationCap className="w-5 h-5 text-emerald-400" />
-                Formación Académica & Títulos Universitarios
-              </h4>
+          <div className="cv-degrees-card bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 sm:p-8 shadow-xl space-y-5">
+            <div className="cv-section-header flex items-center justify-between border-b border-cyan-500/20 pb-4">
+              <div>
+                <h4 className="cv-section-title text-base font-bold text-white flex items-center gap-2">
+                  <GraduationCap className="w-5 h-5 text-emerald-400" />
+                  Formación Académica & Títulos Universitarios
+                </h4>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Pregrados, posgrados, maestrías, doctorados y diplomados certificados
+                </p>
+              </div>
               <button
                 onClick={() => setShowAddDegreeModal(true)}
-                className="cv-add-item-btn flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 hover:bg-emerald-500/30 text-xs font-bold cursor-pointer transition-all"
+                className="cv-add-item-btn flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 hover:bg-emerald-500/30 text-xs font-black cursor-pointer transition-all shadow-md"
               >
                 <Plus className="w-4 h-4" /> Agregar Título
               </button>
             </div>
 
-            <div className="cv-degrees-grid grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="cv-degrees-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {academicDegrees.map(deg => (
-                <div key={deg.id} className="cv-degree-card bg-[#081d38] p-4 rounded-2xl border border-cyan-500/20 flex flex-col justify-between relative group">
+                <div key={deg.id} className="cv-degree-card bg-[#04142a] p-4 rounded-2xl border border-cyan-500/25 flex flex-col justify-between relative group hover:border-cyan-400/50 transition-all shadow-md">
                   <div>
                     <div className="flex items-center justify-between">
-                      <span className="cv-degree-level text-[10px] font-extrabold px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-500/30">
+                      <span className="cv-degree-level text-[10px] font-black px-2.5 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-500/30 uppercase tracking-wider">
                         {deg.level}
                       </span>
-                      <span className="cv-degree-year text-xs font-mono text-slate-400">{deg.year}</span>
+                      <span className="cv-degree-year text-xs font-mono font-bold text-slate-400">{deg.year}</span>
                     </div>
-                    <h5 className="cv-degree-title font-extrabold text-white text-sm mt-2">{deg.title}</h5>
+                    <h5 className="cv-degree-title font-extrabold text-white text-sm mt-2.5 leading-snug">{deg.title}</h5>
                     <p className="cv-degree-institution text-xs text-teal-300 font-medium mt-1">{deg.institution}</p>
                   </div>
-                  <button
-                    onClick={() => {
-                      const next = academicDegrees.filter(d => d.id !== deg.id);
-                      setAcademicDegrees(next);
-                      void saveCandidateCv({ academicDegrees: next }).catch((error: any) => setCvMessage(error?.message || 'No fue posible eliminar el título.'));
-                    }}
-                    className="cv-degree-del-btn absolute top-2 right-2 text-rose-400 opacity-0 group-hover:opacity-100 p-1 hover:bg-rose-950/60 rounded transition-all"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  <div className="pt-3 mt-3 border-t border-cyan-500/15 flex justify-end">
+                    <button
+                      onClick={() => {
+                        const next = academicDegrees.filter(d => d.id !== deg.id);
+                        setAcademicDegrees(next);
+                        void saveCandidateCv({ academicDegrees: next }).catch((error: any) => setCvMessage(error?.message || 'No fue posible eliminar el título.'));
+                      }}
+                      className="cv-degree-del-btn text-rose-400 hover:bg-rose-950/60 p-1.5 rounded-lg transition-all flex items-center gap-1 text-[11px] cursor-pointer"
+                      title="Eliminar título"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" /> Eliminar
+                    </button>
+                  </div>
                 </div>
               ))}
-              {academicDegrees.length === 0 && <p className="cv-empty-text text-xs text-slate-400 md:col-span-3">No hay títulos académicos registrados.</p>}
+
+              {academicDegrees.length === 0 && (
+                <div className="md:col-span-2 lg:col-span-3 p-8 rounded-2xl bg-[#020b18]/60 border border-cyan-500/20 text-center flex flex-col items-center justify-center space-y-2">
+                  <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
+                    <GraduationCap className="w-6 h-6" />
+                  </div>
+                  <p className="text-sm font-bold text-white">Sin títulos académicos registrados</p>
+                  <p className="text-xs text-slate-400 max-w-md">
+                    Haga clic en "+ Agregar Título" o cargue su Hoja de Vida para que la inteligencia artificial extraiga sus certificaciones académicas.
+                  </p>
+                  <button
+                    onClick={() => setShowAddDegreeModal(true)}
+                    className="mt-2 px-4 py-2 rounded-xl bg-cyan-900/60 hover:bg-cyan-800 text-cyan-300 border border-cyan-500/30 text-xs font-bold cursor-pointer transition-all flex items-center gap-1.5"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Agregar Primer Título
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Work & Political Experience */}
-          <div className="cv-experience-card bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 shadow-xl space-y-4">
-            <div className="cv-section-header flex items-center justify-between border-b border-cyan-500/20 pb-3">
-              <h4 className="cv-section-title text-base font-bold text-white flex items-center gap-2">
-                <Briefcase className="w-5 h-5 text-emerald-400" />
-                Experiencia en Sector Público, Privado y Trayectoria Política
-              </h4>
+          <div className="cv-experience-card bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 sm:p-8 shadow-xl space-y-5">
+            <div className="cv-section-header flex items-center justify-between border-b border-cyan-500/20 pb-4">
+              <div>
+                <h4 className="cv-section-title text-base font-bold text-white flex items-center gap-2">
+                  <Briefcase className="w-5 h-5 text-emerald-400" />
+                  Experiencia en Sector Público, Privado y Trayectoria Política
+                </h4>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Cargos directivos, gestión de proyectos, representación pública y liderazgo social
+                </p>
+              </div>
               <button
                 onClick={() => setShowAddExpModal(true)}
-                className="cv-add-item-btn flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 hover:bg-emerald-500/30 text-xs font-bold cursor-pointer transition-all"
+                className="cv-add-item-btn flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 hover:bg-emerald-500/30 text-xs font-black cursor-pointer transition-all shadow-md"
               >
                 <Plus className="w-4 h-4" /> Agregar Experiencia
               </button>
@@ -3805,19 +3702,23 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
 
             <div className="cv-experience-list space-y-3">
               {experienceItems.map(exp => (
-                <div key={exp.id} className="cv-exp-card bg-[#081d38] p-4 rounded-2xl border border-cyan-500/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className={`cv-exp-type text-[10px] font-extrabold px-2 py-0.5 rounded ${
+                <div key={exp.id} className="cv-exp-card bg-[#04142a] p-4 sm:p-5 rounded-2xl border border-cyan-500/25 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:border-cyan-400/40 transition-all shadow-md">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`cv-exp-type text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
                         exp.type === 'Público' ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/30 cv-type-publico' : 'bg-sky-950 text-sky-300 border border-sky-500/30 cv-type-privado'
                       }`}>
                         {exp.type}
                       </span>
-                      <span className="cv-exp-period text-xs font-mono text-cyan-300 font-bold">{exp.period}</span>
+                      <span className="cv-exp-period text-xs font-mono text-cyan-300 font-bold bg-[#020b18] px-2.5 py-0.5 rounded-lg border border-cyan-500/20">{exp.period}</span>
                     </div>
                     <h5 className="cv-exp-role font-extrabold text-white text-sm">{exp.role}</h5>
-                    <p className="cv-exp-entity text-xs font-semibold text-slate-300">{exp.entityCompany}</p>
-                    <p className="cv-exp-achievements text-xs text-slate-400 mt-1">{exp.achievements}</p>
+                    <p className="cv-exp-entity text-xs font-semibold text-teal-300">{exp.entityCompany}</p>
+                    {exp.achievements && (
+                      <p className="cv-exp-achievements text-xs text-slate-300 mt-1 leading-relaxed bg-[#020b18]/60 p-2.5 rounded-xl border border-cyan-500/10">
+                        {exp.achievements}
+                      </p>
+                    )}
                   </div>
                   <button
                     onClick={() => {
@@ -3825,216 +3726,810 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                       setExperienceItems(next);
                       void saveCandidateCv({ experienceItems: next }).catch((error: any) => setCvMessage(error?.message || 'No fue posible eliminar la experiencia.'));
                     }}
-                    className="cv-exp-del-btn text-rose-400 hover:bg-rose-950/60 p-2 rounded-xl transition-all self-end md:self-center"
+                    className="cv-exp-del-btn text-rose-400 hover:bg-rose-950/60 px-3 py-1.5 rounded-xl transition-all self-end md:self-center flex items-center gap-1 text-xs cursor-pointer border border-rose-500/20"
+                    title="Eliminar experiencia"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-3.5 h-3.5" /> Eliminar
                   </button>
                 </div>
               ))}
-              {experienceItems.length === 0 && <p className="cv-empty-text text-xs text-slate-400">No hay experiencia laboral o política registrada.</p>}
+
+              {experienceItems.length === 0 && (
+                <div className="p-8 rounded-2xl bg-[#020b18]/60 border border-cyan-500/20 text-center flex flex-col items-center justify-center space-y-2">
+                  <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
+                    <Briefcase className="w-6 h-6" />
+                  </div>
+                  <p className="text-sm font-bold text-white">Sin experiencia laboral o política registrada</p>
+                  <p className="text-xs text-slate-400 max-w-md">
+                    Registre cargos en el sector público, privado o comunitario para fortalecer la hoja de vida electoral del candidato.
+                  </p>
+                  <button
+                    onClick={() => setShowAddExpModal(true)}
+                    className="mt-2 px-4 py-2 rounded-xl bg-cyan-900/60 hover:bg-cyan-800 text-cyan-300 border border-cyan-500/30 text-xs font-bold cursor-pointer transition-all flex items-center gap-1.5"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Agregar Primera Experiencia
+                  </button>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Financial Assets & Tax Return Declaration */}
-          <div className="cv-financial-card bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 shadow-xl space-y-4">
-            <h4 className="cv-section-title text-base font-bold text-white flex items-center gap-2 border-b border-cyan-500/20 pb-3">
-              <DollarSign className="w-5 h-5 text-emerald-400" />
-              Declaración Juramentada de Bienes e Inmuebles (Ley 2013 / CNE)
-            </h4>
+          <div className="cv-financial-card bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 sm:p-8 shadow-xl space-y-5">
+            <div className="border-b border-cyan-500/20 pb-4">
+              <h4 className="cv-section-title text-base font-bold text-white flex items-center gap-2">
+                <DollarSign className="w-5 h-5 text-emerald-400" />
+                Declaración Juramentada de Bienes e Inmuebles (Ley 2013 / CNE)
+              </h4>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Cumplimiento de transparencia patrimonial y reporte de renta obligatorio para candidatos a cargos de elección popular.
+              </p>
+            </div>
 
             <div className="cv-financial-grid grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-              <div className="cv-financial-metric-card bg-[#081d38] p-4 rounded-2xl border border-cyan-500/20">
-                <span className="cv-financial-label text-slate-400 font-semibold">Total Activos Declarados:</span>
-                <p className="cv-financial-value cv-financial-assets text-xl font-extrabold text-emerald-400 mt-1 font-mono">
+              <div className="cv-financial-metric-card bg-[#04142a] p-5 rounded-2xl border border-emerald-500/30 shadow-lg space-y-1">
+                <span className="cv-financial-label text-slate-400 font-semibold text-[11px] uppercase tracking-wider block">Total Activos Declarados:</span>
+                <p className="cv-financial-value cv-financial-assets text-2xl font-black text-emerald-400 font-mono">
                   ${financialDeclaration.totalAssets.toLocaleString('es-CO')} COP
                 </p>
               </div>
 
-              <div className="cv-financial-metric-card bg-[#081d38] p-4 rounded-2xl border border-cyan-500/20">
-                <span className="cv-financial-label text-slate-400 font-semibold">Total Pasivos / Deudas:</span>
-                <p className="cv-financial-value cv-financial-liabilities text-xl font-extrabold text-amber-400 mt-1 font-mono">
+              <div className="cv-financial-metric-card bg-[#04142a] p-5 rounded-2xl border border-amber-500/30 shadow-lg space-y-1">
+                <span className="cv-financial-label text-slate-400 font-semibold text-[11px] uppercase tracking-wider block">Total Pasivos / Deudas:</span>
+                <p className="cv-financial-value cv-financial-liabilities text-2xl font-black text-amber-400 font-mono">
                   ${financialDeclaration.totalLiabilities.toLocaleString('es-CO')} COP
                 </p>
               </div>
 
-              <div className="cv-financial-metric-card bg-[#081d38] p-4 rounded-2xl border border-cyan-500/20">
-                <span className="cv-financial-label text-slate-400 font-semibold">Patrimonio Neto Fiscal:</span>
-                <p className="cv-financial-value cv-financial-networth text-xl font-extrabold text-cyan-300 mt-1 font-mono">
+              <div className="cv-financial-metric-card bg-[#04142a] p-5 rounded-2xl border border-cyan-500/30 shadow-lg space-y-1">
+                <span className="cv-financial-label text-slate-400 font-semibold text-[11px] uppercase tracking-wider block">Patrimonio Neto Fiscal:</span>
+                <p className="cv-financial-value cv-financial-networth text-2xl font-black text-cyan-300 font-mono">
                   ${financialDeclaration.netWorth.toLocaleString('es-CO')} COP
                 </p>
               </div>
             </div>
             {financialDeclaration.totalAssets === 0 && financialDeclaration.totalLiabilities === 0 && !financialDeclaration.declarationStatus && (
-              <p className="cv-empty-text text-xs text-slate-400">No hay una declaración patrimonial registrada. Los valores permanecen en cero hasta que se agregue información real.</p>
+              <div className="p-3 rounded-xl bg-[#020b18]/60 border border-cyan-500/15 text-slate-400 text-xs">
+                ℹ️ Los valores patrimoniales permanecerán en cero hasta que se cargue la declaración formal o se extraiga automáticamente del documento tributario.
+              </div>
             )}
           </div>
 
-          <div className="cv-footer-bar flex justify-end">
+          <div className="cv-footer-bar flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-cyan-500/20">
+            <span className={`text-xs font-semibold ${cvMessage.toLowerCase().includes('guardado') ? 'text-emerald-400' : 'text-amber-300'}`}>
+              {cvMessage}
+            </span>
             <button
               onClick={() => void handleSaveCandidateCv()}
               disabled={isSavingCv || !candidateCampaignId}
-              className="cv-save-expediente-btn px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-cyan-500 disabled:opacity-50 text-slate-950 font-black rounded-xl flex items-center gap-2 cursor-pointer"
+              className="cv-save-expediente-btn px-6 py-2.5 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:brightness-110 disabled:opacity-50 text-slate-950 font-black rounded-xl flex items-center gap-2 cursor-pointer shadow-lg shadow-emerald-500/20 transition-all"
             >
-              <Save className="w-4 h-4" /> {isSavingCv ? 'Guardando...' : 'Guardar expediente de hoja de vida'}
+              <Save className="w-4 h-4" /> {isSavingCv ? 'Guardando...' : 'Guardar Expediente de Hoja de Vida'}
             </button>
           </div>
 
         </div>
       )}
 
-      {/* TAB 3: MATRIZ DOFA / SWOT ESTRATÉGICA */}
+      {/* TAB 3: MATRIZ DOFA / SWOT ESTRATÉGICA & PLAN CAME */}
       {activeTab === 'dofa' && (
         <div className="space-y-6 dofa-matriz-view">
-          <div className="dofa-main-card bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 shadow-xl space-y-5">
-            <div className="dofa-header-row flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-cyan-500/20 pb-4">
-              <div>
-                <h3 className="dofa-header-title text-lg font-bold text-white flex items-center gap-2">
-                  <PieChart className="w-5 h-5 text-emerald-400 dofa-header-icon" />
-                  Matriz DOFA / SWOT Estratégica
-                </h3>
+          <div className="dofa-main-card bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
+            
+            {/* Header with Title, Archetypes and AI Action */}
+            <div className="dofa-header-row flex flex-col xl:flex-row xl:items-center justify-between gap-5 border-b border-cyan-500/20 pb-6">
+              <div className="space-y-1">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-500/20 via-teal-500/10 to-cyan-500/20 border border-emerald-500/40 flex items-center justify-center shadow-lg shadow-emerald-500/10">
+                    <PieChart className="w-5 h-5 text-emerald-400 dofa-header-icon" />
+                  </div>
+                  <div>
+                    <h3 className="dofa-header-title text-xl font-black text-white flex items-center gap-2.5">
+                      Matriz DOFA / SWOT Estratégica & Diagnóstico Situacional
+                    </h3>
+                    <p className="text-xs text-slate-300">
+                      Evaluación cruzada de variables internas (Fortalezas, Debilidades) y del entorno territorial (Oportunidades, Amenazas).
+                    </p>
+                  </div>
+                </div>
               </div>
 
-              <button
-                onClick={() => void handleGenerateSwot()}
-                disabled={isGeneratingSwot || !candidateCampaignId}
-                className="dofa-generate-btn flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-400 to-teal-400 disabled:opacity-50 text-slate-950 font-extrabold text-xs rounded-xl shadow-md transition-all cursor-pointer"
-              >
-                <Sparkles className={`w-4 h-4 ${isGeneratingSwot ? 'animate-spin' : ''}`} />
-                <span>{isGeneratingSwot ? 'Analizando campaña...' : 'Generar matriz con IA'}</span>
-              </button>
+              <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+                {/* Archetypes Presets */}
+                <div className="flex items-center bg-[#031122] border border-cyan-500/25 p-1 rounded-2xl gap-1">
+                  <span className="text-[10px] uppercase font-black tracking-wider text-slate-400 px-2.5 hidden sm:inline-block">
+                    Plantillas:
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => void handleLoadArchetype('opinion')}
+                    className="text-[11px] font-bold px-2.5 py-1.5 rounded-xl bg-[#051830] hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/20 hover:border-cyan-400/50 transition-all cursor-pointer"
+                    title="Cargar factores para campaña de opinión e independiente"
+                  >
+                    🎯 Opinión
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleLoadArchetype('territorial')}
+                    className="text-[11px] font-bold px-2.5 py-1.5 rounded-xl bg-[#051830] hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/20 hover:border-emerald-400/50 transition-all cursor-pointer"
+                    title="Cargar factores para campaña comunitaria y de base territorial"
+                  >
+                    🏛️ Territorial
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleLoadArchetype('ejecutiva')}
+                    className="text-[11px] font-bold px-2.5 py-1.5 rounded-xl bg-[#051830] hover:bg-amber-500/20 text-amber-300 border border-amber-500/20 hover:border-amber-400/50 transition-all cursor-pointer"
+                    title="Cargar factores para candidatura ejecutiva y técnica"
+                  >
+                    💼 Ejecutiva
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleLoadArchetype('baseline')}
+                    className="text-[11px] font-bold px-2.5 py-1.5 rounded-xl bg-[#051830] hover:bg-purple-500/20 text-purple-300 border border-purple-500/20 hover:border-purple-400/50 transition-all cursor-pointer"
+                    title="Restablecer factores integrales base"
+                  >
+                    🔄 Base
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => void handleGenerateSwot()}
+                  disabled={isGeneratingSwot || !candidateCampaignId}
+                  className="dofa-generate-btn flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 hover:brightness-110 disabled:opacity-50 text-slate-950 font-black text-xs rounded-2xl shadow-lg shadow-emerald-500/20 transition-all cursor-pointer shrink-0"
+                >
+                  <Sparkles className={`w-4 h-4 ${isGeneratingSwot ? 'animate-spin' : ''}`} />
+                  <span>{isGeneratingSwot ? 'Analizando campaña con IA...' : 'Generar Matriz con IA'}</span>
+                </button>
+              </div>
             </div>
 
-            {/* SWOT 4 Quadrants Grid */}
-            <div className="dofa-quadrants-grid grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* Strategic Posture & Summary KPI Bar */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
               
-              {/* Fortalezas (Strengths) */}
-              <div className="dofa-quadrant-card dofa-quadrant-strengths bg-sky-950/40 border border-sky-500/40 rounded-3xl p-5 space-y-3">
-                <div className="flex items-center justify-between dofa-quadrant-header">
-                  <h4 className="dofa-quadrant-title font-extrabold text-sm flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5 dofa-quadrant-icon" /> Fortalezas (Strengths)
-                  </h4>
-                  <span className="dofa-count-badge text-[10px] font-bold px-2.5 py-0.5 rounded">
-                    {swotData.strengths.length} Factores
+              {/* Posture Scorecard */}
+              <div className="md:col-span-5 bg-gradient-to-br from-[#021326] to-[#041d3a] border border-cyan-500/30 p-4 sm:p-5 rounded-2xl shadow-lg flex flex-col justify-between">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
+                    <Compass className="w-3.5 h-3.5 text-cyan-400" /> Postura Estratégica Calculada
+                  </span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/30">
+                    {swotData.strengths.length + swotData.opportunities.length} vs {swotData.weaknesses.length + swotData.threats.length}
                   </span>
                 </div>
-                <p className="dofa-quadrant-desc text-xs">Factores internos positivos y ventajas competitivas del candidato y campaña.</p>
-                <ul className="dofa-items-list space-y-2 text-xs">
-                  {swotData.strengths.map((st, i) => (
-                    <li key={i} className="dofa-item-row flex items-start justify-between gap-2 p-3 rounded-xl border">
-                      <span className="dofa-item-text">• {st}</span>
-                      <button onClick={() => handleRemoveSwotItem('strengths', i)} className="dofa-item-del-btn cursor-pointer shrink-0 p-1 rounded transition-all" title="Eliminar factor">
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </li>
-                  ))}
-                  {swotData.strengths.length === 0 && <li className="dofa-empty-item text-xs">Sin fortalezas registradas.</li>}
-                </ul>
-              </div>
-
-              {/* Debilidades (Weaknesses) */}
-              <div className="dofa-quadrant-card dofa-quadrant-weaknesses bg-amber-950/40 border border-amber-500/40 rounded-3xl p-5 space-y-3">
-                <div className="flex items-center justify-between dofa-quadrant-header">
-                  <h4 className="dofa-quadrant-title font-extrabold text-sm flex items-center gap-2">
-                    <TrendingDown className="w-5 h-5 dofa-quadrant-icon" /> Debilidades (Weaknesses)
-                  </h4>
-                  <span className="dofa-count-badge text-[10px] font-bold px-2.5 py-0.5 rounded">
-                    {swotData.weaknesses.length} Factores
-                  </span>
+                
+                <div className="my-2.5">
+                  {(() => {
+                    const positive = swotData.strengths.length + swotData.opportunities.length;
+                    const negative = swotData.weaknesses.length + swotData.threats.length;
+                    if (positive >= negative + 2) {
+                      return (
+                        <div>
+                          <div className="text-base font-black text-emerald-300 flex items-center gap-2">
+                            🚀 Postura Ofensiva & Liderazgo Territorial
+                          </div>
+                          <p className="text-xs text-slate-300 mt-1">
+                            Las fortalezas internas y oportunidades de entorno superan ampliamente las debilidades. Enfoque en expansión y consolidación electoral.
+                          </p>
+                        </div>
+                      );
+                    } else if (swotData.strengths.length >= swotData.threats.length && swotData.threats.length > swotData.opportunities.length) {
+                      return (
+                        <div>
+                          <div className="text-base font-black text-amber-300 flex items-center gap-2">
+                            🛡️ Postura Defensiva & Blindaje Reputacional
+                          </div>
+                          <p className="text-xs text-slate-300 mt-1">
+                            Presencia de amenazas electorales relevantes. Se recomienda usar la solvencia ética para neutralizar ataques adversarios.
+                          </p>
+                        </div>
+                      );
+                    } else if (swotData.weaknesses.length >= swotData.strengths.length) {
+                      return (
+                        <div>
+                          <div className="text-base font-black text-cyan-300 flex items-center gap-2">
+                            🔄 Postura de Reorientación & Fortalecimiento
+                          </div>
+                          <p className="text-xs text-slate-300 mt-1">
+                            Requiere consolidar reconocimiento y movilización territorial para capitalizar el descontento ciudadano saliente.
+                          </p>
+                        </div>
+                      );
+                    } else {
+                      return (
+                        <div>
+                          <div className="text-base font-black text-teal-300 flex items-center gap-2">
+                            ⚖️ Postura Estratégica Equilibrada
+                          </div>
+                          <p className="text-xs text-slate-300 mt-1">
+                            Factores internos y externos balanceados. Avance sostenido combinando presencia territorial y campaña digital.
+                          </p>
+                        </div>
+                      );
+                    }
+                  })()}
                 </div>
-                <p className="dofa-quadrant-desc text-xs">Factores internos limitantes, brechas y áreas que requieren fortalecimiento.</p>
-                <ul className="dofa-items-list space-y-2 text-xs">
-                  {swotData.weaknesses.map((wk, i) => (
-                    <li key={i} className="dofa-item-row flex items-start justify-between gap-2 p-3 rounded-xl border">
-                      <span className="dofa-item-text">• {wk}</span>
-                      <button onClick={() => handleRemoveSwotItem('weaknesses', i)} className="dofa-item-del-btn cursor-pointer shrink-0 p-1 rounded transition-all" title="Eliminar factor">
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </li>
-                  ))}
-                  {swotData.weaknesses.length === 0 && <li className="dofa-empty-item text-xs">Sin debilidades registradas.</li>}
-                </ul>
-              </div>
 
-              {/* Oportunidades (Opportunities) */}
-              <div className="dofa-quadrant-card dofa-quadrant-opportunities bg-emerald-950/40 border border-emerald-500/40 rounded-3xl p-5 space-y-3">
-                <div className="flex items-center justify-between dofa-quadrant-header">
-                  <h4 className="dofa-quadrant-title font-extrabold text-sm flex items-center gap-2">
-                    <Lightbulb className="w-5 h-5 dofa-quadrant-icon" /> Oportunidades (Opportunities)
-                  </h4>
-                  <span className="dofa-count-badge text-[10px] font-bold px-2.5 py-0.5 rounded">
-                    {swotData.opportunities.length} Factores
-                  </span>
+                <div className="w-full bg-[#030d1a] h-2 rounded-full overflow-hidden flex border border-cyan-500/20">
+                  <div 
+                    style={{ width: `${Math.max(10, Math.min(90, (swotData.strengths.length / (swotData.strengths.length + swotData.weaknesses.length + swotData.opportunities.length + swotData.threats.length || 1)) * 100))}%` }} 
+                    className="bg-emerald-400 h-full" 
+                    title="Fortalezas" 
+                  />
+                  <div 
+                    style={{ width: `${Math.max(10, Math.min(90, (swotData.opportunities.length / (swotData.strengths.length + swotData.weaknesses.length + swotData.opportunities.length + swotData.threats.length || 1)) * 100))}%` }} 
+                    className="bg-cyan-400 h-full" 
+                    title="Oportunidades" 
+                  />
+                  <div 
+                    style={{ width: `${Math.max(10, Math.min(90, (swotData.weaknesses.length / (swotData.strengths.length + swotData.weaknesses.length + swotData.opportunities.length + swotData.threats.length || 1)) * 100))}%` }} 
+                    className="bg-amber-400 h-full" 
+                    title="Debilidades" 
+                  />
+                  <div 
+                    style={{ width: `${Math.max(10, Math.min(90, (swotData.threats.length / (swotData.strengths.length + swotData.weaknesses.length + swotData.opportunities.length + swotData.threats.length || 1)) * 100))}%` }} 
+                    className="bg-rose-500 h-full" 
+                    title="Amenazas" 
+                  />
                 </div>
-                <p className="dofa-quadrant-desc text-xs">Factores externos favorables, coyunturas electorales y tendencias del entorno.</p>
-                <ul className="dofa-items-list space-y-2 text-xs">
-                  {swotData.opportunities.map((op, i) => (
-                    <li key={i} className="dofa-item-row flex items-start justify-between gap-2 p-3 rounded-xl border">
-                      <span className="dofa-item-text">• {op}</span>
-                      <button onClick={() => handleRemoveSwotItem('opportunities', i)} className="dofa-item-del-btn cursor-pointer shrink-0 p-1 rounded transition-all" title="Eliminar factor">
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </li>
-                  ))}
-                  {swotData.opportunities.length === 0 && <li className="dofa-empty-item text-xs">Sin oportunidades registradas.</li>}
-                </ul>
               </div>
 
-              {/* Amenazas (Threats) */}
-              <div className="dofa-quadrant-card dofa-quadrant-threats bg-rose-950/40 border border-rose-500/40 rounded-3xl p-5 space-y-3">
-                <div className="flex items-center justify-between dofa-quadrant-header">
-                  <h4 className="dofa-quadrant-title font-extrabold text-sm flex items-center gap-2">
-                    <AlertTriangle className="w-5 h-5 dofa-quadrant-icon" /> Amenazas (Threats)
-                  </h4>
-                  <span className="dofa-count-badge text-[10px] font-bold px-2.5 py-0.5 rounded">
-                    {swotData.threats.length} Factores
-                  </span>
+              {/* 4 Quadrants Mini Counters */}
+              <div className="md:col-span-7 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="bg-[#031d1d]/90 border border-emerald-500/35 p-3.5 rounded-2xl flex flex-col justify-between hover:border-emerald-400/60 transition-colors shadow-md">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400">Fortalezas</span>
+                    <TrendingUp className="w-4 h-4 text-emerald-400" />
+                  </div>
+                  <div>
+                    <span className="text-2xl font-black text-white font-mono">{swotData.strengths.length}</span>
+                    <span className="text-[10px] text-slate-300 block font-medium">Ventajas Internas</span>
+                  </div>
                 </div>
-                <p className="dofa-quadrant-desc text-xs">Factores externos desfavorables, riesgos electorales y dinámicas de adversarios.</p>
-                <ul className="dofa-items-list space-y-2 text-xs">
-                  {swotData.threats.map((th, i) => (
-                    <li key={i} className="dofa-item-row flex items-start justify-between gap-2 p-3 rounded-xl border">
-                      <span className="dofa-item-text">• {th}</span>
-                      <button onClick={() => handleRemoveSwotItem('threats', i)} className="dofa-item-del-btn cursor-pointer shrink-0 p-1 rounded transition-all" title="Eliminar factor">
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </li>
-                  ))}
-                  {swotData.threats.length === 0 && <li className="dofa-empty-item text-xs">Sin amenazas registradas.</li>}
-                </ul>
-              </div>
 
+                <div className="bg-[#1f1403]/90 border border-amber-500/35 p-3.5 rounded-2xl flex flex-col justify-between hover:border-amber-400/60 transition-colors shadow-md">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-amber-400">Debilidades</span>
+                    <TrendingDown className="w-4 h-4 text-amber-400" />
+                  </div>
+                  <div>
+                    <span className="text-2xl font-black text-white font-mono">{swotData.weaknesses.length}</span>
+                    <span className="text-[10px] text-slate-300 block font-medium">Brechas a Blindar</span>
+                  </div>
+                </div>
+
+                <div className="bg-[#03172e]/90 border border-cyan-500/35 p-3.5 rounded-2xl flex flex-col justify-between hover:border-cyan-400/60 transition-colors shadow-md">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-cyan-400">Oportunidades</span>
+                    <Lightbulb className="w-4 h-4 text-cyan-400" />
+                  </div>
+                  <div>
+                    <span className="text-2xl font-black text-white font-mono">{swotData.opportunities.length}</span>
+                    <span className="text-[10px] text-slate-300 block font-medium">Coyuntura Favorable</span>
+                  </div>
+                </div>
+
+                <div className="bg-[#22050e]/90 border border-rose-500/35 p-3.5 rounded-2xl flex flex-col justify-between hover:border-rose-400/60 transition-colors shadow-md">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-rose-400">Amenazas</span>
+                    <AlertTriangle className="w-4 h-4 text-rose-400" />
+                  </div>
+                  <div>
+                    <span className="text-2xl font-black text-white font-mono">{swotData.threats.length}</span>
+                    <span className="text-[10px] text-slate-300 block font-medium">Riesgos Electorales</span>
+                  </div>
+                </div>
+              </div>
             </div>
+
+            {/* Sub-Tabs Selector & Search Filter Bar */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+              <div className="flex items-center bg-[#020d1c] p-1 rounded-2xl border border-cyan-500/30 w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={() => setSwotSubTab('matriz')}
+                  className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                    swotSubTab === 'matriz'
+                      ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-black shadow-lg shadow-emerald-500/20'
+                      : 'text-slate-300 hover:text-white'
+                  }`}
+                >
+                  <PieChart className="w-3.5 h-3.5" />
+                  <span>Matriz DOFA (Diagnóstico 4x4)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSwotSubTab('came')}
+                  className={`flex-1 sm:flex-initial px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                    swotSubTab === 'came'
+                      ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-slate-950 font-black shadow-lg shadow-cyan-500/20'
+                      : 'text-slate-300 hover:text-white'
+                  }`}
+                >
+                  <Layers className="w-3.5 h-3.5" />
+                  <span>Plan Estratégico CAME (Acción FO/FA/DO/DA)</span>
+                </button>
+              </div>
+
+              {/* Live Search Box */}
+              {swotSubTab === 'matriz' && (
+                <div className="relative w-full sm:w-72">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Filtrar factores diagnósticos..."
+                    value={swotSearchTerm}
+                    onChange={(e) => setSwotSearchTerm(e.target.value)}
+                    className="w-full bg-[#031122] border border-cyan-500/30 text-xs text-white placeholder-slate-400 rounded-xl pl-9 pr-3.5 py-2 outline-none focus:border-cyan-400 transition-all"
+                  />
+                  {swotSearchTerm && (
+                    <button
+                      onClick={() => setSwotSearchTerm('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* VIEW 1: 4 QUADRANTS MATRIX */}
+            {swotSubTab === 'matriz' && (
+              <div className="dofa-quadrants-grid grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
+                
+                {/* Fortalezas (Strengths) */}
+                <div className="dofa-quadrant-card dofa-quadrant-strengths bg-gradient-to-b from-[#031c18]/95 via-[#021411]/95 to-[#010b09] border border-emerald-500/40 rounded-3xl p-5 sm:p-6 space-y-4 shadow-xl flex flex-col justify-between">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between dofa-quadrant-header">
+                      <h4 className="dofa-quadrant-title font-black text-sm text-emerald-300 flex items-center gap-2">
+                        <TrendingUp className="w-5 h-5 text-emerald-400 dofa-quadrant-icon" /> Fortalezas (Strengths)
+                      </h4>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded-full font-mono font-bold">
+                          Interno
+                        </span>
+                        <span className="dofa-count-badge text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-500/30">
+                          {swotData.strengths.length} Factores
+                        </span>
+                      </div>
+                    </div>
+                    <p className="dofa-quadrant-desc text-xs text-slate-300 leading-relaxed">
+                      Factores internos positivos, trayectoria ética y ventajas competitivas del candidato y equipo.
+                    </p>
+
+                    <ul className="dofa-items-list space-y-2 text-xs">
+                      {swotData.strengths
+                        .filter(st => !swotSearchTerm || st.toLowerCase().includes(swotSearchTerm.toLowerCase()))
+                        .map((st, i) => (
+                          <li key={i} className="dofa-item-row flex items-start justify-between gap-2.5 p-3 rounded-xl bg-[#021411] border border-emerald-500/25 hover:border-emerald-500/50 transition-colors shadow-sm">
+                            <span className="dofa-item-text text-white leading-snug flex items-start gap-2">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                              <span>{st}</span>
+                            </span>
+                            <button 
+                              onClick={() => handleRemoveSwotItem('strengths', i)} 
+                              className="dofa-item-del-btn cursor-pointer shrink-0 p-1 text-slate-400 hover:text-rose-400 hover:bg-rose-950/60 rounded-lg transition-all" 
+                              title="Eliminar factor"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </li>
+                        ))}
+                      {swotData.strengths.length === 0 && (
+                        <li className="dofa-empty-item text-xs text-slate-400 p-4 rounded-xl bg-[#021411]/50 border border-emerald-500/15 text-center">
+                          Sin fortalezas registradas. Utilice los factores sugeridos o agregue uno nuevo.
+                        </li>
+                      )}
+                    </ul>
+                  </div>
+
+                  {/* Suggested Quick Add Chips */}
+                  <div className="pt-3 border-t border-emerald-500/20 space-y-2">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-400/80 block">
+                      Factores Recomendados (Clic para agregar):
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[
+                        'Trayectoria ética intachable (0 antecedentes)',
+                        'Experiencia técnica comprobada en gestión pública',
+                        'Liderazgo y carisma territorial en comunas',
+                        'Respaldo de sectores independientes y academia',
+                        'Equipo técnico y político cohesionado'
+                      ].map((text, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => handleQuickAddSwotItem('strengths', text)}
+                          className="text-[10px] px-2.5 py-1 rounded-lg bg-[#021411] hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/20 hover:border-emerald-400/50 transition-all cursor-pointer flex items-center gap-1 leading-tight"
+                        >
+                          <Plus className="w-3 h-3 text-emerald-400" />
+                          <span>{text}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Debilidades (Weaknesses) */}
+                <div className="dofa-quadrant-card dofa-quadrant-weaknesses bg-gradient-to-b from-[#1c1204]/95 via-[#140c02]/95 to-[#0a0601] border border-amber-500/40 rounded-3xl p-5 sm:p-6 space-y-4 shadow-xl flex flex-col justify-between">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between dofa-quadrant-header">
+                      <h4 className="dofa-quadrant-title font-black text-sm text-amber-300 flex items-center gap-2">
+                        <TrendingDown className="w-5 h-5 text-amber-400 dofa-quadrant-icon" /> Debilidades (Weaknesses)
+                      </h4>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-full font-mono font-bold">
+                          Interno
+                        </span>
+                        <span className="dofa-count-badge text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-950 text-amber-300 border border-amber-500/30">
+                          {swotData.weaknesses.length} Factores
+                        </span>
+                      </div>
+                    </div>
+                    <p className="dofa-quadrant-desc text-xs text-slate-300 leading-relaxed">
+                      Factores internos limitantes, brechas operativas o logísticas que requieren blindaje estratégico.
+                    </p>
+
+                    <ul className="dofa-items-list space-y-2 text-xs">
+                      {swotData.weaknesses
+                        .filter(wk => !swotSearchTerm || wk.toLowerCase().includes(swotSearchTerm.toLowerCase()))
+                        .map((wk, i) => (
+                          <li key={i} className="dofa-item-row flex items-start justify-between gap-2.5 p-3 rounded-xl bg-[#140c02] border border-amber-500/25 hover:border-amber-500/50 transition-colors shadow-sm">
+                            <span className="dofa-item-text text-white leading-snug flex items-start gap-2">
+                              <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                              <span>{wk}</span>
+                            </span>
+                            <button 
+                              onClick={() => handleRemoveSwotItem('weaknesses', i)} 
+                              className="dofa-item-del-btn cursor-pointer shrink-0 p-1 text-slate-400 hover:text-rose-400 hover:bg-rose-950/60 rounded-lg transition-all" 
+                              title="Eliminar factor"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </li>
+                        ))}
+                      {swotData.weaknesses.length === 0 && (
+                        <li className="dofa-empty-item text-xs text-slate-400 p-4 rounded-xl bg-[#140c02]/50 border border-amber-500/15 text-center">
+                          Sin debilidades registradas. Utilice los factores sugeridos o agregue uno nuevo.
+                        </li>
+                      )}
+                    </ul>
+                  </div>
+
+                  {/* Suggested Quick Add Chips */}
+                  <div className="pt-3 border-t border-amber-500/20 space-y-2">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-400/80 block">
+                      Factores Recomendados (Clic para agregar):
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[
+                        'Reconocimiento territorial bajo en zonas periféricas',
+                        'Presupuesto inicial ajustado frente a maquinarias',
+                        'Estructura de movilización Día E en consolidación',
+                        'Falta de voceros delegados por corregimiento',
+                        'Sobrecarga de funciones operativas en equipo central'
+                      ].map((text, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => handleQuickAddSwotItem('weaknesses', text)}
+                          className="text-[10px] px-2.5 py-1 rounded-lg bg-[#140c02] hover:bg-amber-500/20 text-amber-300 border border-amber-500/20 hover:border-amber-400/50 transition-all cursor-pointer flex items-center gap-1 leading-tight"
+                        >
+                          <Plus className="w-3 h-3 text-amber-400" />
+                          <span>{text}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Oportunidades (Opportunities) */}
+                <div className="dofa-quadrant-card dofa-quadrant-opportunities bg-gradient-to-b from-[#03192e]/95 via-[#021120]/95 to-[#010910] border border-cyan-500/40 rounded-3xl p-5 sm:p-6 space-y-4 shadow-xl flex flex-col justify-between">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between dofa-quadrant-header">
+                      <h4 className="dofa-quadrant-title font-black text-sm text-cyan-300 flex items-center gap-2">
+                        <Lightbulb className="w-5 h-5 text-cyan-400 dofa-quadrant-icon" /> Oportunidades (Opportunities)
+                      </h4>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 px-2 py-0.5 rounded-full font-mono font-bold">
+                          Externo
+                        </span>
+                        <span className="dofa-count-badge text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-500/30">
+                          {swotData.opportunities.length} Factores
+                        </span>
+                      </div>
+                    </div>
+                    <p className="dofa-quadrant-desc text-xs text-slate-300 leading-relaxed">
+                      Factores externos favorables, coyunturas electorales, alianzas y tendencias del entorno social.
+                    </p>
+
+                    <ul className="dofa-items-list space-y-2 text-xs">
+                      {swotData.opportunities
+                        .filter(op => !swotSearchTerm || op.toLowerCase().includes(swotSearchTerm.toLowerCase()))
+                        .map((op, i) => (
+                          <li key={i} className="dofa-item-row flex items-start justify-between gap-2.5 p-3 rounded-xl bg-[#021120] border border-cyan-500/25 hover:border-cyan-500/50 transition-colors shadow-sm">
+                            <span className="dofa-item-text text-white leading-snug flex items-start gap-2">
+                              <Zap className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+                              <span>{op}</span>
+                            </span>
+                            <button 
+                              onClick={() => handleRemoveSwotItem('opportunities', i)} 
+                              className="dofa-item-del-btn cursor-pointer shrink-0 p-1 text-slate-400 hover:text-rose-400 hover:bg-rose-950/60 rounded-lg transition-all" 
+                              title="Eliminar factor"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </li>
+                        ))}
+                      {swotData.opportunities.length === 0 && (
+                        <li className="dofa-empty-item text-xs text-slate-400 p-4 rounded-xl bg-[#021120]/50 border border-cyan-500/15 text-center">
+                          Sin oportunidades registradas. Utilice los factores sugeridos o agregue uno nuevo.
+                        </li>
+                      )}
+                    </ul>
+                  </div>
+
+                  {/* Suggested Quick Add Chips */}
+                  <div className="pt-3 border-t border-cyan-500/20 space-y-2">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-cyan-400/80 block">
+                      Factores Recomendados (Clic para agregar):
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[
+                        'Descontento ciudadano con la administración saliente',
+                        'Crecimiento exponencial del voto de opinión',
+                        'Alianzas con JAC, líderes gremiales y comunales',
+                        'Apertura en medios locales y podcasts comunitarios',
+                        'Coyuntura favorable para propuestas de innovación'
+                      ].map((text, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => handleQuickAddSwotItem('opportunities', text)}
+                          className="text-[10px] px-2.5 py-1 rounded-lg bg-[#021120] hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/20 hover:border-cyan-400/50 transition-all cursor-pointer flex items-center gap-1 leading-tight"
+                        >
+                          <Plus className="w-3 h-3 text-cyan-400" />
+                          <span>{text}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Amenazas (Threats) */}
+                <div className="dofa-quadrant-card dofa-quadrant-threats bg-gradient-to-b from-[#22050e]/95 via-[#180309]/95 to-[#0c0104] border border-rose-500/40 rounded-3xl p-5 sm:p-6 space-y-4 shadow-xl flex flex-col justify-between">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between dofa-quadrant-header">
+                      <h4 className="dofa-quadrant-title font-black text-sm text-rose-300 flex items-center gap-2">
+                        <ShieldAlert className="w-5 h-5 text-rose-400 dofa-quadrant-icon" /> Amenazas (Threats)
+                      </h4>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] bg-rose-500/20 text-rose-300 border border-rose-500/40 px-2 py-0.5 rounded-full font-mono font-bold">
+                          Externo
+                        </span>
+                        <span className="dofa-count-badge text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-rose-950 text-rose-300 border border-rose-500/30">
+                          {swotData.threats.length} Factores
+                        </span>
+                      </div>
+                    </div>
+                    <p className="dofa-quadrant-desc text-xs text-slate-300 leading-relaxed">
+                      Factores externos adversos, guerra sucia, clientelismo rival y riesgos de orden público.
+                    </p>
+
+                    <ul className="dofa-items-list space-y-2 text-xs">
+                      {swotData.threats
+                        .filter(th => !swotSearchTerm || th.toLowerCase().includes(swotSearchTerm.toLowerCase()))
+                        .map((th, i) => (
+                          <li key={i} className="dofa-item-row flex items-start justify-between gap-2.5 p-3 rounded-xl bg-[#180309] border border-rose-500/25 hover:border-rose-500/50 transition-colors shadow-sm">
+                            <span className="dofa-item-text text-white leading-snug flex items-start gap-2">
+                              <Flame className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                              <span>{th}</span>
+                            </span>
+                            <button 
+                              onClick={() => handleRemoveSwotItem('threats', i)} 
+                              className="dofa-item-del-btn cursor-pointer shrink-0 p-1 text-slate-400 hover:text-rose-400 hover:bg-rose-950/60 rounded-lg transition-all" 
+                              title="Eliminar factor"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </li>
+                        ))}
+                      {swotData.threats.length === 0 && (
+                        <li className="dofa-empty-item text-xs text-slate-400 p-4 rounded-xl bg-[#180309]/50 border border-rose-500/15 text-center">
+                          Sin amenazas registradas. Utilice los factores sugeridos o agregue uno nuevo.
+                        </li>
+                      )}
+                    </ul>
+                  </div>
+
+                  {/* Suggested Quick Add Chips */}
+                  <div className="pt-3 border-t border-rose-500/20 space-y-2">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-rose-400/80 block">
+                      Factores Recomendados (Clic para agregar):
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[
+                        'Ataques de desinformación y guerra sucia en redes',
+                        'Uso de recursos públicos y clientelismo por rivales',
+                        'Riesgo de alto abstencionismo en puestos clave',
+                        'Prácticas clientelares y compra de votos en el territorio',
+                        'Riesgos de orden público y seguridad en desplazamientos'
+                      ].map((text, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => handleQuickAddSwotItem('threats', text)}
+                          className="text-[10px] px-2.5 py-1 rounded-lg bg-[#180309] hover:bg-rose-500/20 text-rose-300 border border-rose-500/20 hover:border-rose-400/50 transition-all cursor-pointer flex items-center gap-1 leading-tight"
+                        >
+                          <Plus className="w-3 h-3 text-rose-400" />
+                          <span>{text}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            )}
+
+            {/* VIEW 2: PLAN ESTRATÉGICO CAME (CRUCE FO, FA, DO, DA) */}
+            {swotSubTab === 'came' && (
+              <div className="space-y-4 pt-2">
+                <div className="p-4 rounded-2xl bg-gradient-to-r from-[#021326] via-[#041d3a] to-[#021326] border border-cyan-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div>
+                    <h4 className="text-sm font-black text-white flex items-center gap-2">
+                      <Layers className="w-4 h-4 text-cyan-400" /> Matriz CAME: Formulación de Estrategias Cruzadas
+                    </h4>
+                    <p className="text-xs text-slate-300 mt-0.5">
+                      <strong>C</strong>orregir debilidades, <strong>A</strong>frontar amenazas, <strong>M</strong>antener fortalezas y <strong>E</strong>xplotar oportunidades.
+                    </p>
+                  </div>
+                  <span className="text-[11px] font-bold px-3 py-1 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                    Plan de Campaña Activo
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* FO Strategies (Ofensivas) */}
+                  <div className="bg-[#021818] border border-emerald-500/35 p-5 rounded-2xl space-y-3">
+                    <div className="flex items-center justify-between border-b border-emerald-500/20 pb-2.5">
+                      <span className="text-xs font-black text-emerald-300 uppercase tracking-wider flex items-center gap-1.5">
+                        <Zap className="w-4 h-4 text-emerald-400" /> Estrategias FO (Ofensivas)
+                      </span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-500/30 font-mono">
+                        Fortalezas + Oportunidades
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-300">
+                      Utilizar la solvencia ética y técnica del candidato para capitalizar el voto de opinión y el rechazo a maquinarias salientes.
+                    </p>
+                    <ul className="space-y-1.5 text-xs text-emerald-100">
+                      <li className="flex items-start gap-2 p-2 rounded-lg bg-[#01221f]/60 border border-emerald-500/15">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                        <span>Desplegar giras temáticas de debate público con gremios y universidades para consolidar el perfil de líder técnico.</span>
+                      </li>
+                      <li className="flex items-start gap-2 p-2 rounded-lg bg-[#01221f]/60 border border-emerald-500/15">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                        <span>Firmar pactos comunales públicos con Juntas de Acción Comunal para posicionar propuestas de presupuesto participativo.</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  {/* FA Strategies (Defensivas) */}
+                  <div className="bg-[#1f0910] border border-rose-500/35 p-5 rounded-2xl space-y-3">
+                    <div className="flex items-center justify-between border-b border-rose-500/20 pb-2.5">
+                      <span className="text-xs font-black text-rose-300 uppercase tracking-wider flex items-center gap-1.5">
+                        <ShieldAlert className="w-4 h-4 text-rose-400" /> Estrategias FA (Defensivas / Blindaje)
+                      </span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-950 text-rose-300 border border-rose-500/30 font-mono">
+                        Fortalezas + Amenazas
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-300">
+                      Emplear el récord ético impecable y equipo cohesionado para desarticular ataques de guerra sucia y desinformación.
+                    </p>
+                    <ul className="space-y-1.5 text-xs text-rose-100">
+                      <li className="flex items-start gap-2 p-2 rounded-lg bg-[#2d0b16]/60 border border-rose-500/15">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-rose-400 shrink-0 mt-0.5" />
+                        <span>Activar un comité de respuesta rápida y fact-checking digital para responder con certificados oficiales en menos de 30 min.</span>
+                      </li>
+                      <li className="flex items-start gap-2 p-2 rounded-lg bg-[#2d0b16]/60 border border-rose-500/15">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-rose-400 shrink-0 mt-0.5" />
+                        <span>Establecer una red de veeduría electoral y testigos capacitados para neutralizar presiones clientelares en puestos de votación.</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  {/* DO Strategies (Reorientación) */}
+                  <div className="bg-[#04192d] border border-cyan-500/35 p-5 rounded-2xl space-y-3">
+                    <div className="flex items-center justify-between border-b border-cyan-500/20 pb-2.5">
+                      <span className="text-xs font-black text-cyan-300 uppercase tracking-wider flex items-center gap-1.5">
+                        <RefreshCw className="w-4 h-4 text-cyan-400" /> Estrategias DO (Reorientación)
+                      </span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-500/30 font-mono">
+                        Debilidades + Oportunidades
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-300">
+                      Aprovechar los canales digitales y la apertura comunitaria para compensar el bajo reconocimiento en zonas periféricas.
+                    </p>
+                    <ul className="space-y-1.5 text-xs text-cyan-100">
+                      <li className="flex items-start gap-2 p-2 rounded-lg bg-[#05233e]/60 border border-cyan-500/15">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
+                        <span>Descentralizar la campaña con brigadas móviles puerta a puerta y voceros territoriales delegados por corregimiento.</span>
+                      </li>
+                      <li className="flex items-start gap-2 p-2 rounded-lg bg-[#05233e]/60 border border-cyan-500/15">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
+                        <span>Impulsar micro-campañas de pauta segmentada geográficamente en comunas periféricas para elevar el conocimiento de marca.</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  {/* DA Strategies (Supervivencia / Contingencia) */}
+                  <div className="bg-[#1c1204] border border-amber-500/35 p-5 rounded-2xl space-y-3">
+                    <div className="flex items-center justify-between border-b border-amber-500/20 pb-2.5">
+                      <span className="text-xs font-black text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+                        <AlertTriangle className="w-4 h-4 text-amber-400" /> Estrategias DA (Supervivencia & Blindaje)
+                      </span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-950 text-amber-300 border border-amber-500/30 font-mono">
+                        Debilidades + Amenazas
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-300">
+                      Reorganizar la logística operativa y optimizar el presupuesto para evitar vulnerabilidades ante compras de voto y abstencionismo.
+                    </p>
+                    <ul className="space-y-1.5 text-xs text-amber-100">
+                      <li className="flex items-start gap-2 p-2 rounded-lg bg-[#2b1804]/60 border border-amber-500/15">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                        <span>Focalizar recursos de movilización del Día E en los 20 puestos de mayor rendimiento y abstencionismo histórico.</span>
+                      </li>
+                      <li className="flex items-start gap-2 p-2 rounded-lg bg-[#2b1804]/60 border border-amber-500/15">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                        <span>Delegar coordinadores operativos voluntarios por zona para desahogar las cargas del equipo central de campaña.</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Quick Add SWOT Item Bar */}
-            <div className="dofa-add-bar bg-[#081d38] p-4 rounded-2xl border border-cyan-500/20 flex flex-col sm:flex-row items-center gap-3 mt-4">
+            <div className="dofa-add-bar bg-[#041224] p-4 sm:p-5 rounded-2xl border border-cyan-500/30 flex flex-col sm:flex-row items-center gap-3 shadow-xl">
               <select
                 value={swotCategory}
                 onChange={(e) => setSwotCategory(e.target.value as any)}
-                className="dofa-add-select bg-[#05162a] border border-cyan-500/30 text-xs text-white rounded-xl px-3 py-2 outline-none font-semibold cursor-pointer"
+                className="dofa-add-select bg-[#081d38] border border-cyan-500/30 text-xs text-white rounded-xl px-3.5 py-2.5 outline-none font-semibold cursor-pointer focus:border-cyan-400 shrink-0"
               >
-                <option value="strengths">Fortaleza</option>
-                <option value="weaknesses">Debilidad</option>
-                <option value="opportunities">Oportunidad</option>
-                <option value="threats">Amenaza</option>
+                <option value="strengths">🛡️ Fortaleza (Interno)</option>
+                <option value="weaknesses">⚠️ Debilidad (Interno)</option>
+                <option value="opportunities">💡 Oportunidad (Externo)</option>
+                <option value="threats">🚨 Amenaza (Externo)</option>
               </select>
 
               <input
                 type="text"
-                placeholder="Escriba un nuevo elemento diagnóstico..."
+                placeholder="Escriba un nuevo elemento de diagnóstico y presione Enter..."
                 value={newItemText}
                 onChange={(e) => setNewItemText(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleAddSwotItem()}
-                className="dofa-add-input flex-1 bg-[#05162a] border border-cyan-500/30 text-xs text-white rounded-xl px-3 py-2 outline-none"
+                className="dofa-add-input flex-1 w-full bg-[#081d38] border border-cyan-500/30 text-xs text-white placeholder-slate-400 rounded-xl px-3.5 py-2.5 outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-all"
               />
 
               <button
                 onClick={handleAddSwotItem}
-                className="dofa-add-btn px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold rounded-xl cursor-pointer transition-all shrink-0 shadow-md"
+                className="dofa-add-btn px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:brightness-110 text-slate-950 text-xs font-black rounded-xl cursor-pointer transition-all shrink-0 shadow-lg shadow-emerald-500/20 flex items-center gap-1.5"
               >
-                Agregar a Matriz
+                <Plus className="w-4 h-4" /> Agregar a Matriz
               </button>
             </div>
-            {swotMessage && <p className={`dofa-feedback-msg text-xs font-bold ${/guardad|generada|eliminado/i.test(swotMessage) ? 'text-emerald-300 dofa-msg-success' : 'text-amber-300 dofa-msg-alert'}`}>{swotMessage}</p>}
+
+            {swotMessage && (
+              <p className={`dofa-feedback-msg text-xs font-bold ${/guardad|generad|eliminad|éxito|cargada/i.test(swotMessage) ? 'text-emerald-300 dofa-msg-success' : 'text-amber-300 dofa-msg-alert'}`}>
+                {swotMessage}
+              </p>
+            )}
           </div>
         </div>
       )}
@@ -4044,21 +4539,69 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 narrativa-discurso-view">
           
           {/* Campaign Narrative & Base Message */}
-          <div className="lg:col-span-7 bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 space-y-5 shadow-xl narrativa-editor-card">
-            <div className="flex items-center justify-between border-b border-cyan-500/20 pb-3 narrativa-header-box">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2 narrativa-editor-title">
-                <MessageSquare className="w-5 h-5 text-emerald-400 narrativa-editor-icon" />
-                <span>Identidad Estratégica & Argumentario Base</span>
-              </h3>
-              <span className="narrativa-header-badge text-[11px] font-bold px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
+          <div className="lg:col-span-7 bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 sm:p-7 space-y-6 shadow-2xl narrativa-editor-card">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-cyan-500/20 pb-4 narrativa-header-box">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-500/20 via-teal-500/10 to-cyan-500/20 border border-emerald-500/40 flex items-center justify-center shadow-lg shadow-emerald-500/10">
+                  <MessageSquare className="w-5 h-5 text-emerald-400 narrativa-editor-icon" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-white flex items-center gap-2 narrativa-editor-title">
+                    Identidad Estratégica & Argumentario Base
+                  </h3>
+                  <p className="text-xs text-slate-300">
+                    Discurso oficial, mensaje fuerza de debate y valores rectores de la marca política.
+                  </p>
+                </div>
+              </div>
+
+              <span className="narrativa-header-badge text-[11px] font-bold px-3 py-1 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 self-start sm:self-center font-mono">
                 Redacción Oficial
               </span>
             </div>
 
-            <div className="narrativa-field-group">
-              <div className="flex items-center justify-between mb-2">
-                <label className="block text-xs font-bold text-emerald-300 uppercase tracking-wider narrativa-editor-label">
-                  Narrativa Estratégica de Campaña:
+            {/* Narrative Templates Quick Switcher */}
+            <div className="p-3.5 rounded-2xl bg-[#031122] border border-cyan-500/25 space-y-2">
+              <span className="text-[10px] font-black uppercase tracking-wider text-cyan-400 block">
+                Plantillas de Narrativa y Discurso (Clic para aplicar):
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => void handleLoadNarrativeTemplate('cambio')}
+                  className="text-[11px] font-bold px-3 py-1.5 rounded-xl bg-[#051830] hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/20 hover:border-emerald-400/50 transition-all cursor-pointer"
+                >
+                  🛡️ Cambio & Transparencia
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleLoadNarrativeTemplate('desarrollo')}
+                  className="text-[11px] font-bold px-3 py-1.5 rounded-xl bg-[#051830] hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/20 hover:border-cyan-400/50 transition-all cursor-pointer"
+                >
+                  📈 Desarrollo & Empleo
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleLoadNarrativeTemplate('comunal')}
+                  className="text-[11px] font-bold px-3 py-1.5 rounded-xl bg-[#051830] hover:bg-amber-500/20 text-amber-300 border border-amber-500/20 hover:border-amber-400/50 transition-all cursor-pointer"
+                >
+                  🤝 Liderazgo Comunal
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleLoadNarrativeTemplate('innovacion')}
+                  className="text-[11px] font-bold px-3 py-1.5 rounded-xl bg-[#051830] hover:bg-purple-500/20 text-purple-300 border border-purple-500/20 hover:border-purple-400/50 transition-all cursor-pointer"
+                >
+                  ⚡ Innovación & Juventud
+                </button>
+              </div>
+            </div>
+
+            {/* Narrative Textarea */}
+            <div className="narrativa-field-group space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-black text-emerald-300 uppercase tracking-wider narrativa-editor-label flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5 text-emerald-400" /> Narrativa Estratégica de Campaña:
                 </label>
                 <span className="narrativa-char-count text-[11px] text-slate-400 font-mono">
                   {strategicIdentity.narrative.length} caracteres
@@ -4069,14 +4612,15 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                 value={strategicIdentity.narrative}
                 onChange={(e) => setStrategicIdentity({ ...strategicIdentity, narrative: e.target.value })}
                 placeholder="Escriba la historia, propósito y narrativa central que conecta la candidatura con los anhelos ciudadanos..."
-                className="w-full bg-[#081d38] border border-cyan-500/30 rounded-2xl p-4 text-xs text-white font-medium focus:border-emerald-400 outline-none leading-relaxed resize-y narrativa-textarea"
+                className="w-full bg-[#081d38] border border-cyan-500/30 rounded-2xl p-4 text-xs text-white font-medium focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 outline-none leading-relaxed resize-y narrativa-textarea shadow-inner"
               />
             </div>
 
-            <div className="narrativa-field-group">
-              <div className="flex items-center justify-between mb-2">
-                <label className="block text-xs font-bold text-cyan-300 uppercase tracking-wider narrativa-editor-label">
-                  Mensaje Fuerza / Eje del Discurso:
+            {/* Base Message / Talking Points Textarea */}
+            <div className="narrativa-field-group space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-black text-cyan-300 uppercase tracking-wider narrativa-editor-label flex items-center gap-1.5">
+                  <Target className="w-3.5 h-3.5 text-cyan-400" /> Mensaje Fuerza / Eje del Discurso (Pitch):
                 </label>
                 <span className="narrativa-char-count text-[11px] text-slate-400 font-mono">
                   {strategicIdentity.baseMessage.length} caracteres
@@ -4087,142 +4631,303 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                 value={strategicIdentity.baseMessage}
                 onChange={(e) => setStrategicIdentity({ ...strategicIdentity, baseMessage: e.target.value })}
                 placeholder="Escriba el argumento central y consigna de debate repetible en plazas, medios y debates..."
-                className="w-full bg-[#081d38] border border-cyan-500/30 rounded-2xl p-4 text-xs text-white font-medium focus:border-emerald-400 outline-none leading-relaxed resize-y narrativa-textarea"
+                className="w-full bg-[#081d38] border border-cyan-500/30 rounded-2xl p-4 text-xs text-white font-medium focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 outline-none leading-relaxed resize-y narrativa-textarea shadow-inner"
               />
             </div>
 
-            <div className="narrativa-field-group">
-              <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 narrativa-editor-label">
-                Valores de Marca Política:
+            {/* Core Values Interactive Pill Cloud */}
+            <div className="narrativa-field-group space-y-2.5">
+              <label className="block text-xs font-black text-slate-200 uppercase tracking-wider narrativa-editor-label flex items-center gap-1.5">
+                <Award className="w-3.5 h-3.5 text-teal-400" /> Valores Rectores de Marca Política:
               </label>
-              <div className="flex flex-wrap gap-2 narrativa-tags-container">
-                {strategicIdentity.coreValues.map((val, idx) => (
-                  <span key={idx} className="px-3 py-1 rounded-xl bg-teal-950 text-teal-300 border border-teal-500/30 text-xs font-bold narrativa-tag-badge">
-                    {val}
-                  </span>
-                ))}
-                {strategicIdentity.coreValues.length === 0 && <span className="text-xs text-slate-400 narrativa-empty-tags">Sin valores registrados.</span>}
+              
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  'Transparencia',
+                  'Seguridad',
+                  'Desarrollo Económico',
+                  'Participación Ciudadana',
+                  'Meritocracia',
+                  'Honestidad',
+                  'Equidad Social',
+                  'Innovación',
+                  'Cercanía',
+                  'Eficiencia Fiscal',
+                  'Sostenibilidad'
+                ].map((val, idx) => {
+                  const isSelected = strategicIdentity.coreValues.includes(val);
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => handleToggleCoreValue(val)}
+                      className={`text-xs px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                        isSelected
+                          ? 'bg-gradient-to-r from-emerald-500/30 to-teal-500/30 text-emerald-300 border border-emerald-500/50 shadow-sm'
+                          : 'bg-[#081d38] text-slate-400 border border-cyan-500/20 hover:border-cyan-400/50 hover:text-white'
+                      }`}
+                    >
+                      {isSelected ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> : <Plus className="w-3 h-3" />}
+                      <span>{val}</span>
+                    </button>
+                  );
+                })}
               </div>
-              <input
-                type="text"
-                value={strategicIdentity.coreValues.join(', ')}
-                onChange={(e) => setStrategicIdentity({ ...strategicIdentity, coreValues: e.target.value.split(',').map(value => value.trim()).filter(Boolean) })}
-                placeholder="Escriba valores separados por comas (ej. Honestidad, Innovación, Cercanía)"
-                className="mt-3 w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white outline-none narrativa-input"
-              />
+
+              {/* Add Custom Core Value */}
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="text"
+                  value={newCustomCoreValue}
+                  onChange={(e) => setNewCustomCoreValue(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddCustomCoreValue()}
+                  placeholder="Agregar otro valor de marca personalizado..."
+                  className="flex-1 bg-[#081d38] border border-cyan-500/30 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-400 outline-none focus:border-cyan-400"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddCustomCoreValue}
+                  className="px-4 py-2 bg-[#041d3a] hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-bold rounded-xl cursor-pointer transition-all"
+                >
+                  Agregar Valor
+                </button>
+              </div>
             </div>
 
-            <div className="narrativa-field-group">
-              <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 narrativa-editor-label">
-                Eslogan de campaña:
+            {/* Campaign Slogan */}
+            <div className="narrativa-field-group space-y-2">
+              <label className="block text-xs font-black text-slate-200 uppercase tracking-wider narrativa-editor-label flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-cyan-400" /> Eslogan Oficial de Campaña:
               </label>
               <input
                 type="text"
                 value={strategicIdentity.slogan}
                 onChange={(e) => setStrategicIdentity({ ...strategicIdentity, slogan: e.target.value })}
-                placeholder="Escriba el eslogan aprobado (ej. ¡Medellín Avanza con Seguridad y Oportunidades!)"
-                className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white outline-none narrativa-input"
+                placeholder={`Escriba el eslogan aprobado (ej. ¡${diagnosticTerritory} Avanza con Seguridad y Oportunidades!)`}
+                className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-4 py-2.5 text-xs text-white font-bold placeholder-slate-400 outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400"
               />
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                <span className="text-[10px] text-slate-400 uppercase font-black tracking-wider self-center mr-1">
+                  Sugerencias:
+                </span>
+                {[
+                  '¡Liderazgo Firme, Territorio Seguro y Futuro con Oportunidades!',
+                  '¡Cuentas Claras, Gobierno de la Gente!',
+                  '¡El Territorio Primero: Juntos Construimos Futuro!'
+                ].map((slog, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setStrategicIdentity({ ...strategicIdentity, slogan: slog })}
+                    className="text-[10px] px-2.5 py-1 rounded-lg bg-[#081d38] text-slate-300 hover:text-cyan-300 border border-cyan-500/20 hover:border-cyan-400/40 transition-all cursor-pointer"
+                  >
+                    "{slog}"
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <div className="pt-2">
+            {/* Save Button */}
+            <div className="pt-2 border-t border-cyan-500/20 flex flex-col sm:flex-row items-center justify-between gap-3">
               <button
                 type="button"
                 onClick={() => void handleSaveNarrative()}
                 disabled={narrativeSaving || !candidateCampaignId}
-                className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 text-xs font-black rounded-xl flex items-center gap-2 cursor-pointer transition-all shadow-md narrativa-save-btn"
+                className="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:brightness-110 disabled:opacity-50 text-slate-950 text-xs font-black rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all shadow-lg shadow-emerald-500/20 narrativa-save-btn"
               >
                 <Save className={`w-4 h-4 ${narrativeSaving ? 'animate-spin' : ''}`} /> 
-                <span>{narrativeSaving ? 'Guardando...' : 'Guardar narrativa'}</span>
+                <span>{narrativeSaving ? 'Guardando...' : 'Guardar Identidad & Discurso'}</span>
               </button>
+
+              {narrativeMessage && (
+                <span className={`text-xs font-bold ${/guardad|aplicada/i.test(narrativeMessage) ? 'text-emerald-300' : 'text-amber-300'}`}>
+                  {narrativeMessage}
+                </span>
+              )}
             </div>
           </div>
 
           {/* Political Competitors & Allies Matrix */}
-          <div className="lg:col-span-5 bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 space-y-4 shadow-xl mapa-politico-card">
-            <div className="flex items-center justify-between border-b border-cyan-500/20 pb-3 mapa-header-box">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2 mapa-politico-title">
-                <Users className="w-5 h-5 text-emerald-400 mapa-politico-icon" />
-                <span>Mapa de Competidores & Aliados</span>
-              </h3>
-              <span className="mapa-count-badge text-[11px] font-bold px-2.5 py-1 rounded-lg bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
-                {actorsList.length} Actores
-              </span>
-            </div>
-
-            <div className="space-y-3 mapa-actors-list">
-              {actorsList.map(actor => (
-                <div key={actor.id} className="bg-[#081d38] p-4 rounded-2xl border border-cyan-500/20 space-y-2 relative group mapa-actor-card">
-                  <div className="flex items-center justify-between pr-6">
-                    <span className="font-extrabold text-white text-sm mapa-actor-name">{actor.name}</span>
-                    <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full mapa-actor-badge ${
-                      actor.role === 'Competidor Directo' 
-                        ? 'actor-badge-competidor bg-rose-950 text-rose-300 border border-rose-500/30' 
-                        : actor.role === 'Aliado Político'
-                        ? 'actor-badge-aliado bg-emerald-950 text-emerald-300 border border-emerald-500/30'
-                        : 'actor-badge-neutral bg-sky-950 text-sky-300 border border-sky-500/30'
-                    }`}>
-                      {actor.role}
-                    </span>
+          <div className="lg:col-span-5 bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 sm:p-7 space-y-5 shadow-2xl mapa-politico-card flex flex-col justify-between">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between border-b border-cyan-500/20 pb-3 mapa-header-box">
+                <div className="flex items-center gap-2.5">
+                  <Users className="w-5 h-5 text-cyan-400 mapa-politico-icon" />
+                  <div>
+                    <h3 className="text-lg font-black text-white mapa-politico-title">
+                      Mapa Político: Rivales & Aliados
+                    </h3>
+                    <p className="text-xs text-slate-300">
+                      Monitoreo de competencia, alianzas e influencia en {diagnosticTerritory}.
+                    </p>
                   </div>
+                </div>
+                <span className="mapa-count-badge text-[11px] font-bold px-2.5 py-1 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-mono">
+                  {actorsList.length} Actores
+                </span>
+              </div>
 
-                  <div className="flex justify-between text-xs text-slate-300 mapa-actor-party-row">
-                    <span className="mapa-actor-party">{actor.party}</span>
-                    {actor.estimatedVoteShare > 0 && (
-                      <span className="font-bold text-cyan-300 font-mono mapa-actor-votes">
-                        Intención: {actor.estimatedVoteShare}%
+              {/* Summary KPIs */}
+              <div className="grid grid-cols-3 gap-2">
+                <div className="bg-[#1f0910] border border-rose-500/30 p-2.5 rounded-xl text-center">
+                  <span className="text-[10px] font-black uppercase text-rose-400 block">Rivales</span>
+                  <span className="text-lg font-black text-white font-mono">
+                    {actorsList.filter(a => a.role === 'Competidor Directo').length}
+                  </span>
+                </div>
+                <div className="bg-[#021818] border border-emerald-500/30 p-2.5 rounded-xl text-center">
+                  <span className="text-[10px] font-black uppercase text-emerald-400 block">Aliados</span>
+                  <span className="text-lg font-black text-white font-mono">
+                    {actorsList.filter(a => a.role === 'Aliado Político').length}
+                  </span>
+                </div>
+                <div className="bg-[#04192d] border border-sky-500/30 p-2.5 rounded-xl text-center">
+                  <span className="text-[10px] font-black uppercase text-sky-400 block">Neutrales</span>
+                  <span className="text-lg font-black text-white font-mono">
+                    {actorsList.filter(a => a.role === 'Líder Neutral').length}
+                  </span>
+                </div>
+              </div>
+
+              {/* Actors List */}
+              <div className="space-y-3 mapa-actors-list max-h-[380px] overflow-y-auto pr-1">
+                {actorsList.map(actor => (
+                  <div key={actor.id} className="bg-[#081d38] p-4 rounded-2xl border border-cyan-500/25 space-y-2 relative group mapa-actor-card hover:border-cyan-400/50 transition-colors shadow-sm">
+                    <div className="flex items-center justify-between pr-16 gap-2">
+                      <span className="font-black text-white text-sm mapa-actor-name">{actor.name}</span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full mapa-actor-badge ${
+                          actor.role === 'Competidor Directo' 
+                            ? 'actor-badge-competidor bg-rose-950 text-rose-300 border border-rose-500/30' 
+                            : actor.role === 'Aliado Político'
+                            ? 'actor-badge-aliado bg-emerald-950 text-emerald-300 border border-emerald-500/30'
+                            : 'actor-badge-neutral bg-sky-950 text-sky-300 border border-sky-500/30'
+                        }`}>
+                          {actor.role}
+                        </span>
+                        {actor.influenceLevel && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-900 text-cyan-300 border border-cyan-500/30 font-mono">
+                            Infl. {actor.influenceLevel}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex justify-between items-center text-xs text-slate-300 mapa-actor-party-row">
+                      <span className="mapa-actor-party font-medium text-slate-300">
+                        {actor.party || 'Sin partido registrado'} {actor.territorio ? `· 📍 ${actor.territorio}` : ''}
                       </span>
-                    )}
-                  </div>
+                      {actor.estimatedVoteShare > 0 && (
+                        <span className="font-bold text-cyan-300 font-mono mapa-actor-votes">
+                          Intención: {actor.estimatedVoteShare}%
+                        </span>
+                      )}
+                    </div>
 
-                  <p className="text-[11px] text-slate-400 italic mapa-actor-notes">
-                    {actor.notes || 'Sin observaciones.'}
-                  </p>
-                  <p className="text-[10px] text-cyan-300 mapa-actor-source">
-                    Fuente: {actor.source || 'No registrada'} · Actualizado: {actor.updatedAt ? new Date(actor.updatedAt).toLocaleDateString('es-CO') : 'Sin fecha'}
-                  </p>
-                  <button 
-                    type="button"
-                    onClick={() => void handleRemovePoliticalActor(actor.id)} 
-                    className="absolute top-3 right-3 text-rose-400 opacity-0 group-hover:opacity-100 hover:text-rose-300 transition-opacity p-1 cursor-pointer mapa-actor-del-btn"
-                    title="Eliminar actor"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
-              {actorsList.length === 0 && (
-                <div className="text-center py-6 px-4 bg-[#081d38]/50 rounded-2xl border border-dashed border-cyan-500/20 text-xs text-slate-400 mapa-empty-state">
-                  No hay competidores, aliados o líderes neutrales registrados.
-                </div>
-              )}
+                    {actor.estimatedVoteShare > 0 && (
+                      <div className="w-full bg-[#030d1a] h-1.5 rounded-full overflow-hidden border border-cyan-500/20">
+                        <div 
+                          style={{ width: `${Math.min(100, actor.estimatedVoteShare)}%` }} 
+                          className={`h-full ${actor.role === 'Competidor Directo' ? 'bg-rose-500' : 'bg-emerald-400'}`}
+                        />
+                      </div>
+                    )}
+
+                    <p className="text-[11px] text-slate-300 leading-relaxed mapa-actor-notes">
+                      {actor.notes || 'Sin observaciones.'}
+                    </p>
+                    <p className="text-[10px] text-slate-400 mapa-actor-source">
+                      Fuente: {actor.source || 'No registrada'} · Actualizado: {actor.updatedAt ? new Date(actor.updatedAt).toLocaleDateString('es-CO') : 'Sin fecha'}
+                    </p>
+                    <div className="absolute top-3 right-3 flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEditActor(actor)}
+                        className="text-slate-400 hover:text-cyan-300 hover:bg-cyan-950/60 p-1.5 rounded-lg transition-all cursor-pointer"
+                        title="Editar actor político"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                      </button>
+                      <button 
+                        type="button"
+                        onClick={() => setActorToDelete(actor)} 
+                        className="text-slate-400 hover:text-rose-400 hover:bg-rose-950/60 p-1.5 rounded-lg transition-all cursor-pointer"
+                        title="Eliminar actor político"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {actorsList.length === 0 && (
+                  <div className="text-center py-8 px-4 bg-[#081d38]/50 rounded-2xl border border-dashed border-cyan-500/25 text-xs text-slate-300 space-y-2">
+                    <Users className="w-8 h-8 text-cyan-400/70 mx-auto mb-1" />
+                    <p className="font-bold text-white text-sm">Sin actores políticos registrados</p>
+                    <p className="text-slate-400 text-[11px] max-w-xs mx-auto">
+                      Registre competidores directos, aliados políticos o líderes neutrales en el formulario inferior para mapear las fuerzas electorales de {diagnosticTerritory}.
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
 
+            {/* Register / Edit Actor Form */}
             <div className="border-t border-cyan-500/20 pt-4 space-y-3 mapa-register-box">
-              <h4 className="text-xs font-black text-cyan-300 uppercase tracking-wider mapa-register-title">
-                Registrar actor político
-              </h4>
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-black text-cyan-300 uppercase tracking-wider mapa-register-title flex items-center gap-1.5">
+                  {editingActorId ? (
+                    <>
+                      <Edit3 className="w-3.5 h-3.5 text-amber-400" /> Editando Actor Político:
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-3.5 h-3.5 text-cyan-400" /> Registrar Nuevo Actor Político:
+                    </>
+                  )}
+                </h4>
+                {editingActorId && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingActorId(null);
+                      setNewActor({
+                        name: '',
+                        party: '',
+                        role: 'Competidor Directo',
+                        influenceLevel: 'Alta',
+                        territorio: '',
+                        estimatedVoteShare: 0,
+                        notes: '',
+                        source: '',
+                      });
+                    }}
+                    className="text-[11px] text-slate-400 hover:text-white underline cursor-pointer"
+                  >
+                    Cancelar edición
+                  </button>
+                )}
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <input 
                   value={newActor.name} 
                   onChange={(e) => setNewActor({ ...newActor, name: e.target.value })} 
-                  placeholder="Nombre completo *" 
-                  className="bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white outline-none mapa-register-input" 
+                  placeholder="Nombre completo o coalición *" 
+                  className="bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-400 outline-none focus:border-cyan-400" 
                 />
                 <select 
                   value={newActor.role} 
                   onChange={(e) => setNewActor({ ...newActor, role: e.target.value as PoliticalActor['role'] })} 
-                  className="bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white outline-none mapa-register-select"
+                  className="bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-cyan-400"
                 >
-                  <option value="Competidor Directo">Competidor directo</option>
-                  <option value="Aliado Político">Aliado político</option>
-                  <option value="Líder Neutral">Líder neutral</option>
+                  <option value="Competidor Directo">⚔️ Competidor Directo</option>
+                  <option value="Aliado Político">🤝 Aliado Político</option>
+                  <option value="Líder Neutral">⚖️ Líder Neutral</option>
                 </select>
                 <input 
                   value={newActor.party} 
                   onChange={(e) => setNewActor({ ...newActor, party: e.target.value })} 
-                  placeholder="Partido, movimiento o coalición" 
-                  className="bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white outline-none mapa-register-input" 
+                  placeholder="Partido, movimiento o JAC" 
+                  className="bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-400 outline-none focus:border-cyan-400" 
                 />
                 <input 
                   type="number" 
@@ -4232,48 +4937,84 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                   value={newActor.estimatedVoteShare || ''} 
                   onChange={(e) => setNewActor({ ...newActor, estimatedVoteShare: Number(e.target.value || 0) })} 
                   placeholder="Intención de voto (%)" 
-                  className="bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white outline-none mapa-register-input" 
+                  className="bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-400 outline-none focus:border-cyan-400 font-mono" 
+                />
+                <select
+                  value={newActor.influenceLevel}
+                  onChange={(e) => setNewActor({ ...newActor, influenceLevel: e.target.value as 'Alta' | 'Media' | 'Baja' })}
+                  className="bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-cyan-400"
+                >
+                  <option value="Alta">🔥 Influencia Alta</option>
+                  <option value="Media">⚡ Influencia Media</option>
+                  <option value="Baja">📍 Influencia Baja</option>
+                </select>
+                <input
+                  value={newActor.territorio}
+                  onChange={(e) => setNewActor({ ...newActor, territorio: e.target.value })}
+                  placeholder={`Zona / Bastión (${diagnosticTerritory})`}
+                  className="bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-400 outline-none focus:border-cyan-400"
                 />
                 <input 
                   value={newActor.source} 
                   onChange={(e) => setNewActor({ ...newActor, source: e.target.value })} 
-                  placeholder="Fuente del dato *" 
-                  className="sm:col-span-2 bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white outline-none mapa-register-input" 
+                  placeholder="Fuente verificable (ej. Encuesta local, CNE, JAC) *" 
+                  className="sm:col-span-2 bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-400 outline-none focus:border-cyan-400" 
                 />
                 <textarea 
                   value={newActor.notes} 
                   onChange={(e) => setNewActor({ ...newActor, notes: e.target.value })} 
-                  placeholder="Observaciones verificables" 
+                  placeholder="Observaciones estratégicas, alianzas o vulnerabilidades verificables..." 
                   rows={2} 
-                  className="sm:col-span-2 bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white outline-none resize-none mapa-register-textarea" 
+                  className="sm:col-span-2 bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-400 outline-none resize-none focus:border-cyan-400" 
                 />
               </div>
               <button 
                 type="button"
                 onClick={() => void handleAddPoliticalActor()} 
-                className="px-4 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-black rounded-xl flex items-center gap-2 cursor-pointer transition-all shadow-md mapa-register-btn"
+                className="w-full py-2.5 bg-gradient-to-r from-cyan-500 to-blue-500 hover:brightness-110 text-slate-950 text-xs font-black rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all shadow-md"
               >
-                <Plus className="w-4 h-4" /> 
-                <span>Registrar actor</span>
+                {editingActorId ? <Save className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                <span>{editingActorId ? 'Guardar Cambios del Actor' : 'Registrar Actor en Mapa Político'}</span>
               </button>
             </div>
           </div>
 
-          {narrativeMessage && (
-            <div className={`lg:col-span-12 p-3.5 rounded-2xl border text-xs font-bold flex items-center gap-2 narrativa-feedback-msg ${
-              /guardad|registrado|eliminado/i.test(narrativeMessage) 
-                ? 'narrativa-msg-success bg-emerald-950/40 text-emerald-300 border-emerald-500/40' 
-                : 'narrativa-msg-alert bg-amber-950/40 text-amber-300 border-amber-500/40'
-            }`}>
-              {/guardad|registrado|eliminado/i.test(narrativeMessage) ? (
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              ) : (
-                <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
-              )}
-              <span>{narrativeMessage}</span>
-            </div>
-          )}
+        </div>
+      )}
 
+      {/* MODAL: CONFIRMAR ELIMINACIÓN DE ACTOR POLÍTICO */}
+      {actorToDelete && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#05162a] border border-rose-500/40 rounded-3xl p-6 max-w-md w-full space-y-4 text-xs shadow-2xl">
+            <div className="flex justify-between items-center border-b border-rose-500/20 pb-3">
+              <h4 className="font-extrabold text-white text-sm flex items-center gap-2">
+                <Trash2 className="w-4 h-4 text-rose-400" />
+                Eliminar Actor Político
+              </h4>
+              <button type="button" onClick={() => setActorToDelete(null)} className="text-slate-400 hover:text-white cursor-pointer">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-slate-300 leading-relaxed">
+              ¿Está seguro de eliminar a <strong className="text-white">{actorToDelete.name}</strong> ({actorToDelete.role}) del Mapa Político de la campaña? Esta acción sincronizará el cambio en Supabase.
+            </p>
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setActorToDelete(null)}
+                className="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleRemovePoliticalActor(actorToDelete.id)}
+                className="flex-1 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl font-black cursor-pointer shadow-md"
+              >
+                Sí, Eliminar Actor
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -4281,8 +5022,6 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
       {activeTab === 'comunicacion_redes' && (
         <ComunicacionRedesView candidateProfile={candidateProfile} />
       )}
-
-
 
       {/* TAB AGENDA Y CALENDARIO ELECTORAL */}
       {activeTab === 'agenda_electoral' && (
@@ -4296,32 +5035,42 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
             <div className="flex items-center justify-between border-b border-cyan-500/20 pb-3">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-emerald-400 animate-pulse" />
-                Command Center AI - Diagnóstico Diario Estratégico
+                Command Center AI - Diagnóstico Estratégico ({diagnosticTerritory})
               </h3>
               <span className="text-xs font-bold text-emerald-400 bg-emerald-950 border border-emerald-400/30 px-3 py-1 rounded-full">
-                Índice de Preparación: 87%
+                Sectores Diagnosticados: {sectorDiagnostics.length} · Actores: {actorsList.length}
               </span>
             </div>
 
             <div className="space-y-4 text-xs">
               <div className="bg-[#081d38] p-4 rounded-2xl border border-emerald-500/30 space-y-2">
                 <h4 className="font-extrabold text-emerald-300 text-sm flex items-center gap-2">
-                  <Lightbulb className="w-4 h-4 text-emerald-400" /> Oportunidades Clave Recomendadas por IA
+                  <Lightbulb className="w-4 h-4 text-emerald-400" /> Recomendaciones Basadas en Datos Reales de Campaña
                 </h4>
                 <ul className="list-disc list-inside space-y-1 text-slate-200">
-                  <li>Reforzar recorridos en la Comuna 4 (Aranjuez) donde se detecta migración de voto indeciso.</li>
-                  <li>Promover infografías sobre el plan de empleo juvenil tras debate universitario.</li>
-                  <li>Coordinar encuentro con gremios de transporte antes de cierre de inscripciones.</li>
+                  <li>
+                    Cobertura en {diagnosticTerritory}: {realCampaignStats.leadersCount} líderes y {realCampaignStats.votersCount.toLocaleString('es-CO')} simpatizantes registrados.
+                  </li>
+                  <li>
+                    Propuestas Programáticas: {realCampaignStats.proposalsCount} propuestas estructuradas y {territorialNeeds.length} fichas territoriales mapeadas.
+                  </li>
+                  <li>
+                    Agenda Operativa: {realCampaignStats.activitiesCount} hitos y eventos programados en el calendario electoral.
+                  </li>
                 </ul>
               </div>
 
               <div className="bg-[#081d38] p-4 rounded-2xl border border-rose-500/30 space-y-2">
                 <h4 className="font-extrabold text-rose-300 text-sm flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-rose-400" /> Alertas de Riesgo
+                  <AlertTriangle className="w-4 h-4 text-rose-400" /> Alertas Estratégicas & Brechas Operativas
                 </h4>
                 <ul className="list-disc list-inside space-y-1 text-slate-200">
-                  <li>Aumento de comentarios negativos en redes sociales provenientes de cuentas inactivas (posible red de bodegas).</li>
-                  <li>Atención en presupuesto de pauta en comunas 1 y 3.</li>
+                  <li>
+                    Defensa Electoral: {realCampaignStats.witnessesCount} testigos acreditados para cubrir {realCampaignStats.mesasCount} mesas en {realCampaignStats.puestosCount} puestos.
+                  </li>
+                  <li>
+                    Matriz DOFA: {swotData.weaknesses.length} debilidades internas y {swotData.threats.length} amenazas externas en seguimiento.
+                  </li>
                 </ul>
               </div>
             </div>
@@ -4329,42 +5078,50 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
 
           <div className="lg:col-span-4 bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 flex flex-col justify-between space-y-4 shadow-xl">
             <div>
-              <h4 className="font-extrabold text-white text-base mb-2">Sentimiento Político Registrado</h4>
-              <div className="space-y-3 mt-4 text-xs">
-                <div>
-                  <div className="flex justify-between text-slate-300 mb-1">
-                    <span>Positivo / Aceptación</span>
-                    <span className="text-emerald-400 font-bold">72%</span>
-                  </div>
-                  <div className="w-full h-2.5 bg-slate-900 rounded-full overflow-hidden">
-                    <div className="h-full bg-emerald-400 rounded-full" style={{ width: '72%' }} />
-                  </div>
-                </div>
+              <h4 className="font-extrabold text-white text-base mb-2">Balance de Matriz DOFA</h4>
+              {(() => {
+                const totalFactors = swotData.strengths.length + swotData.opportunities.length + swotData.weaknesses.length + swotData.threats.length;
+                const positivePct = totalFactors > 0 ? Math.round(((swotData.strengths.length + swotData.opportunities.length) / totalFactors) * 100) : 0;
+                const weaknessPct = totalFactors > 0 ? Math.round((swotData.weaknesses.length / totalFactors) * 100) : 0;
+                const threatPct = totalFactors > 0 ? Math.max(0, 100 - positivePct - weaknessPct) : 0;
+                return (
+                  <div className="space-y-3 mt-4 text-xs">
+                    <div>
+                      <div className="flex justify-between text-slate-300 mb-1">
+                        <span>Factores Favorables (F + O)</span>
+                        <span className="text-emerald-400 font-bold">{positivePct}%</span>
+                      </div>
+                      <div className="w-full h-2.5 bg-slate-900 rounded-full overflow-hidden">
+                        <div className="h-full bg-emerald-400 rounded-full" style={{ width: `${positivePct}%` }} />
+                      </div>
+                    </div>
 
-                <div>
-                  <div className="flex justify-between text-slate-300 mb-1">
-                    <span>Neutral / Indecisos</span>
-                    <span className="text-cyan-400 font-bold">18%</span>
-                  </div>
-                  <div className="w-full h-2.5 bg-slate-900 rounded-full overflow-hidden">
-                    <div className="h-full bg-cyan-400 rounded-full" style={{ width: '18%' }} />
-                  </div>
-                </div>
+                    <div>
+                      <div className="flex justify-between text-slate-300 mb-1">
+                        <span>Debilidades Internas (D)</span>
+                        <span className="text-cyan-400 font-bold">{weaknessPct}%</span>
+                      </div>
+                      <div className="w-full h-2.5 bg-slate-900 rounded-full overflow-hidden">
+                        <div className="h-full bg-cyan-400 rounded-full" style={{ width: `${weaknessPct}%` }} />
+                      </div>
+                    </div>
 
-                <div>
-                  <div className="flex justify-between text-slate-300 mb-1">
-                    <span>Negativo / Rechazo</span>
-                    <span className="text-rose-400 font-bold">10%</span>
+                    <div>
+                      <div className="flex justify-between text-slate-300 mb-1">
+                        <span>Amenazas Externas (A)</span>
+                        <span className="text-rose-400 font-bold">{threatPct}%</span>
+                      </div>
+                      <div className="w-full h-2.5 bg-slate-900 rounded-full overflow-hidden">
+                        <div className="h-full bg-rose-400 rounded-full" style={{ width: `${threatPct}%` }} />
+                      </div>
+                    </div>
                   </div>
-                  <div className="w-full h-2.5 bg-slate-900 rounded-full overflow-hidden">
-                    <div className="h-full bg-rose-400 rounded-full" style={{ width: '10%' }} />
-                  </div>
-                </div>
-              </div>
+                );
+              })()}
             </div>
 
             <p className="text-[11px] text-slate-400 bg-[#081d38] p-3 rounded-2xl border border-cyan-500/20">
-              Cálculo estimado basado en análisis de redes sociales, sondeos y monitoreo de opinión en tiempo real.
+              Cálculo sincronizado en tiempo real con los registros estratégicos de la campaña en Supabase.
             </p>
           </div>
         </div>
@@ -4423,194 +5180,6 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                 ${draftBudget.allocatedContingency.toLocaleString('es-CO')} COP
               </p>
               <span className="text-[10px] text-amber-400">10% del Total</span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL: AGREGAR TÍTULO ACADÉMICO */}
-      {showAddDegreeModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="cv-modal-card bg-[#05162a] border border-cyan-500/40 rounded-3xl p-6 max-w-md w-full space-y-4 text-xs shadow-2xl">
-            <div className="flex justify-between items-center border-b border-cyan-500/20 pb-3">
-              <h4 className="cv-modal-title font-extrabold text-white text-sm flex items-center gap-2">
-                <GraduationCap className="w-4 h-4 text-emerald-400" />
-                Agregar Título Académico
-              </h4>
-              <button onClick={() => setShowAddDegreeModal(false)} className="text-slate-400 hover:text-white cursor-pointer">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="space-y-3">
-              <div>
-                <label className="cv-modal-label block text-slate-300 font-semibold mb-1">Nombre del Título:</label>
-                <input
-                  type="text"
-                  placeholder="Ej: Especialización en Derecho Constitucional"
-                  value={newDegree.title}
-                  onChange={(e) => setNewDegree({ ...newDegree, title: e.target.value })}
-                  className="cv-modal-input w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="cv-modal-label block text-slate-300 font-semibold mb-1">Institución Educativa:</label>
-                <input
-                  type="text"
-                  placeholder="Ej: Universidad Nacional de Colombia"
-                  value={newDegree.institution}
-                  onChange={(e) => setNewDegree({ ...newDegree, institution: e.target.value })}
-                  className="cv-modal-input w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white outline-none"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="cv-modal-label block text-slate-300 font-semibold mb-1">Nivel:</label>
-                  <select
-                    value={newDegree.level}
-                    onChange={(e) => setNewDegree({ ...newDegree, level: e.target.value as any })}
-                    className="cv-modal-select w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white outline-none"
-                  >
-                    <option value="Pregrado">Pregrado</option>
-                    <option value="Posgrado">Posgrado</option>
-                    <option value="Maestría">Maestría</option>
-                    <option value="Doctorado">Doctorado</option>
-                    <option value="Diplomado">Diplomado</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="cv-modal-label block text-slate-300 font-semibold mb-1">Año de Graduación:</label>
-                  <input
-                    type="text"
-                    value={newDegree.year}
-                    onChange={(e) => setNewDegree({ ...newDegree, year: e.target.value })}
-                    className="cv-modal-input w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white outline-none"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="flex gap-2 pt-2">
-              <button
-                onClick={() => setShowAddDegreeModal(false)}
-                className="cv-modal-cancel-btn flex-1 py-2 bg-slate-800 text-slate-300 rounded-xl font-bold cursor-pointer"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => {
-                  if (!newDegree.title || !newDegree.institution) return;
-                  const next = [...academicDegrees, { ...newDegree, id: `deg-${Date.now()}` }];
-                  setAcademicDegrees(next);
-                  void saveCandidateCv({ academicDegrees: next }).catch((error: any) => setCvMessage(error?.message || 'No fue posible guardar el título.'));
-                  setShowAddDegreeModal(false);
-                }}
-                className="cv-modal-save-btn flex-1 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-xl font-bold cursor-pointer"
-              >
-                Guardar Título
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL: AGREGAR EXPERIENCIA */}
-      {showAddExpModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="cv-modal-card bg-[#05162a] border border-cyan-500/40 rounded-3xl p-6 max-w-md w-full space-y-4 text-xs shadow-2xl">
-            <div className="flex justify-between items-center border-b border-cyan-500/20 pb-3">
-              <h4 className="cv-modal-title font-extrabold text-white text-sm flex items-center gap-2">
-                <Briefcase className="w-4 h-4 text-emerald-400" />
-                Agregar Experiencia Laboral / Trayectoria
-              </h4>
-              <button onClick={() => setShowAddExpModal(false)} className="text-slate-400 hover:text-white cursor-pointer">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="space-y-3">
-              <div>
-                <label className="cv-modal-label block text-slate-300 font-semibold mb-1">Cargo Desempeñado:</label>
-                <input
-                  type="text"
-                  placeholder="Ej: Director de Planeación"
-                  value={newExp.role}
-                  onChange={(e) => setNewExp({ ...newExp, role: e.target.value })}
-                  className="cv-modal-input w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="cv-modal-label block text-slate-300 font-semibold mb-1">Entidad / Empresa:</label>
-                <input
-                  type="text"
-                  placeholder="Ej: Gobernación de Antioquia"
-                  value={newExp.entityCompany}
-                  onChange={(e) => setNewExp({ ...newExp, entityCompany: e.target.value })}
-                  className="cv-modal-input w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white outline-none"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="cv-modal-label block text-slate-300 font-semibold mb-1">Sector:</label>
-                  <select
-                    value={newExp.type}
-                    onChange={(e) => setNewExp({ ...newExp, type: e.target.value as any })}
-                    className="cv-modal-select w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white outline-none"
-                  >
-                    <option value="Público">Público</option>
-                    <option value="Privado">Privado</option>
-                    <option value="Político/Social">Político/Social</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="cv-modal-label block text-slate-300 font-semibold mb-1">Periodo:</label>
-                  <input
-                    type="text"
-                    placeholder="Ej: 2018 - 2021"
-                    value={newExp.period}
-                    onChange={(e) => setNewExp({ ...newExp, period: e.target.value })}
-                    className="cv-modal-input w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white outline-none"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="cv-modal-label block text-slate-300 font-semibold mb-1">Logros Destacados:</label>
-                <textarea
-                  rows={2}
-                  placeholder="Resuma logros clave..."
-                  value={newExp.achievements}
-                  onChange={(e) => setNewExp({ ...newExp, achievements: e.target.value })}
-                  className="cv-modal-textarea w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white outline-none"
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-2 pt-2">
-              <button
-                onClick={() => setShowAddExpModal(false)}
-                className="cv-modal-cancel-btn flex-1 py-2 bg-slate-800 text-slate-300 rounded-xl font-bold cursor-pointer"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => {
-                  if (!newExp.role || !newExp.entityCompany) return;
-                  const next = [...experienceItems, { ...newExp, id: `exp-${Date.now()}` }];
-                  setExperienceItems(next);
-                  void saveCandidateCv({ experienceItems: next }).catch((error: any) => setCvMessage(error?.message || 'No fue posible guardar la experiencia.'));
-                  setShowAddExpModal(false);
-                }}
-                className="cv-modal-save-btn flex-1 py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 rounded-xl font-bold cursor-pointer"
-              >
-                Guardar Experiencia
-              </button>
             </div>
           </div>
         </div>
@@ -4865,10 +5434,10 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
 
             <div className="space-y-3">
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">Comuna / Corregimiento / Sector:</label>
+                <label className="block text-slate-300 font-semibold mb-1">Zona / Corregimiento / Sector ({diagnosticTerritory}):</label>
                 <input
                   type="text"
-                  placeholder="Ej: Comuna 1 - Popular"
+                  placeholder={`Ej: Casco Urbano / Corregimiento - ${diagnosticTerritory}`}
                   value={newTerritorialNeed.comunaSector}
                   onChange={(e) => setNewTerritorialNeed({ ...newTerritorialNeed, comunaSector: e.target.value })}
                   className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-cyan-400"
@@ -5086,6 +5655,187 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                 className="flex-1 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl font-black shadow-md cursor-pointer"
               >
                 Sí, Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: AGREGAR TÍTULO ACADÉMICO */}
+      {showAddDegreeModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#05162a] border border-cyan-500/40 rounded-3xl p-6 sm:p-7 max-w-lg w-full space-y-4 text-xs shadow-2xl">
+            <div className="flex justify-between items-center border-b border-cyan-500/20 pb-3">
+              <h4 className="font-extrabold text-white text-sm flex items-center gap-2">
+                <GraduationCap className="w-5 h-5 text-emerald-400" />
+                Registrar Formación Académica & Título
+              </h4>
+              <button onClick={() => setShowAddDegreeModal(false)} className="text-slate-400 hover:text-white cursor-pointer">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3.5">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">Nivel Académico:</label>
+                  <select
+                    value={newDegree.level}
+                    onChange={(e) => setNewDegree({ ...newDegree, level: e.target.value as any })}
+                    className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-cyan-400"
+                  >
+                    <option value="Pregrado">Pregrado</option>
+                    <option value="Posgrado">Posgrado</option>
+                    <option value="Maestría">Maestría</option>
+                    <option value="Doctorado">Doctorado</option>
+                    <option value="Diplomado">Diplomado / Curso</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">Año de Graduación:</label>
+                  <input
+                    type="text"
+                    placeholder="Ej. 2020"
+                    value={newDegree.year}
+                    onChange={(e) => setNewDegree({ ...newDegree, year: e.target.value })}
+                    className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-cyan-400 font-mono"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">Título Obtenido / Carrera:</label>
+                <input
+                  type="text"
+                  placeholder="Ej. Abogado, Administrador Público, Especialista en Finanzas"
+                  value={newDegree.title}
+                  onChange={(e) => setNewDegree({ ...newDegree, title: e.target.value })}
+                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-cyan-400 font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">Institución / Universidad:</label>
+                <input
+                  type="text"
+                  placeholder="Ej. Universidad Nacional de Colombia / Universidad de Córdoba"
+                  value={newDegree.institution}
+                  onChange={(e) => setNewDegree({ ...newDegree, institution: e.target.value })}
+                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-cyan-400 font-medium"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2.5 pt-3 border-t border-cyan-500/20">
+              <button
+                type="button"
+                onClick={() => setShowAddDegreeModal(false)}
+                className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold cursor-pointer transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleAddDegree}
+                className="flex-1 py-2.5 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:brightness-110 text-slate-950 rounded-xl font-black cursor-pointer transition-all shadow-md"
+              >
+                Guardar Título
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: AGREGAR EXPERIENCIA LABORAL / POLÍTICA */}
+      {showAddExpModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#05162a] border border-cyan-500/40 rounded-3xl p-6 sm:p-7 max-w-lg w-full space-y-4 text-xs shadow-2xl">
+            <div className="flex justify-between items-center border-b border-cyan-500/20 pb-3">
+              <h4 className="font-extrabold text-white text-sm flex items-center gap-2">
+                <Briefcase className="w-5 h-5 text-emerald-400" />
+                Registrar Trayectoria & Experiencia Laboral
+              </h4>
+              <button onClick={() => setShowAddExpModal(false)} className="text-slate-400 hover:text-white cursor-pointer">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-3.5">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">Sector / Tipo:</label>
+                  <select
+                    value={newExp.type}
+                    onChange={(e) => setNewExp({ ...newExp, type: e.target.value as any })}
+                    className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-cyan-400"
+                  >
+                    <option value="Público">Sector Público</option>
+                    <option value="Privado">Sector Privado</option>
+                    <option value="Político/Social">Político / Social / Comunitario</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-slate-300 font-semibold mb-1">Período de Gestión:</label>
+                  <input
+                    type="text"
+                    placeholder="Ej. 2020 - 2023"
+                    value={newExp.period}
+                    onChange={(e) => setNewExp({ ...newExp, period: e.target.value })}
+                    className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-cyan-400"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">Cargo / Rol Desempeñado:</label>
+                <input
+                  type="text"
+                  placeholder="Ej. Secretario de Gobierno / Gerente de Operaciones / Concejal"
+                  value={newExp.role}
+                  onChange={(e) => setNewExp({ ...newExp, role: e.target.value })}
+                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-cyan-400 font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">Entidad, Empresa u Organización:</label>
+                <input
+                  type="text"
+                  placeholder="Ej. Alcaldía Municipal / Consorcio de Infraestructura"
+                  value={newExp.entityCompany}
+                  onChange={(e) => setNewExp({ ...newExp, entityCompany: e.target.value })}
+                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-cyan-400 font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-semibold mb-1">Principales Logros / Responsabilidades:</label>
+                <textarea
+                  rows={2}
+                  placeholder="Describa brevemente los resultados alcanzados o proyectos gestionados..."
+                  value={newExp.achievements}
+                  onChange={(e) => setNewExp({ ...newExp, achievements: e.target.value })}
+                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white outline-none focus:border-cyan-400 resize-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2.5 pt-3 border-t border-cyan-500/20">
+              <button
+                type="button"
+                onClick={() => setShowAddExpModal(false)}
+                className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold cursor-pointer transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleAddExperience}
+                className="flex-1 py-2.5 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:brightness-110 text-slate-950 rounded-xl font-black cursor-pointer transition-all shadow-md"
+              >
+                Guardar Experiencia
               </button>
             </div>
           </div>

@@ -156,11 +156,29 @@ export const CampaignProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (!campaignId || !isUUID(campaignId)) return;
     setIsLiveLoading(true);
     try {
-      // Presupuesto: suma de budget_items agrupado por tipo
-      const { data: budgetRows } = await supabase
-        .from('budget_items')
-        .select('tipo, monto, observaciones, estado')
-        .eq('campaign_id', campaignId);
+      const validClientId = isUUID(clientId) ? clientId : null;
+      const [
+        { data: budgetRows },
+        { data: campRow },
+        leaders,
+        voters,
+        witnesses,
+        jurors,
+      ] = await Promise.all([
+        supabase
+          .from('budget_items')
+          .select('tipo, monto, observaciones, estado')
+          .eq('campaign_id', campaignId),
+        supabase
+          .from('campaigns')
+          .select('presupuesto_total')
+          .eq('id', campaignId)
+          .maybeSingle(),
+        validClientId ? countTable('leaders',   'client_id', validClientId) : Promise.resolve(0),
+        validClientId ? countTable('voters',    'client_id', validClientId) : Promise.resolve(0),
+        validClientId ? countTable('witnesses', 'client_id', validClientId) : Promise.resolve(0),
+        validClientId ? countTable('jurors',    'client_id', validClientId) : Promise.resolve(0),
+      ]);
 
       let executed = 0;
       let income = 0;
@@ -175,22 +193,7 @@ export const CampaignProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (String(row.tipo).toUpperCase() === 'INGRESO') income += amount;
       });
 
-      // Tope CNE desde la campaña
-      const { data: campRow } = await supabase
-        .from('campaigns')
-        .select('presupuesto_total')
-        .eq('id', campaignId)
-        .maybeSingle();
       const limit = Number(campRow?.presupuesto_total ?? 0);
-
-      // Conteos de personas por client_id
-      const validClientId = isUUID(clientId) ? clientId : null;
-      const [leaders, voters, witnesses, jurors] = validClientId ? await Promise.all([
-        countTable('leaders',   'client_id', validClientId),
-        countTable('voters',    'client_id', validClientId),
-        countTable('witnesses', 'client_id', validClientId),
-        countTable('jurors',    'client_id', validClientId),
-      ]) : [0, 0, 0, 0];
 
       setLive({
         budgetLimitCop:     limit,
@@ -216,63 +219,43 @@ export const CampaignProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     channelsRef.current.forEach(ch => void supabase.removeChannel(ch));
     channelsRef.current = [];
 
-    const refresh = () => void loadLiveMetrics(campaignId, clientId);
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    const refresh = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        void loadLiveMetrics(campaignId, clientId);
+      }, 250);
+    };
 
-    // campaigns → presupuesto_total cambia
-    const chCampaign = supabase
-      .channel(`ctx-campaign-${campaignId}`)
+    const channel = supabase
+      .channel(`ctx-live-${campaignId}`)
       .on('postgres_changes', {
         event: 'UPDATE', schema: 'public', table: 'campaigns',
         filter: `id=eq.${campaignId}`
       }, refresh)
-      .subscribe();
-
-    // budget_items → gastos e ingresos cambian
-    const chBudget = supabase
-      .channel(`ctx-budget-${campaignId}`)
       .on('postgres_changes', {
         event: '*', schema: 'public', table: 'budget_items',
         filter: `campaign_id=eq.${campaignId}`
       }, refresh)
-      .subscribe();
-
-    // leaders
-    const chLeaders = supabase
-      .channel(`ctx-leaders-${clientId}`)
       .on('postgres_changes', {
         event: '*', schema: 'public', table: 'leaders',
         filter: `client_id=eq.${clientId}`
       }, refresh)
-      .subscribe();
-
-    // voters
-    const chVoters = supabase
-      .channel(`ctx-voters-${clientId}`)
       .on('postgres_changes', {
         event: '*', schema: 'public', table: 'voters',
         filter: `client_id=eq.${clientId}`
       }, refresh)
-      .subscribe();
-
-    // witnesses
-    const chWitnesses = supabase
-      .channel(`ctx-witnesses-${clientId}`)
       .on('postgres_changes', {
         event: '*', schema: 'public', table: 'witnesses',
         filter: `client_id=eq.${clientId}`
       }, refresh)
-      .subscribe();
-
-    // jurors
-    const chJurors = supabase
-      .channel(`ctx-jurors-${clientId}`)
       .on('postgres_changes', {
         event: '*', schema: 'public', table: 'jurors',
         filter: `client_id=eq.${clientId}`
       }, refresh)
       .subscribe();
 
-    channelsRef.current = [chCampaign, chBudget, chLeaders, chVoters, chWitnesses, chJurors];
+    channelsRef.current = [channel];
   }, [loadLiveMetrics]);
 
   // ── Carga datos de la campaña ──────────────────────────────────────────────

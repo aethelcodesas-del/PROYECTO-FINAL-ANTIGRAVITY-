@@ -150,7 +150,12 @@ export function ModuleSelectPage({ onBack, onSelectModule, onOpenLogin }: Module
       {/* Top Bar: Back Button */}
       <div className="relative z-20 w-full max-w-7xl flex items-center justify-start gap-3 mb-6 sm:mb-8">
         <button
-          onClick={onBack}
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onBack();
+          }}
           aria-label="Volver al Portal"
           className="flex items-center gap-2 px-4 py-2 sm:py-2.5 rounded-full bg-white/5 hover:bg-white/10 active:bg-white/15 border border-white/10 text-slate-300 hover:text-white transition-all text-xs sm:text-sm font-medium cursor-pointer min-h-[40px] shrink-0"
         >
@@ -210,7 +215,11 @@ export function ModuleSelectPage({ onBack, onSelectModule, onOpenLogin }: Module
                 onMouseEnter={() => setHoveredCardId(mod.id)}
                 onMouseLeave={() => setHoveredCardId(null)}
                 onMouseMove={(e) => handleCardMouseMove(e, mod.id)}
-                onClick={() => handleCardClick(mod)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleCardClick(mod);
+                }}
                 className={`
                   relative rounded-3xl p-6 sm:p-7 md:p-8 flex flex-col justify-between
                   transition-all duration-300 group cursor-pointer overflow-hidden
@@ -281,6 +290,11 @@ export function ModuleSelectPage({ onBack, onSelectModule, onOpenLogin }: Module
                 <div className="relative z-10 pt-4 border-t border-white/5">
                   <button
                     type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleCardClick(mod);
+                    }}
                     className={`
                       w-full py-3 sm:py-3.5 px-4 rounded-2xl font-black text-xs tracking-wide shadow-xl
                       flex items-center justify-between transition-all cursor-pointer

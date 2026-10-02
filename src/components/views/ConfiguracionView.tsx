@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ViewMode } from '../../types';
+import { confirmModal, showToast } from '../common/ConfirmModal';
 import { 
   Settings, 
   ShieldCheck, 
@@ -250,13 +251,16 @@ export const ConfiguracionView: React.FC<ConfiguracionViewProps> = ({ onSelectVi
       )}
 
       {/* Navigation Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto p-1.5 rounded-2xl bg-[#07172e] border border-cyan-500/20">
+      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar scrollbar-none scrollbar-hide p-1.5 rounded-2xl bg-[#07172e] border border-cyan-500/20">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={(e) => {
+                setActiveTab(tab.id as any);
+                e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+              }}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                 isActive
                   ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md shadow-cyan-500/30'
@@ -273,24 +277,54 @@ export const ConfiguracionView: React.FC<ConfiguracionViewProps> = ({ onSelectVi
       {/* TAB CONTENT: ACCESIBILIDAD Y TEMA */}
       {activeTab === 'accesibilidad' && (
         <div className="space-y-6">
-          {/* Visual Color Mode: Color Establecido vs Efecto Blanco */}
-          <div className="p-6 rounded-3xl bg-[#07172e] border border-cyan-500/20 space-y-4">
+          {/* Visual Color Mode: Tema Oscuro Cyber Executive */}
+          <div className="p-6 rounded-3xl bg-gradient-to-br from-[#07172e] to-[#030d1f] border border-cyan-500/30 space-y-4 shadow-xl shadow-black/40">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h2 className="text-sm font-extrabold text-white uppercase tracking-wider flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-cyan-400" />
-                  Apariencia — Color Principal y Efecto Visual
+                  Apariencia — Tema Oscuro Premium (Cyber Executive)
                 </h2>
                 <p className="text-xs text-slate-300 mt-0.5">
-                  Alterna entre el esquema de color establecido o el efecto blanco de alta luminosidad sin alterar datos ni funciones.
+                  La plataforma está configurada en la paleta oscura de alta gama: Obsidiana Profundo, Zafiro Eléctrico, Esmeralda Neón, Ámbar Real y Violeta Cuántico.
                 </p>
               </div>
-              <div>
-                <ColorModeToggle variant="segmented" />
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-cyan-950/80 border border-cyan-500/40 text-cyan-300 font-mono text-xs font-bold shadow-sm">
+                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+                Tema Oscuro Activo
               </div>
             </div>
 
-            <ColorModeToggle variant="cards" />
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 font-mono text-xs">
+              <div className="p-3 rounded-xl bg-[#030914] border border-cyan-500/30 flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-cyan-400 shadow-sm shadow-cyan-400/50"></div>
+                <div>
+                  <div className="text-[11px] font-bold text-white">Zafiro / Cian</div>
+                  <div className="text-[10px] text-cyan-400">Comando & Mapas</div>
+                </div>
+              </div>
+              <div className="p-3 rounded-xl bg-[#030914] border border-emerald-500/30 flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/50"></div>
+                <div>
+                  <div className="text-[11px] font-bold text-white">Esmeralda</div>
+                  <div className="text-[10px] text-emerald-400">Victoria & Metas</div>
+                </div>
+              </div>
+              <div className="p-3 rounded-xl bg-[#030914] border border-amber-500/30 flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-amber-400 shadow-sm shadow-amber-400/50"></div>
+                <div>
+                  <div className="text-[11px] font-bold text-white">Ámbar Real</div>
+                  <div className="text-[10px] text-amber-400">Alertas & Control</div>
+                </div>
+              </div>
+              <div className="p-3 rounded-xl bg-[#030914] border border-purple-500/30 flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-purple-400 shadow-sm shadow-purple-400/50"></div>
+                <div>
+                  <div className="text-[11px] font-bold text-white">Violeta Cuántico</div>
+                  <div className="text-[10px] text-purple-400">IA & Diagnósticos</div>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Theme Selector Grid */}
@@ -907,8 +941,15 @@ export const ConfiguracionView: React.FC<ConfiguracionViewProps> = ({ onSelectVi
               <div className="pt-2">
                 <button
                   type="button"
-                  onClick={() => {
-                    if (window.confirm('¿Confirmas que deseas restablecer el software a estado inicial desde cero?')) {
+                  onClick={async () => {
+                    const confirmed = await confirmModal({
+                      title: 'Restablecer software a estado inicial',
+                      message: '¿Confirmas que deseas restablecer el software a estado inicial desde cero? Esta acción limpiará la configuración local almacenada.',
+                      confirmText: 'Sí, restablecer',
+                      cancelText: 'Cancelar',
+                      variant: 'danger'
+                    });
+                    if (confirmed) {
                       try {
                         localStorage.removeItem('elecciones_campana_principal_dossier_v2');
                         localStorage.removeItem('elecciones_campanas_guardadas_v2');
@@ -923,6 +964,7 @@ export const ConfiguracionView: React.FC<ConfiguracionViewProps> = ({ onSelectVi
                         localStorage.removeItem('campaign_user_permissions');
                         localStorage.removeItem('custom_polling_stations_v1');
                         localStorage.removeItem('elecciones_estrategia_dofa_v1');
+                        showToast('El software ha sido restablecido a su estado inicial.', 'success');
                       } catch (e) {
                         console.error(e);
                       }

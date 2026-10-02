@@ -12,7 +12,7 @@
  * 7. Telemetría estructurada sin exposición de secretos.
  */
 
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import {
   OfficialProcessSourceDefinition,
   getOfficialProcessSource,

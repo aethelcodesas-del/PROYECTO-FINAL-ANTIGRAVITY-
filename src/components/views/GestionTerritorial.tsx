@@ -1,4 +1,5 @@
 import React, { lazy, Suspense, useState } from 'react';
+import 'leaflet/dist/leaflet.css';
 import { useCampaignData } from '../../contexts/CampaignContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { CircleMarker, MapContainer, Popup, TileLayer, useMap } from 'react-leaflet';
@@ -6,6 +7,7 @@ import { ViewMode, TerritorialZone, AuthUser } from '../../types';
 import { supabase } from '../../lib/supabase';
 import { useModuleColorMode } from '../../utils/themeColorMode';
 import { ColorModeToggle } from '../common/ColorModeToggle';
+import { confirmModal, showToast } from '../common/ConfirmModal';
 const RegistroVotantesView = lazy(() => import('./RegistroVotantesView').then(module => ({ default: module.RegistroVotantesView })));
 import { 
   Search, 
@@ -247,10 +249,17 @@ export const GestionTerritorial: React.FC<GestionTerritorialProps> = ({
     setEditingSector(null);
   };
 
-  const handleDeleteSector = (sectorId: string) => {
+  const handleDeleteSector = async (sectorId: string) => {
     const target = sectorList.find(s => s.id === sectorId);
     if (!target) return;
-    if (!window.confirm(`¿Está seguro de eliminar el sector "${target.nombre}"?`)) return;
+    const confirmed = await confirmModal({
+      title: 'Eliminar sector territorial',
+      message: `¿Está seguro de eliminar el sector "${target.nombre}"? Esta acción no se puede deshacer.`,
+      confirmText: 'Sí, eliminar sector',
+      cancelText: 'Cancelar',
+      variant: 'danger'
+    });
+    if (!confirmed) return;
 
     setSectorList(prev => {
       const remaining = prev.filter(s => s.id !== sectorId);
@@ -262,6 +271,7 @@ export const GestionTerritorial: React.FC<GestionTerritorialProps> = ({
       return remaining;
     });
     setEditingSector(null);
+    showToast(`Sector "${target.nombre}" eliminado.`, 'success');
   };
 
   const handleAddSectorSubmit = () => {
@@ -343,7 +353,11 @@ export const GestionTerritorial: React.FC<GestionTerritorialProps> = ({
       </div>
 
       {activeSubTab === 'registro' ? (
-        <Suspense fallback={<div className="min-h-[60vh] flex items-center justify-center"><div className="h-8 w-8 rounded-full border-2 border-cyan-500/30 border-t-cyan-400 animate-spin" /></div>}>
+        <Suspense fallback={
+          <div className="fixed top-0 left-0 right-0 z-[9999] pointer-events-none">
+            <div className="h-[2px] w-full bg-gradient-to-r from-teal-500 via-emerald-400 to-cyan-500 animate-pulse" />
+          </div>
+        }>
         <RegistroVotantesView onSelectView={onSelectView} authUser={authUser} />
         </Suspense>
       ) : (

@@ -146,6 +146,11 @@ const [isLoading, setIsLoading] = useState(false);
       setIdentifier('');
       setPassword('');
       setRecoveryMessage(null);
+      try {
+        localStorage.removeItem('active_demo_expires_at');
+      } catch {
+        // ignore
+      }
     }
   }, [isOpen, targetModule]);
 
@@ -207,29 +212,24 @@ const [isLoading, setIsLoading] = useState(false);
         throw new Error('Tu cuenta está inactiva o suspendida.');
       }
 
+      // Los usuarios registrados con cuenta activa en Supabase son usuarios legítimos del sistema.
+      // Limpiar cualquier residuo de demo previo para garantizar una sesión persistente sin interrupciones.
+      try {
+        localStorage.removeItem('active_demo_expires_at');
+      } catch {
+        // ignore
+      }
+
       if (profile.campaign_id) {
-        const { data: campaign, error: campaignError } = await supabase
+        const { data: campaign } = await supabase
           .from('campaigns')
-          .select('descripcion')
+          .select('id,estado')
           .eq('id', profile.campaign_id)
           .maybeSingle();
-        if (campaignError) {
+
+        if (campaign && ['SUSPENDIDA', 'CANCELADA'].includes(String(campaign.estado || '').toUpperCase())) {
           await supabase.auth.signOut();
-          throw new Error('No fue posible validar la vigencia de la campaña.');
-        }
-        let demoExpiresAt: string | null = null;
-        try {
-          const demoMetadata = JSON.parse(String(campaign?.descripcion || ''));
-          if (demoMetadata?.systemType === 'DEMO') demoExpiresAt = demoMetadata.demoExpiresAt || null;
-        } catch { /* Descripción de campaña sin metadatos internos. */ }
-        if (demoExpiresAt && new Date(demoExpiresAt).getTime() <= Date.now()) {
-          await supabase.auth.signOut();
-          throw new Error('La demostración finalizó y su información está siendo eliminada automáticamente.');
-        }
-        if (demoExpiresAt) {
-          localStorage.setItem('active_demo_expires_at', demoExpiresAt);
-        } else {
-          localStorage.removeItem('active_demo_expires_at');
+          throw new Error('La campaña asociada a tu cuenta se encuentra temporalmente suspendida o inactiva.');
         }
       }
 
@@ -332,7 +332,7 @@ const [isLoading, setIsLoading] = useState(false);
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.94, y: 16 }}
           transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-          className="relative w-full max-w-lg bg-[#030d1d] border border-cyan-500/25 rounded-3xl shadow-2xl shadow-black/90 p-5 sm:p-7 z-10 text-slate-100 overflow-hidden max-h-[92vh] flex flex-col"
+          className="relative w-full max-w-[min(92vw,420px)] mx-auto bg-[#030d1d] border border-cyan-500/25 rounded-2xl sm:rounded-3xl shadow-2xl shadow-black/90 p-4 sm:p-7 z-10 text-slate-100 overflow-hidden max-h-[90vh] flex flex-col box-border"
         >
           {/* Ambient Glows */}
           <div className="absolute -top-24 -left-24 w-60 h-60 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />
@@ -341,31 +341,31 @@ const [isLoading, setIsLoading] = useState(false);
           {/* Close button */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white transition-all cursor-pointer min-h-[38px] min-w-[38px] flex items-center justify-center z-20 border border-slate-700/50"
+            className="absolute top-3 right-3 sm:top-4 sm:right-4 p-2 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white transition-all cursor-pointer min-h-[38px] min-w-[38px] flex items-center justify-center z-20 border border-slate-700/50"
             aria-label="Cerrar modal"
           >
             <X className="w-4 h-4" />
           </button>
 
           {/* Header */}
-          <div className="flex items-center gap-3.5 mb-5 pr-10">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-cyan-500 via-teal-500 to-emerald-600 p-0.5 shadow-lg shadow-teal-950/60 flex items-center justify-center shrink-0">
+          <div className="flex items-center gap-3 mb-4 sm:mb-5 pr-8 sm:pr-10">
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-br from-cyan-500 via-teal-500 to-emerald-600 p-0.5 shadow-lg shadow-teal-950/60 flex items-center justify-center shrink-0">
               <div className="w-full h-full bg-[#020b18] rounded-[14px] flex items-center justify-center">
                 <Lock className="w-5 h-5 text-cyan-400" />
               </div>
             </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-extrabold uppercase tracking-widest text-cyan-400 bg-cyan-950/70 px-2 py-0.5 rounded-full border border-cyan-800/50">
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-1.5 mb-0.5">
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-cyan-400 bg-cyan-950/70 px-2 py-0.5 rounded-full border border-cyan-800/50 shrink-0">
                   Control de Acceso
                 </span>
                 {targetModule && (
-                  <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-800/40 truncate max-w-[170px]">
+                  <span className="text-[10px] font-bold text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-800/40 truncate max-w-[130px] sm:max-w-[170px]">
                     {targetModule}
                   </span>
                 )}
               </div>
-              <h2 className="text-xl sm:text-2xl font-black text-white mt-1 truncate">
+              <h2 className="text-lg sm:text-2xl font-black text-white truncate">
                 Iniciar Sesión
               </h2>
             </div>
@@ -375,79 +375,85 @@ const [isLoading, setIsLoading] = useState(false);
           {errorMsg && (
             <div className="p-3 mb-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
-              <span>{errorMsg}</span>
+              <span className="break-words min-w-0">{errorMsg}</span>
             </div>
           )}
           {recoveryMessage && (
             <div className="p-3 mb-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-200 text-xs flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 shrink-0 text-emerald-400" />
-              <span>{recoveryMessage}</span>
+              <span className="break-words min-w-0">{recoveryMessage}</span>
             </div>
           )}
 
           {/* FORMULARIO DE CREDENCIALES */}
-          <form onSubmit={handleCredentialsSubmit} className="space-y-3.5 overflow-y-auto flex-1 pr-1 custom-scrollbar">
+          <form onSubmit={handleCredentialsSubmit} className="space-y-3.5 overflow-y-auto flex-1 pr-1 custom-scrollbar w-full">
             <div>
-              <label className="block text-xs font-bold text-slate-300 mb-1.5">
+              <label htmlFor="login-email" className="block text-xs font-bold text-slate-300 mb-1.5">
                 Correo Electrónico
               </label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <div className="relative flex items-center w-full">
+                <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
                 <input
-                  type="text"
+                  type="email"
+                  name="email"
+                  id="login-email"
+                  autoComplete="username email"
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
                   placeholder="Correo electrónico registrado"
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-950/80 border border-slate-700/80 rounded-xl text-xs sm:text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all"
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-950/80 border border-slate-700/80 rounded-xl text-base sm:text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all dark-autofill min-h-[44px]"
                 />
               </div>
             </div>
 
-              <div>
-                <div className="mb-1.5 flex items-center justify-between gap-2">
-                  <label className="block text-xs font-bold text-slate-300">Contraseña de Seguridad</label>
-                  <button
-                    type="button"
-                    onClick={handlePasswordRecovery}
-                    disabled={isRecovering || isLoading}
-                    className="text-[11px] font-semibold text-cyan-400 hover:text-cyan-300 disabled:opacity-50"
-                  >
-                    {isRecovering ? 'Enviando…' : '¿Olvidaste tu contraseña?'}
-                  </button>
-                </div>
-                <div className="relative flex items-center">
-                  <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 pointer-events-none z-10" />
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Ingrese su contraseña"
-                    className="w-full pl-10 pr-11 py-2.5 bg-slate-950/80 border border-slate-700/80 rounded-xl text-xs sm:text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all"
-                  />
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setShowPassword((prev) => !prev);
-                    }}
-                    title={showPassword ? "Ocultar contraseña" : "Ver contraseña"}
-                    aria-label={showPassword ? "Ocultar contraseña" : "Ver contraseña"}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-slate-800/60 active:scale-95 transition-all cursor-pointer z-20 focus:outline-none"
-                  >
-                    {showPassword ? (
-                      <EyeOff className="w-4 h-4 pointer-events-none" />
-                    ) : (
-                      <Eye className="w-4 h-4 pointer-events-none" />
-                    )}
-                  </button>
-                </div>
+            <div>
+              <div className="mb-1.5 flex items-center justify-between gap-2">
+                <label htmlFor="login-password" className="block text-xs font-bold text-slate-300">Contraseña de Seguridad</label>
+                <button
+                  type="button"
+                  onClick={handlePasswordRecovery}
+                  disabled={isRecovering || isLoading}
+                  className="text-[11px] font-semibold text-cyan-400 hover:text-cyan-300 disabled:opacity-50 cursor-pointer shrink-0"
+                >
+                  {isRecovering ? 'Enviando…' : '¿Olvidaste tu contraseña?'}
+                </button>
               </div>
+              <div className="relative flex items-center w-full">
+                <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  name="password"
+                  id="login-password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Ingrese su contraseña"
+                  className="w-full pl-10 pr-11 py-2.5 bg-slate-950/80 border border-slate-700/80 rounded-xl text-base sm:text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all dark-autofill min-h-[44px]"
+                />
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setShowPassword((prev) => !prev);
+                  }}
+                  title={showPassword ? "Ocultar contraseña" : "Ver contraseña"}
+                  aria-label={showPassword ? "Ocultar contraseña" : "Ver contraseña"}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-slate-800/60 active:scale-95 transition-all cursor-pointer z-20 focus:outline-none min-h-[38px] min-w-[38px] flex items-center justify-center"
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-4 h-4 pointer-events-none" />
+                  ) : (
+                    <Eye className="w-4 h-4 pointer-events-none" />
+                  )}
+                </button>
+              </div>
+            </div>
 
             {/* Security info notice */}
-            <div className="p-2.5 rounded-xl bg-cyan-950/30 border border-cyan-500/20 flex items-start gap-2 text-[11px] text-cyan-300/90 leading-relaxed">
+            <div className="p-2.5 rounded-xl bg-cyan-950/30 border border-cyan-500/20 flex items-start gap-2 text-[11px] text-cyan-300/90 leading-relaxed max-w-full overflow-hidden">
               <ShieldCheck className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
-              <span>
+              <span className="break-words min-w-0">
                 Autenticación encriptada con asignación automática de permisos según el rol directivo y territorial.
               </span>
             </div>
@@ -456,7 +462,7 @@ const [isLoading, setIsLoading] = useState(false);
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-600 via-teal-600 to-emerald-600 hover:brightness-110 active:scale-[0.99] text-white font-extrabold text-xs sm:text-sm shadow-lg shadow-teal-950/60 border border-white/20 transition-all cursor-pointer flex items-center justify-center gap-2 mt-2"
+              className="w-full py-3 px-3 rounded-xl bg-gradient-to-r from-cyan-600 via-teal-600 to-emerald-600 hover:brightness-110 active:scale-[0.99] text-white font-extrabold text-xs sm:text-sm shadow-lg shadow-teal-950/60 border border-white/20 transition-all cursor-pointer flex items-center justify-center gap-2 mt-2 min-h-[44px]"
             >
               {isLoading ? (
                 <>
@@ -465,8 +471,8 @@ const [isLoading, setIsLoading] = useState(false);
                 </>
               ) : (
                 <>
-                  <Lock className="w-4 h-4" />
-                  <span>Iniciar Sesión en {targetModule || 'el Módulo'}</span>
+                  <Lock className="w-4 h-4 shrink-0" />
+                  <span className="truncate">Iniciar Sesión en {targetModule || 'el Módulo'}</span>
                 </>
               )}
             </button>
