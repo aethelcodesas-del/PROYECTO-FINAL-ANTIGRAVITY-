@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useCampaignData } from '../contexts/CampaignContext';
+import { supabase } from '../lib/supabaseClient';
 import { motion } from 'motion/react';
 import { ViewMode, AuthUser } from '../types';
 import { CampaignLogoBadge } from './common/CampaignLogoIcon';
@@ -29,7 +30,9 @@ import {
   Calendar,
   X,
   ClipboardList,
-  LogOut
+  LogOut,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -63,23 +66,119 @@ export const Sidebar: React.FC<SidebarProps> = ({
   authUser,
   onLogout
 }) => {
-  const userRole = authUser?.role || 'superadmin';
+  const userRole = authUser?.role || 'administrador';
 
-  // ── Datos de campaña desde el contexto global ──────────────────────────────
+  // ── Datos de campaña y perfil desde Supabase en tiempo real ───────────────
   const campaignCtx = useCampaignData();
+  const [liveProfile, setLiveProfile] = useState<{
+    displayName: string;
+    role: string;
+    roleLabel: string;
+  } | null>(null);
 
   const [candidatePhoto, setCandidatePhoto] = useState<string | null>(() => {
     return localStorage.getItem('candidate_photo');
   });
 
-  const isGlobalSuperAdmin = userRole === 'GLOBAL_ADMIN' || userRole === 'superadmin' || authUser?.role === 'SUPERADMIN' || authUser?.role === 'GLOBAL_ADMIN';
+  useEffect(() => {
+    let cancelled = false;
+    const roleLabelMap: Record<string, string> = {
+      GLOBAL_ADMIN: 'Superadministrador',
+      SUPERADMIN: 'Superadministrador',
+      superadmin: 'Superadministrador',
+      ADMIN: 'Administrador de campaña',
+      admin: 'Administrador de campaña',
+      administrador: 'Administrador de campaña',
+      CANDIDATO: 'Candidato Oficial',
+      candidato: 'Candidato Oficial',
+      ESTRATEGICO: 'Estratega de campaña',
+      estrategico: 'Estratega de campaña',
+      TERRITORIAL: 'Coordinador Territorial',
+      territorial: 'Coordinador Territorial',
+      AUDITOR: 'Auditor CNE',
+      auditor: 'Auditor CNE',
+    };
 
-  // Prioridad: contexto global > localStorage > fallback
-  const candidateName = !isGlobalSuperAdmin ? (campaignCtx.candidateName || localStorage.getItem('candidate_name') || 'Candidato Principal') : '';
+    supabase.auth.getSession().then(async ({ data }) => {
+      const sessionUser = data?.session?.user;
+      const targetId = sessionUser?.id || authUser?.id;
+      if (!targetId || cancelled) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('display_name, role, email')
+        .eq('id', targetId)
+        .maybeSingle();
+
+      if (!cancelled && profile) {
+        const rawRole = String(profile.role || authUser?.role || 'administrador');
+        setLiveProfile({
+          displayName: String(profile.display_name || authUser?.name || profile.email || '').trim(),
+          role: rawRole,
+          roleLabel: roleLabelMap[rawRole] || authUser?.roleName || rawRole,
+        });
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authUser?.id, authUser?.name, authUser?.role, authUser?.roleName]);
+
+  const effectiveRole = liveProfile?.role || userRole;
+  const isGlobalSuperAdmin =
+    effectiveRole === 'GLOBAL_ADMIN' ||
+    effectiveRole === 'superadmin' ||
+    effectiveRole === 'SUPERADMIN' ||
+    authUser?.role === 'SUPERADMIN' ||
+    authUser?.role === 'GLOBAL_ADMIN';
+
+  const candidateName = !isGlobalSuperAdmin ? (campaignCtx.candidateName || '') : '';
 
   const campaignTerritory = !isGlobalSuperAdmin && campaignCtx.municipality
     ? `${campaignCtx.officeType ? campaignCtx.officeType + ' · ' : ''}${campaignCtx.municipality}`
     : '';
+
+  // Desktop collapsible sidebar state (stored in localStorage)
+  const [isDesktopCollapsed, setIsDesktopCollapsed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('sidebar_desktop_collapsed') === 'true';
+    }
+    return false;
+  });
+
+  const toggleDesktopCollapse = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    setIsDesktopCollapsed(prev => {
+      const next = !prev;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('sidebar_desktop_collapsed', String(next));
+      }
+      return next;
+    });
+  };
+
+  // Touch swipe gesture handling to close drawer on mobile swipe-left
+  const touchStartX = useRef<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current !== null) {
+      const touchEndX = e.changedTouches[0].clientX;
+      const deltaX = touchStartX.current - touchEndX;
+      // Swiped left by at least 45px -> close drawer
+      if (deltaX > 45 && onCloseMobile) {
+        onCloseMobile();
+      }
+      touchStartX.current = null;
+    }
+  };
 
   useEffect(() => {
     const refreshPhoto = () => {
@@ -104,12 +203,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     return (parts[0] || name).slice(0, 2).toUpperCase();
   };
 
-  const userDisplayName = isGlobalSuperAdmin
-    ? (authUser?.name || 'Propietario del Sistema')
-    : (authUser?.name || candidateName || 'Usuario Activo');
-  const userRoleDisplay = isGlobalSuperAdmin
-    ? (authUser?.roleName || 'Superadministrador')
-    : (authUser?.roleName || authUser?.moduleName || 'Candidato Oficial');
+  const userDisplayName = liveProfile?.displayName || authUser?.name || candidateName || authUser?.email || '';
+  const userRoleDisplay = liveProfile?.roleLabel || authUser?.roleName || authUser?.moduleName || '';
 
   const hasPermission = (permId: string) => {
     const permissions = authUser?.permissions;
@@ -214,35 +309,66 @@ export const Sidebar: React.FC<SidebarProps> = ({
         />
       )}
 
-      <aside className={`fixed inset-y-0 left-0 z-50 w-[280px] xs:w-72 md:w-64 max-w-[85vw] bg-[#051329] border-r border-cyan-500/25 text-slate-100 flex flex-col shrink-0 transition-transform duration-300 ease-in-out select-none lg:sticky lg:top-0 lg:translate-x-0 h-[100dvh] max-h-[100dvh] ${
-        isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-      }`}>
-      <div className="flex-1 p-3 sm:p-4 md:p-5 space-y-4 overflow-y-auto custom-scrollbar">
-        
-        {/* Header Block matching app design */}
-        <div className="flex items-center justify-between gap-3 pb-2 border-b border-cyan-500/15">
-          <div className="flex items-center gap-3">
-            <CampaignLogoBadge size="md" />
-            <div>
-              <h1 className="font-extrabold text-sm tracking-wide text-white leading-tight">
-                Campaña Ganadora IA
-              </h1>
-              <p className="text-[11px] font-semibold text-emerald-400/90 mt-0.5">
-                Panel de Control
-              </p>
+      <aside 
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        className={`fixed inset-y-0 left-0 z-50 ${isDesktopCollapsed ? 'lg:w-[76px]' : 'lg:w-64'} w-[280px] xs:w-72 md:w-64 max-w-[85vw] bg-[#051329] border-r border-cyan-500/25 text-slate-100 flex flex-col shrink-0 transition-[width,transform] duration-300 ease-in-out select-none lg:sticky lg:top-0 lg:translate-x-0 h-[100dvh] max-h-[100dvh] ${
+          isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        }`}
+      >
+        {/* Header Block matching app design with generous top breathing room and safe-area */}
+        <div
+          className={`shrink-0 pt-[max(1.25rem,env(safe-area-inset-top))] sm:pt-5 pb-3.5 px-4 flex items-center ${
+            isDesktopCollapsed ? 'justify-center' : 'justify-between gap-2.5'
+          } w-full border-b border-cyan-500/15`}
+        >
+          {!isDesktopCollapsed && (
+            <div className="flex items-center gap-2.5 min-w-0">
+              <CampaignLogoBadge size="md" className="shrink-0" />
+              <div className="min-w-0">
+                <h1 className="font-extrabold text-sm tracking-wide text-white leading-tight truncate">
+                  Campaña Ganadora IA
+                </h1>
+                <p className="text-[11px] font-semibold text-emerald-400/90 mt-0.5 truncate">
+                  Panel de Control
+                </p>
+              </div>
             </div>
-          </div>
-          {onCloseMobile && (
-            <button
-              onClick={onCloseMobile}
-              aria-label="Cerrar menú"
-              className="lg:hidden p-2 rounded-xl bg-slate-900 border border-cyan-500/30 text-cyan-300 hover:text-white cursor-pointer transition-all min-h-[38px] min-w-[38px] flex items-center justify-center"
-              title="Cerrar menú"
-            >
-              <X className="w-4 h-4" />
-            </button>
           )}
+
+          <div className={`flex items-center ${isDesktopCollapsed ? 'justify-center w-full' : 'gap-1 shrink-0'}`}>
+            {/* Desktop Collapsible Toggle Button */}
+            <button
+              type="button"
+              onClick={toggleDesktopCollapse}
+              aria-label={isDesktopCollapsed ? 'Expandir menú lateral' : 'Colapsar menú lateral'}
+              title={isDesktopCollapsed ? 'Expandir menú' : 'Colapsar menú'}
+              className="hidden lg:flex items-center justify-center w-10 h-10 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-cyan-500/40 text-slate-300 hover:text-white cursor-pointer transition-all shrink-0"
+            >
+              {isDesktopCollapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
+            </button>
+
+            {/* Mobile Close Button (Minimum 44x44px Touch Target) */}
+            {onCloseMobile && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onCloseMobile();
+                }}
+                aria-label="Cerrar menú"
+                className="lg:hidden p-2.5 rounded-xl bg-slate-900 border border-cyan-500/30 text-cyan-300 hover:text-white cursor-pointer transition-all min-h-[44px] min-w-[44px] flex items-center justify-center"
+                title="Cerrar menú"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            )}
+          </div>
         </div>
+
+        {/* Scrollable Navigation Body */}
+        <div className="flex-1 px-3 sm:px-4 py-3 space-y-4 overflow-y-auto custom-scrollbar">
 
 
 
@@ -252,7 +378,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* 1. MÓDULO ESTRATÉGICO */}
           {activeSection === 'estrategico' && (
             <div>
-              <p className="px-3 text-[10px] font-black uppercase tracking-wider text-emerald-400/90 mb-2">
+              <p className={`px-3 text-[10px] font-black uppercase tracking-wider text-emerald-400/90 mb-2 ${isDesktopCollapsed ? 'lg:hidden' : ''}`}>
                 Funciones Estratégicas
               </p>
               <nav className="space-y-1">
@@ -262,17 +388,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   return (
                     <motion.button
                       key={item.id}
+                      type="button"
                       whileHover={{ scale: 1.01, x: 2 }}
                       whileTap={{ scale: 0.98 }}
-                      onClick={() => {
-                        onSelectView('gestion_estrategica');
+                      title={item.label}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (currentView !== 'gestion_estrategica') {
+                          onSelectView('gestion_estrategica');
+                        }
                         if (item.tab && onSelectStrategicTab) {
                           onSelectStrategicTab(item.tab);
                         }
                         if (onCloseMobile) onCloseMobile();
                         document.querySelector('main')?.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
-                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      className={`w-full flex items-center ${isDesktopCollapsed ? 'lg:justify-center lg:px-2' : 'gap-3 px-3'} min-h-[44px] py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                         isActive
                           ? 'bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-md shadow-emerald-900/40 border border-emerald-400/50'
                           : 'text-slate-300 hover:text-white hover:bg-emerald-500/10'
@@ -281,7 +413,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       <div className={`shrink-0 transition-transform ${isActive ? 'scale-110 text-white' : 'text-slate-400'}`}>
                         {item.icon}
                       </div>
-                      <span className="truncate tracking-wide text-left">{item.label}</span>
+                      <span className={`truncate tracking-wide text-left ${isDesktopCollapsed ? 'lg:hidden' : ''}`}>{item.label}</span>
                     </motion.button>
                   );
                 })}
@@ -292,7 +424,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* 2. GESTIÓN TERRITORIAL */}
           {activeSection === 'territorial' && (
             <div>
-              <p className="px-3 text-[10px] font-black uppercase tracking-wider text-teal-400/90 mb-2">
+              <p className={`px-3 text-[10px] font-black uppercase tracking-wider text-teal-400/90 mb-2 ${isDesktopCollapsed ? 'lg:hidden' : ''}`}>
                 Funciones Territoriales
               </p>
               <div className="space-y-1">
@@ -304,9 +436,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   return (
                     <button
                       key={item.id}
-                      onClick={() => {
+                      type="button"
+                      title={item.label}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
                         if (item.type === 'subtab') {
-                          onSelectView('gestion_territorial');
+                          if (currentView !== 'gestion_territorial') {
+                            onSelectView('gestion_territorial');
+                          }
                           if (onSelectTerritorialSubTab) onSelectTerritorialSubTab(item.subtab);
                         } else {
                           onSelectView(item.view);
@@ -314,7 +452,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         if (onCloseMobile) onCloseMobile();
                         document.querySelector('main')?.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
-                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      className={`w-full flex items-center ${isDesktopCollapsed ? 'lg:justify-center lg:px-2' : 'gap-3 px-3'} min-h-[44px] py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                         isActive
                           ? 'bg-gradient-to-r from-teal-700 to-emerald-700 text-white shadow-md shadow-teal-900/40 border border-teal-400/50'
                           : 'text-slate-300 hover:text-white hover:bg-teal-500/10'
@@ -323,7 +461,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       <div className={`shrink-0 transition-transform ${isActive ? 'scale-110 text-white' : ''}`}>
                         {item.icon}
                       </div>
-                      <div className="text-left truncate">
+                      <div className={`text-left truncate ${isDesktopCollapsed ? 'lg:hidden' : ''}`}>
                         <div className="tracking-wide text-white">{item.label}</div>
                       </div>
                     </button>
@@ -336,7 +474,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* 3. MÓDULO ADMINISTRATIVO */}
           {activeSection === 'administrativo' && (
             <div>
-              <p className="px-3 text-[10px] font-black uppercase tracking-wider text-cyan-400/90 mb-2">
+              <p className={`px-3 text-[10px] font-black uppercase tracking-wider text-cyan-400/90 mb-2 ${isDesktopCollapsed ? 'lg:hidden' : ''}`}>
                 Funciones Administrativas
               </p>
               <nav className="space-y-1">
@@ -346,15 +484,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   return (
                     <button
                       key={item.id}
-                      onClick={() => {
-                        onSelectView('modulo_admin');
+                      type="button"
+                      title={item.label}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (currentView !== 'modulo_admin') {
+                          onSelectView('modulo_admin');
+                        }
                         if (item.tab && onSelectAdminTab) {
                           onSelectAdminTab(item.tab);
                         }
                         if (onCloseMobile) onCloseMobile();
                         document.querySelector('main')?.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
-                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      className={`w-full flex items-center ${isDesktopCollapsed ? 'lg:justify-center lg:px-2' : 'gap-3 px-3'} min-h-[44px] py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                         isActive
                           ? 'bg-gradient-to-r from-cyan-600 to-blue-700 text-white shadow-md shadow-cyan-950/40 border border-cyan-400/40'
                           : 'text-slate-300 hover:text-white hover:bg-cyan-500/10'
@@ -363,7 +507,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       <div className={`shrink-0 transition-transform ${isActive ? 'scale-110 text-white' : 'text-slate-400'}`}>
                         {item.icon}
                       </div>
-                      <span className="truncate tracking-wide text-left">{item.label}</span>
+                      <span className={`truncate tracking-wide text-left ${isDesktopCollapsed ? 'lg:hidden' : ''}`}>{item.label}</span>
                     </button>
                   );
                 })}
@@ -375,74 +519,83 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       </div>
 
-      {/* User Profile Footer Card - Dual Theme Responsive */}
-      <div className="user-profile-card shrink-0 mx-2.5 mt-2.5 mb-[max(0.625rem,env(safe-area-inset-bottom))] p-3.5 rounded-2xl transition-all">
-        <div className="flex items-start gap-3">
-          <div className="flex items-center gap-3 min-w-0 flex-1">
-            {/* Avatar with Status Indicator */}
-            <div className="relative shrink-0">
-              {authUser?.avatar ? (
-                <img
-                  src={authUser.avatar}
-                  alt={userDisplayName}
-                  className="w-10 h-10 rounded-xl border border-white/30 object-cover shadow-sm"
-                />
-              ) : authUser?.role === 'candidato' && candidatePhoto ? (
-                <img
-                  src={candidatePhoto}
-                  alt={userDisplayName}
-                  className="w-10 h-10 rounded-xl border border-white/30 object-cover shadow-sm"
-                />
-              ) : (
-                <div 
-                  className="user-avatar-initials w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs shadow-inner"
-                >
-                  {getInitials(userDisplayName)}
-                </div>
-              )}
-              {/* Online pulse dot */}
-              <span className="absolute -bottom-0.5 -right-0.5 flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400 border-2 border-[#051329]"></span>
-              </span>
-            </div>
-
-            {/* Name & Role */}
-            <div className="text-left min-w-0 flex-1">
-              <div
-                className="user-name font-black text-xs sm:text-[13px] leading-4 tracking-wider break-words line-clamp-2 uppercase drop-shadow-md"
-                title={userDisplayName}
-              >
-                {userDisplayName}
-              </div>
+      {/* User Profile Footer Card - Professional Cyber Design */}
+      <div className={`shrink-0 ${isDesktopCollapsed ? 'lg:mx-1.5 lg:p-2' : 'mx-2.5 p-3.5'} mt-2.5 mb-[max(0.625rem,env(safe-area-inset-bottom))] rounded-2xl bg-gradient-to-b from-[#072448]/90 to-[#031127]/95 border border-cyan-500/30 shadow-lg shadow-cyan-950/40 backdrop-blur-md transition-all`}>
+        <div className={`flex items-center ${isDesktopCollapsed ? 'lg:justify-center' : 'gap-3'}`}>
+          {/* Avatar with Status Indicator */}
+          <div className="relative shrink-0">
+            {authUser?.avatar ? (
+              <img
+                src={authUser.avatar}
+                alt={userDisplayName}
+                loading="lazy"
+                decoding="async"
+                className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl border border-cyan-400/40 object-cover shadow-md"
+              />
+            ) : authUser?.role === 'candidato' && candidatePhoto ? (
+              <img
+                src={candidatePhoto}
+                alt={userDisplayName}
+                loading="lazy"
+                decoding="async"
+                className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl border border-cyan-400/40 object-cover shadow-md"
+              />
+            ) : (
               <div 
-                className="user-role text-[11px] font-semibold truncate mt-0.5"
-                title={userRoleDisplay}
+                className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br from-cyan-500 via-blue-600 to-indigo-700 text-white font-extrabold text-sm flex items-center justify-center shadow-md shadow-cyan-500/20 border border-cyan-400/50 tracking-wider select-none"
               >
-                {userRoleDisplay}
+                {getInitials(userDisplayName)}
               </div>
-              {campaignTerritory && (
-                <div 
-                  className="user-territory text-[10px] font-medium truncate mt-0.5 flex items-center gap-1"
-                >
-                  <span>📍</span>
-                  <span className="truncate">{campaignTerritory}</span>
-                </div>
-              )}
-            </div>
+            )}
+            {/* Online pulse dot */}
+            <span className="absolute -bottom-1 -right-1 flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500 ring-2 ring-[#072448]"></span>
+            </span>
           </div>
 
+          {/* Name & Role */}
+          <div className={`text-left min-w-0 flex-1 ${isDesktopCollapsed ? 'lg:hidden' : ''}`}>
+            <div
+              className="font-extrabold text-xs text-white uppercase tracking-wider break-words line-clamp-1 drop-shadow-sm"
+              title={userDisplayName}
+            >
+              {userDisplayName}
+            </div>
+            <div 
+              className="text-[11px] font-semibold text-cyan-300/90 truncate mt-0.5"
+              title={userRoleDisplay}
+            >
+              {userRoleDisplay}
+            </div>
+            {campaignTerritory && (
+              <div 
+                className="mt-1.5 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[#020b18]/80 border border-cyan-500/25 text-[10px] font-medium text-cyan-200 max-w-full"
+                title={campaignTerritory}
+              >
+                <MapPin className="w-3 h-3 text-cyan-400 shrink-0" />
+                <span className="truncate">{campaignTerritory}</span>
+              </div>
+            )}
+          </div>
         </div>
+
         {onLogout && (
           <motion.button
+            type="button"
+            whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.98 }}
-            onClick={onLogout}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onLogout();
+            }}
             title="Cerrar sesión"
             aria-label="Cerrar sesión"
-            className="user-logout-btn mt-3 w-full min-h-10 px-3 py-2 rounded-xl transition-all cursor-pointer flex items-center justify-center gap-2 text-xs font-bold"
+            className={`mt-3 w-full min-h-[44px] py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 bg-slate-800/80 hover:bg-rose-950/50 text-slate-300 hover:text-rose-200 border border-slate-700/80 hover:border-rose-500/40 shadow-sm transition-all cursor-pointer`}
           >
             <LogOut className="w-4 h-4 shrink-0" />
-            <span>Cerrar sesión</span>
+            <span className={isDesktopCollapsed ? 'lg:hidden' : ''}>Cerrar sesión</span>
           </motion.button>
         )}
       </div>

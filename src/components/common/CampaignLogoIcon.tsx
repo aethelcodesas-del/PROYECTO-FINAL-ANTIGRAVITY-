@@ -55,7 +55,7 @@ export const CampaignLogoBadge: React.FC<LogoProps> = ({ size = 'md', className 
 
   return (
     <div 
-      className={`relative inline-flex items-center justify-center bg-[#022c22]/80 border-2 border-[#00d2a0] text-[#00e6b0] shadow-lg shadow-[#00d2a0]/20 animate-bounce ${sizeClasses[size]} ${className}`}
+      className={`relative inline-flex shrink-0 items-center justify-center bg-[#022c22]/90 border-2 border-[#00d2a0] text-[#00e6b0] shadow-md shadow-[#00d2a0]/25 transition-transform hover:scale-105 duration-200 ${sizeClasses[size]} ${className}`}
     >
       <BallotBrainIcon className={iconSizes[size]} />
     </div>
