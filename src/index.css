@@ -1505,6 +1505,17 @@ button:not(:disabled),
   will-change: transform;
 }
 
+.modal-backdrop-animate {
+  animation: viewFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+  will-change: opacity;
+}
+
+.modal-container-animate {
+  animation: slideUpEnter 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+  will-change: transform, opacity;
+  transform: translateZ(0);
+}
+
 /* Fluid Table & List Row Microinteractions */
 table tbody tr {
   transition: background-color 0.15s ease, border-color 0.15s ease;

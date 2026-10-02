@@ -32,7 +32,8 @@ import {
   ClipboardList,
   LogOut,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Loader2
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -79,6 +80,37 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [candidatePhoto, setCandidatePhoto] = useState<string | null>(() => {
     return localStorage.getItem('candidate_photo');
   });
+
+  const [showLogoutModal, setShowLogoutModal] = useState<boolean>(false);
+  const [isLoggingOut, setIsLoggingOut] = useState<boolean>(false);
+
+  const handleConfirmLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.warn('Sign out warning in Sidebar:', err);
+    }
+    try {
+      if (onLogout) {
+        await onLogout();
+      }
+    } finally {
+      setIsLoggingOut(false);
+      setShowLogoutModal(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!showLogoutModal) return;
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isLoggingOut) {
+        setShowLogoutModal(false);
+      }
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [showLogoutModal, isLoggingOut]);
 
   useEffect(() => {
     let cancelled = false;
@@ -588,7 +620,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              onLogout();
+              setShowLogoutModal(true);
             }}
             title="Cerrar sesión"
             aria-label="Cerrar sesión"
@@ -600,6 +632,73 @@ export const Sidebar: React.FC<SidebarProps> = ({
         )}
       </div>
     </aside>
+
+    {/* Modal de confirmación de cierre de sesión */}
+    {showLogoutModal && (
+      <div
+        className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4 modal-backdrop-animate"
+        onClick={(e) => {
+          if (e.target === e.currentTarget && !isLoggingOut) {
+            setShowLogoutModal(false);
+          }
+        }}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="logout-modal-title"
+      >
+        <div
+          className="bg-[#0c1425]/95 border border-slate-800 shadow-[0_25px_60px_rgba(0,0,0,0.7)] rounded-2xl max-w-sm w-full p-6 text-center modal-container-animate relative overflow-hidden text-white"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Luz ambiental sutil */}
+          <div className="absolute -top-12 -left-12 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl pointer-events-none" />
+          <div className="absolute -bottom-12 -right-12 w-32 h-32 bg-rose-500/10 rounded-full blur-2xl pointer-events-none" />
+
+          {/* Icono central de salida */}
+          <div className="w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 mx-auto flex items-center justify-center mb-4 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+            <LogOut className="w-6 h-6" />
+          </div>
+
+          {/* Título y descripción */}
+          <h3 id="logout-modal-title" className="text-lg font-semibold text-white">
+            ¿Cerrar sesión en la plataforma?
+          </h3>
+          <p className="text-sm text-slate-400 mt-1 mb-6 leading-relaxed">
+            Deberá ingresar nuevamente sus credenciales para acceder a la gestión de campaña.
+          </p>
+
+          {/* Botones de acción */}
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              disabled={isLoggingOut}
+              onClick={() => setShowLogoutModal(false)}
+              className="flex-1 px-4 py-2.5 rounded-xl border border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-sm font-medium transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              disabled={isLoggingOut}
+              onClick={handleConfirmLogout}
+              className="flex-1 px-4 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white text-sm font-semibold shadow-[0_0_15px_rgba(225,29,72,0.35)] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {isLoggingOut ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                  <span>Cerrando sesión...</span>
+                </>
+              ) : (
+                <>
+                  <LogOut className="w-4 h-4 shrink-0" />
+                  <span>Sí, cerrar sesión</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
     </>
   );
 };
