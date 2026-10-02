@@ -110,3 +110,5 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
     </nav>
   );
 };
+
+export default BottomNavBar;
