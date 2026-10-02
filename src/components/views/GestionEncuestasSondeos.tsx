@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
+import { confirmModal, showToast } from '../common/ConfirmModal';
 import { 
   PieChart, 
   BarChart3, 
@@ -214,231 +215,8 @@ export const GestionEncuestasSondeos: React.FC<GestionEncuestasSondeosProps> = (
   const [aiAuditRunning, setAiAuditRunning] = useState(false);
   const [aiAuditResult, setAiAuditResult] = useState<string | null>(null);
 
-  // Historical design samples are intentionally not rendered. Real records
-  // are loaded from Supabase for the active campaign below.
-  const _legacyStudySamples: SurveyStudy[] = [
-    {
-      id: 'enc-1',
-      code: 'ENC-2026-001',
-      title: 'Primer Tracking Semanal de Intención de Voto Alcaldía',
-      type: 'Tracking Poll',
-      methodology: 'Presencial (CAPI)',
-      status: 'En Campo',
-      targetSample: 1200,
-      completedSample: 840,
-      marginOfError: 2.8,
-      confidenceLevel: 95,
-      startDate: '2026-08-01',
-      endDate: '2026-08-10',
-      pollstersCount: 18,
-      location: 'Municipio Principal - 12 Comunas',
-      questionsCount: 14
-    },
-    {
-      id: 'enc-2',
-      code: 'SND-2026-004',
-      title: 'Sondeo Digital de Percepción sobre Propuestas de Movilidad',
-      type: 'Sondeo Flash',
-      methodology: 'Digital / WhatsApp',
-      status: 'En Campo',
-      targetSample: 2500,
-      completedSample: 2150,
-      marginOfError: 2.1,
-      confidenceLevel: 95,
-      startDate: '2026-08-04',
-      endDate: '2026-08-08',
-      pollstersCount: 4,
-      location: 'Zonas Urbana y Metropolitana',
-      questionsCount: 8
-    },
-    {
-      id: 'enc-3',
-      code: 'ENC-2026-002',
-      title: 'Estudio de Línea Base Percepción de Imagen y Candidatos',
-      type: 'Línea Base',
-      methodology: 'Mixto',
-      status: 'Finalizado',
-      targetSample: 1800,
-      completedSample: 1800,
-      marginOfError: 2.3,
-      confidenceLevel: 95,
-      startDate: '2026-07-10',
-      endDate: '2026-07-25',
-      pollstersCount: 24,
-      location: 'Departamento - 8 Subregiones',
-      questionsCount: 22
-    },
-    {
-      id: 'enc-4',
-      code: 'ENC-2026-003',
-      title: 'Evaluación de Impacto del Debate de Televisión Regional',
-      type: 'Favorabilidad',
-      methodology: 'Telefónico (CATI)',
-      status: 'En Auditoría',
-      targetSample: 600,
-      completedSample: 600,
-      marginOfError: 4.0,
-      confidenceLevel: 95,
-      startDate: '2026-08-05',
-      endDate: '2026-08-06',
-      pollstersCount: 10,
-      location: 'Casco Urbano',
-      questionsCount: 10
-    }
-  ];
+  // Real records are loaded exclusively from Supabase for the active campaign.
   const [studies, setStudies] = useState<SurveyStudy[]>([]);
-
-  // Pollsters State
-  const _legacyPollsterSamples: Pollster[] = [
-    {
-      id: 'pol-101',
-      name: 'Carlos Mario Mendoza',
-      cedula: '1032448912',
-      phone: '+57 312 458 9012',
-      email: 'carlos.mendoza@campanaganadora.co',
-      surveyId: 'enc-1',
-      surveyTitle: 'Primer Tracking Semanal de Intención de Voto Alcaldía',
-      assignedZone: 'Comuna 1 - Centro Histórico',
-      dailyGoal: 40,
-      completedCount: 38,
-      status: 'Activo',
-      lastActivity: 'Hace 3 min',
-      batteryLevel: 88,
-      gpsCoordinates: {
-        lat: 6.2442,
-        lng: -75.5812,
-        address: 'Calle 50 # 45-12, Parque Berrio',
-        inGeofence: true,
-        accuracyMeters: 4.2
-      },
-      deviceImei: '864201049281023',
-      accreditationCode: 'CNE-ENC-2026-0891'
-    },
-    {
-      id: 'pol-102',
-      name: 'Laura Restrepo Gómez',
-      cedula: '1017234901',
-      phone: '+57 300 892 1104',
-      email: 'laura.restrepo@campanaganadora.co',
-      surveyId: 'enc-1',
-      surveyTitle: 'Primer Tracking Semanal de Intención de Voto Alcaldía',
-      assignedZone: 'Comuna 3 - Manrique / Norte',
-      dailyGoal: 40,
-      completedCount: 40,
-      status: 'Meta Cumplida',
-      lastActivity: 'Hace 12 min',
-      batteryLevel: 95,
-      gpsCoordinates: {
-        lat: 6.2621,
-        lng: -75.5681,
-        address: 'Carrera 45 # 72-18, Manrique Central',
-        inGeofence: true,
-        accuracyMeters: 3.8
-      },
-      deviceImei: '864201049281904',
-      accreditationCode: 'CNE-ENC-2026-0892'
-    },
-    {
-      id: 'pol-103',
-      name: 'Andrés Felipe Silva',
-      cedula: '1020412890',
-      phone: '+57 314 670 4421',
-      email: 'andres.silva@campanaganadora.co',
-      surveyId: 'enc-1',
-      surveyTitle: 'Primer Tracking Semanal de Intención de Voto Alcaldía',
-      assignedZone: 'Comuna 5 - Castilla / Sur',
-      dailyGoal: 40,
-      completedCount: 29,
-      status: 'En Recorrido',
-      lastActivity: 'Hace 1 min',
-      batteryLevel: 62,
-      gpsCoordinates: {
-        lat: 6.2189,
-        lng: -75.5742,
-        address: 'Carrera 68 # 94-05, Castilla Sector Terminal',
-        inGeofence: false, // Out of zone alert!
-        accuracyMeters: 12.5
-      },
-      deviceImei: '864201049281881',
-      accreditationCode: 'CNE-ENC-2026-0893',
-      aiAuditFlags: {
-        outOfGeofence: true,
-        notes: 'Ubicación reportada a 850m fuera de la geocerca de Comuna 5'
-      }
-    },
-    {
-      id: 'pol-104',
-      name: 'Camila Rodríguez Toro',
-      cedula: '1036782199',
-      phone: '+57 318 901 3342',
-      email: 'camila.rodriguez@campanaganadora.co',
-      surveyId: 'enc-2',
-      surveyTitle: 'Sondeo Digital de Percepción sobre Propuestas de Movilidad',
-      assignedZone: 'Comuna 13 - San Javier / Occidente',
-      dailyGoal: 50,
-      completedCount: 44,
-      status: 'En Recorrido',
-      lastActivity: 'Hace 5 min',
-      batteryLevel: 74,
-      gpsCoordinates: {
-        lat: 6.2511,
-        lng: -75.6012,
-        address: 'Calle 44 # 108-20, Estación San Javier',
-        inGeofence: true,
-        accuracyMeters: 5.0
-      },
-      deviceImei: '864201049281774',
-      accreditationCode: 'CNE-ENC-2026-0894'
-    },
-    {
-      id: 'pol-105',
-      name: 'Jhon Jairo Arango',
-      cedula: '98712344',
-      phone: '+57 301 234 5599',
-      email: 'jhon.arango@campanaganadora.co',
-      surveyId: 'enc-1',
-      surveyTitle: 'Primer Tracking Semanal de Intención de Voto Alcaldía',
-      assignedZone: 'Comuna 4 - Aranjuez',
-      dailyGoal: 40,
-      completedCount: 35,
-      status: 'Activo',
-      lastActivity: 'Hace 8 min',
-      batteryLevel: 41,
-      gpsCoordinates: {
-        lat: 6.2733,
-        lng: -75.5521,
-        address: 'Carrera 52 # 92-10, Aranjuez Parque',
-        inGeofence: true,
-        accuracyMeters: 4.8
-      },
-      deviceImei: '864201049281655',
-      accreditationCode: 'CNE-ENC-2026-0895'
-    },
-    {
-      id: 'pol-106',
-      name: 'Valentina Morales Duque',
-      cedula: '1045998210',
-      phone: '+57 320 881 9023',
-      email: 'valentina.morales@campanaganadora.co',
-      surveyId: 'enc-2',
-      surveyTitle: 'Sondeo Digital de Percepción sobre Propuestas de Movilidad',
-      assignedZone: 'Corregimiento San Cristóbal',
-      dailyGoal: 35,
-      completedCount: 32,
-      status: 'En Recorrido',
-      lastActivity: 'Hace 2 min',
-      batteryLevel: 91,
-      gpsCoordinates: {
-        lat: 6.2801,
-        lng: -75.6311,
-        address: 'Parque Principal San Cristóbal',
-        inGeofence: true,
-        accuracyMeters: 3.5
-      },
-      deviceImei: '864201049281112',
-      accreditationCode: 'CNE-ENC-2026-0896'
-    }
-  ];
   const [pollsters, setPollsters] = useState<Pollster[]>([]);
   const [surveyResponses, setSurveyResponses] = useState<any[]>([]);
 
@@ -447,7 +225,7 @@ export const GestionEncuestasSondeos: React.FC<GestionEncuestasSondeosProps> = (
   const [newPolCedula, setNewPolCedula] = useState('');
   const [newPolPhone, setNewPolPhone] = useState('');
   const [newPolEmail, setNewPolEmail] = useState('');
-  const [newPolSurveyId, setNewPolSurveyId] = useState(studies[0]?.id || 'enc-1');
+  const [newPolSurveyId, setNewPolSurveyId] = useState('');
   const [newPolZone, setNewPolZone] = useState('Comuna 1 - Centro Histórico');
   const [newPolGoal, setNewPolGoal] = useState(40);
   const [newPolDevice, setNewPolDevice] = useState('');
@@ -716,15 +494,27 @@ export const GestionEncuestasSondeos: React.FC<GestionEncuestasSondeosProps> = (
     setNewPolPhone('');
     setNewPolEmail('');
     await loadRealSurveyData();
-    alert(`Encuestador registrado en la base real. Acreditación: ${accreditationCode}`);
+    showToast(`Encuestador registrado en la base real. Acreditación: ${accreditationCode}`, 'success');
   };
 
   const handleDeletePollster = async (id: string, name: string) => {
-    if (confirm(`¿Está seguro de eliminar al encuestador ${name}? Se desvinculará del dispositivo y de la ruta de campo.`)) {
-      const { error } = await supabase.from('survey_pollsters').delete().eq('id', id).eq('campaign_id', activeCampaignId);
-      if (error) return setRealDataError(error.message);
-      await loadRealSurveyData();
-    }
+    await confirmModal({
+      title: 'Eliminar encuestador de campo',
+      message: `¿Está seguro de eliminar al encuestador "${name}"? Se desvinculará del dispositivo y de la ruta de campo.`,
+      confirmText: 'Sí, eliminar',
+      cancelText: 'Cancelar',
+      variant: 'danger',
+      onConfirm: async () => {
+        const { error } = await supabase.from('survey_pollsters').delete().eq('id', id).eq('campaign_id', activeCampaignId);
+        if (error) {
+          setRealDataError(error.message);
+          showToast(error.message, 'error');
+          return false;
+        }
+        await loadRealSurveyData();
+        showToast(`Encuestador "${name}" eliminado correctamente.`, 'success');
+      }
+    });
   };
 
   const handleCreateSurvey = async (e: React.FormEvent) => {
@@ -762,17 +552,29 @@ export const GestionEncuestasSondeos: React.FC<GestionEncuestasSondeosProps> = (
     setNewQuestions([]);
     setActiveSubTab('estudios');
     await loadRealSurveyData();
-    alert(`Encuesta ${code} guardada en la base de datos real.`);
+    showToast(`Encuesta ${code} guardada en la base de datos real.`, 'success');
   };
 
   const handleDeleteSurvey = async (id: string, code: string) => {
-    if (confirm(`¿Está seguro de eliminar la encuesta ${code}? Esta acción eliminará todas las respuestas y no se puede deshacer.`)) {
-      setSavingRealData(true);
-      const { error } = await supabase.from('surveys').delete().eq('id', id).eq('campaign_id', activeCampaignId);
-      setSavingRealData(false);
-      if (error) return setRealDataError(error.message);
-      await loadRealSurveyData();
-    }
+    await confirmModal({
+      title: 'Eliminar estudio de encuesta',
+      message: `¿Está seguro de eliminar la encuesta "${code}"? Esta acción eliminará todas las respuestas y no se puede deshacer.`,
+      confirmText: 'Sí, eliminar encuesta',
+      cancelText: 'Cancelar',
+      variant: 'danger',
+      onConfirm: async () => {
+        setSavingRealData(true);
+        const { error } = await supabase.from('surveys').delete().eq('id', id).eq('campaign_id', activeCampaignId);
+        setSavingRealData(false);
+        if (error) {
+          setRealDataError(error.message);
+          showToast(error.message, 'error');
+          return false;
+        }
+        await loadRealSurveyData();
+        showToast(`Encuesta "${code}" eliminada.`, 'success');
+      }
+    });
   };
 
   const handleRunAiAudit = () => {
@@ -837,10 +639,13 @@ export const GestionEncuestasSondeos: React.FC<GestionEncuestasSondeosProps> = (
       <div className="bg-[#05162a] border border-cyan-500/30 rounded-2xl p-4 sm:p-6 text-slate-100 shadow-xl relative overflow-hidden">
         <div className="absolute -right-10 -bottom-10 w-60 h-60 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
         
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 relative z-10">
+        <div 
+          className="animate-encuestas-stagger flex flex-col lg:flex-row lg:items-center justify-between gap-4 relative z-10"
+          style={{ animationDelay: '0s' }}
+        >
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <div className="p-2 sm:p-2.5 bg-gradient-to-br from-cyan-500/20 to-blue-600/30 border border-cyan-400/40 rounded-xl text-cyan-300">
+              <div className="p-2 sm:p-2.5 bg-gradient-to-br from-cyan-500/20 to-blue-600/30 border border-cyan-400/40 rounded-xl text-cyan-300 transition-all duration-300 hover:scale-105 hover:drop-shadow-[0_0_8px_rgba(6,182,212,0.4)]">
                 <PieChart className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
               <div>
@@ -856,7 +661,7 @@ export const GestionEncuestasSondeos: React.FC<GestionEncuestasSondeosProps> = (
               type="button"
               onClick={openPollsterRegistration}
               disabled={savingRealData}
-              className="flex items-center justify-center gap-1.5 sm:gap-2 w-full sm:w-auto px-3 sm:px-4 py-2 sm:py-2.5 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-black text-[11px] sm:text-xs rounded-xl shadow-lg transition-all cursor-pointer transform hover:scale-105"
+              className="flex items-center justify-center gap-1.5 sm:gap-2 w-full sm:w-auto px-3 sm:px-4 py-2 sm:py-2.5 bg-emerald-500 hover:bg-emerald-400 hover:brightness-110 hover:-translate-y-0.5 active:scale-[0.96] disabled:opacity-50 text-slate-950 font-black text-[11px] sm:text-xs rounded-xl shadow-[0_0_15px_rgba(16,185,129,0.25)] hover:shadow-[0_0_22px_rgba(16,185,129,0.45)] transition-all duration-200 cursor-pointer will-change-transform"
             >
               <UserPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>+ Registrar Encuestador</span>
@@ -864,7 +669,7 @@ export const GestionEncuestasSondeos: React.FC<GestionEncuestasSondeosProps> = (
 
             <button
               onClick={() => setActiveSubTab('crear')}
-              className="flex items-center justify-center gap-1.5 sm:gap-2 w-full sm:w-auto px-3 sm:px-3.5 py-2 sm:py-2.5 bg-[#0a2342] hover:bg-cyan-500/20 border border-cyan-500/40 text-cyan-200 font-bold text-[11px] sm:text-xs rounded-xl transition-all cursor-pointer"
+              className="flex items-center justify-center gap-1.5 sm:gap-2 w-full sm:w-auto px-3 sm:px-3.5 py-2 sm:py-2.5 bg-[#0a2342] hover:bg-cyan-500/20 hover:border-cyan-400/50 hover:-translate-y-0.5 active:scale-[0.97] border border-cyan-500/40 text-cyan-200 font-bold text-[11px] sm:text-xs rounded-xl transition-all duration-150 cursor-pointer will-change-transform"
             >
               <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-400" />
               <span>Nueva Encuesta</span>
@@ -872,15 +677,15 @@ export const GestionEncuestasSondeos: React.FC<GestionEncuestasSondeosProps> = (
 
             <button
               onClick={() => void loadRealSurveyData()}
-              className="flex items-center justify-center gap-1.5 sm:gap-2 w-full sm:w-auto px-3 sm:px-3.5 py-2 sm:py-2.5 bg-[#0a2342] hover:bg-cyan-500/20 border border-cyan-500/40 text-cyan-200 font-bold text-[11px] sm:text-xs rounded-xl transition-all cursor-pointer"
+              className="group flex items-center justify-center gap-1.5 sm:gap-2 w-full sm:w-auto px-3 sm:px-3.5 py-2 sm:py-2.5 bg-[#0a2342] hover:bg-cyan-500/20 hover:border-cyan-400/50 hover:-translate-y-0.5 active:scale-[0.97] border border-cyan-500/40 text-cyan-200 font-bold text-[11px] sm:text-xs rounded-xl transition-all duration-150 cursor-pointer will-change-transform"
             >
-              <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-400 ${realDataLoading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-cyan-400 group-hover:rotate-180 transition-transform duration-500 ${realDataLoading ? 'animate-spin' : ''}`} />
               <span>Sincronizar</span>
             </button>
 
             <button
               onClick={() => setActiveSubTab('georreferenciacion')}
-              className="flex items-center justify-center gap-1.5 sm:gap-2 w-full sm:w-auto px-3 sm:px-3.5 py-2 sm:py-2.5 bg-[#0a2342] hover:bg-cyan-500/20 border border-cyan-500/40 text-cyan-200 font-bold text-[11px] sm:text-xs rounded-xl transition-all cursor-pointer"
+              className="flex items-center justify-center gap-1.5 sm:gap-2 w-full sm:w-auto px-3 sm:px-3.5 py-2 sm:py-2.5 bg-[#0a2342] hover:bg-cyan-500/20 hover:border-cyan-400/50 hover:-translate-y-0.5 active:scale-[0.97] border border-cyan-500/40 text-cyan-200 font-bold text-[11px] sm:text-xs rounded-xl transition-all duration-150 cursor-pointer will-change-transform"
             >
               <Crosshair className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-400" />
               <span>Mapa GPS en Vivo</span>
@@ -889,41 +694,44 @@ export const GestionEncuestasSondeos: React.FC<GestionEncuestasSondeosProps> = (
         </div>
 
         {/* Global Statistics Summary */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 mt-4 sm:mt-6 pt-4 sm:pt-5 border-t border-cyan-500/20">
-          <div className="bg-[#081d38] border border-cyan-500/20 rounded-xl p-2.5 sm:p-3">
-            <span className="text-[9px] sm:text-[10px] text-cyan-300/80 font-bold uppercase tracking-wider block">Estudios Activos</span>
+        <div 
+          className="animate-encuestas-stagger grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 mt-4 sm:mt-6 pt-4 sm:pt-5 border-t border-cyan-500/20"
+          style={{ animationDelay: '0.035s' }}
+        >
+          <div className="encuestas-kpi-card group cursor-default bg-[#081d38] hover:bg-[#0b2548] border border-cyan-500/20 hover:border-cyan-400/40 rounded-xl p-2.5 sm:p-3 shadow-sm hover:shadow-[0_0_20px_rgba(6,182,212,0.12)]">
+            <span className="text-[9px] sm:text-[10px] text-cyan-300/80 group-hover:text-cyan-300 font-bold uppercase tracking-wider block transition-colors">Estudios Activos</span>
             <div className="text-base sm:text-xl font-black text-white mt-1 flex items-center gap-1.5 sm:gap-2 flex-wrap">
               <span>{studies.length}</span>
               <span className="text-[9px] sm:text-[10px] text-emerald-400 font-normal bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">{studiesInField} en campo</span>
             </div>
           </div>
           
-          <div className="bg-[#081d38] border border-cyan-500/20 rounded-xl p-2.5 sm:p-3">
-            <span className="text-[9px] sm:text-[10px] text-cyan-300/80 font-bold uppercase tracking-wider block">Encuestadores Registrados</span>
+          <div className="encuestas-kpi-card group cursor-default bg-[#081d38] hover:bg-[#0b2548] border border-cyan-500/20 hover:border-cyan-400/40 rounded-xl p-2.5 sm:p-3 shadow-sm hover:shadow-[0_0_20px_rgba(6,182,212,0.12)]">
+            <span className="text-[9px] sm:text-[10px] text-cyan-300/80 group-hover:text-cyan-300 font-bold uppercase tracking-wider block transition-colors">Encuestadores Registrados</span>
             <div className="text-base sm:text-xl font-black text-cyan-300 mt-1 flex items-center gap-1.5 sm:gap-2 flex-wrap">
               <span>{pollsters.length}</span>
               <span className="text-[9px] sm:text-[10px] text-emerald-400 font-normal">100% CNE</span>
             </div>
           </div>
 
-          <div className="bg-[#081d38] border border-cyan-500/20 rounded-xl p-2.5 sm:p-3">
-            <span className="text-[9px] sm:text-[10px] text-cyan-300/80 font-bold uppercase tracking-wider block">Monitoreo GPS en Vivo</span>
+          <div className="encuestas-kpi-card group cursor-default bg-[#081d38] hover:bg-[#0b2548] border border-cyan-500/20 hover:border-emerald-500/40 rounded-xl p-2.5 sm:p-3 shadow-sm hover:shadow-[0_0_20px_rgba(16,185,129,0.12)]">
+            <span className="text-[9px] sm:text-[10px] text-cyan-300/80 group-hover:text-cyan-300 font-bold uppercase tracking-wider block transition-colors">Monitoreo GPS en Vivo</span>
             <div className="text-base sm:text-xl font-black text-emerald-400 mt-1 flex items-center gap-1.5 sm:gap-2 flex-wrap">
               <span>{pollstersInsideGeofence} / {pollstersWithGps.length}</span>
               <span className="text-[9px] sm:text-[10px] text-emerald-400 font-normal">En Perímetro</span>
             </div>
           </div>
 
-          <div className="bg-[#081d38] border border-cyan-500/20 rounded-xl p-2.5 sm:p-3">
-            <span className="text-[9px] sm:text-[10px] text-cyan-300/80 font-bold uppercase tracking-wider block">Margen Error Prom.</span>
+          <div className="encuestas-kpi-card group cursor-default bg-[#081d38] hover:bg-[#0b2548] border border-cyan-500/20 hover:border-amber-500/40 rounded-xl p-2.5 sm:p-3 shadow-sm hover:shadow-[0_0_20px_rgba(245,158,11,0.12)]">
+            <span className="text-[9px] sm:text-[10px] text-cyan-300/80 group-hover:text-cyan-300 font-bold uppercase tracking-wider block transition-colors">Margen Error Prom.</span>
             <div className="text-base sm:text-xl font-black text-amber-300 mt-1 flex items-center gap-1.5 sm:gap-2 flex-wrap">
               <span>{studies.length ? `± ${averageMargin.toFixed(1)}%` : '—'}</span>
               <span className="text-[9px] sm:text-[10px] text-slate-400 font-normal">Conf. 95%</span>
             </div>
           </div>
 
-          <div className="bg-[#081d38] border border-cyan-500/20 rounded-xl p-2.5 sm:p-3 col-span-2 sm:col-span-1 lg:col-span-1">
-            <span className="text-[9px] sm:text-[10px] text-cyan-300/80 font-bold uppercase tracking-wider block">Auditoría IA Muestral</span>
+          <div className="encuestas-kpi-card group cursor-default bg-[#081d38] hover:bg-[#0b2548] border border-cyan-500/20 hover:border-indigo-500/40 rounded-xl p-2.5 sm:p-3 col-span-2 sm:col-span-1 lg:col-span-1 shadow-sm hover:shadow-[0_0_20px_rgba(99,102,241,0.12)]">
+            <span className="text-[9px] sm:text-[10px] text-cyan-300/80 group-hover:text-cyan-300 font-bold uppercase tracking-wider block transition-colors">Auditoría IA Muestral</span>
             <div className="text-base sm:text-xl font-black text-emerald-300 mt-1 flex items-center gap-1.5 sm:gap-2 flex-wrap">
               <span>—</span>
               <span className="text-[9px] sm:text-[10px] text-slate-400 font-normal">Sin auditoría real</span>
@@ -932,77 +740,98 @@ export const GestionEncuestasSondeos: React.FC<GestionEncuestasSondeosProps> = (
         </div>
       </div>
 
-      {/* Navigation Sub-Tabs */}
-      <div className="encuestas-subtabs-nav flex items-center gap-2 border-b border-cyan-500/20 pb-2 overflow-x-auto whitespace-nowrap scrollbar-hide">
+      {/* Navigation Sub-Tabs - Professional Cyber Pill Bar */}
+      <div 
+        className="animate-encuestas-stagger encuestas-subtabs-nav bg-[#030e21]/90 p-1.5 rounded-2xl border border-slate-800/80 flex items-center gap-1.5 overflow-x-auto no-scrollbar scrollbar-none scrollbar-hide shadow-lg scroll-smooth whitespace-nowrap"
+        style={{ animationDelay: '0.070s' }}
+      >
         <button
-          onClick={() => setActiveSubTab('estudios')}
-          className={`flex-shrink-0 flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+          onClick={(e) => {
+            setActiveSubTab('estudios');
+            e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+          }}
+          className={`shrink-0 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 cursor-pointer ${
             activeSubTab === 'estudios'
-              ? 'encuestas-subtab-active bg-cyan-500 text-slate-950 shadow-md font-extrabold'
-              : 'encuestas-subtab-inactive bg-[#06182c] text-cyan-200/80 hover:text-white hover:bg-cyan-500/10 border border-cyan-500/20'
+              ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md shadow-cyan-500/30 font-extrabold'
+              : 'text-slate-300 hover:text-cyan-300 hover:bg-slate-800/50 border border-transparent hover:border-cyan-500/20'
           }`}
         >
-          <BarChart3 className="w-4 h-4" />
+          <BarChart3 className={`w-4 h-4 ${activeSubTab === 'estudios' ? 'text-white' : 'text-cyan-400'}`} />
           <span>Panel de Estudios y Sondeos ({studies.length})</span>
         </button>
 
         <button
-          onClick={() => setActiveSubTab('encuestadores')}
-          className={`flex-shrink-0 flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+          onClick={(e) => {
+            setActiveSubTab('encuestadores');
+            e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+          }}
+          className={`shrink-0 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 cursor-pointer ${
             activeSubTab === 'encuestadores'
-              ? 'encuestas-subtab-active bg-cyan-500 text-slate-950 shadow-md font-extrabold'
-              : 'encuestas-subtab-inactive bg-[#06182c] text-cyan-200/80 hover:text-white hover:bg-cyan-500/10 border border-cyan-500/20'
+              ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md shadow-cyan-500/30 font-extrabold'
+              : 'text-slate-300 hover:text-cyan-300 hover:bg-slate-800/50 border border-transparent hover:border-cyan-500/20'
           }`}
         >
-          <Users className="w-4 h-4 text-emerald-400" />
+          <Users className={`w-4 h-4 ${activeSubTab === 'encuestadores' ? 'text-white' : 'text-emerald-400'}`} />
           <span>Gestión de Encuestadores ({pollsters.length})</span>
         </button>
 
         <button
-          onClick={() => setActiveSubTab('georreferenciacion')}
-          className={`flex-shrink-0 flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+          onClick={(e) => {
+            setActiveSubTab('georreferenciacion');
+            e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+          }}
+          className={`shrink-0 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 cursor-pointer ${
             activeSubTab === 'georreferenciacion'
-              ? 'encuestas-subtab-active bg-cyan-500 text-slate-950 shadow-md font-extrabold'
-              : 'encuestas-subtab-inactive bg-[#06182c] text-cyan-200/80 hover:text-white hover:bg-cyan-500/10 border border-cyan-500/20'
+              ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md shadow-cyan-500/30 font-extrabold'
+              : 'text-slate-300 hover:text-cyan-300 hover:bg-slate-800/50 border border-transparent hover:border-cyan-500/20'
           }`}
         >
-          <MapPin className="w-4 h-4 text-amber-400" />
+          <MapPin className={`w-4 h-4 ${activeSubTab === 'georreferenciacion' ? 'text-white' : 'text-amber-400'}`} />
           <span>Monitoreo GPS y Geocercas en Vivo</span>
         </button>
 
         <button
-          onClick={() => setActiveSubTab('crear')}
-          className={`flex-shrink-0 flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+          onClick={(e) => {
+            setActiveSubTab('crear');
+            e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+          }}
+          className={`shrink-0 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 cursor-pointer ${
             activeSubTab === 'crear'
-              ? 'encuestas-subtab-active bg-cyan-500 text-slate-950 shadow-md font-extrabold'
-              : 'encuestas-subtab-inactive bg-[#06182c] text-cyan-200/80 hover:text-white hover:bg-cyan-500/10 border border-cyan-500/20'
+              ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md shadow-cyan-500/30 font-extrabold'
+              : 'text-slate-300 hover:text-cyan-300 hover:bg-slate-800/50 border border-transparent hover:border-cyan-500/20'
           }`}
         >
-          <Plus className="w-4 h-4" />
+          <Plus className={`w-4 h-4 drop-shadow-[0_0_6px_rgba(168,85,247,0.5)] ${activeSubTab === 'crear' ? 'text-white' : 'text-cyan-300'}`} />
           <span>Diseñador con IA</span>
         </button>
 
         <button
-          onClick={() => setActiveSubTab('calculadora')}
-          className={`flex-shrink-0 flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+          onClick={(e) => {
+            setActiveSubTab('calculadora');
+            e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+          }}
+          className={`shrink-0 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 cursor-pointer ${
             activeSubTab === 'calculadora'
-              ? 'encuestas-subtab-active bg-cyan-500 text-slate-950 shadow-md font-extrabold'
-              : 'encuestas-subtab-inactive bg-[#06182c] text-cyan-200/80 hover:text-white hover:bg-cyan-500/10 border border-cyan-500/20'
+              ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md shadow-cyan-500/30 font-extrabold'
+              : 'text-slate-300 hover:text-cyan-300 hover:bg-slate-800/50 border border-transparent hover:border-cyan-500/20'
           }`}
         >
-          <Calculator className="w-4 h-4" />
+          <Calculator className={`w-4 h-4 ${activeSubTab === 'calculadora' ? 'text-white' : 'text-cyan-400'}`} />
           <span>Calculadora Muestral</span>
         </button>
 
         <button
-          onClick={() => setActiveSubTab('resultados')}
-          className={`flex-shrink-0 flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+          onClick={(e) => {
+            setActiveSubTab('resultados');
+            e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+          }}
+          className={`shrink-0 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 cursor-pointer ${
             activeSubTab === 'resultados'
-              ? 'encuestas-subtab-active bg-cyan-500 text-slate-950 shadow-md font-extrabold'
-              : 'encuestas-subtab-inactive bg-[#06182c] text-cyan-200/80 hover:text-white hover:bg-cyan-500/10 border border-cyan-500/20'
+              ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-md shadow-cyan-500/30 font-extrabold'
+              : 'text-slate-300 hover:text-cyan-300 hover:bg-slate-800/50 border border-transparent hover:border-cyan-500/20'
           }`}
         >
-          <PieChart className="w-4 h-4" />
+          <PieChart className={`w-4 h-4 ${activeSubTab === 'resultados' ? 'text-white' : 'text-purple-400'}`} />
           <span>Inteligencia & IA</span>
         </button>
       </div>
@@ -1012,7 +841,10 @@ export const GestionEncuestasSondeos: React.FC<GestionEncuestasSondeosProps> = (
         <div className="space-y-4">
           
           {/* Filter & Search Bar */}
-          <div className="bg-[#05162a] border border-cyan-500/20 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div 
+            className="animate-encuestas-stagger bg-[#05162a] border border-cyan-500/20 rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4"
+            style={{ animationDelay: '0.105s' }}
+          >
             <div className="relative w-full md:w-96">
               <Search className="w-4 h-4 text-cyan-400 absolute left-3.5 top-3" />
               <input
@@ -1020,7 +852,7 @@ export const GestionEncuestasSondeos: React.FC<GestionEncuestasSondeosProps> = (
                 placeholder="Buscar por título, código o municipio..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl pl-10 pr-4 py-2 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-cyan-400"
+                className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl pl-10 pr-4 py-2 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/25 transition-all duration-150"
               />
             </div>
 
@@ -1028,13 +860,13 @@ export const GestionEncuestasSondeos: React.FC<GestionEncuestasSondeosProps> = (
               <button
                 onClick={handleRunAiAudit}
                 disabled={aiAuditRunning}
-                className="px-3.5 py-2 bg-gradient-to-r from-purple-600/30 to-indigo-600/30 border border-purple-400/40 hover:border-purple-400 rounded-xl text-xs font-bold text-purple-200 flex items-center gap-2 cursor-pointer"
+                className="px-3.5 py-2 bg-gradient-to-r from-purple-600/30 to-indigo-600/30 border border-purple-400/40 hover:border-purple-400 hover:brightness-110 hover:-translate-y-0.5 active:scale-[0.97] rounded-xl text-xs font-bold text-purple-200 flex items-center gap-2 cursor-pointer shadow-[0_0_12px_rgba(168,85,247,0.2)] hover:shadow-[0_0_18px_rgba(168,85,247,0.35)] transition-all duration-200 will-change-transform"
               >
                 <Bot className="w-4 h-4 text-purple-300 animate-pulse" />
                 <span>{aiAuditRunning ? 'Analizando con IA...' : 'Auditoría de Calidad IA'}</span>
               </button>
 
-              <div className="flex items-center gap-2 bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-1.5 text-xs text-cyan-200">
+              <div className="flex items-center gap-2 bg-[#081d38] border border-cyan-500/30 focus-within:border-cyan-400 focus-within:ring-2 focus-within:ring-cyan-500/25 rounded-xl px-3 py-1.5 text-xs text-cyan-200 transition-all duration-150">
                 <Filter className="w-3.5 h-3.5 text-cyan-400" />
                 <span>Estado:</span>
                 <select
@@ -2174,7 +2006,7 @@ export const GestionEncuestasSondeos: React.FC<GestionEncuestasSondeosProps> = (
             <div className="pt-2 flex justify-end gap-2">
               <button
                 onClick={() => {
-                  alert(`Imprimiendo acreditación CNE para ${selectedPollster.name}...`);
+                  showToast(`Imprimiendo acreditación CNE para ${selectedPollster.name}...`, 'info');
                   setShowAccreditationModal(false);
                 }}
                 className="w-full py-2 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-xl shadow cursor-pointer flex items-center justify-center gap-2"
