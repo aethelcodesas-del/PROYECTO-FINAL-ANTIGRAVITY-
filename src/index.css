@@ -1604,6 +1604,52 @@ button:not(:disabled),
   transform: translateZ(0);
 }
 
+/* RBAC Console Animations */
+@keyframes greenRadar {
+  0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5); }
+  70% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+
+.status-dot-active {
+  animation: greenRadar 2s infinite ease-out;
+  will-change: box-shadow;
+}
+
+@keyframes rbacCardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(12px) translateZ(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) translateZ(0);
+  }
+}
+
+.animate-rbac-card {
+  animation: rbacCardEnter 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
+  transform: translateZ(0);
+}
+
+@keyframes rbacTableEnter {
+  from {
+    opacity: 0;
+    transform: translateY(8px) translateZ(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) translateZ(0);
+  }
+}
+
+.animate-rbac-table {
+  animation: rbacTableEnter 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
+  transform: translateZ(0);
+}
+
 /* Fluid Table & List Row Microinteractions */
 table tbody tr {
   transition: background-color 0.15s ease, border-color 0.15s ease;

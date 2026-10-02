@@ -2634,12 +2634,18 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
               {/* Campaign Modules Row (Displaying modules side-by-side) */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Gestión Administrativa */}
-                <div className="p-4 rounded-xl bg-[#030d1f]/60 border border-cyan-500/10 flex flex-col items-center justify-center text-center gap-2 shadow-md">
+                <div 
+                  style={{ animationDelay: '0s' }}
+                  className="group animate-rbac-card will-change-transform p-4 rounded-xl bg-[#030d1f]/60 border border-cyan-500/15 hover:border-cyan-500/40 hover:shadow-[0_0_20px_rgba(6,182,212,0.12)] hover:-translate-y-[3px] transition-all duration-250 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col items-center justify-center text-center gap-2 select-none"
+                >
                   <span className="font-extrabold text-xs text-cyan-300 uppercase tracking-wider flex items-center justify-center gap-1.5 w-full">
-                    <UserCheck className="w-4 h-4 text-cyan-400" /> Gestión Administrativa
+                    <UserCheck className="w-4 h-4 text-cyan-400 group-hover:scale-[1.08] group-hover:drop-shadow-[0_0_8px_rgba(6,182,212,0.5)] transition-all duration-200" /> 
+                    Gestión Administrativa
                   </span>
-                  <div className="mt-2 flex min-w-20 flex-col items-center rounded-xl border border-cyan-400/25 bg-cyan-400/10 px-4 py-2">
-                    <span className="text-2xl font-black leading-none text-cyan-300">{assignedUsers.admin.length}</span>
+                  <div className="mt-2 flex min-w-20 flex-col items-center rounded-xl border border-cyan-400/25 bg-cyan-400/10 px-4 py-2 transition-all duration-200 group-hover:border-cyan-400/50 group-hover:bg-cyan-400/20">
+                    <span className="text-2xl font-black leading-none text-cyan-300 transition-transform duration-200 group-hover:scale-105">
+                      <AnimatedCounter value={assignedUsers.admin.length} duration={500} />
+                    </span>
                     <span className="mt-1 text-[9px] font-bold uppercase tracking-widest text-cyan-100/70">
                       {assignedUsers.admin.length === 1 ? 'Usuario' : 'Usuarios'}
                     </span>
@@ -2647,12 +2653,18 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                 </div>
 
                 {/* Gestión Estratégica */}
-                <div className="p-4 rounded-xl bg-[#030d1f]/60 border border-cyan-500/10 flex flex-col items-center justify-center text-center gap-2 shadow-md">
+                <div 
+                  style={{ animationDelay: '0.05s' }}
+                  className="group animate-rbac-card will-change-transform p-4 rounded-xl bg-[#030d1f]/60 border border-amber-500/15 hover:border-amber-500/40 hover:shadow-[0_0_20px_rgba(245,158,11,0.12)] hover:-translate-y-[3px] transition-all duration-250 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col items-center justify-center text-center gap-2 select-none"
+                >
                   <span className="font-extrabold text-xs text-amber-300 uppercase tracking-wider flex items-center justify-center gap-1.5 w-full">
-                    <Settings className="w-4 h-4 text-amber-400" /> Gestión Estratégica
+                    <Settings className="w-4 h-4 text-amber-400 group-hover:scale-[1.08] group-hover:drop-shadow-[0_0_8px_rgba(245,158,11,0.5)] transition-all duration-200" /> 
+                    Gestión Estratégica
                   </span>
-                  <div className="mt-2 flex min-w-20 flex-col items-center rounded-xl border border-amber-400/25 bg-amber-400/10 px-4 py-2">
-                    <span className="text-2xl font-black leading-none text-amber-300">{assignedUsers.estrategico.length}</span>
+                  <div className="mt-2 flex min-w-20 flex-col items-center rounded-xl border border-amber-400/25 bg-amber-400/10 px-4 py-2 transition-all duration-200 group-hover:border-amber-400/50 group-hover:bg-amber-400/20">
+                    <span className="text-2xl font-black leading-none text-amber-300 transition-transform duration-200 group-hover:scale-105">
+                      <AnimatedCounter value={assignedUsers.estrategico.length} duration={500} />
+                    </span>
                     <span className="mt-1 text-[9px] font-bold uppercase tracking-widest text-amber-100/70">
                       {assignedUsers.estrategico.length === 1 ? 'Usuario' : 'Usuarios'}
                     </span>
@@ -2660,12 +2672,18 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                 </div>
 
                 {/* Gestión Territorial */}
-                <div className="p-4 rounded-xl bg-[#030d1f]/60 border border-cyan-500/10 flex flex-col items-center justify-center text-center gap-2 shadow-md">
+                <div 
+                  style={{ animationDelay: '0.10s' }}
+                  className="group animate-rbac-card will-change-transform p-4 rounded-xl bg-[#030d1f]/60 border border-emerald-500/15 hover:border-emerald-500/40 hover:shadow-[0_0_20px_rgba(16,185,129,0.12)] hover:-translate-y-[3px] transition-all duration-250 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col items-center justify-center text-center gap-2 select-none"
+                >
                   <span className="font-extrabold text-xs text-emerald-300 uppercase tracking-wider flex items-center justify-center gap-1.5 w-full">
-                    <Users className="w-4 h-4 text-emerald-400" /> Gestión Territorial
+                    <Users className="w-4 h-4 text-emerald-400 group-hover:scale-[1.08] group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] transition-all duration-200" /> 
+                    Gestión Territorial
                   </span>
-                  <div className="mt-2 flex min-w-20 flex-col items-center rounded-xl border border-emerald-400/25 bg-emerald-400/10 px-4 py-2">
-                    <span className="text-2xl font-black leading-none text-emerald-300">{assignedUsers.territorial.length}</span>
+                  <div className="mt-2 flex min-w-20 flex-col items-center rounded-xl border border-emerald-400/25 bg-emerald-400/10 px-4 py-2 transition-all duration-200 group-hover:border-emerald-400/50 group-hover:bg-emerald-400/20">
+                    <span className="text-2xl font-black leading-none text-emerald-300 transition-transform duration-200 group-hover:scale-105">
+                      <AnimatedCounter value={assignedUsers.territorial.length} duration={500} />
+                    </span>
                     <span className="mt-1 text-[9px] font-bold uppercase tracking-widest text-emerald-100/70">
                       {assignedUsers.territorial.length === 1 ? 'Usuario' : 'Usuarios'}
                     </span>
@@ -2685,19 +2703,19 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
 
                   {/* Inline user search and user adding button */}
                   <div className="flex items-center gap-2">
-                    <div className="relative w-48 sm:w-56">
+                    <div className="relative w-48 sm:w-56 group/search">
                       <input
                         type="text"
                         placeholder="Buscar por nombre o correo..."
                         value={userSearchTerm}
                         onChange={(e) => setUserSearchTerm(e.target.value)}
-                        className="w-full pl-8 pr-3 py-2 bg-slate-950 border border-cyan-500/30 rounded-xl text-xs text-slate-100 placeholder-slate-400 focus:outline-none focus:border-cyan-400 transition-all"
+                        className="w-full pl-8 pr-3 py-2 bg-slate-950 border border-cyan-500/30 rounded-xl text-xs text-slate-100 placeholder-slate-400 focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_0_2px_rgba(6,182,212,0.25)] transition-all duration-200"
                       />
-                      <Search className="w-3.5 h-3.5 text-cyan-400 absolute left-2.5 top-3" />
+                      <Search className="w-3.5 h-3.5 text-cyan-400 absolute left-2.5 top-3 group-focus-within/search:scale-110 group-focus-within/search:text-cyan-300 transition-all duration-200" />
                     </div>
                     <button
                       onClick={() => setShowAddUserSection(!showAddUserSection)}
-                      className="px-3 py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all flex items-center gap-1 cursor-pointer"
+                      className="px-3 py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs rounded-xl shadow-[0_0_15px_rgba(6,182,212,0.25)] hover:shadow-[0_0_25px_rgba(6,182,212,0.45)] active:scale-95 transition-all duration-150 flex items-center gap-1 cursor-pointer select-none"
                     >
                       <Plus className="w-4 h-4 text-slate-950" />
                       <span>{showAddUserSection ? 'Cancelar' : 'Registrar'}</span>
@@ -2857,7 +2875,10 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                 )}
 
                 {/* Users assignment list (Tabular format with status toggles and assigned permission badges) */}
-                <div className="space-y-2">
+                <div 
+                  style={{ animationDelay: '0.15s' }}
+                  className="animate-rbac-table space-y-2 will-change-transform"
+                >
                   <div className="hidden sm:grid sm:grid-cols-12 gap-4 px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-cyan-500/10">
                     <div className="col-span-6">Datos de Usuario y Funciones Habilitadas</div>
                     <div className="col-span-2">Módulo Asignado</div>
@@ -2875,10 +2896,10 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                     .map(usr => (
                       <div 
                         key={usr.id} 
-                        className={`p-3.5 rounded-xl border transition-all flex flex-col sm:grid sm:grid-cols-12 items-start sm:items-center gap-4 ${
+                        className={`p-3.5 rounded-xl border transition-all duration-200 flex flex-col sm:grid sm:grid-cols-12 items-start sm:items-center gap-4 will-change-transform hover:bg-slate-800/30 hover:border-cyan-500/30 ${
                           usr.status === 'Activo'
-                            ? 'bg-[#030d1f]/40 border-cyan-500/10'
-                            : 'bg-rose-950/5 border-rose-500/10 opacity-70'
+                            ? 'bg-[#030d1f]/40 border-cyan-500/15'
+                            : 'bg-rose-950/5 border-rose-500/15 opacity-70'
                         }`}
                       >
                         {/* Column 1: User info & enabled permissions */}
@@ -2906,10 +2927,10 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                             disabled={usr.isCandidateOwner}
                             value={usr.role}
                             onChange={(e) => void handleUserRoleChangeReal(usr.id, e.target.value as any)}
-                            className={`border rounded-lg px-2 py-1 text-xs font-medium focus:outline-none w-full transition-all ${
+                            className={`border rounded-lg px-2 py-1 text-xs font-medium focus:outline-none focus:border-cyan-400 focus:shadow-[0_0_0_2px_rgba(6,182,212,0.25)] w-full transition-all duration-200 ${
                               usr.isCandidateOwner
                                 ? 'bg-slate-900/60 border-slate-700/60 text-slate-400 cursor-not-allowed opacity-75'
-                                : 'bg-[#030d1f] border-cyan-500/35 text-cyan-300 focus:border-cyan-400 cursor-pointer'
+                                : 'bg-[#030d1f] border-cyan-500/35 text-cyan-300 cursor-pointer hover:border-cyan-400/60'
                             }`}
                             title={usr.isCandidateOwner ? "El rol del candidato propietario no puede modificarse" : "Cambiar módulo asignado"}
                           >
@@ -2925,16 +2946,26 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                             type="button"
                             disabled={usr.isCandidateOwner || !!(authUser && usr.email.toLowerCase() === authUser.email.toLowerCase())}
                             onClick={() => void toggleUserStatusReal(usr.id)}
-                            className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold border transition-all w-full ${
+                            className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold border transition-all duration-200 w-full flex items-center justify-center gap-1.5 ${
                               usr.isCandidateOwner || (authUser && usr.email.toLowerCase() === authUser.email.toLowerCase())
                                 ? 'bg-slate-800/80 border-slate-700 text-slate-500 cursor-not-allowed opacity-50'
                                 : usr.status === 'Activo'
-                                ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400 cursor-pointer'
-                                : 'bg-rose-500/15 border-rose-500/30 text-rose-400 cursor-pointer'
+                                ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/25 hover:border-emerald-500/50 cursor-pointer active:scale-95'
+                                : 'bg-rose-500/15 border-rose-500/30 text-rose-400 hover:bg-rose-500/25 hover:border-rose-500/50 cursor-pointer active:scale-95'
                             }`}
                             title={usr.isCandidateOwner ? "La cuenta del candidato propietario permanece siempre activa" : authUser && usr.email.toLowerCase() === authUser.email.toLowerCase() ? "No puedes suspender tu propia cuenta" : ""}
                           >
-                            {usr.status === 'Activo' ? '🟢 Activo' : '🔴 Suspendido'}
+                            {usr.status === 'Activo' ? (
+                              <>
+                                <span className="status-dot-active w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
+                                <span>Activo</span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0" />
+                                <span>Suspendido</span>
+                              </>
+                            )}
                           </button>
                         </div>
 
@@ -2943,23 +2974,23 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                           <button
                             type="button"
                             onClick={() => setExpandedUserId(prev => prev === usr.id ? null : usr.id)}
-                            className={`flex-1 sm:flex-none px-2.5 py-1.5 border rounded-lg text-[10px] font-bold transition-all cursor-pointer flex items-center justify-center gap-1 sm:inline-flex ${
+                            className={`group/btn flex-1 sm:flex-none px-2.5 py-1.5 border rounded-lg text-[10px] font-bold transition-all duration-200 cursor-pointer flex items-center justify-center gap-1.5 sm:inline-flex active:scale-95 ${
                               expandedUserId === usr.id 
-                                ? 'bg-cyan-500 text-slate-950 border-cyan-400 hover:bg-cyan-400' 
-                                : 'bg-cyan-500/10 hover:bg-cyan-500/25 border-cyan-500/30 text-cyan-300'
+                                ? 'bg-cyan-500 text-slate-950 border-cyan-400 hover:bg-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.3)]' 
+                                : 'bg-cyan-500/10 hover:bg-cyan-500/20 hover:border-cyan-400/50 border-cyan-500/30 text-cyan-300'
                             }`}
                           >
-                            <Settings className={`w-3 h-3 ${expandedUserId === usr.id ? 'text-slate-950 animate-spin' : 'text-cyan-400'}`} />
+                            <Settings className={`w-3 h-3 transition-transform duration-300 ${expandedUserId === usr.id ? 'text-slate-950 animate-spin' : 'text-cyan-400 group-hover/btn:rotate-45'}`} />
                             <span>{expandedUserId === usr.id ? 'Ocultar' : 'Permisos'}</span>
                           </button>
                           <button
                             type="button"
                             disabled={usr.isCandidateOwner || !!(authUser && usr.email.toLowerCase() === authUser.email.toLowerCase())}
                             onClick={() => void handleDeleteUserReal(usr.id, usr.email, usr.name)}
-                            className={`px-2.5 py-1.5 border rounded-lg text-[10px] font-bold transition-all flex items-center justify-center gap-1 w-10 sm:w-auto ${
+                            className={`px-2.5 py-1.5 border rounded-lg text-[10px] font-bold transition-all duration-200 flex items-center justify-center gap-1 w-10 sm:w-auto active:scale-90 ${
                               usr.isCandidateOwner || (authUser && usr.email.toLowerCase() === authUser.email.toLowerCase())
                                 ? 'bg-slate-800/80 border-slate-700 text-slate-500 cursor-not-allowed opacity-50'
-                                : 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 border-rose-500/30 cursor-pointer'
+                                : 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 hover:text-rose-300 border-rose-500/30 hover:border-rose-500/50 cursor-pointer'
                             }`}
                             title={usr.isCandidateOwner ? "No se puede eliminar la cuenta del candidato propietario" : authUser && usr.email.toLowerCase() === authUser.email.toLowerCase() ? "No puedes eliminar tu propia cuenta" : "Eliminar usuario permanentemente"}
                           >
