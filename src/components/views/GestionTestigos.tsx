@@ -853,14 +853,17 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
         {/* ========================================================================= */}
         {/* TOP ACTION BUTTONS BAR (ONLY BUTTONS) */}
         {/* ========================================================================= */}
-        <div className={`flex flex-wrap items-center gap-2 sm:gap-3 border-b pb-4 ${
-          isWhiteMode ? 'border-slate-200' : 'border-cyan-500/20'
-        }`}>
+        <div 
+          className={`animate-witness-stagger flex flex-wrap items-center gap-2 sm:gap-3 border-b pb-4 ${
+            isWhiteMode ? 'border-slate-200' : 'border-cyan-500/20'
+          }`}
+          style={{ animationDelay: '0s' }}
+        >
           {/* Status indicator */}
-          <div className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-black rounded-xl shadow-sm whitespace-nowrap border ${
+          <div className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-black rounded-xl shadow-sm whitespace-nowrap border transition-all duration-200 ${
             isWhiteMode 
-              ? 'bg-emerald-50 border-emerald-200 text-emerald-700' 
-              : 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300'
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-700 shadow-[0_0_12px_rgba(16,185,129,0.15)]' 
+              : 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.2)]'
           }`}>
             <CheckCircle2 className={`w-4 h-4 shrink-0 ${isWhiteMode ? 'text-emerald-600' : 'text-emerald-400'}`} />
             <span>Campaña Activa: Creada ✓</span>
@@ -869,19 +872,19 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
           <button
             type="button"
             onClick={() => setShowE16Modal(true)}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-black text-xs rounded-xl shadow-sm flex items-center justify-center gap-2 transition-all cursor-pointer whitespace-nowrap"
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 active:scale-[0.97] text-white font-black text-xs rounded-xl shadow-[0_0_18px_rgba(59,130,246,0.3)] hover:shadow-[0_0_24px_rgba(59,130,246,0.45)] hover:-translate-y-0.5 flex items-center justify-center gap-2 transition-all duration-150 cursor-pointer whitespace-nowrap will-change-transform"
           >
-            <FileCheck className="w-4 h-4" />
+            <FileCheck className="w-4 h-4 transition-transform group-hover:scale-110" />
             <span>Generar Formulario E-16 Oficial</span>
           </button>
 
           <button
             type="button"
             onClick={() => setShowImportModal(true)}
-            className={`px-3.5 py-2 active:scale-95 font-bold text-xs rounded-xl border flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+            className={`px-3.5 py-2 active:scale-[0.97] hover:-translate-y-0.5 font-bold text-xs rounded-xl border flex items-center justify-center gap-1.5 transition-all duration-150 cursor-pointer whitespace-nowrap will-change-transform ${
               isWhiteMode 
                 ? 'bg-slate-50 hover:bg-slate-100 text-blue-700 border-slate-200 shadow-sm' 
-                : 'bg-[#041733] hover:bg-[#07244f] text-cyan-300 border-cyan-500/30'
+                : 'bg-[#041733] hover:bg-[#07244f] hover:border-cyan-400/50 text-cyan-300 border-cyan-500/30'
             }`}
           >
             <FileSpreadsheet className={`w-4 h-4 ${isWhiteMode ? 'text-blue-600' : 'text-cyan-400'}`} />
@@ -891,10 +894,10 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
           <button
             type="button"
             onClick={handleExportCsv}
-            className={`px-3.5 py-2 active:scale-95 font-bold text-xs rounded-xl border flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+            className={`px-3.5 py-2 active:scale-[0.97] hover:-translate-y-0.5 font-bold text-xs rounded-xl border flex items-center justify-center gap-1.5 transition-all duration-150 cursor-pointer whitespace-nowrap will-change-transform ${
               isWhiteMode 
                 ? 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200 shadow-sm' 
-                : 'bg-[#041733] hover:bg-[#07244f] text-slate-200 border-cyan-500/30'
+                : 'bg-[#041733] hover:bg-[#07244f] hover:border-cyan-400/50 text-slate-200 border-cyan-500/30'
             }`}
             title="Descargar base de testigos en archivo CSV"
           >
@@ -905,10 +908,10 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
           <button
             type="button"
             onClick={() => setShowAddPuestoModal(true)}
-            className={`px-3.5 py-2 active:scale-95 font-bold text-xs rounded-xl border flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+            className={`px-3.5 py-2 active:scale-[0.97] hover:-translate-y-0.5 font-bold text-xs rounded-xl border flex items-center justify-center gap-1.5 transition-all duration-150 cursor-pointer whitespace-nowrap will-change-transform ${
               isWhiteMode 
                 ? 'bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200 shadow-sm' 
-                : 'bg-[#041733] hover:bg-[#07244f] text-cyan-300 border-cyan-500/30'
+                : 'bg-[#041733] hover:bg-[#07244f] hover:border-cyan-400/50 text-cyan-300 border-cyan-500/30'
             }`}
           >
             <PlusCircle className={`w-4 h-4 ${isWhiteMode ? 'text-blue-600' : 'text-cyan-400'}`} />
@@ -920,17 +923,20 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
         <div className="space-y-4">
           
           {/* KPI Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-            <div className={`p-4 rounded-xl border space-y-1 transition-all ${
+          <div 
+            className="animate-witness-stagger grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs"
+            style={{ animationDelay: '0.035s' }}
+          >
+            <div className={`witness-kpi-card group cursor-default p-4 rounded-xl border space-y-1 ${
               isWhiteMode 
-                ? 'bg-slate-50/80 border-slate-200/80 shadow-sm' 
-                : 'bg-[#041733]/80 border-cyan-500/30 shadow-md'
+                ? 'bg-slate-50/80 hover:bg-white border-slate-200/80 hover:border-emerald-400 shadow-sm hover:shadow-[0_0_20px_rgba(16,185,129,0.12)]' 
+                : 'bg-[#041733]/80 hover:bg-[#062044] border-cyan-500/30 hover:border-emerald-500/40 shadow-md hover:shadow-[0_0_20px_rgba(16,185,129,0.15)]'
             }`}>
               <div className={`flex items-center justify-between font-bold text-[11px] uppercase tracking-wider ${
                 isWhiteMode ? 'text-slate-500' : 'text-cyan-300'
               }`}>
                 <span>Testigos Acreditados</span>
-                <Award className={`w-4 h-4 ${isWhiteMode ? 'text-emerald-600' : 'text-emerald-400'}`} />
+                <Award className={`w-4 h-4 group-hover:scale-110 group-hover:drop-shadow-[0_0_8px_currentColor] transition-all duration-200 ${isWhiteMode ? 'text-emerald-600' : 'text-emerald-400'}`} />
               </div>
               <div className={`text-xl sm:text-2xl font-black ${
                 isWhiteMode ? 'text-slate-900' : 'text-white'
@@ -939,7 +945,7 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
                 isWhiteMode ? 'bg-slate-200' : 'bg-slate-800'
               }`}>
                 <div 
-                  className="bg-emerald-500 h-full rounded-full transition-all" 
+                  className="bg-emerald-500 h-full rounded-full transition-all duration-500" 
                   style={{ width: `${totalInscritos > 0 ? (totalAcreditados / totalInscritos) * 100 : 0}%` }}
                 />
               </div>
@@ -950,16 +956,16 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
               </span>
             </div>
 
-            <div className={`p-4 rounded-xl border space-y-1 transition-all ${
+            <div className={`witness-kpi-card group cursor-default p-4 rounded-xl border space-y-1 ${
               isWhiteMode 
-                ? 'bg-slate-50/80 border-slate-200/80 shadow-sm' 
-                : 'bg-[#041733]/80 border-cyan-500/30 shadow-md'
+                ? 'bg-slate-50/80 hover:bg-white border-slate-200/80 hover:border-cyan-400 shadow-sm hover:shadow-[0_0_20px_rgba(6,182,212,0.12)]' 
+                : 'bg-[#041733]/80 hover:bg-[#062044] border-cyan-500/30 hover:border-cyan-400/50 shadow-md hover:shadow-[0_0_20px_rgba(6,182,212,0.15)]'
             }`}>
               <div className={`flex items-center justify-between font-bold text-[11px] uppercase tracking-wider ${
                 isWhiteMode ? 'text-slate-500' : 'text-cyan-300'
               }`}>
                 <span>Cobertura de Mesas</span>
-                <MapPin className={`w-4 h-4 ${isWhiteMode ? 'text-blue-600' : 'text-blue-400'}`} />
+                <MapPin className={`w-4 h-4 group-hover:scale-110 group-hover:drop-shadow-[0_0_8px_currentColor] transition-all duration-200 ${isWhiteMode ? 'text-blue-600' : 'text-blue-400'}`} />
               </div>
               <div className={`text-xl sm:text-2xl font-black ${
                 isWhiteMode ? 'text-slate-900' : 'text-white'
@@ -968,7 +974,7 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
                 isWhiteMode ? 'bg-slate-200' : 'bg-slate-800'
               }`}>
                 <div 
-                  className="bg-blue-600 h-full rounded-full transition-all" 
+                  className="bg-blue-600 h-full rounded-full transition-all duration-500" 
                   style={{ width: `${pctCobertura}%` }}
                 />
               </div>
@@ -979,16 +985,16 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
               </span>
             </div>
 
-            <div className={`p-4 rounded-xl border space-y-1 transition-all ${
+            <div className={`witness-kpi-card group cursor-default p-4 rounded-xl border space-y-1 ${
               isWhiteMode 
-                ? 'bg-slate-50/80 border-slate-200/80 shadow-sm' 
-                : 'bg-[#041733]/80 border-cyan-500/30 shadow-md'
+                ? 'bg-slate-50/80 hover:bg-white border-slate-200/80 hover:border-indigo-400 shadow-sm hover:shadow-[0_0_20px_rgba(99,102,241,0.12)]' 
+                : 'bg-[#041733]/80 hover:bg-[#062044] border-cyan-500/30 hover:border-indigo-500/50 shadow-md hover:shadow-[0_0_20px_rgba(99,102,241,0.15)]'
             }`}>
               <div className={`flex items-center justify-between font-bold text-[11px] uppercase tracking-wider ${
                 isWhiteMode ? 'text-slate-500' : 'text-cyan-300'
               }`}>
                 <span>Puestos Asignados</span>
-                <Building className={`w-4 h-4 ${isWhiteMode ? 'text-indigo-600' : 'text-indigo-400'}`} />
+                <Building className={`w-4 h-4 group-hover:scale-110 group-hover:drop-shadow-[0_0_8px_currentColor] transition-all duration-200 ${isWhiteMode ? 'text-indigo-600' : 'text-indigo-400'}`} />
               </div>
               <div className={`text-xl sm:text-2xl font-black ${
                 isWhiteMode ? 'text-slate-900' : 'text-white'
@@ -1002,16 +1008,16 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
               </span>
             </div>
 
-            <div className={`p-4 rounded-xl border space-y-1 transition-all ${
+            <div className={`witness-kpi-card group cursor-default p-4 rounded-xl border space-y-1 ${
               isWhiteMode 
-                ? 'bg-slate-50/80 border-slate-200/80 shadow-sm' 
-                : 'bg-[#041733]/80 border-cyan-500/30 shadow-md'
+                ? 'bg-slate-50/80 hover:bg-white border-slate-200/80 hover:border-amber-400 shadow-sm hover:shadow-[0_0_20px_rgba(245,158,11,0.12)]' 
+                : 'bg-[#041733]/80 hover:bg-[#062044] border-cyan-500/30 hover:border-amber-500/40 shadow-md hover:shadow-[0_0_20px_rgba(245,158,11,0.15)]'
             }`}>
               <div className={`flex items-center justify-between font-bold text-[11px] uppercase tracking-wider ${
                 isWhiteMode ? 'text-slate-500' : 'text-cyan-300'
               }`}>
                 <span>Cerco GPS en Tiempo Real</span>
-                <Locate className={`w-4 h-4 ${isWhiteMode ? 'text-amber-600' : 'text-amber-400'}`} />
+                <Locate className={`w-4 h-4 group-hover:scale-110 group-hover:drop-shadow-[0_0_8px_currentColor] transition-all duration-200 ${isWhiteMode ? 'text-amber-600' : 'text-amber-400'}`} />
               </div>
               <div className={`text-xl sm:text-2xl font-black ${
                 isWhiteMode ? 'text-slate-900' : 'text-white'
@@ -1099,13 +1105,16 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
           {/* ========================================================================= */}
           {/* GEOFENCING & RADAR GPS PANEL */}
           {/* ========================================================================= */}
-          <div className={`gestion-testigos-geofence-card rounded-2xl border p-6 text-center transition-all ${
-            isWhiteMode 
-              ? 'bg-slate-50/80 border-slate-200 shadow-sm' 
-              : 'border-indigo-500/30 bg-[#04142b]'
-          }`}>
-            <Locate className={`mx-auto mb-3 h-8 w-8 ${
-              isWhiteMode ? 'text-slate-400' : 'text-slate-600'
+          <div 
+            className={`animate-witness-stagger gestion-testigos-geofence-card rounded-2xl border p-6 text-center transition-all duration-300 ${
+              isWhiteMode 
+                ? 'bg-slate-50/80 hover:bg-slate-50 border-slate-200 hover:border-indigo-400 shadow-sm hover:shadow-[0_0_20px_rgba(99,102,241,0.12)]' 
+                : 'border-indigo-500/30 hover:border-indigo-500/60 bg-[#04142b] hover:shadow-[0_0_25px_rgba(99,102,241,0.15)]'
+            }`}
+            style={{ animationDelay: '0.070s' }}
+          >
+            <Locate className={`gps-radar-icon mx-auto mb-3 h-8 w-8 ${
+              isWhiteMode ? 'text-indigo-500' : 'text-cyan-400'
             }`} />
             <h4 className={`font-extrabold text-sm ${
               isWhiteMode ? 'text-slate-900' : 'text-white'
@@ -1418,7 +1427,10 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
           {/* ========================================================================= */}
           {/* ACTION & FILTER BAR (RESPONSIVE) */}
           {/* ========================================================================= */}
-          <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 pt-2">
+          <div 
+            className="animate-witness-stagger flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 pt-2"
+            style={{ animationDelay: '0.105s' }}
+          >
             <div className="flex flex-wrap items-center gap-2 flex-1">
               {/* Search */}
               <div className="relative w-full sm:w-auto flex-1 min-w-[200px]">
@@ -1430,10 +1442,10 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
                   value={witnessSearchQuery}
                   onChange={(e) => setWitnessSearchQuery(e.target.value)}
                   placeholder="Buscar por nombre, CC o mesa..."
-                  className={`w-full rounded-xl pl-8 pr-3 py-2 text-xs transition-colors focus:outline-none ${
+                  className={`w-full rounded-xl pl-8 pr-3 py-2 text-xs transition-all duration-150 focus:outline-none ${
                     isWhiteMode 
-                      ? 'bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm' 
-                      : 'bg-[#020712] border border-slate-700 text-white placeholder-slate-500 focus:border-cyan-400'
+                      ? 'bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25 shadow-sm' 
+                      : 'bg-[#020712] border border-slate-700 text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/25'
                   }`}
                 />
               </div>
@@ -1443,10 +1455,10 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
                 <select
                   value={witnessPartidoFilter}
                   onChange={(e) => setWitnessPartidoFilter(e.target.value)}
-                  className={`w-full rounded-xl px-2.5 py-2 text-xs font-semibold transition-colors focus:outline-none ${
+                  className={`w-full rounded-xl px-2.5 py-2 text-xs font-semibold transition-all duration-150 focus:outline-none ${
                     isWhiteMode 
-                      ? 'bg-white border border-slate-300 text-slate-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm' 
-                      : 'bg-[#020712] border border-slate-700 text-slate-200 focus:border-cyan-400'
+                      ? 'bg-white border border-slate-300 text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25 shadow-sm' 
+                      : 'bg-[#020712] border border-slate-700 text-slate-200 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/25'
                   }`}
                 >
                   <option value="Todos">Todos los Partidos</option>
@@ -1461,10 +1473,10 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
                 <select
                   value={witnessPuestoFilter}
                   onChange={(e) => setWitnessPuestoFilter(e.target.value)}
-                  className={`w-full rounded-xl px-2.5 py-2 text-xs font-semibold transition-colors focus:outline-none ${
+                  className={`w-full rounded-xl px-2.5 py-2 text-xs font-semibold transition-all duration-150 focus:outline-none ${
                     isWhiteMode 
-                      ? 'bg-white border border-slate-300 text-slate-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm' 
-                      : 'bg-[#020712] border border-slate-700 text-slate-200 focus:border-cyan-400'
+                      ? 'bg-white border border-slate-300 text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25 shadow-sm' 
+                      : 'bg-[#020712] border border-slate-700 text-slate-200 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/25'
                   }`}
                 >
                   <option value="Todos">Todos los puestos</option>
@@ -1479,10 +1491,10 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
                 <select
                   value={witnessAcreditacionFilter}
                   onChange={(e) => setWitnessAcreditacionFilter(e.target.value)}
-                  className={`w-full rounded-xl px-2.5 py-2 text-xs font-semibold transition-colors focus:outline-none ${
+                  className={`w-full rounded-xl px-2.5 py-2 text-xs font-semibold transition-all duration-150 focus:outline-none ${
                     isWhiteMode 
-                      ? 'bg-white border border-slate-300 text-slate-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm' 
-                      : 'bg-[#020712] border border-slate-700 text-slate-200 focus:border-cyan-400'
+                      ? 'bg-white border border-slate-300 text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25 shadow-sm' 
+                      : 'bg-[#020712] border border-slate-700 text-slate-200 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/25'
                   }`}
                 >
                   <option value="Todos">Acreditaciones E-16</option>
@@ -1497,10 +1509,10 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
                 <select
                   value={witnessGpsFilter}
                   onChange={(e) => setWitnessGpsFilter(e.target.value as any)}
-                  className={`w-full rounded-xl px-2.5 py-2 text-xs font-semibold transition-colors focus:outline-none ${
+                  className={`w-full rounded-xl px-2.5 py-2 text-xs font-semibold transition-all duration-150 focus:outline-none ${
                     isWhiteMode 
-                      ? 'bg-white border border-slate-300 text-slate-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm' 
-                      : 'bg-[#020712] border border-slate-700 text-slate-200 focus:border-cyan-400'
+                      ? 'bg-white border border-slate-300 text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/25 shadow-sm' 
+                      : 'bg-[#020712] border border-slate-700 text-slate-200 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-500/25'
                   }`}
                 >
                   <option value="Todos">Estados GPS</option>
@@ -1520,7 +1532,7 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
                   setShowWitnessForm(true);
                 }
               }}
-              className="w-full lg:w-auto px-4 py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-black text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+              className="w-full lg:w-auto px-4 py-2.5 bg-blue-600 hover:bg-blue-500 active:scale-[0.97] text-white font-black text-xs rounded-xl shadow-[0_0_18px_rgba(37,99,235,0.3)] hover:shadow-[0_0_24px_rgba(37,99,235,0.45)] hover:-translate-y-0.5 transition-all duration-150 flex items-center justify-center gap-1.5 cursor-pointer shrink-0 will-change-transform"
             >
               <Plus className="w-4 h-4" />
               <span>{showWitnessForm ? 'Cerrar Formulario' : '+ Inscribir Nuevo Testigo'}</span>
@@ -1810,7 +1822,10 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
           {/* ========================================================================= */}
           {/* WITNESSES LIST (DUAL RESPONSIVE: CARDS ON MOBILE & TABLE ON DESKTOP) */}
           {/* ========================================================================= */}
-          <div className="rounded-2xl overflow-hidden shadow-xl transition-all bg-[#030d1d] border border-cyan-500/30">
+          <div 
+            className="animate-witness-stagger rounded-2xl overflow-hidden shadow-xl transition-all bg-[#030d1d] border border-cyan-500/30"
+            style={{ animationDelay: '0.140s' }}
+          >
             <div className="p-3.5 sm:p-4 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-slate-800 bg-[#020b18]/90 text-white">
               <div className="flex items-center gap-2">
                 <Users className="w-4 h-4 text-cyan-400" />
@@ -1819,7 +1834,7 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
                 </h4>
               </div>
               <span className="text-[11px] text-slate-400">
-                Territorio: <strong className="text-cyan-300">{activeTerritoryLabel || 'Pendiente de configurar'}</strong>
+                Territorio: <strong className="text-cyan-300 font-mono drop-shadow-[0_0_6px_rgba(6,182,212,0.3)]">{activeTerritoryLabel || 'Pendiente de configurar'}</strong>
               </span>
             </div>
 
@@ -2117,7 +2132,10 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
           {/* ========================================================================= */}
           {/* TERRITORIAL POLLING STATION COVERAGE SUMMARY */}
           {/* ========================================================================= */}
-          <div className="rounded-2xl p-4 sm:p-5 space-y-4 shadow-xl transition-all bg-[#030d1d] border border-cyan-500/30">
+          <div 
+            className="animate-witness-stagger rounded-2xl p-4 sm:p-5 space-y-4 shadow-xl transition-all bg-[#030d1d] border border-cyan-500/30"
+            style={{ animationDelay: '0.175s' }}
+          >
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b pb-3 border-slate-800">
               <div>
                 <h4 className="text-xs sm:text-sm font-bold flex items-center gap-1.5 uppercase tracking-wider text-white">
@@ -2133,7 +2151,7 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowAddPuestoModal(true)}
-                  className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-sm cursor-pointer flex items-center gap-1"
+                  className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 active:scale-[0.97] text-white font-bold text-xs rounded-xl shadow-[0_0_12px_rgba(37,99,235,0.3)] hover:shadow-[0_0_18px_rgba(37,99,235,0.45)] hover:-translate-y-0.5 transition-all duration-150 cursor-pointer flex items-center gap-1 will-change-transform"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Añadir Puesto</span>

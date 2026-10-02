@@ -1762,6 +1762,56 @@ textarea {
   transform: translateY(-1.5px) translateZ(0);
 }
 
+/* Electoral Witness Operations Module Animations */
+@keyframes witnessStaggerEnter {
+  from {
+    opacity: 0;
+    transform: translateY(8px) translateZ(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) translateZ(0);
+  }
+}
+
+.animate-witness-stagger {
+  animation: witnessStaggerEnter 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
+  transform: translateZ(0);
+}
+
+.witness-kpi-card {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.witness-kpi-card:hover {
+  transform: translateY(-3px) translateZ(0);
+}
+
+@keyframes gpsRadarSweep {
+  0% {
+    transform: scale(1) translateZ(0);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.08) translateZ(0);
+    opacity: 1;
+    filter: drop-shadow(0 0 8px rgba(6, 182, 212, 0.5));
+  }
+  100% {
+    transform: scale(1) translateZ(0);
+    opacity: 0.8;
+  }
+}
+
+.gps-radar-icon {
+  animation: gpsRadarSweep 3.5s ease-in-out infinite;
+  will-change: transform, opacity, filter;
+  transform: translateZ(0);
+}
+
 /* --------------------------------------------------------------------------
    E. ACCESSIBILITY & PREFERS-REDUCED-MOTION
    Respect user operating system reduced-motion preferences
