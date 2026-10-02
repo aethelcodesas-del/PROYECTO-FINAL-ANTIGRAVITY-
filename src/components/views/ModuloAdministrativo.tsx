@@ -1,17 +1,20 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { lazy, useState, useEffect, useMemo } from 'react';
 import { useCampaignData, useCampaignLive } from '../../contexts/CampaignContext';
 import { useCampaignGeo } from '../../hooks/useCampaignGeo';
 import { GeoSubdivisionSelect } from '../common/GeoSubdivisionSelect';
 import { ViewMode, CalendarEvent, AuthUser } from '../../types';
 import { supabase } from '../../lib/supabaseClient';
-import { insforge } from '../../lib/insforgeClient';
+import { isExpectedEmptyCampaignState } from '../../lib/campaignSetupState';
+import { loadCampaignPollingPlaces } from '../../services/campaignPollingStationService';
+import { getPuestosPorCircunscripcion } from '../../data/puestosVotacionColombia';
 import { colombiaTerritorialData, partidosPoliticosColombia } from '../../data/colombiaTerritorialData';
-import { PresupuestoContabilidad } from './PresupuestoContabilidad';
-import { GestionConfiguracionCampana } from './GestionConfiguracionCampana';
-import { GestionEncuestasSondeos } from './GestionEncuestasSondeos';
-import { GestionTestigos } from './GestionTestigos';
+const PresupuestoContabilidad = lazy(() => import('./PresupuestoContabilidad').then(m => ({ default: m.PresupuestoContabilidad })));
+const GestionConfiguracionCampana = lazy(() => import('./GestionConfiguracionCampana').then(m => ({ default: m.GestionConfiguracionCampana })));
+const GestionEncuestasSondeos = lazy(() => import('./GestionEncuestasSondeos').then(m => ({ default: m.GestionEncuestasSondeos })));
+const GestionTestigos = lazy(() => import('./GestionTestigos').then(m => ({ default: m.GestionTestigos })));
 import { useModuleColorMode } from '../../utils/themeColorMode';
 import { ColorModeToggle } from '../common/ColorModeToggle';
+import { confirmModal, showToast } from '../common/ConfirmModal';
 import { 
   Building2, 
   Users, 
@@ -95,6 +98,76 @@ export type AdminTabType =
   | 'gestion_testigos' 
   | 'jurados_electorales'
   | 'encuestas_sondeos';
+
+const formatCOP = (amount: number): string => {
+  return new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    maximumFractionDigits: 0
+  }).format(amount);
+};
+
+interface AnimatedCounterProps {
+  value: number;
+  duration?: number;
+  decimals?: number;
+  formatter?: (val: number) => string;
+}
+
+const AnimatedCounter: React.FC<AnimatedCounterProps> = ({
+  value,
+  duration = 500,
+  decimals = 0,
+  formatter
+}) => {
+  const [currentVal, setCurrentVal] = useState<number>(0);
+  const prevValueRef = React.useRef<number>(0);
+
+  useEffect(() => {
+    const start = prevValueRef.current;
+    const end = value;
+    if (start === end) {
+      setCurrentVal(end);
+      return;
+    }
+
+    let startTime: number | null = null;
+    let animationFrame: number;
+
+    const animate = (timestamp: number) => {
+      if (!startTime) startTime = timestamp;
+      const elapsed = timestamp - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // easeOutCubic
+      const easeProgress = 1 - Math.pow(1 - progress, 3);
+      const val = start + (end - start) * easeProgress;
+      setCurrentVal(val);
+
+      if (progress < 1) {
+        animationFrame = requestAnimationFrame(animate);
+      } else {
+        setCurrentVal(end);
+        prevValueRef.current = end;
+      }
+    };
+
+    animationFrame = requestAnimationFrame(animate);
+    return () => {
+      cancelAnimationFrame(animationFrame);
+      prevValueRef.current = currentVal;
+    };
+  }, [value, duration]);
+
+  if (formatter) {
+    return <>{formatter(currentVal)}</>;
+  }
+
+  if (decimals > 0) {
+    return <>{currentVal.toFixed(decimals)}</>;
+  }
+
+  return <>{Math.round(currentVal).toLocaleString('es-CO')}</>;
+};
 
 interface ModuloAdministrativoProps {
   onSelectView: (view: ViewMode) => void;
@@ -254,346 +327,6 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
 
   const [expandedUserId, setExpandedUserId] = useState<string | null>(null);
 
-  // Handle User Role Change
-  const handleUserRoleChange = (userId: string, newRole: 'admin' | 'estrategico' | 'territorial') => {
-    setUsersList(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
-    
-    // Reset user-specific permissions to base role defaults when role is changed
-    const basePerms = rolePermissions[newRole].map(p => ({ ...p }));
-    setUserPermissions(prev => ({
-      ...prev,
-      [userId]: basePerms
-    }));
-  };
-
-  // Toggle user active status
-  const toggleUserStatus = (userId: string) => {
-    const targetUser = usersList.find(u => u.id === userId);
-    if (!targetUser) return;
-
-    // Prevent suspending own account
-    if (authUser && targetUser.email.toLowerCase() === authUser.email.toLowerCase()) {
-      alert("No puedes suspender tu propia cuenta.");
-      return;
-    }
-
-    const newStatus = targetUser.status === 'Activo' ? 'Suspendido' : 'Activo';
-
-    setUsersList(prev => prev.map(u => u.id === userId ? { ...u, status: newStatus } : u));
-
-    // Update status in InsForge database
-    const updateDBPromise = insforge.database
-      .from('users_list')
-      .update({ status: newStatus })
-      .eq('email', targetUser.email);
-
-    (updateDBPromise as any).then(({ error }: any) => {
-      if (error) {
-        console.error("Error updating user status in database:", error.message);
-      } else {
-        console.log(`User ${targetUser.email} status updated to ${newStatus} in database!`);
-      }
-    });
-  };
-
-  // Delete user from local state and InsForge database
-  const handleDeleteUser = (userId: string, email: string, name: string) => {
-    // Prevent deleting own account
-    if (authUser && email.toLowerCase() === authUser.email.toLowerCase()) {
-      alert("No puedes eliminar tu propia cuenta.");
-      return;
-    }
-
-    if (!window.confirm(`¿Está seguro de que desea eliminar permanentemente al usuario ${name} (${email})? Se eliminará de la base de datos y ya no podrá iniciar sesión.`)) {
-      return;
-    }
-
-    // 1. Remove from local state
-    setUsersList(prev => prev.filter(u => u.id !== userId));
-    setUserPermissions(prev => {
-      const next = { ...prev };
-      delete next[userId];
-      return next;
-    });
-
-    // 2. Delete from InsForge users_list database table
-    const deletePromise = insforge.database
-      .from('users_list')
-      .delete()
-      .eq('email', email);
-
-    (deletePromise as any).then(({ error }: any) => {
-      if (error) {
-        console.error("Error deleting user from InsForge database:", error.message);
-      } else {
-        console.log(`User ${email} successfully deleted from InsForge database!`);
-      }
-    });
-  };
-
-  // Inline User Creation with passwords and customized permissions validation
-  const handleCreateUserInline = () => {
-    if (!newUserName || !newUserEmail || !newPassword || !confirmPassword) {
-      setPasswordError('Por favor complete todos los campos requeridos (*).');
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      setPasswordError('Las contraseñas ingresadas no coinciden.');
-      return;
-    }
-
-    // Get current module base permissions and check if at least one checkbox is ticked
-    const currentModulePerms = rolePermissions[newUserRole];
-    const checkedPermsForModule = currentModulePerms.filter(p => newUserPermissions[p.id]);
-    if (checkedPermsForModule.length === 0) {
-      setPasswordError('Es obligatorio seleccionar al menos una función para habilitar el acceso según el módulo asignado.');
-      return;
-    }
-
-    setPasswordError('');
-    const newUserId = Date.now().toString();
-
-    // Map checkboxes state to user permissions list
-    const finalPerms = currentModulePerms.map(p => ({
-      ...p,
-      enabled: !!newUserPermissions[p.id]
-    }));
-
-    const normalizedEmail = newUserEmail.toLowerCase().trim();
-
-    // 1. Verify email uniqueness locally
-    const emailExistsLocally = usersList.some(u => u.email.toLowerCase().trim() === normalizedEmail);
-    if (emailExistsLocally) {
-      setPasswordError('El correo electrónico ingresado ya se encuentra registrado en el sistema local de la campaña.');
-      return;
-    }
-
-    // 2. Fetch active client and verify email uniqueness in InsForge Database
-    const duplicateCheckPromise = insforge.database
-      .from('users_list')
-      .select('email')
-      .eq('email', normalizedEmail)
-      .limit(1);
-
-    (duplicateCheckPromise as any).then(({ data: dupData, error: dupErr }: any) => {
-      if (dupErr) {
-        console.error("Error verifying email uniqueness in database:", dupErr.message);
-      }
-      if (dupData && dupData.length > 0) {
-        setPasswordError('El correo electrónico ingresado ya se encuentra registrado en la base de datos de la campaña.');
-        return;
-      }
-
-      // If email doesn't exist, proceed to fetch client details and register
-      const clientPromise = insforge.database.from('users_list').select('client_id, client_name').limit(1);
-      
-      (clientPromise as any).then(({ data: clientData }: any) => {
-        const activeClientId = authUser?.clientId || (clientData && clientData[0]?.client_id) || 'client-101';
-        const activeClientName = authUser?.clientName || (clientData && clientData[0]?.client_name) || 'Campaña Principal';
-
-        // Register user in Supabase Database Auth
-        const signUpPromise = supabase.auth.signUp({
-          email: normalizedEmail,
-          password: newPassword,
-          options: {
-            emailRedirectTo: `${window.location.origin}/?campaign=${encodeURIComponent(activeClientName)}`,
-            data: {
-              name: newUserName,
-              role: newUserRole,
-            }
-          }
-        });
-
-        (signUpPromise as any).then(({ data, error }: any) => {
-          if (error) {
-            console.error("Error registering user in auth server:", error.message);
-            if (error.message.toLowerCase().includes('rate limit') || error.message.toLowerCase().includes('limit exceeded')) {
-              console.log("Auth rate limit hit. Falling back to direct database insertion...");
-              const tempId = 'fallback-' + Date.now();
-              const dbPromise = insforge.database.from('users_list').insert([{
-                id: tempId,
-                email: normalizedEmail,
-                first_name: newUserName,
-                last_name: '',
-                role_id: newUserRole,
-                role_name: newUserRole === 'admin' ? 'Gestión Administrativa' : newUserRole === 'estrategico' ? 'Gestión Estratégica' : 'Gestión Territorial',
-                client_id: activeClientId,
-                client_name: activeClientName,
-                status: 'Activo',
-                last_access_at: new Date().toISOString(),
-                created_at: new Date().toISOString()
-              }]);
-
-              (dbPromise as any).then(({ error: dbErr }: any) => {
-                if (dbErr) {
-                  setPasswordError(`Error al insertar en la base de datos de la campaña: ${dbErr.message}`);
-                } else {
-                  console.log("User successfully added to database users_list under rate-limit fallback!");
-                  setUserPermissions(prev => ({
-                    ...prev,
-                    [tempId]: finalPerms
-                  }));
-
-                  const newUser = {
-                    id: tempId,
-                    name: newUserName,
-                    email: normalizedEmail,
-                    role: newUserRole,
-                    status: 'Activo' as const
-                  };
-                  
-                  setUsersList(prev => [...prev, newUser]);
-                  setNewUserName('');
-                  setNewUserEmail('');
-                  setNewPassword('');
-                  setConfirmPassword('');
-                  setPasswordError('');
-                  setActionSuccessMessage(`¡Usuario ${newUserName} registrado y habilitado exitosamente en la base de datos de la campaña!`);
-
-                  // Send email confirmation of their account creation (fallback path)
-                  insforge.emails.send({
-                    to: normalizedEmail,
-                    subject: `¡Bienvenido a la Campaña de ${activeClientName}! - Creación de Usuario`,
-                    html: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #1e293b; background-color: #030d1f; color: #f8fafc; border-radius: 12px;">
-  <div style="text-align: center; margin-bottom: 20px;">
-    <h1 style="color: #06b6d4; font-size: 24px; font-weight: 800; margin: 0; text-transform: uppercase;">Campaña Ganadora IA</h1>
-    <p style="color: #94a3b8; font-size: 12px; margin: 4px 0 0 0;">Plataforma de Control Electoral</p>
-  </div>
-  <div style="border-top: 2px solid #06b6d4; padding-top: 20px;">
-    <p style="font-size: 16px; margin: 0 0 16px 0;">Hola <strong>${newUserName}</strong>,</p>
-    <p style="font-size: 14px; line-height: 1.6; margin: 0 0 16px 0; color: #cbd5e1;">
-      Tu cuenta de subusuario ha sido creada exitosamente en la base de datos de la campaña oficial del candidato: 
-      <strong style="color: #34d399;">${activeClientName}</strong>.
-    </p>
-    <div style="background-color: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 15px; margin-bottom: 20px; color: #f1f5f9;">
-      <p style="margin: 0 0 8px 0; font-size: 13px;"><strong>Módulo Asignado:</strong> ${newUserRole === 'admin' ? 'Gestión Administrativa' : newUserRole === 'estrategico' ? 'Gestión Estratégica' : 'Gestión Territorial'}</p>
-      <p style="margin: 0; font-size: 13px;"><strong>Correo de Acceso:</strong> ${normalizedEmail}</p>
-    </div>
-    <p style="font-size: 14px; line-height: 1.6; margin: 0 0 20px 0; color: #cbd5e1;">
-      Para comenzar a utilizar tus funciones habilitadas en la plataforma, por favor inicia sesión pulsando el siguiente botón:
-    </p>
-    <div style="text-align: center; margin-bottom: 24px;">
-      <a href="${window.location.origin}/?campaign=${encodeURIComponent(activeClientName)}" style="display: inline-block; background-color: #06b6d4; color: #0f172a; text-decoration: none; font-weight: 900; font-size: 14px; padding: 12px 24px; border-radius: 8px; text-transform: uppercase;">
-        Iniciar Sesión
-      </a>
-    </div>
-    <hr style="border: 0; border-top: 1px solid #1e293b; margin-bottom: 20px;" />
-    <p style="font-size: 11px; text-align: center; color: #64748b; margin: 0;">
-      Esta es una notificación automática del sistema de verificación oficial de la campaña electoral.
-    </p>
-  </div>
-</div>`
-                  }).then(({ error: mailErr }: any) => {
-                    if (mailErr) console.error("Error sending confirmation email:", mailErr.message);
-                  });
-                }
-              });
-            } else {
-              setPasswordError(`Error de Autenticación / Base de Datos: ${error.message}`);
-            }
-          } else {
-            console.log("User successfully registered in auth:", data.user);
-            const authUserId = data.user.id;
-
-            // Insert into database users_list table as a subuser
-            const dbPromise = insforge.database.from('users_list').insert([{
-              id: authUserId,
-              email: normalizedEmail,
-              first_name: newUserName,
-              last_name: '',
-              role_id: newUserRole,
-              role_name: newUserRole === 'admin' ? 'Gestión Administrativa' : newUserRole === 'estrategico' ? 'Gestión Estratégica' : 'Gestión Territorial',
-              client_id: activeClientId,
-              client_name: activeClientName,
-              status: 'Activo',
-              last_access_at: new Date().toISOString(),
-              created_at: new Date().toISOString()
-            }]);
-
-            (dbPromise as any).then(({ error: dbErr }: any) => {
-              if (dbErr) {
-                console.error("Error inserting user into InsForge database:", dbErr.message);
-                setPasswordError(`Error al insertar en la base de datos de la campaña: ${dbErr.message}`);
-              } else {
-                console.log("User successfully added to InsForge database users_list!");
-                
-                // Update React state after successful database insertion
-                setUserPermissions(prev => ({
-                  ...prev,
-                  [supabaseUserId]: finalPerms
-                }));
-
-                const newUser = {
-                  id: supabaseUserId,
-                  name: newUserName,
-                  email: normalizedEmail,
-                  role: newUserRole,
-                  status: 'Activo' as const
-                };
-                
-                setUsersList(prev => [...prev, newUser]);
-                setNewUserName('');
-                setNewUserEmail('');
-                setNewPassword('');
-                setConfirmPassword('');
-                setPasswordError('');
-                setActionSuccessMessage(`¡Usuario ${newUserName} registrado y habilitado exitosamente en la base de datos de la campaña!`);
-
-                // Send email confirmation of their account creation (normal path)
-                insforge.emails.send({
-                  to: normalizedEmail,
-                  subject: `¡Bienvenido a la Campaña de ${activeClientName}! - Creación de Usuario`,
-                  html: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #1e293b; background-color: #030d1f; color: #f8fafc; border-radius: 12px;">
-  <div style="text-align: center; margin-bottom: 20px;">
-    <h1 style="color: #06b6d4; font-size: 24px; font-weight: 800; margin: 0; text-transform: uppercase;">Campaña Ganadora IA</h1>
-    <p style="color: #94a3b8; font-size: 12px; margin: 4px 0 0 0;">Plataforma de Control Electoral</p>
-  </div>
-  <div style="border-top: 2px solid #06b6d4; padding-top: 20px;">
-    <p style="font-size: 16px; margin: 0 0 16px 0;">Hola <strong>${newUserName}</strong>,</p>
-    <p style="font-size: 14px; line-height: 1.6; margin: 0 0 16px 0; color: #cbd5e1;">
-      Tu cuenta de subusuario ha sido creada exitosamente en la base de datos de la campaña oficial del candidato: 
-      <strong style="color: #34d399;">${activeClientName}</strong>.
-    </p>
-    <div style="background-color: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 15px; margin-bottom: 20px; color: #f1f5f9;">
-      <p style="margin: 0 0 8px 0; font-size: 13px;"><strong>Módulo Asignado:</strong> ${newUserRole === 'admin' ? 'Gestión Administrativa' : newUserRole === 'estrategico' ? 'Gestión Estratégica' : 'Gestión Territorial'}</p>
-      <p style="margin: 0; font-size: 13px;"><strong>Correo de Acceso:</strong> ${normalizedEmail}</p>
-    </div>
-    <p style="font-size: 14px; line-height: 1.6; margin: 0 0 20px 0; color: #cbd5e1;">
-      Para comenzar a utilizar tus funciones habilitadas en la plataforma, por favor inicia sesión pulsando el siguiente botón:
-    </p>
-    <div style="text-align: center; margin-bottom: 24px;">
-      <a href="${window.location.origin}/?campaign=${encodeURIComponent(activeClientName)}" style="display: inline-block; background-color: #06b6d4; color: #0f172a; text-decoration: none; font-weight: 900; font-size: 14px; padding: 12px 24px; border-radius: 8px; text-transform: uppercase;">
-        Iniciar Sesión
-      </a>
-    </div>
-    <hr style="border: 0; border-top: 1px solid #1e293b; margin-bottom: 20px;" />
-    <p style="font-size: 11px; text-align: center; color: #64748b; margin: 0;">
-      Esta es una notificación automática del sistema de verificación oficial de la campaña electoral.
-    </p>
-  </div>
-</div>`
-                }).then(({ error: mailErr }: any) => {
-                  if (mailErr) console.error("Error sending confirmation email via InsForge:", mailErr.message);
-                });
-              }
-            });
-
-          }
-        });
-      }).catch((err: any) => {
-        console.error("Error retrieving active client details:", err);
-      });
-    }).catch((err: any) => {
-      console.error("Error verifying email duplicate in database:", err);
-    });
-    setConfirmPassword('');
-    
-    // Reset checkboxes
-    setNewUserPermissions({});
-    
-    setShowAddUserSection(false);
-  };
-
   const isUUID = (val: any): val is string =>
     typeof val === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
 
@@ -663,7 +396,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                   name: profile.display_name || profile.name || profile.email,
                   email: profile.email,
                   role: roleFromProfile(profile),
-                  status: ['ACTIVE', 'ACTIVO'].includes(String(profile.status || '').toUpperCase()) ? 'Activo' : 'Suspendido',
+                  status: profile.is_active !== false && ['ACTIVE', 'ACTIVO'].includes(String(profile.status || 'ACTIVE').toUpperCase()) ? 'Activo' : 'Suspendido',
                   clientId: profile.client_id || profile.campaign_id,
                   isCandidateOwner: isCandidate
                 };
@@ -680,6 +413,13 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
 
               setUsersList(mappedUsers);
               setUserPermissions(mappedPermissions);
+              const activeCount = mappedUsers.filter((u: any) => u.status === 'Activo').length;
+              setDashboardStats(prev => ({
+                ...prev,
+                users: mappedUsers.length,
+                activeUsers: activeCount,
+                inactiveUsers: mappedUsers.length - activeCount
+              }));
               apiSucceeded = true;
             }
           }
@@ -724,16 +464,9 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
         if (authUser?.clientId && isUUID(authUser.clientId)) matchIds.add(authUser.clientId);
         if (authUser?.campaignId && isUUID(authUser.campaignId)) matchIds.add(authUser.campaignId);
 
-        const candName = String(matchingCampaign?.candidato_nombre || activeCampaign?.candidateName || '').trim().toLowerCase();
-        const candClientId = matchingCampaign?.client_id;
-        const ownerName = String(ownerProfile?.display_name || authUser?.name || '').trim().toLowerCase();
-        const ownerIsCandidate = (candName && ownerName && (ownerName === candName || ownerName.includes(candName) || candName.includes(ownerName))) ||
-          (candClientId && ownerId === candClientId) ||
-          String(ownerProfile?.role || '').toUpperCase() === 'CANDIDATO';
-
         const { data: rawProfiles, error: profilesError } = await supabase
           .from('profiles')
-          .select('id,email,display_name,role,status,allowed_modules,client_id,campaign_id,created_at')
+          .select('id,email,display_name,role,status,is_active,allowed_modules,client_id,campaign_id,created_at')
           .order('created_at', { ascending: true });
 
         if (profilesError) throw profilesError;
@@ -741,25 +474,11 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
         const profiles = (rawProfiles || []).filter((profile: any) => {
           const r = String(profile.role || '').toUpperCase();
           if (['SUPERADMIN', 'GLOBAL_ADMIN'].includes(r)) return false;
-
-          const pName = String(profile.display_name || '').trim().toLowerCase();
-          const pIsCandidate = (candName && pName && (pName === candName || pName.includes(candName) || candName.includes(pName))) ||
-            (candClientId && profile.id === candClientId) ||
-            r === 'CANDIDATO';
-
-          if (ownerIsCandidate) {
-            if (profile.id === ownerId) return true;
-          } else {
-            if (pIsCandidate) return false;
-            if (profile.id === ownerId) return false;
-          }
-
+          if (profile.id === ownerId) return true;
           if (profile.campaign_id && matchIds.has(profile.campaign_id)) return true;
           if (profile.client_id && matchIds.has(profile.client_id)) return true;
-
           if (!profile.campaign_id && !profile.client_id) return true;
           if (campaigns && campaigns.length <= 1) return true;
-
           return false;
         });
 
@@ -769,7 +488,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
           : { data: [], error: null } as any;
         if (permissionsResult.error) throw permissionsResult.error;
 
-        const candNameClean = String(campaignCtx.candidateName || (campaigns && campaigns[0]?.candidato_nombre) || '').trim().toLowerCase();
+        const candNameClean = String(campaignCtx.candidateName || matchingCampaign?.candidato_nombre || (campaigns && campaigns[0]?.candidato_nombre) || '').trim().toLowerCase();
         const mappedUsers = (profiles || []).map((profile: any) => {
           const pName = String(profile.display_name || profile.name || '').trim().toLowerCase();
           const pEmail = String(profile.email || '').trim().toLowerCase();
@@ -786,7 +505,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
             name: profile.display_name || profile.name || profile.email,
             email: profile.email,
             role: roleFromProfile(profile),
-            status: ['ACTIVE', 'ACTIVO'].includes(String(profile.status || '').toUpperCase()) ? 'Activo' : 'Suspendido',
+            status: profile.is_active !== false && ['ACTIVE', 'ACTIVO'].includes(String(profile.status || 'ACTIVE').toUpperCase()) ? 'Activo' : 'Suspendido',
             clientId: profile.client_id || profile.campaign_id,
             isCandidateOwner: isCandidate
           };
@@ -803,6 +522,13 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
 
         setUsersList(mappedUsers);
         setUserPermissions(mappedPermissions);
+        const activeCount = mappedUsers.filter((u: any) => u.status === 'Activo').length;
+        setDashboardStats(prev => ({
+          ...prev,
+          users: mappedUsers.length,
+          activeUsers: activeCount,
+          inactiveUsers: mappedUsers.length - activeCount
+        }));
       }
     } catch (error: any) {
       setRbacError(isExpectedEmptyCampaignState(error) ? '' : `Servidor: ${error?.message || 'No fue posible cargar los usuarios y permisos.'}`);
@@ -812,7 +538,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
   };
 
   useEffect(() => {
-    if (activeTab === 'roles') void loadRealRbac();
+    if (activeTab === 'roles' || activeTab === 'inicio') void loadRealRbac();
   }, [activeTab]);
 
   const handleUserRoleChangeReal = async (userId: string, newRole: 'admin' | 'estrategico' | 'territorial') => {
@@ -878,6 +604,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
       return setRbacError('No puedes suspender tu propia cuenta.');
     }
     const nextStatus = targetUser.status === 'Activo' ? 'SUSPENDED' : 'ACTIVE';
+    const nextIsActive = nextStatus === 'ACTIVE';
     const nextUiStatus = targetUser.status === 'Activo' ? 'Suspendido' : 'Activo';
     // Optimistic update
     setUsersList(prev => prev.map(u => u.id === userId ? { ...u, status: nextUiStatus } : u));
@@ -893,7 +620,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`
           },
-          body: JSON.stringify({ status: nextStatus })
+          body: JSON.stringify({ status: nextStatus, is_active: nextIsActive })
         });
         if (res.ok) {
           setActionSuccessMessage(`Usuario ${nextStatus === 'ACTIVE' ? 'activado' : 'suspendido'} correctamente.`);
@@ -907,7 +634,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
       } catch {}
     }
 
-    const { error } = await supabase.from('profiles').update({ status: nextStatus, updated_at: new Date().toISOString() }).eq('id', userId);
+    const { error } = await supabase.from('profiles').update({ status: nextStatus, is_active: nextIsActive, updated_at: new Date().toISOString() }).eq('id', userId);
     if (error) return setRbacError(`Servidor: ${error.message}`);
     setActionSuccessMessage(`Usuario ${nextStatus === 'ACTIVE' ? 'activado' : 'suspendido'} correctamente.`);
     window.dispatchEvent(new Event('global-admin-users-changed'));
@@ -923,7 +650,14 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
       return setRbacError('No se puede eliminar la cuenta del candidato propietario.');
     }
     if (authUser && email.toLowerCase() === authUser.email.toLowerCase()) return setRbacError('No puedes eliminar tu propia cuenta.');
-    if (!window.confirm(`¿Eliminar el acceso de ${name} (${email})? Esta acción retirará su perfil y todos sus permisos.`)) return;
+    const confirmed = await confirmModal({
+      title: 'Revocar acceso de usuario',
+      message: `¿Eliminar el acceso de "${name}" (${email})? Esta acción retirará su perfil y todos sus permisos del sistema.`,
+      confirmText: 'Sí, eliminar acceso',
+      cancelText: 'Cancelar',
+      variant: 'danger'
+    });
+    if (!confirmed) return;
 
     // Optimistic update
     setUsersList(prev => prev.filter(u => u.id !== userId));
@@ -1169,178 +903,8 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
   // Estado de Existencia de Campaña para CNE ("no se puede crear lista a testigo si no hay campaña creada")
   const [hasActiveCampaign, setHasActiveCampaign] = useState(true);
 
-  // Sample Testigos Electorales con detalles completos por Partido y Asignación Territorial de Mesas
-  const [testigos, setTestigos] = useState([
-    { id: 't1', cc: '1018998877', nombre: 'Mateo Botero López', telefono: '+57 311 456 7890', email: 'mateo.botero@gmail.com', partido: 'Partido Liberal Colombiano', rol: 'Testigo de Mesa (E-16)', puesto: 'Colegio Marco Fidel Suárez', mesa: 'Mesa 12', comuna: 'Comuna 10 (La Candelaria)', acreditacion: 'Formulario E-16 Aprobado', geofencing: 'Confirmado en Puesto (GPS OK)', estado: 'Acreditado' },
-    { id: 't2', cc: '1022334455', nombre: 'Sofia Castro Restrepo', telefono: '+57 300 987 6543', email: 'sofia.castro@gmail.com', partido: 'Partido Alianza Verde', rol: 'Testigo Rematador / Coordinador de Puesto', puesto: 'Universidad UPB', mesa: 'Mesa 04', comuna: 'Comuna 11 (Laureles)', acreditacion: 'Formulario E-16 En Trámite', geofencing: 'Pendiente Día E', estado: 'Inscrito' },
-    { id: 't3', cc: '1033445566', nombre: 'Jorge Andrés Hoyos', telefono: '+57 320 123 4567', email: 'jorge.hoyos@gmail.com', partido: 'Centro Democrático', rol: 'Testigo de Mesa (E-16)', puesto: 'I.E. Pedro Justo Berrío', mesa: 'Mesa 15', comuna: 'Comuna 16 (Belén)', acreditacion: 'Formulario E-16 Aprobado', geofencing: 'Confirmado en Puesto (GPS OK)', estado: 'Acreditado' },
-    { id: 't4', cc: '1044556677', nombre: 'Valeria Gómez Ortiz', telefono: '+57 315 678 9012', email: 'valeria.gomez@gmail.com', partido: 'Nuevo Liberalismo', rol: 'Testigo de Escrutinio Municipal', puesto: 'Plaza de Toros La Macarena', mesa: 'Mesa 01', comuna: 'Comuna 11 (Laureles)', acreditacion: 'Formulario E-16 En Trámite', geofencing: 'Pendiente Día E', estado: 'Inscrito' }
-  ]);
-
-  // Filtros y Estados de Formulario de Testigos
-  const [witnessPartidoFilter, setWitnessPartidoFilter] = useState('Todos');
-  const [witnessPuestoFilter, setWitnessPuestoFilter] = useState('Todos');
-  const [witnessSearchQuery, setWitnessSearchQuery] = useState('');
-  const [showWitnessForm, setShowWitnessForm] = useState(false);
-  const [editingWitnessId, setEditingWitnessId] = useState<string | null>(null);
-
-  // Campos de Formulario para Crear / Modificar Testigo
-  const [witNombre, setWitNombre] = useState('');
-  const [witCc, setWitCc] = useState('');
-  const [witTelefono, setWitTelefono] = useState('');
-  const [witEmail, setWitEmail] = useState('');
-  const [witPartido, setWitPartido] = useState('Partido Liberal Colombiano');
-  const [witRol, setWitRol] = useState('Testigo de Mesa (E-16)');
-  const [witPuesto, setWitPuesto] = useState('Colegio Marco Fidel Suárez');
-  const [witMesa, setWitMesa] = useState('Mesa 01');
-  const [witComuna, setWitComuna] = useState('Comuna 10 (La Candelaria)');
-  const [witAcreditacion, setWitAcreditacion] = useState('Formulario E-16 En Trámite');
-  const [witEstado, setWitEstado] = useState('Inscrito');
-
-  // =========================================================================
-  // ESTADOS PARA SISTEMA DE CERCO PERIMETRAL Y GEOREFERENCIACIÓN DE TESTIGOS
-  // =========================================================================
-  const [geofenceActive, setGeofenceActive] = useState(true);
-  const [geofenceRadius, setGeofenceRadius] = useState(150); // Radio en metros (editable de 30m a 2000m)
-  const [geofenceToleranceMinutes, setGeofenceToleranceMinutes] = useState(15);
-  const [selectedGeofencePuesto, setSelectedGeofencePuesto] = useState('Colegio Marco Fidel Suárez');
-  const [autoNotifyCommandCenter, setAutoNotifyCommandCenter] = useState(true);
-  const [showGeofenceConfigPanel, setShowGeofenceConfigPanel] = useState(true);
-
-  // Datos GPS simulados en tiempo real por testigo
-  const [testigoGpsPings, setTestigoGpsPings] = useState<Record<string, {
-    distanciaMetros: number;
-    lat: number;
-    lng: number;
-    ultimoPing: string;
-    bateriaPct: number;
-    estadoGPS: 'DENTRO' | 'FUERA' | 'SIN_SIGNAL';
-  }>>({
-    't1': { distanciaMetros: 28, lat: 6.2442, lng: -75.5812, ultimoPing: 'Hace 1 min', bateriaPct: 92, estadoGPS: 'DENTRO' },
-    't2': { distanciaMetros: 320, lat: 6.2410, lng: -75.5900, ultimoPing: 'Hace 4 min', bateriaPct: 58, estadoGPS: 'FUERA' },
-    't3': { distanciaMetros: 42, lat: 6.2301, lng: -75.5875, ultimoPing: 'Hace 2 min', bateriaPct: 85, estadoGPS: 'DENTRO' },
-    't4': { distanciaMetros: 110, lat: 6.2488, lng: -75.5780, ultimoPing: 'Hace 8 min', bateriaPct: 74, estadoGPS: 'DENTRO' }
-  });
-
-  // Handler para simular actualización de ping GPS de testigo
-  const handleSimulateWitnessPing = (tId: string) => {
-    const newDistance = Math.floor(Math.random() * 350) + 10;
-    const isInside = newDistance <= geofenceRadius;
-    setTestigoGpsPings(prev => ({
-      ...prev,
-      [tId]: {
-        distanciaMetros: newDistance,
-        lat: 6.244 + (Math.random() * 0.006 - 0.003),
-        lng: -75.581 + (Math.random() * 0.006 - 0.003),
-        ultimoPing: 'Justo ahora',
-        bateriaPct: Math.floor(Math.random() * 25) + 70,
-        estadoGPS: isInside ? 'DENTRO' : 'FUERA'
-      }
-    }));
-  };
-
   // Partidos y Movimientos disponibles
   const partidosPoliticosOpt = partidosPoliticosColombia;
-
-  // Puestos de Votación consignados para la circunscripción territorial de la campaña
-  const puestosTerritorioOpt = [
-    { nombre: 'Colegio Marco Fidel Suárez', comuna: 'Comuna 10 (La Candelaria)', mesas: 28 },
-    { nombre: 'Universidad UPB', comuna: 'Comuna 11 (Laureles)', mesas: 35 },
-    { nombre: 'I.E. Pedro Justo Berrío', comuna: 'Comuna 16 (Belén)', mesas: 22 },
-    { nombre: 'I.E. INEM José Félix de Restrepo', comuna: 'Comuna 14 (El Poblado)', mesas: 40 },
-    { nombre: 'Plaza de Toros La Macarena', comuna: 'Comuna 11 (Laureles)', mesas: 18 },
-    { nombre: 'I.E. Diego Echavarría Misas', comuna: 'Comuna 5 (Castilla)', mesas: 25 },
-    { nombre: 'Colegio San José de las Vegas', comuna: 'Comuna 14 (El Poblado)', mesas: 30 }
-  ];
-
-  // Handler para guardar o actualizar un testigo
-  const handleSaveWitness = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!hasActiveCampaign) {
-      alert('⚠️ No se puede inscribir ni modificar un testigo porque no existe una campaña creada aún. Por favor cree la campaña primero.');
-      return;
-    }
-    if (!witNombre.trim() || !witCc.trim() || !witTelefono.trim() || !witEmail.trim()) {
-      alert('Nombre, cédula, teléfono y correo electrónico son obligatorios para registrar y localizar al testigo.');
-      return;
-    }
-
-    if (editingWitnessId) {
-      setTestigos(prev => prev.map(t => t.id === editingWitnessId ? {
-        ...t,
-        nombre: witNombre.trim(),
-        cc: witCc.trim(),
-        telefono: witTelefono.trim() || t.telefono,
-        email: witEmail.trim() || t.email,
-        partido: witPartido,
-        rol: witRol,
-        puesto: witPuesto,
-        mesa: witMesa,
-        comuna: witComuna,
-        acreditacion: witAcreditacion,
-        estado: witEstado
-      } : t));
-      alert(`✅ Información del testigo ${witNombre} modificada correctamente.`);
-    } else {
-      const newWitness = {
-        id: `t-${Date.now()}`,
-        nombre: witNombre.trim(),
-        cc: witCc.trim(),
-        telefono: witTelefono.trim(),
-        email: witEmail.trim().toLowerCase(),
-        partido: witPartido,
-        rol: witRol,
-        puesto: witPuesto,
-        mesa: witMesa,
-        comuna: witComuna,
-        acreditacion: witAcreditacion,
-        geofencing: 'Pendiente Día E',
-        estado: witEstado
-      };
-      setTestigos(prev => [newWitness, ...prev]);
-      alert(`✅ Testigo ${witNombre} inscrito con éxito para ${witPartido} en ${witPuesto} (${witMesa}).`);
-    }
-
-    resetWitnessForm();
-  };
-
-  const resetWitnessForm = () => {
-    setEditingWitnessId(null);
-    setWitNombre('');
-    setWitCc('');
-    setWitTelefono('');
-    setWitEmail('');
-    setWitPartido('Partido Liberal Colombiano');
-    setWitRol('Testigo de Mesa (E-16)');
-    setWitPuesto('Colegio Marco Fidel Suárez');
-    setWitMesa('Mesa 01');
-    setWitComuna('Comuna 10 (La Candelaria)');
-    setWitAcreditacion('Formulario E-16 En Trámite');
-    setWitEstado('Inscrito');
-    setShowWitnessForm(false);
-  };
-
-  const handleStartEditWitness = (t: typeof testigos[0]) => {
-    setEditingWitnessId(t.id);
-    setWitNombre(t.nombre);
-    setWitCc(t.cc);
-    setWitTelefono(t.telefono);
-    setWitEmail(t.email);
-    setWitPartido(t.partido);
-    setWitRol(t.rol);
-    setWitPuesto(t.puesto);
-    setWitMesa(t.mesa);
-    setWitComuna(t.comuna);
-    setWitAcreditacion(t.acreditacion);
-    setWitEstado(t.estado);
-    setShowWitnessForm(true);
-  };
-
-  const handleDeleteWitness = (id: string) => {
-    if (confirm('¿Está seguro de eliminar este testigo electoral de la lista?')) {
-      setTestigos(prev => prev.filter(t => t.id !== id));
-    }
-  };
 
   // --------------------------------------------------------------------------
   // ESTADO Y MÓDULOS DE JURADOS ELECTORALES (POSTULACIÓN A REGISTRADURÍA & SORTEO)
@@ -1443,21 +1007,33 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
         }
         const { data: campaign, error: campaignError } = await campaignQuery.order('created_at', { ascending: false }).limit(1).maybeSingle();
         if (campaignError) throw campaignError;
-        const department = String(campaign?.departamento || '');
-        const municipality = String(campaign?.municipio || '').replace(/\s*\(Capital\)\s*/gi, '').trim();
-        const scope = String(campaign?.circunscripcion || '').toUpperCase();
+        const department = String(campaign?.departamento || campaignCtx.department || 'Córdoba');
+        const municipality = String(campaign?.municipio || campaignCtx.municipality || 'Cotorra').replace(/\s*\(Capital\)\s*/gi, '').trim();
+        const scope = String(campaign?.circunscripcion || 'MUNICIPAL').toUpperCase();
         const municipalityOptions = scope === 'MUNICIPAL'
           ? (municipality ? [municipality] : [])
-          : (colombiaTerritorialData[department] || []).map(name => name.replace(/\s*\(Capital\)\s*/gi, '').trim());
-        setJurMunicipioOptions([...new Set(municipalityOptions)]);
-        setJurMunicipio('');
+          : (colombiaTerritorialData[department] || [municipality]).map(name => name.replace(/\s*\(Capital\)\s*/gi, '').trim()).filter(Boolean);
+        const uniqueMunOptions = [...new Set(municipalityOptions)];
+        setJurMunicipioOptions(uniqueMunOptions);
+        setJurMunicipio(uniqueMunOptions.length === 1 ? uniqueMunOptions[0] : '');
         setJurPuestoPreferente('');
+        let loadedPlaces: Array<{ nombre: string; municipio: string }> = [];
         if (campaign?.id && isUUID(campaign.id)) {
           const places = await loadCampaignPollingPlaces(String(campaign.id));
-          setJurPollingPlaces(places.map(place => ({ nombre: place.nombre, municipio: place.municipio })));
-        } else {
-          setJurPollingPlaces([]);
+          loadedPlaces = places.map(place => ({ nombre: place.nombre, municipio: place.municipio || municipality }));
         }
+        if (loadedPlaces.length === 0) {
+          const fallbackPuestos = getPuestosPorCircunscripcion(
+            department,
+            municipality,
+            scope === 'DEPARTAMENTAL' ? 'Departamento' : scope === 'NACIONAL' ? 'Nacional' : 'Municipio'
+          );
+          loadedPlaces = fallbackPuestos.map(place => ({
+            nombre: place.nombre,
+            municipio: place.municipio || municipality
+          }));
+        }
+        setJurPollingPlaces(loadedPlaces);
         const realJurorClientId = isUUID(campaign?.client_id) ? campaign.client_id : effectiveClientId;
         if (realJurorClientId) {
           await loadRealJurors(realJurorClientId);
@@ -1514,9 +1090,10 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
   const [jurPuestoPreferente, setJurPuestoPreferente] = useState('');
   const [jurMunicipioOptions, setJurMunicipioOptions] = useState<string[]>([]);
   const [jurPollingPlaces, setJurPollingPlaces] = useState<Array<{ nombre: string; municipio: string }>>([]);
-  const jurPuestoOptions = jurPollingPlaces.filter(place =>
+  const filteredJurPuestos = jurPollingPlaces.filter(place =>
     jurMunicipio && place.municipio.localeCompare(jurMunicipio, 'es', { sensitivity: 'base' }) === 0
   );
+  const jurPuestoOptions = filteredJurPuestos.length > 0 ? filteredJurPuestos : jurPollingPlaces;
 
   useEffect(() => {
     if (!jurPuestoOptions.some(place => place.nombre === jurPuestoPreferente)) {
@@ -1563,13 +1140,12 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
         size: fileSizeFormatted !== '0.0 MB' ? fileSizeFormatted : '1.8 MB',
         uploadDate: new Date().toLocaleDateString(),
         status: 'Leído & OCR Procesado',
-        numRecordsExtracted: 0,
+        numRecordsExtracted: jurados.length,
         resolutionNumber: resNum
       });
       setIsReadingResolution(false);
-
-      alert(`✅ RESOLUCIÓN ANEXADA Y LEÍDA EXITOSAMENTE:\n\n📄 Archivo: "${file.name}"\n🔍 Motor de Lectura / OCR: 100% de páginas y cédulas extraídas.\n📊 Registros Detectados: Se identificaron asignaciones de puestos y mesas preparadas para la confrontación.`);
-    }, 1200);
+      setActionSuccessMessage(`Resolución "${file.name}" (${resNum}) anexada y procesada para confrontación.`);
+    }, 600);
   };
 
   // Exportar Lista de Jurados Postulados a Excel / CSV para la Registraduría
@@ -1620,7 +1196,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
     link.click();
     document.body.removeChild(link);
 
-    alert('✅ Lista oficial de jurados postulados exportada exitosamente en formato Excel / CSV.\n\nEste archivo cumple estrictamente la estructura estandarizada exigida por la Registraduría Nacional del Estado Civil para el sorteo electrónico de jurados de votación por partido o movimiento político.');
+    setActionSuccessMessage('Lista oficial de jurados postulados exportada en formato CSV/Excel estandarizado.');
   };
 
   // Ejecutar Confrontación Automática con Resolución de Sorteo emitida por Registraduría
@@ -1658,23 +1234,23 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
       }
       setJurados(updatedJurors);
       setIsConfronting(false);
-      alert(`🎉 CONFRONTACIÓN DE RESOLUCIÓN COMPLETADA EXITOSAMENTE:\n\nSe cruzaron ${jurados.length} cédulas de candidatos postulados contra el censo procesado de "${resolutionFile.name}" (${resolutionFile.resolutionNumber}).\n\n- Postulados Confrontados: ${jurados.length}\n- Seleccionados Designados: ${jurados.filter(j => j.estadoSorteo.includes('Seleccionado')).length} Ciudadanos (${Math.round((jurados.filter(j => j.estadoSorteo.includes('Seleccionado')).length / jurados.length) * 100)}% de efectividad)\n- No Seleccionados: ${jurados.filter(j => j.estadoSorteo === 'No Seleccionado').length}`);
-    }, 1200);
+      setActionSuccessMessage(`Confrontación completada: ${updatedJurors.filter(j => j.estadoSorteo.includes('Seleccionado')).length} de ${updatedJurors.length} jurados seleccionados en ${resolutionFile.resolutionNumber}.`);
+    }, 800);
   };
 
   // Guardar nuevo postulante a jurado o modificar
   const handleSaveJuradoCandidate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!hasActiveCampaign) {
-      alert('⚠️ No se puede crear lista de jurados si no hay una campaña política creada en el sistema.');
+      setJurorError('No se puede crear lista de jurados si no hay una campaña política activa en el sistema.');
       return;
     }
     if (!jurNombre.trim() || !jurCc.trim() || !jurTelefono.trim() || !jurEmail.trim()) {
-      alert('Nombre, cédula, teléfono y correo electrónico son obligatorios para registrar y localizar al jurado.');
+      setJurorError('Nombre, cédula, teléfono y correo electrónico son obligatorios para registrar al jurado.');
       return;
     }
     if (!jurMunicipio || !jurPuestoPreferente) {
-      alert('Seleccione el municipio o distrito y un puesto de votación oficial.');
+      setJurorError('Seleccione el municipio o distrito y un puesto de votación oficial.');
       return;
     }
 
@@ -1729,7 +1305,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
     setJurEmail('');
     setJurPartido('');
     setJurOcupacion('');
-    setJurMunicipio('');
+    setJurMunicipio(jurMunicipioOptions.length === 1 ? jurMunicipioOptions[0] : '');
     setJurPuestoPreferente('');
     setShowJuradoForm(false);
   };
@@ -1742,21 +1318,34 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
     setJurEmail(j.email);
     setJurPartido(j.partido);
     setJurOcupacion(j.ocupacion);
-    setJurMunicipio(j.municipio);
+    setJurMunicipio(j.municipio || (jurMunicipioOptions.length === 1 ? jurMunicipioOptions[0] : ''));
     setJurPuestoPreferente(j.puestoPreferente);
     setShowJuradoForm(true);
   };
 
   const handleDeleteJurado = async (id: string) => {
-    if (confirm('¿Está seguro de eliminar este ciudadano de la lista de jurados postulados?')) {
-      const { error } = await supabase.from('jurors').delete().eq('id', id);
-      if (error) return setJurorError(error.message);
-      setJurados(prev => prev.filter(j => j.id !== id));
-      setActionSuccessMessage('Jurado eliminado correctamente del sistema.');
-    }
+    const target = jurados.find(j => j.id === id);
+    await confirmModal({
+      title: 'Eliminar jurado postulado',
+      message: `¿Está seguro de eliminar a "${target?.nombre || 'este ciudadano'}" de la lista de jurados postulados? Esta acción no se puede deshacer.`,
+      confirmText: 'Sí, eliminar',
+      cancelText: 'Cancelar',
+      variant: 'danger',
+      onConfirm: async () => {
+        const { error } = await supabase.from('jurors').delete().eq('id', id);
+        if (error) {
+          setJurorError(error.message);
+          showToast(error.message, 'error');
+          return false;
+        }
+        setJurados(prev => prev.filter(j => j.id !== id));
+        setActionSuccessMessage('Jurado eliminado correctamente del sistema.');
+        showToast('Jurado eliminado correctamente del sistema.', 'success');
+      }
+    });
   };
 
-  // Forms states for Simulation & Test (Votantes)
+  // Forms states for Votantes
   const [showAddVoterForm, setShowAddVoterForm] = useState(false);
   const [selectedVoterDetail, setSelectedVoterDetail] = useState<any | null>(null);
 
@@ -1775,7 +1364,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
   const [crmCampaignMunicipality, setCrmCampaignMunicipality] = useState('');
   const [crmPollingPlaces, setCrmPollingPlaces] = useState<Array<{ nombre: string; comuna: string; municipio: string; mesas: number }>>([]);
 
-  // Forms states for Simulation & Test (Líderes y Coordinadores de Zona)
+  // Forms states for Líderes y Coordinadores de Zona
   const [showAddLeaderForm, setShowAddLeaderForm] = useState(false);
   const [selectedLeaderDetail, setSelectedLeaderDetail] = useState<any | null>(null);
 
@@ -1799,11 +1388,12 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
     ...leadersAndCoordinators.map(leader => String(leader.zona || '').split('/')[0].trim()),
     ...crmPollingPlaces.map(place => place.comuna),
   ].filter(Boolean))].sort((a, b) => a.localeCompare(b, 'es'));
-  const voterPuestoOptions = crmPollingPlaces.filter(place => !newComuna || place.comuna === newComuna);
-  const selectedVoterPlace = crmPollingPlaces.find(place => place.nombre === newPuesto && (!newComuna || place.comuna === newComuna));
+  const matchedVoterPuestos = crmPollingPlaces.filter(place => !newComuna || place.comuna === newComuna);
+  const voterPuestoOptions = matchedVoterPuestos.length > 0 ? matchedVoterPuestos : crmPollingPlaces;
+  const selectedVoterPlace = crmPollingPlaces.find(place => place.nombre === newPuesto);
   const voterMesaOptions = selectedVoterPlace
-    ? Array.from({ length: selectedVoterPlace.mesas }, (_, index) => `Mesa ${String(index + 1).padStart(2, '0')}`)
-    : [];
+    ? Array.from({ length: Math.max(1, selectedVoterPlace.mesas || 15) }, (_, index) => `Mesa ${String(index + 1).padStart(2, '0')}`)
+    : (newPuesto ? Array.from({ length: 15 }, (_, index) => `Mesa ${String(index + 1).padStart(2, '0')}`) : []);
   const leaderZoneOptions = [...new Set([
     ...crmPollingPlaces.map(place => place.comuna),
     ...leadersAndCoordinators.map(leader => String(leader.zona || '').split('/')[0].trim()),
@@ -1833,7 +1423,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
       const profileClientId = isUUID(profile.client_id) ? profile.client_id : null;
       setCrmClientId(profileClientId || rememberedCampaignId || '');
 
-      let crmCampaignQuery = supabase.from('campaigns').select('id,client_id,descripcion,municipio');
+      let crmCampaignQuery = supabase.from('campaigns').select('id,client_id,descripcion,departamento,municipio,circunscripcion');
       if (rememberedCampaignId) {
         crmCampaignQuery = crmCampaignQuery.eq('id', rememberedCampaignId);
       } else if (profileClientId) {
@@ -1863,18 +1453,29 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
         if (Array.isArray(savedSchemas?.voters)) setRegistrationFields(savedSchemas.voters);
         if (Array.isArray(savedSchemas?.leaders)) setLeaderRegistrationFields(savedSchemas.leaders);
       } catch {}
-      setCrmCampaignMunicipality(String(activeCampaign?.municipio || '').replace(/\s*\(Capital\)\s*/gi, '').trim());
+      const cleanMun = String(activeCampaign?.municipio || campaignCtx.municipality || 'Cotorra').replace(/\s*\(Capital\)\s*/gi, '').trim();
+      const cleanDep = String(activeCampaign?.departamento || campaignCtx.department || 'Córdoba').trim();
+      setCrmCampaignMunicipality(cleanMun);
+      let places: Array<{ nombre: string; comuna: string; municipio: string; mesas: number }> = [];
       if (activeCampaign?.id && isUUID(activeCampaign.id)) {
-        const places = await loadCampaignPollingPlaces(String(activeCampaign.id));
-        setCrmPollingPlaces(places.map(place => ({
+        const dbPlaces = await loadCampaignPollingPlaces(String(activeCampaign.id));
+        places = dbPlaces.map(place => ({
           nombre: place.nombre,
           comuna: place.comuna,
-          municipio: place.municipio,
-          mesas: place.mesas,
-        })));
-      } else {
-        setCrmPollingPlaces([]);
+          municipio: place.municipio || cleanMun,
+          mesas: place.mesas || 15,
+        }));
       }
+      if (places.length === 0) {
+        const fallbackPuestos = getPuestosPorCircunscripcion(cleanDep, cleanMun, 'Municipio');
+        places = fallbackPuestos.map(place => ({
+          nombre: place.nombre,
+          comuna: place.comuna,
+          municipio: place.municipio || cleanMun,
+          mesas: place.mesas || 15,
+        }));
+      }
+      setCrmPollingPlaces(places);
 
       setLeadersAndCoordinators((leadersResult.data || []).map((leader: any) => ({
         id: leader.id,
@@ -2047,11 +1648,24 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
   };
 
   const deletePoliticalCrmRecord = async (table: 'leaders' | 'voters', id: string, name: string) => {
-    if (!window.confirm(`¿Eliminar definitivamente a ${name} del CRM electoral?`)) return;
-    const { error } = await deletePoliticalCrmRecordApi(table, id);
-    if (error) return setCrmError(error.message);
-    setActionSuccessMessage(`${name} fue eliminado del CRM.`);
-    await loadRealPoliticalCrm();
+    await confirmModal({
+      title: table === 'leaders' ? 'Eliminar líder territorial' : 'Eliminar votante del CRM',
+      message: `¿Eliminar definitivamente a "${name}" del CRM electoral? Esta acción no se puede deshacer.`,
+      confirmText: 'Sí, eliminar',
+      cancelText: 'Cancelar',
+      variant: 'danger',
+      onConfirm: async () => {
+        const { error } = await deletePoliticalCrmRecordApi(table, id);
+        if (error) {
+          setCrmError(error.message);
+          showToast(error.message, 'error');
+          return false;
+        }
+        setActionSuccessMessage(`${name} fue eliminado del CRM.`);
+        showToast(`${name} fue eliminado del CRM.`, 'success');
+        await loadRealPoliticalCrm();
+      }
+    });
   };
 
   const saveCrmFormSchema = async (schemaType: 'voters' | 'leaders') => {
@@ -2100,8 +1714,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
 
     const exists = leadersAndCoordinators.some(l => l.cc === newLeaderCc.trim());
     if (exists) {
-      alert(`Error: La cédula ${newLeaderCc} ya se encuentra registrada en la estructura de Líderes/Coordinadores.`);
-      return;
+      return setCrmError(`La cédula ${newLeaderCc} ya se encuentra registrada en la estructura de Líderes/Coordinadores.`);
     }
 
     if (!crmClientId) return setCrmError('No hay una organización electoral activa.');
@@ -2109,7 +1722,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
     const [comuna, ...barrioParts] = newLeaderZona.split('/').map(value => value.trim());
     const { error } = await savePoliticalCrmRecord('leaders', {
       client_id: crmClientId,
-      campaign_id: crmCampaignId || crmClientId,
+      campaign_id: crmCampaignId || null,
       nombre: newLeaderNombre.trim(),
       cedula: newLeaderCc.trim(),
       telefono: newLeaderTelefono.trim() || null,
@@ -2142,27 +1755,81 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
     await loadRealPoliticalCrm();
   };
 
-  // Search Cédula Function against Censo Electoral & Duplicate Prevention
-  const handleSearchCedula = () => {
-    if (!cedulaSearch.trim()) return;
+  // Consulta real de Cédula contra Supabase (voters y leaders)
+  const [isValidatingCedula, setIsValidatingCedula] = useState(false);
+  const handleSearchCedula = async () => {
+    const cleanCc = cedulaSearch.trim();
+    if (!cleanCc) return;
+    setIsValidatingCedula(true);
     setConsultationSavedSuccess(null);
+    setCrmError('');
 
-    // Check duplicate
-    const existing = voters.find(v => v.cc === cedulaSearch.trim());
-    if (existing) {
-      setDuplicateWarning(`¡ATENCIÓN DUPLICADO! La cédula ${existing.cc} ya se encuentra empadronada en la campaña por el líder: ${existing.lider} el ${existing.fecha}.`);
-      setCedulaSearchResult(existing);
-    } else {
-      setDuplicateWarning(null);
-      // Simulate Censo Electoral Fetch
-      setCedulaSearchResult({
-        cc: cedulaSearch.trim(),
-        nombre: 'CIUDADANO HABILITADO EN CENSO',
-        municipio: crmCampaignMunicipality || 'Sin municipio seleccionado',
-        puesto: 'Puesto Asignado por Registraduría: I.E. San José',
-        mesa: 'Mesa 09',
-        estadoCenso: 'Habilitado para Votar en Elecciones Territoriales'
-      });
+    try {
+      // 1. Consulta en tiempo real contra las tablas voters y leaders en Supabase
+      let voterQuery = supabase.from('voters').select('*,leaders(nombre)').eq('cedula', cleanCc);
+      let leaderQuery = supabase.from('leaders').select('*').eq('cedula', cleanCc);
+      if (isUUID(crmClientId)) {
+        voterQuery = voterQuery.eq('client_id', crmClientId);
+        leaderQuery = leaderQuery.eq('client_id', crmClientId);
+      }
+
+      const [voterRes, leaderRes] = await Promise.all([
+        voterQuery.limit(1).maybeSingle(),
+        leaderQuery.limit(1).maybeSingle()
+      ]);
+
+      if (voterRes.error) throw voterRes.error;
+      if (leaderRes.error) throw leaderRes.error;
+
+      const dbVoter = voterRes.data;
+      const dbLeader = leaderRes.data;
+      const localVoter = voters.find(v => v.cc === cleanCc);
+      const localLeader = leadersAndCoordinators.find(l => l.cc === cleanCc);
+
+      if (dbVoter || localVoter) {
+        const found = dbVoter ? {
+          id: dbVoter.id,
+          cc: dbVoter.cedula,
+          nombre: dbVoter.nombre,
+          lider: dbVoter.leaders?.nombre || 'Asignación Directa Central',
+          municipio: dbVoter.municipio || crmCampaignMunicipality || campaignCtx.municipality || 'Sin municipio',
+          comuna: dbVoter.comuna || 'Sin comuna',
+          puesto: dbVoter.puesto || 'Sin puesto',
+          mesa: dbVoter.mesa || 'Sin mesa',
+          fecha: dbVoter.created_at?.slice(0, 10) || 'Fecha registrada'
+        } : localVoter;
+        setDuplicateWarning(`¡ATENCIÓN DUPLICADO EN SUPABASE! La cédula ${found.cc} (${found.nombre}) ya se encuentra registrada como VOTANTE en la campaña (Líder: ${found.lider} · Puesto: ${found.puesto} · ${found.mesa}).`);
+        setCedulaSearchResult(found);
+      } else if (dbLeader || localLeader) {
+        const foundLeader = dbLeader ? {
+          cc: dbLeader.cedula,
+          nombre: dbLeader.nombre,
+          cargo: dbLeader.puesto || 'Líder de Estructura',
+          zona: [dbLeader.comuna, dbLeader.barrio].filter(Boolean).join(' / ') || 'Zona asignada',
+          municipio: crmCampaignMunicipality || campaignCtx.municipality || 'Municipio activo',
+          puesto: dbLeader.puesto || 'Estructura de Líderes',
+          mesa: 'N/A'
+        } : localLeader;
+        setDuplicateWarning(`¡REGISTRO EXISTENTE EN ESTRUCTURA! La cédula ${foundLeader.cc} pertenece a ${foundLeader.nombre}, quien ya está registrado como LÍDER / COORDINADOR (${foundLeader.cargo}) en la campaña.`);
+        setCedulaSearchResult(foundLeader);
+      } else {
+        setDuplicateWarning(null);
+        const defaultPlace = crmPollingPlaces[0];
+        const activeMun = crmCampaignMunicipality || campaignCtx.municipality || 'Municipio de Campaña';
+        setCedulaSearchResult({
+          cc: cleanCc,
+          nombre: `Cédula ${cleanCc} disponible para registro`,
+          municipio: activeMun,
+          comuna: defaultPlace?.comuna || geoCtx.subdivisions[0] || 'Zona Urbana',
+          puesto: defaultPlace?.nombre || `Puesto Cabecera Municipal ${activeMun}`,
+          mesa: 'Mesa 01',
+          estadoCenso: 'Verificado en base de datos: Sin duplicados en la campaña actual'
+        });
+      }
+    } catch (err: any) {
+      setCrmError(err?.message || 'Error al consultar la cédula en Supabase.');
+    } finally {
+      setIsValidatingCedula(false);
     }
   };
 
@@ -2177,21 +1844,22 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
     }
 
     if (!crmClientId) return setCrmError('No hay una organización electoral activa.');
-    const voterName = cedulaSearchResult.nombre === 'CIUDADANO HABILITADO EN CENSO' ? `Ciudadano Habilitado CNE (${cedulaSearchResult.cc})` : cedulaSearchResult.nombre;
+    const isGenericLabel = String(cedulaSearchResult.nombre || '').startsWith('Cédula ');
+    const voterName = isGenericLabel ? `Votante Verificado (${cedulaSearchResult.cc})` : cedulaSearchResult.nombre;
     const { error } = await savePoliticalCrmRecord('voters', {
       client_id: crmClientId,
-      campaign_id: crmCampaignId || crmClientId,
+      campaign_id: crmCampaignId || null,
       nombre: voterName,
       cedula: cedulaSearchResult.cc,
-      municipio: cedulaSearchResult.municipio || crmCampaignMunicipality || null,
-      comuna: 'Comuna Central',
-      puesto: cedulaSearchResult.puesto || 'Puesto Registraduría',
+      municipio: cedulaSearchResult.municipio || crmCampaignMunicipality || campaignCtx.municipality || null,
+      comuna: cedulaSearchResult.comuna || geoCtx.subdivisions[0] || 'Cabecera Municipal',
+      puesto: cedulaSearchResult.puesto || crmPollingPlaces[0]?.nombre || 'Puesto Cabecera Municipal',
       mesa: cedulaSearchResult.mesa || 'Mesa 01',
-      intencion: 'Indeciso',
+      intencion: 'Probable',
       status: 'ACTIVE'
     });
     if (error) return setCrmError(error.code === '23505' ? 'La cédula ya está registrada en el CRM.' : error.message);
-    setConsultationSavedSuccess(`¡Información de la cédula ${cedulaSearchResult.cc} guardada y empadronada exitosamente en la base de datos de la campaña!`);
+    setConsultationSavedSuccess(`¡Cédula ${cedulaSearchResult.cc} guardada y empadronada exitosamente en Supabase!`);
     setCedulaSearchResult(null);
     setCedulaSearch('');
     setDuplicateWarning(null);
@@ -2213,9 +1881,12 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
   // Cargar datos consultados al formulario de empadronamiento detallado
   const handleFillFormWithConsultedVoter = () => {
     if (!cedulaSearchResult) return;
+    const isGenericLabel = String(cedulaSearchResult.nombre || '').startsWith('Cédula ');
     setNewCc(cedulaSearchResult.cc);
-    setNewNombre(cedulaSearchResult.nombre === 'CIUDADANO HABILITADO EN CENSO' ? '' : cedulaSearchResult.nombre);
-    setNewPuesto(cedulaSearchResult.puesto || 'Colegio Marco Fidel Suárez');
+    setNewNombre(isGenericLabel ? '' : cedulaSearchResult.nombre);
+    setNewLider(leadersAndCoordinators[0]?.id || 'DIRECTO');
+    setNewComuna(cedulaSearchResult.comuna || geoCtx.subdivisions[0] || crmPollingPlaces[0]?.comuna || '');
+    setNewPuesto(cedulaSearchResult.puesto || crmPollingPlaces[0]?.nombre || '');
     setNewMesa(cedulaSearchResult.mesa || 'Mesa 01');
     setShowAddVoterForm(true);
     setCedulaSearchResult(null);
@@ -2224,28 +1895,30 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
 
   const handleAddVoterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newCc.trim() || !newNombre.trim()) return;
+    if (!newCc.trim() || !newNombre.trim()) {
+      return setCrmError('La cédula y el nombre completo del votante son obligatorios.');
+    }
     if (!newLider || !newComuna || !newPuesto || !newMesa) {
-      return setCrmError('Seleccione líder, comuna o sector, puesto de votación y mesa.');
+      return setCrmError('Seleccione líder (o asignación directa), zona/corregimiento, puesto de votación y mesa.');
     }
 
     // Duplicate Check
     const exists = voters.some(v => v.cc === newCc.trim());
     if (exists) {
-      alert(`Error: La cédula ${newCc} ya existe en el CRM de la campaña.`);
-      return;
+      return setCrmError(`La cédula ${newCc} ya existe en el padrón electoral de la campaña.`);
     }
 
     if (!crmClientId) return setCrmError('No hay una organización electoral activa.');
-    const assignedLeader = leadersAndCoordinators.find(leader => leader.id === newLider);
+    const assignedLeader = newLider === 'DIRECTO' ? null : leadersAndCoordinators.find(leader => leader.id === newLider);
+    setCrmLoading(true);
     const { error } = await savePoliticalCrmRecord('voters', {
       client_id: crmClientId,
-      campaign_id: crmCampaignId || crmClientId,
+      campaign_id: crmCampaignId || null,
       nombre: newNombre.trim(),
       cedula: newCc.trim(),
       email: newEmail.trim() || null,
       telefono: newTelefono.trim() || null,
-      municipio: crmCampaignMunicipality || null,
+      municipio: crmCampaignMunicipality || campaignCtx.municipality || null,
       comuna: newComuna,
       barrio: newDireccion.trim() || null,
       puesto: newPuesto,
@@ -2255,6 +1928,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
       status: 'ACTIVE',
       updated_at: new Date().toISOString()
     });
+    setCrmLoading(false);
     if (error) return setCrmError(error.code === '23505' ? 'La cédula ya está registrada en el CRM.' : error.message);
     setNewCc('');
     setNewNombre('');
@@ -2269,12 +1943,14 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
     setNewPuesto('');
     setNewMesa('');
     setShowAddVoterForm(false);
-    setActionSuccessMessage('Votante empadronado en el sistema y asociado a su líder.');
+    setActionSuccessMessage('Votante registrado exitosamente en Supabase.');
     await loadRealPoliticalCrm();
   };
 
   const [dashboardStats, setDashboardStats] = useState({
     users: 0,
+    activeUsers: 0,
+    inactiveUsers: 0,
     leaders: 0,
     voters: 0,
     budgetPercent: 0,
@@ -2314,76 +1990,92 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
       let campaign: any = null;
       if (!isGlobalAdmin) {
         if (profileCampaignId) {
-          const { data } = await supabase.from('campaigns').select('id,client_id,presupuesto_total').eq('id', profileCampaignId).maybeSingle();
+          const { data } = await supabase.from('campaigns').select('id,client_id,presupuesto_total,candidato_nombre,candidato_email').eq('id', profileCampaignId).maybeSingle();
           if (data) campaign = data;
         }
         if (!campaign && profileClientId) {
-          const { data: directData } = await supabase.from('campaigns').select('id,client_id,presupuesto_total').eq('id', profileClientId).maybeSingle();
+          const { data: directData } = await supabase.from('campaigns').select('id,client_id,presupuesto_total,candidato_nombre,candidato_email').eq('id', profileClientId).maybeSingle();
           if (directData) campaign = directData;
           else {
-            const { data } = await supabase.from('campaigns').select('id,client_id,presupuesto_total').eq('client_id', profileClientId).order('updated_at', { ascending: false }).limit(1).maybeSingle();
+            const { data } = await supabase.from('campaigns').select('id,client_id,presupuesto_total,candidato_nombre,candidato_email').eq('client_id', profileClientId).order('updated_at', { ascending: false }).limit(1).maybeSingle();
             if (data) campaign = data;
           }
         }
       }
 
       if (!campaign && rememberedId) {
-        const { data } = await supabase.from('campaigns').select('id,client_id,presupuesto_total').eq('id', rememberedId).maybeSingle();
+        const { data } = await supabase.from('campaigns').select('id,client_id,presupuesto_total,candidato_nombre,candidato_email').eq('id', rememberedId).maybeSingle();
         if (data) campaign = data;
       }
       if (!campaign) {
-        const { data } = await supabase.from('campaigns').select('id,client_id,presupuesto_total').order('updated_at', { ascending: false }).limit(1).maybeSingle();
+        const { data } = await supabase.from('campaigns').select('id,client_id,presupuesto_total,candidato_nombre,candidato_email').order('updated_at', { ascending: false }).limit(1).maybeSingle();
         if (data) campaign = data;
       }
 
       const activeCampaignId = isUUID(campaign?.id) ? campaign.id : profileCampaignId;
       const effectiveClientId = isUUID(campaign?.client_id) ? campaign.client_id : profileClientId;
+      const candidateOwnerEmail = String(campaign?.candidato_email || '').trim().toLowerCase();
+      const candidateOwnerName = String(campaign?.candidato_nombre || '').trim().toLowerCase();
 
-      const userMatchIds = new Set<string>();
-      if (activeCampaignId) userMatchIds.add(activeCampaignId);
-      if (effectiveClientId) userMatchIds.add(effectiveClientId);
-      if (profile.campaign_id && isUUID(profile.campaign_id)) userMatchIds.add(profile.campaign_id);
-      if (profile.client_id && isUUID(profile.client_id)) userMatchIds.add(profile.client_id);
-
+      // 1. Conteo exacto de usuarios RBAC (cuentas secundarias de la campaña, sincronizado con Gestión de Roles)
       const userPromise = (async () => {
-        const { data: rawProfiles } = await supabase
-          .from('profiles')
-          .select('id,role,status,client_id,campaign_id')
-          .neq('id', userId);
-        const activeSubusers = (rawProfiles || []).filter((p: any) => {
-          const r = String(p.role || '').toUpperCase();
-          if (['SUPERADMIN', 'GLOBAL_ADMIN'].includes(r)) return false;
-          if (p.id === userId) return false;
-          const s = String(p.status || '').toUpperCase();
-          const isActive = s === 'ACTIVE' || s === 'ACTIVO' || !s;
-          if (!isActive) return false;
-          if (p.campaign_id && userMatchIds.has(p.campaign_id)) return true;
-          if (p.client_id && userMatchIds.has(p.client_id)) return true;
-          if (!p.campaign_id && !p.client_id) return true;
-          return false;
+        let query = supabase.from('profiles').select('id,display_name,email,role,status,is_active,client_id,campaign_id');
+        if (!isGlobalAdmin) {
+          if (effectiveClientId && activeCampaignId) {
+            query = query.or(`client_id.eq.${effectiveClientId},campaign_id.eq.${activeCampaignId}`);
+          } else if (effectiveClientId) {
+            query = query.eq('client_id', effectiveClientId);
+          } else if (activeCampaignId) {
+            query = query.eq('campaign_id', activeCampaignId);
+          }
+        }
+        const { data: rawProfiles, error } = await query;
+        if (error) return { total: 0, active: 0, inactive: 0, error };
+        const list = (rawProfiles || []).filter((p: any) => {
+          const normalizedRole = String(p.role || '').trim().toUpperCase();
+          const normalizedEmail = String(p.email || '').trim().toLowerCase();
+          const normalizedName = String(p.display_name || '').trim().toLowerCase();
+          const isOwner = Boolean(
+            normalizedRole === 'CANDIDATE' ||
+            normalizedRole === 'CANDIDATO' ||
+            (candidateOwnerEmail && normalizedEmail === candidateOwnerEmail) ||
+            (candidateOwnerName && normalizedName === candidateOwnerName) ||
+            (userId && p.id === userId && ['GLOBAL_ADMIN', 'SUPERADMIN', 'CANDIDATE', 'CANDIDATO'].includes(normalizedRole))
+          );
+          return !isOwner;
         });
-        return { count: activeSubusers.length, error: null };
+        let active = 0;
+        let inactive = 0;
+        list.forEach((p: any) => {
+          const s = String(p.status || '').toUpperCase();
+          const isActive = p.is_active !== false && s !== 'INACTIVE' && s !== 'INACTIVO' && s !== 'SUSPENDED';
+          if (isActive) active++;
+          else inactive++;
+        });
+        return { total: list.length, active, inactive, error: null };
       })();
 
+      // 2. Conteo de CRM (Líderes y Votantes) con conteo exacto eficiente (count: 'exact')
       const leaderPromise = effectiveClientId
-        ? supabase.from('leaders').select('id', { count: 'exact', head: true }).eq('client_id', effectiveClientId).eq('status', 'ACTIVE')
-        : Promise.resolve({ count: 0, error: null } as any);
+        ? supabase.from('leaders').select('id', { count: 'exact', head: true }).eq('client_id', effectiveClientId)
+        : supabase.from('leaders').select('id', { count: 'exact', head: true });
 
       const voterPromise = effectiveClientId
-        ? supabase.from('voters').select('id', { count: 'exact', head: true }).eq('client_id', effectiveClientId).eq('status', 'ACTIVE')
-        : Promise.resolve({ count: 0, error: null } as any);
+        ? supabase.from('voters').select('id', { count: 'exact', head: true }).eq('client_id', effectiveClientId)
+        : supabase.from('voters').select('id', { count: 'exact', head: true });
 
+      // 3. Testigos y Jurados con acreditación verificada (count: 'exact')
       const witnessPromise = effectiveClientId
         ? supabase.from('witnesses').select('id', { count: 'exact', head: true }).eq('client_id', effectiveClientId)
-        : Promise.resolve({ count: 0, error: null } as any);
+        : supabase.from('witnesses').select('id', { count: 'exact', head: true });
 
       const accreditedPromise = effectiveClientId
-        ? supabase.from('witnesses').select('id', { count: 'exact', head: true }).eq('client_id', effectiveClientId).in('estado', ['ACREDITADO', 'EN_MESA'])
-        : Promise.resolve({ count: 0, error: null } as any);
+        ? supabase.from('witnesses').select('id', { count: 'exact', head: true }).eq('client_id', effectiveClientId).in('estado', ['ACREDITADO', 'EN_MESA', 'Acreditado'])
+        : supabase.from('witnesses').select('id', { count: 'exact', head: true }).in('estado', ['ACREDITADO', 'EN_MESA', 'Acreditado']);
 
       const jurorPromise = effectiveClientId
         ? supabase.from('jurors').select('id', { count: 'exact', head: true }).eq('client_id', effectiveClientId)
-        : Promise.resolve({ count: 0, error: null } as any);
+        : supabase.from('jurors').select('id', { count: 'exact', head: true });
 
       const [usersResult, leadersResult, votersResult, witnessesResult, accreditedResult, jurorsResult] = await Promise.all([
         userPromise, leaderPromise, voterPromise, witnessPromise, accreditedPromise, jurorPromise
@@ -2392,11 +2084,12 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
       const firstError = [usersResult, leadersResult, votersResult, witnessesResult, accreditedResult, jurorsResult].find(result => result.error)?.error;
       if (firstError) throw firstError;
 
+      // 4. Presupuesto CNE — Sumatoria de gastos ejecutados vs tope legal
       const budgetResult = activeCampaignId
         ? await supabase.from('budget_items').select('tipo,monto,estado,observaciones').eq('campaign_id', activeCampaignId).eq('tipo', 'GASTO').neq('estado', 'ANULADO')
         : (effectiveClientId
             ? await supabase.from('budget_items').select('tipo,monto,estado,observaciones').eq('client_id', effectiveClientId).eq('tipo', 'GASTO').neq('estado', 'ANULADO')
-            : { data: [], error: null } as any);
+            : await supabase.from('budget_items').select('tipo,monto,estado,observaciones').eq('tipo', 'GASTO').neq('estado', 'ANULADO'));
       if (budgetResult.error) throw budgetResult.error;
 
       const executed = (budgetResult.data || []).reduce((total: number, row: any) => {
@@ -2408,19 +2101,22 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
         }
       }, 0);
       const budgetLimit = Number(campaign?.presupuesto_total || 0);
-      const budgetPercent = budgetLimit > 0 ? Math.min(100, Math.round((executed / budgetLimit) * 1000) / 10) : 0;
+      const budgetPercent = budgetLimit > 0 ? (executed / budgetLimit) * 100 : 0;
 
-      setDashboardStats({
-        users: usersResult.count || 0,
-        leaders: leadersResult.count || 0,
-        voters: votersResult.count || 0,
+      const newStats = {
+        users: usersResult.total ?? 0,
+        activeUsers: usersResult.active ?? 0,
+        inactiveUsers: usersResult.inactive ?? 0,
+        leaders: leadersResult.count ?? 0,
+        voters: votersResult.count ?? 0,
         budgetPercent,
         budgetExecuted: executed,
         budgetLimit,
-        witnesses: witnessesResult.count || 0,
-        accreditedWitnesses: accreditedResult.count || 0,
-        jurors: jurorsResult.count || 0
-      });
+        witnesses: witnessesResult.count ?? 0,
+        accreditedWitnesses: accreditedResult.count ?? 0,
+        jurors: jurorsResult.count ?? 0
+      };
+      setDashboardStats(newStats);
       return effectiveClientId || activeCampaignId;
     } catch (error: any) {
       setDashboardError(isExpectedEmptyCampaignState(error) ? '' : (error?.message || 'No fue posible cargar los indicadores reales.'));
@@ -2432,22 +2128,20 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
 
   // ── Sincronización LIVE: cuando el contexto global actualiza por Realtime,
   //    el dashboardStats de presupuesto/líderes/votantes/testigos se actualiza
-  //    automáticamente sin recargar la página ni abrir nuevos canales.
+  //    automáticamente respetando valores legítimos en 0 (sin usar || fallback).
   useEffect(() => {
     if (liveMetrics.lastUpdatedAt === 0) return; // aún no ha cargado
     setDashboardStats(prev => ({
       ...prev,
-      // Presupuesto — datos del canal ctx-budget del CampaignProvider
-      budgetExecuted: liveMetrics.budgetExecutedCop   || prev.budgetExecuted,
-      budgetLimit:    liveMetrics.budgetLimitCop       || prev.budgetLimit,
-      budgetPercent:  liveMetrics.budgetExecutionPct   || prev.budgetPercent,
-      // Personas — datos de los canales ctx-leaders/voters/witnesses/jurors
-      leaders:             liveMetrics.leaderCount   || prev.leaders,
-      voters:              liveMetrics.voterCount     || prev.voters,
-      witnesses:           liveMetrics.witnessCount   || prev.witnesses,
-      jurors:              liveMetrics.jurorCount     || prev.jurors,
+      budgetExecuted: liveMetrics.budgetExecutedCop ?? prev.budgetExecuted,
+      budgetLimit:    liveMetrics.budgetLimitCop    ?? prev.budgetLimit,
+      budgetPercent:  liveMetrics.budgetExecutionPct ?? prev.budgetPercent,
+      leaders:        liveMetrics.leaderCount       ?? prev.leaders,
+      voters:         liveMetrics.voterCount        ?? prev.voters,
+      witnesses:      liveMetrics.witnessCount      ?? prev.witnesses,
+      jurors:         liveMetrics.jurorCount        ?? prev.jurors,
     }));
-  }, [liveMetrics.lastUpdatedAt]); // dispara solo cuando hay un nuevo snapshot
+  }, [liveMetrics.lastUpdatedAt]);
 
   useEffect(() => {
     if (activeTab !== 'inicio') return;
@@ -2460,10 +2154,10 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
         if (refreshTimer) clearTimeout(refreshTimer);
         refreshTimer = setTimeout(() => { void loadRealAdministrativeDashboard(); }, 250);
       };
-      // Solo suscribimos profiles y accreditedWitnesses (no cubiertos por el contexto global)
-      channel = supabase.channel(`administrative-dashboard-${clientId}`);
-      ['profiles', 'witnesses'].forEach(table => {
-        channel.on('postgres_changes', { event: '*', schema: 'public', table, filter: `client_id=eq.${clientId}` }, refresh);
+      // Suscripción reactiva completa a las 6 tablas principales del panel
+      channel = supabase.channel(`administrative-dashboard-realtime-${clientId}`);
+      ['profiles', 'witnesses', 'leaders', 'voters', 'budget_items', 'jurors'].forEach(table => {
+        channel.on('postgres_changes', { event: '*', schema: 'public', table }, refresh);
       });
       channel.subscribe();
     };
@@ -2491,7 +2185,12 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
             <p className="text-[11px] text-slate-200 mt-0.5 leading-snug break-words">{actionSuccessMessage}</p>
           </div>
           <button 
-            onClick={() => setActionSuccessMessage('')}
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setActionSuccessMessage('');
+            }}
             className="text-slate-400 hover:text-slate-100 transition-colors ml-1 p-1 rounded-md text-[10px] uppercase font-bold shrink-0"
             title="Cerrar"
           >
@@ -2502,31 +2201,9 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
 
       {/* Main Container Content */}
       <main className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto">
-
-        {/* Module Header with Logo, Title & Color Mode Toggle */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-cyan-500/20">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-cyan-950 to-blue-950 border border-cyan-500/40 text-cyan-400 flex items-center justify-center shrink-0 shadow-md shadow-cyan-950/40">
-              <Building2 className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="font-extrabold text-lg sm:text-xl text-white tracking-tight">
-                  Gestión Administrativa
-                </h2>
-                <span className="text-[10px] font-mono font-bold bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded-full border border-cyan-500/40">
-                  Módulo 1
-                </span>
-              </div>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Consola directiva, nómina, finanzas CNE y control de accesos RBAC
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 shrink-0">
-            <ColorModeToggle moduleId="gestion_administrativa" />
-          </div>
+        {/* Selector de Tema del Sistema */}
+        <div className="flex items-center justify-end pb-2">
+          <ColorModeToggle moduleId="gestion_administrativa" />
         </div>
 
         {/* ---------------------------------------------------------------------- */}
@@ -2534,227 +2211,398 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
         {/* ---------------------------------------------------------------------- */}
         {activeTab === 'inicio' && (
           <div className="space-y-6 animate-fadeIn">
+            {/* Header del Tablero con Indicador de Estado En Vivo */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-1">
+              <div>
+                <h2 className="text-sm font-extrabold text-white tracking-wide uppercase flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_#22d3ee]"></span>
+                  Indicadores Clave del Tablero Administrativo
+                </h2>
+                <p className="text-[11px] text-slate-400 font-medium mt-0.5">
+                  Métricas consolidadas en tiempo real conectadas directamente a la base de datos de Supabase.
+                </p>
+              </div>
+              <div className="flex items-center gap-2 self-start sm:self-auto">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 backdrop-blur-md shadow-[0_0_12px_rgba(16,185,129,0.15)]">
+                  <span className="badge-live-dot w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                  En vivo / Sincronizado
+                </span>
+              </div>
+            </div>
+
             {dashboardError && (
-              <div className="rounded-xl border p-3 text-xs font-bold flex items-center gap-2 bg-rose-950/70 border-rose-500/50 text-rose-200">
-                <AlertTriangle className="w-4 h-4 shrink-0" />
+              <div className="rounded-xl border p-3.5 text-xs font-bold flex items-center gap-2.5 bg-rose-950/70 border-rose-500/50 text-rose-200">
+                <AlertTriangle className="w-4 h-4 shrink-0 text-rose-400" />
                 <span>Error de indicadores: {dashboardError}</span>
               </div>
             )}
-            {/* Global KPI Cards — datos del contexto en tiempo real */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-[#041733]/90 rounded-2xl p-4 border border-cyan-500/30 shadow-lg flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-cyan-200/80 font-semibold">Usuarios con Roles (RBAC):</p>
-                  <p className="text-2xl font-black text-white mt-1">{dashboardStats.users.toLocaleString('es-CO')}</p>
-                  <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1 mt-1">
-                    <ShieldCheck className="w-3 h-3" /> 100% Aislamiento Activo
+
+            {/* Top Loading Line for background network activity (non-blocking) */}
+            {dashboardLoading && (
+              <div className="fixed top-0 left-0 right-0 z-50 pointer-events-none">
+                <div className="h-[2px] w-full bg-gradient-to-r from-cyan-500 via-emerald-400 to-blue-500 animate-pulse" />
+              </div>
+            )}
+
+            {/* Global KPI Cards — Renderizado Directo e Instantáneo con Conteos Exactos de Supabase */}
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+              {/* 1. Usuarios con Roles (RBAC) */}
+              <div 
+                style={{ animationDelay: '0s' }}
+                className="group animate-kpi-stagger will-change-transform bg-gradient-to-b from-[#0b1728]/80 to-[#070d18]/90 backdrop-blur-md rounded-2xl p-4.5 border border-cyan-500/15 hover:border-cyan-400/60 hover:shadow-[0_0_25px_rgba(6,182,212,0.18)] hover:-translate-y-0.5 transition-all duration-250 ease-[cubic-bezier(0.16,1,0.3,1)] flex items-center justify-between min-h-[110px]"
+              >
+                <div className="min-w-0 pr-3">
+                  <p className="text-xs text-cyan-200/80 font-semibold tracking-wide">Usuarios con Roles (RBAC):</p>
+                  <p className="text-2xl font-black text-white mt-1 font-mono tracking-tight">
+                    <AnimatedCounter value={dashboardStats.users} duration={500} />
+                  </p>
+                  <span className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1.5 mt-1.5 truncate">
+                    <ShieldCheck className="w-3.5 h-3.5 shrink-0 text-emerald-400" />
+                    <span className="truncate">{dashboardStats.activeUsers} activos · {dashboardStats.inactiveUsers} inactivos · RLS Activo</span>
                   </span>
                 </div>
-                <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center justify-center">
+                <div className="w-11 h-11 rounded-2xl bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(16,185,129,0.15)] group-hover:scale-105 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.5)] transition-all duration-250 ease-[cubic-bezier(0.16,1,0.3,1)]">
                   <ShieldCheck className="w-5 h-5" />
                 </div>
               </div>
 
-              {/* Líderes + Votantes — en vivo desde contexto global */}
-              <div className="bg-[#041733]/90 rounded-2xl p-4 border border-cyan-500/30 shadow-lg flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-cyan-200/80 font-semibold">CRM Líderes & Votantes:</p>
-                  <p className="text-2xl font-black text-white mt-1">
-                    {((liveMetrics.leaderCount || dashboardStats.leaders) + (liveMetrics.voterCount || dashboardStats.voters)).toLocaleString('es-CO')}
+              {/* 2. CRM Líderes & Votantes */}
+              <div 
+                style={{ animationDelay: '0.04s' }}
+                className="group animate-kpi-stagger will-change-transform bg-gradient-to-b from-[#0b1728]/80 to-[#070d18]/90 backdrop-blur-md rounded-2xl p-4.5 border border-cyan-500/15 hover:border-cyan-400/60 hover:shadow-[0_0_25px_rgba(6,182,212,0.18)] hover:-translate-y-0.5 transition-all duration-250 ease-[cubic-bezier(0.16,1,0.3,1)] flex items-center justify-between min-h-[110px]"
+              >
+                <div className="min-w-0 pr-3">
+                  <p className="text-xs text-cyan-200/80 font-semibold tracking-wide">CRM Líderes & Votantes:</p>
+                  <p className="text-2xl font-black text-white mt-1 font-mono tracking-tight">
+                    <AnimatedCounter 
+                      value={dashboardStats.leaders + dashboardStats.voters} 
+                      duration={500}
+                    />
                   </p>
-                  <span className="text-[10px] text-cyan-400 font-bold flex items-center gap-1 mt-1">
-                    <span className="relative flex h-1.5 w-1.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" /><span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-cyan-500" /></span>
-                    <Users className="w-3 h-3" /> {liveMetrics.leaderCount || dashboardStats.leaders} líderes · {liveMetrics.voterCount || dashboardStats.voters} votantes
+                  <span className="text-[11px] text-cyan-400 font-semibold flex items-center gap-1.5 mt-1.5 truncate">
+                    <span className="relative flex h-1.5 w-1.5 shrink-0">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-cyan-500" />
+                    </span>
+                    <Users className="w-3.5 h-3.5 shrink-0 text-cyan-400" />
+                    <span className="truncate">{dashboardStats.leaders} líderes · {dashboardStats.voters} votantes</span>
                   </span>
                 </div>
-                <div className="w-10 h-10 rounded-2xl bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 flex items-center justify-center">
+                <div className="w-11 h-11 rounded-2xl bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(6,182,212,0.15)] group-hover:scale-105 group-hover:drop-shadow-[0_0_8px_rgba(6,182,212,0.5)] transition-all duration-250 ease-[cubic-bezier(0.16,1,0.3,1)]">
                   <Users className="w-5 h-5" />
                 </div>
               </div>
 
-              {/* Presupuesto — en vivo desde contexto global */}
-              <div className="bg-[#041733]/90 rounded-2xl p-4 border border-cyan-500/30 shadow-lg flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-cyan-200/80 font-semibold">Presupuesto Ejecutado CNE:</p>
-                  <p className="text-2xl font-black text-white mt-1">
-                    {(liveMetrics.budgetExecutionPct || dashboardStats.budgetPercent).toFixed(1)}%
+              {/* 3. Presupuesto Ejecutado CNE */}
+              <div 
+                style={{ animationDelay: '0.08s' }}
+                className="group animate-kpi-stagger will-change-transform bg-gradient-to-b from-[#0b1728]/80 to-[#070d18]/90 backdrop-blur-md rounded-2xl p-4.5 border border-cyan-500/15 hover:border-amber-400/60 hover:shadow-[0_0_25px_rgba(245,158,11,0.18)] hover:-translate-y-0.5 transition-all duration-250 ease-[cubic-bezier(0.16,1,0.3,1)] flex items-center justify-between min-h-[110px]"
+              >
+                <div className="min-w-0 pr-3">
+                  <p className="text-xs text-cyan-200/80 font-semibold tracking-wide">Presupuesto Ejecutado CNE:</p>
+                  <p className="text-2xl font-black text-white mt-1 font-mono tracking-tight">
+                    <AnimatedCounter 
+                      value={Number(dashboardStats.budgetPercent || 0)} 
+                      decimals={1} 
+                      duration={500}
+                    />%
                   </p>
-                  <span className="text-[10px] text-amber-400 font-bold flex items-center gap-1 mt-1">
-                    <span className="relative flex h-1.5 w-1.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" /><span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500" /></span>
-                    <DollarSign className="w-3 h-3" /> ${(liveMetrics.budgetExecutedCop || dashboardStats.budgetExecuted).toLocaleString('es-CO')} ejecutados
+                  <span className="text-[11px] text-amber-400 font-semibold flex items-center gap-1.5 mt-1.5 truncate">
+                    <span className="relative flex h-1.5 w-1.5 shrink-0">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500" />
+                    </span>
+                    <DollarSign className="w-3.5 h-3.5 shrink-0 text-amber-400" />
+                    <span className="truncate">
+                      <AnimatedCounter 
+                        value={dashboardStats.budgetExecuted || 0} 
+                        formatter={(val) => formatCOP(val)} 
+                        duration={500} 
+                      /> ejecutados
+                    </span>
                   </span>
                 </div>
-                <div className="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center justify-center">
+                <div className="w-11 h-11 rounded-2xl bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(245,158,11,0.15)] group-hover:scale-105 group-hover:drop-shadow-[0_0_8px_rgba(245,158,11,0.5)] transition-all duration-250 ease-[cubic-bezier(0.16,1,0.3,1)]">
                   <DollarSign className="w-5 h-5" />
                 </div>
               </div>
 
-              {/* Testigos + Jurados — en vivo desde contexto global */}
-              <div className="bg-[#041733]/90 rounded-2xl p-4 border border-cyan-500/30 shadow-lg flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-cyan-200/80 font-semibold">Testigos & Jurados Día E:</p>
-                  <p className="text-2xl font-black text-white mt-1">
-                    {(liveMetrics.witnessCount || dashboardStats.witnesses).toLocaleString('es-CO')} / {(liveMetrics.jurorCount || dashboardStats.jurors).toLocaleString('es-CO')}
+              {/* 4. Testigos & Jurados Día E */}
+              <div 
+                style={{ animationDelay: '0.12s' }}
+                className="group animate-kpi-stagger will-change-transform bg-gradient-to-b from-[#0b1728]/80 to-[#070d18]/90 backdrop-blur-md rounded-2xl p-4.5 border border-cyan-500/15 hover:border-teal-400/60 hover:shadow-[0_0_25px_rgba(20,184,166,0.18)] hover:-translate-y-0.5 transition-all duration-250 ease-[cubic-bezier(0.16,1,0.3,1)] flex items-center justify-between min-h-[110px]"
+              >
+                <div className="min-w-0 pr-3">
+                  <p className="text-xs text-cyan-200/80 font-semibold tracking-wide">Testigos & Jurados Día E:</p>
+                  <p className="text-2xl font-black text-white mt-1 font-mono tracking-tight">
+                    <AnimatedCounter value={dashboardStats.witnesses} duration={500} />
+                    <span className="text-slate-500 mx-1">/</span>
+                    <AnimatedCounter value={dashboardStats.jurors} duration={500} />
                   </p>
-                  <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1 mt-1">
-                    <span className="relative flex h-1.5 w-1.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" /><span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" /></span>
-                    <Award className="w-3 h-3" /> {dashboardStats.accreditedWitnesses} testigos acreditados
+                  <span className="text-[11px] text-teal-400 font-semibold flex items-center gap-1.5 mt-1.5 truncate">
+                    <span className="relative flex h-1.5 w-1.5 shrink-0">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-teal-500" />
+                    </span>
+                    <Award className="w-3.5 h-3.5 shrink-0 text-teal-400" />
+                    <span className="truncate">
+                      <AnimatedCounter value={dashboardStats.accreditedWitnesses} duration={500} /> testigos acreditados
+                    </span>
                   </span>
                 </div>
-                <div className="w-10 h-10 rounded-2xl bg-teal-500/20 text-teal-300 border border-teal-500/40 flex items-center justify-center">
+                <div className="w-11 h-11 rounded-2xl bg-teal-500/15 text-teal-300 border border-teal-500/30 flex items-center justify-center shrink-0 shadow-[0_0_15px_rgba(20,184,166,0.15)] group-hover:scale-105 group-hover:drop-shadow-[0_0_8px_rgba(20,184,166,0.5)] transition-all duration-250 ease-[cubic-bezier(0.16,1,0.3,1)]">
                   <Award className="w-5 h-5" />
                 </div>
               </div>
             </div>
 
             {/* Quick Access Grid to the 7 Sub-Functions */}
-            <div className="space-y-3">
-              <h3 className="text-xs font-bold text-cyan-300 uppercase tracking-wider">
-                Acceso Rápido a Funcionalidades Administrativas
-              </h3>
+            <div className="space-y-4 pt-3">
+              <div 
+                style={{ animationDelay: '0.15s' }}
+                className="animate-quick-access-stagger flex items-center justify-between"
+              >
+                <h3 className="text-xs font-bold text-cyan-300 uppercase tracking-wider flex items-center gap-2">
+                  <Layers className="w-4 h-4 text-cyan-400" />
+                  Acceso Rápido a Funcionalidades Administrativas
+                </h3>
+                <span className="text-[11px] text-slate-400 font-mono hidden sm:inline-flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_#22d3ee]" />
+                  7 Módulos Operativos
+                </span>
+              </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4.5">
+                {/* 1. Gestión de Roles y Permisos */}
                 <button
-                  onClick={() => setActiveTab('roles')}
-                  className="p-5 bg-[#041733]/90 rounded-2xl border border-cyan-500/30 hover:border-cyan-400 shadow-md hover:shadow-cyan-500/20 transition-all text-left group cursor-pointer"
+                  type="button"
+                  style={{ animationDelay: '0.18s' }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setActiveTab('roles');
+                  }}
+                  className="group animate-quick-access-stagger will-change-transform bg-gradient-to-b from-[#0b1728]/80 to-[#070d18]/90 backdrop-blur-md rounded-2xl p-5 border border-cyan-500/15 hover:border-cyan-500/40 hover:shadow-[0_12px_30px_-10px_rgba(0,0,0,0.6),0_0_20px_rgba(6,182,212,0.1)] hover:-translate-y-[3px] active:scale-[0.985] transition-all duration-200 text-left cursor-pointer flex flex-col justify-between select-none"
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="p-2 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded-xl">
-                      <ShieldCheck className="w-5 h-5" />
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="p-2.5 bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 rounded-xl group-hover:scale-105 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.4)] transition-all duration-200 shadow-[0_0_12px_rgba(16,185,129,0.12)]">
+                        <ShieldCheck className="w-5 h-5" />
+                      </div>
+                      <span className="text-[10px] bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-mono font-bold px-2.5 py-0.5 rounded-full tracking-wider group-hover:border-opacity-60 group-hover:bg-opacity-25 transition-all duration-200">
+                        RBAC Security
+                      </span>
                     </div>
-                    <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono font-bold px-2 py-0.5 rounded-full">
-                      RBAC Security
-                    </span>
+                    <h4 className="font-extrabold text-white text-sm group-hover:text-cyan-300 transition-colors duration-200">
+                      Gestión de Roles y Permisos
+                    </h4>
+                    <p className="text-xs text-slate-300/85 mt-1.5 leading-relaxed font-normal">
+                      Control de SuperUsuarios, Administradores, Auditores y aislamiento territorial por zona.
+                    </p>
                   </div>
-                  <h4 className="font-extrabold text-white text-sm group-hover:text-cyan-300 transition-colors">
-                    Gestión de Roles y Permisos
-                  </h4>
-                  <p className="text-xs text-slate-300 mt-1">
-                    Control de SuperUsuarios, Administradores, Auditores y aislamiento territorial por zona.
-                  </p>
+                  <div className="mt-4 pt-2.5 border-t border-slate-800/60 flex items-center justify-between text-[11px] text-slate-400 group-hover:text-cyan-400 transition-colors duration-200 font-medium">
+                    <span>Gestionar usuarios y accesos</span>
+                    <ArrowUpRight className="w-3.5 h-3.5 group-hover:translate-x-[2px] group-hover:-translate-y-[2px] transition-transform duration-200" />
+                  </div>
                 </button>
 
+                {/* 2. CRM Líderes / Votantes */}
                 <button
-                  onClick={() => setActiveTab('lideres_votantes')}
-                  className="p-5 bg-[#041733]/90 rounded-2xl border border-cyan-500/30 hover:border-cyan-400 shadow-md hover:shadow-cyan-500/20 transition-all text-left group cursor-pointer"
+                  type="button"
+                  style={{ animationDelay: '0.21s' }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setActiveTab('lideres_votantes');
+                  }}
+                  className="group animate-quick-access-stagger will-change-transform bg-gradient-to-b from-[#0b1728]/80 to-[#070d18]/90 backdrop-blur-md rounded-2xl p-5 border border-cyan-500/15 hover:border-cyan-500/40 hover:shadow-[0_12px_30px_-10px_rgba(0,0,0,0.6),0_0_20px_rgba(6,182,212,0.1)] hover:-translate-y-[3px] active:scale-[0.985] transition-all duration-200 text-left cursor-pointer flex flex-col justify-between select-none"
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="p-2 bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 rounded-xl">
-                      <Users className="w-5 h-5" />
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="p-2.5 bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 rounded-xl group-hover:scale-105 group-hover:drop-shadow-[0_0_8px_rgba(6,182,212,0.4)] transition-all duration-200 shadow-[0_0_12px_rgba(6,182,212,0.12)]">
+                        <Users className="w-5 h-5" />
+                      </div>
+                      <span className="text-[10px] bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 font-mono font-bold px-2.5 py-0.5 rounded-full tracking-wider group-hover:border-opacity-60 group-hover:bg-opacity-25 transition-all duration-200">
+                        CRM Censo
+                      </span>
                     </div>
-                    <span className="text-[10px] bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-mono font-bold px-2 py-0.5 rounded-full">
-                      CRM Censo
-                    </span>
+                    <h4 className="font-extrabold text-white text-sm group-hover:text-cyan-300 transition-colors duration-200">
+                      CRM Líderes / Votantes
+                    </h4>
+                    <p className="text-xs text-slate-300/85 mt-1.5 leading-relaxed font-normal">
+                      Validación por cédula, control estricto de duplicidad y mapeo por puesto/mesa.
+                    </p>
                   </div>
-                  <h4 className="font-extrabold text-white text-sm group-hover:text-cyan-300 transition-colors">
-                    CRM Líderes / Votantes
-                  </h4>
-                  <p className="text-xs text-slate-300 mt-1">
-                    Validación por cédula, control estricto de duplicidad y mapeo por puesto/mesa.
-                  </p>
+                  <div className="mt-4 pt-2.5 border-t border-slate-800/60 flex items-center justify-between text-[11px] text-slate-400 group-hover:text-cyan-400 transition-colors duration-200 font-medium">
+                    <span>Explorar censo electoral</span>
+                    <ArrowUpRight className="w-3.5 h-3.5 group-hover:translate-x-[2px] group-hover:-translate-y-[2px] transition-transform duration-200" />
+                  </div>
                 </button>
 
+                {/* 3. Presupuesto / CNE */}
                 <button
-                  onClick={() => setActiveTab('presupuesto_cne')}
-                  className="p-5 bg-[#041733]/90 rounded-2xl border border-cyan-500/30 hover:border-cyan-400 shadow-md hover:shadow-cyan-500/20 transition-all text-left group cursor-pointer"
+                  type="button"
+                  style={{ animationDelay: '0.24s' }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setActiveTab('presupuesto_cne');
+                  }}
+                  className="group animate-quick-access-stagger will-change-transform bg-gradient-to-b from-[#0b1728]/80 to-[#070d18]/90 backdrop-blur-md rounded-2xl p-5 border border-cyan-500/15 hover:border-amber-400/40 hover:shadow-[0_12px_30px_-10px_rgba(0,0,0,0.6),0_0_20px_rgba(245,158,11,0.1)] hover:-translate-y-[3px] active:scale-[0.985] transition-all duration-200 text-left cursor-pointer flex flex-col justify-between select-none"
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="p-2 bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-xl">
-                      <DollarSign className="w-5 h-5" />
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="p-2.5 bg-amber-500/15 text-amber-300 border border-amber-500/30 rounded-xl group-hover:scale-105 group-hover:drop-shadow-[0_0_8px_rgba(245,158,11,0.4)] transition-all duration-200 shadow-[0_0_12px_rgba(245,158,11,0.12)]">
+                        <DollarSign className="w-5 h-5" />
+                      </div>
+                      <span className="text-[10px] bg-amber-500/15 text-amber-300 border border-amber-500/30 font-mono font-bold px-2.5 py-0.5 rounded-full tracking-wider group-hover:border-opacity-60 group-hover:bg-opacity-25 transition-all duration-200">
+                        CNE / Cuentas Claras
+                      </span>
                     </div>
-                    <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono font-bold px-2 py-0.5 rounded-full">
-                      CNE / Cuentas Claras
-                    </span>
+                    <h4 className="font-extrabold text-white text-sm group-hover:text-amber-300 transition-colors duration-200">
+                      Presupuesto / CNE
+                    </h4>
+                    <p className="text-xs text-slate-300/85 mt-1.5 leading-relaxed font-normal">
+                      Auditoría de topes legales CNE, cuentas bancarias, ingresos y escáner OCR de facturas.
+                    </p>
                   </div>
-                  <h4 className="font-extrabold text-white text-sm group-hover:text-amber-300 transition-colors">
-                    Presupuesto / CNE
-                  </h4>
-                  <p className="text-xs text-slate-300 mt-1">
-                    Auditoría de topes legales CNE, cuentas bancarias, ingresos y escáner OCR de facturas.
-                  </p>
+                  <div className="mt-4 pt-2.5 border-t border-slate-800/60 flex items-center justify-between text-[11px] text-slate-400 group-hover:text-amber-400 transition-colors duration-200 font-medium">
+                    <span>Auditar ingresos y gastos</span>
+                    <ArrowUpRight className="w-3.5 h-3.5 group-hover:translate-x-[2px] group-hover:-translate-y-[2px] transition-transform duration-200" />
+                  </div>
                 </button>
 
+                {/* 4. Gestión de Campaña */}
                 <button
-                  onClick={() => setActiveTab('gestion_campana')}
-                  className="p-5 bg-[#041733]/90 rounded-2xl border border-cyan-500/30 hover:border-cyan-400 shadow-md hover:shadow-cyan-500/20 transition-all text-left group cursor-pointer"
+                  type="button"
+                  style={{ animationDelay: '0.27s' }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setActiveTab('gestion_campana');
+                  }}
+                  className="group animate-quick-access-stagger will-change-transform bg-gradient-to-b from-[#0b1728]/80 to-[#070d18]/90 backdrop-blur-md rounded-2xl p-5 border border-cyan-500/15 hover:border-teal-400/40 hover:shadow-[0_12px_30px_-10px_rgba(0,0,0,0.6),0_0_20px_rgba(20,184,166,0.1)] hover:-translate-y-[3px] active:scale-[0.985] transition-all duration-200 text-left cursor-pointer flex flex-col justify-between select-none"
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="p-2 bg-teal-500/20 text-teal-300 border border-teal-500/40 rounded-xl">
-                      <FolderGit2 className="w-5 h-5" />
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="p-2.5 bg-teal-500/15 text-teal-300 border border-teal-500/30 rounded-xl group-hover:scale-105 group-hover:drop-shadow-[0_0_8px_rgba(20,184,166,0.4)] transition-all duration-200 shadow-[0_0_12px_rgba(20,184,166,0.12)]">
+                        <FolderGit2 className="w-5 h-5" />
+                      </div>
+                      <span className="text-[10px] bg-teal-500/15 text-teal-300 border border-teal-500/30 font-mono font-bold px-2.5 py-0.5 rounded-full tracking-wider group-hover:border-opacity-60 group-hover:bg-opacity-25 transition-all duration-200">
+                        Parámetros
+                      </span>
                     </div>
-                    <span className="text-[10px] bg-teal-500/20 text-teal-300 border border-teal-500/40 font-mono font-bold px-2 py-0.5 rounded-full">
-                      Parámetros
-                    </span>
+                    <h4 className="font-extrabold text-white text-sm group-hover:text-teal-300 transition-colors duration-200">
+                      Gestión de Campaña
+                    </h4>
+                    <p className="text-xs text-slate-300/85 mt-1.5 leading-relaxed font-normal">
+                      Expediente estratégico del candidato, organigrama del equipo e hitos del calendario.
+                    </p>
                   </div>
-                  <h4 className="font-extrabold text-white text-sm group-hover:text-teal-300 transition-colors">
-                    Gestión de Campaña
-                  </h4>
-                  <p className="text-xs text-slate-300 mt-1">
-                    Expediente estratégico del candidato, organigrama del equipo e hitos del calendario.
-                  </p>
+                  <div className="mt-4 pt-2.5 border-t border-slate-800/60 flex items-center justify-between text-[11px] text-slate-400 group-hover:text-teal-400 transition-colors duration-200 font-medium">
+                    <span>Configurar hitos y equipo</span>
+                    <ArrowUpRight className="w-3.5 h-3.5 group-hover:translate-x-[2px] group-hover:-translate-y-[2px] transition-transform duration-200" />
+                  </div>
                 </button>
 
+                {/* 5. Gestión de Testigos */}
                 <button
-                  onClick={() => setActiveTab('gestion_testigos')}
-                  className="p-5 bg-[#041733]/90 rounded-2xl border border-cyan-500/30 hover:border-cyan-400 shadow-md hover:shadow-cyan-500/20 transition-all text-left group cursor-pointer"
+                  type="button"
+                  style={{ animationDelay: '0.30s' }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setActiveTab('gestion_testigos');
+                  }}
+                  className="group animate-quick-access-stagger will-change-transform bg-gradient-to-b from-[#0b1728]/80 to-[#070d18]/90 backdrop-blur-md rounded-2xl p-5 border border-cyan-500/15 hover:border-emerald-400/40 hover:shadow-[0_12px_30px_-10px_rgba(0,0,0,0.6),0_0_20px_rgba(16,185,129,0.1)] hover:-translate-y-[3px] active:scale-[0.985] transition-all duration-200 text-left cursor-pointer flex flex-col justify-between select-none"
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="p-2 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded-xl">
-                      <Award className="w-5 h-5" />
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="p-2.5 bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 rounded-xl group-hover:scale-105 group-hover:drop-shadow-[0_0_8px_rgba(16,185,129,0.4)] transition-all duration-200 shadow-[0_0_12px_rgba(16,185,129,0.12)]">
+                        <Award className="w-5 h-5" />
+                      </div>
+                      <span className="text-[10px] bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-mono font-bold px-2.5 py-0.5 rounded-full tracking-wider group-hover:border-opacity-60 group-hover:bg-opacity-25 transition-all duration-200">
+                        Formulario E-16
+                      </span>
                     </div>
-                    <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono font-bold px-2 py-0.5 rounded-full">
-                      Formulario E-16
-                    </span>
+                    <h4 className="font-extrabold text-white text-sm group-hover:text-emerald-300 transition-colors duration-200">
+                      Gestión de Testigos
+                    </h4>
+                    <p className="text-xs text-slate-300/85 mt-1.5 leading-relaxed font-normal">
+                      Inscripción y acreditación de testigos en puestos de votación y geofencing GPS.
+                    </p>
                   </div>
-                  <h4 className="font-extrabold text-white text-sm group-hover:text-emerald-300 transition-colors">
-                    Gestión de Testigos
-                  </h4>
-                  <p className="text-xs text-slate-300 mt-1">
-                    Inscripción y acreditación de testigos en puestos de votación y geofencing GPS.
-                  </p>
+                  <div className="mt-4 pt-2.5 border-t border-slate-800/60 flex items-center justify-between text-[11px] text-slate-400 group-hover:text-emerald-400 transition-colors duration-200 font-medium">
+                    <span>Asignar mesas y puestos</span>
+                    <ArrowUpRight className="w-3.5 h-3.5 group-hover:translate-x-[2px] group-hover:-translate-y-[2px] transition-transform duration-200" />
+                  </div>
                 </button>
 
+                {/* 6. Jurados Electorales */}
                 <button
-                  onClick={() => setActiveTab('jurados_electorales')}
-                  className="p-5 bg-[#041733]/90 rounded-2xl border border-cyan-500/30 hover:border-cyan-400 shadow-md hover:shadow-cyan-500/20 transition-all text-left group cursor-pointer"
+                  type="button"
+                  style={{ animationDelay: '0.33s' }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setActiveTab('jurados_electorales');
+                  }}
+                  className="group animate-quick-access-stagger will-change-transform bg-gradient-to-b from-[#0b1728]/80 to-[#070d18]/90 backdrop-blur-md rounded-2xl p-5 border border-cyan-500/15 hover:border-cyan-400/40 hover:shadow-[0_12px_30px_-10px_rgba(0,0,0,0.6),0_0_20px_rgba(6,182,212,0.1)] hover:-translate-y-[3px] active:scale-[0.985] transition-all duration-200 text-left cursor-pointer flex flex-col justify-between select-none"
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="p-2 bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 rounded-xl">
-                      <Vote className="w-5 h-5" />
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="p-2.5 bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 rounded-xl group-hover:scale-105 group-hover:drop-shadow-[0_0_8px_rgba(6,182,212,0.4)] transition-all duration-200 shadow-[0_0_12px_rgba(6,182,212,0.12)]">
+                        <Vote className="w-5 h-5" />
+                      </div>
+                      <span className="text-[10px] bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 font-mono font-bold px-2.5 py-0.5 rounded-full tracking-wider group-hover:border-opacity-60 group-hover:bg-opacity-25 transition-all duration-200">
+                        Monitoreo Día E
+                      </span>
                     </div>
-                    <span className="text-[10px] bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-mono font-bold px-2 py-0.5 rounded-full">
-                      Monitoreo Día E
-                    </span>
+                    <h4 className="font-extrabold text-white text-sm group-hover:text-cyan-300 transition-colors duration-200">
+                      Jurados Electorales
+                    </h4>
+                    <p className="text-xs text-slate-300/85 mt-1.5 leading-relaxed font-normal">
+                      Mapeo de jurados asignados por Registraduría y recepción de incidencias en mesas.
+                    </p>
                   </div>
-                  <h4 className="font-extrabold text-white text-sm group-hover:text-cyan-300 transition-colors">
-                    Jurados Electorales
-                  </h4>
-                  <p className="text-xs text-slate-300 mt-1">
-                    Mapeo de jurados asignados por Registraduría y recepción de incidencias en mesas.
-                  </p>
+                  <div className="mt-4 pt-2.5 border-t border-slate-800/60 flex items-center justify-between text-[11px] text-slate-400 group-hover:text-cyan-400 transition-colors duration-200 font-medium">
+                    <span>Monitorear incidencias</span>
+                    <ArrowUpRight className="w-3.5 h-3.5 group-hover:translate-x-[2px] group-hover:-translate-y-[2px] transition-transform duration-200" />
+                  </div>
                 </button>
 
+                {/* 7. Encuestas y Sondeos */}
                 <button
-                  onClick={() => setActiveTab('encuestas_sondeos')}
-                  className="p-5 bg-[#041733]/90 rounded-2xl border border-cyan-500/30 hover:border-cyan-400 shadow-md hover:shadow-cyan-500/20 transition-all text-left group cursor-pointer"
+                  type="button"
+                  style={{ animationDelay: '0.36s' }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setActiveTab('encuestas_sondeos');
+                  }}
+                  className="group animate-quick-access-stagger will-change-transform bg-gradient-to-b from-[#0b1728]/80 to-[#070d18]/90 backdrop-blur-md rounded-2xl p-5 border border-cyan-500/15 hover:border-indigo-400/40 hover:shadow-[0_12px_30px_-10px_rgba(0,0,0,0.6),0_0_20px_rgba(99,102,241,0.1)] hover:-translate-y-[3px] active:scale-[0.985] transition-all duration-200 text-left cursor-pointer flex flex-col justify-between select-none"
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="p-2 bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 rounded-xl">
-                      <PieChart className="w-5 h-5" />
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="p-2.5 bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 rounded-xl group-hover:scale-105 group-hover:drop-shadow-[0_0_8px_rgba(99,102,241,0.4)] transition-all duration-200 shadow-[0_0_12px_rgba(99,102,241,0.12)]">
+                        <PieChart className="w-5 h-5" />
+                      </div>
+                      <span className="text-[10px] bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 font-mono font-bold px-2.5 py-0.5 rounded-full tracking-wider group-hover:border-opacity-60 group-hover:bg-opacity-25 transition-all duration-200">
+                        Clima Electoral & IA
+                      </span>
                     </div>
-                    <span className="text-[10px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 font-mono font-bold px-2 py-0.5 rounded-full">
-                      Clima Electoral & IA
-                    </span>
+                    <h4 className="font-extrabold text-white text-sm group-hover:text-indigo-300 transition-colors duration-200">
+                      Encuestas y Sondeos
+                    </h4>
+                    <p className="text-xs text-slate-300/85 mt-1.5 leading-relaxed font-normal">
+                      Muestreo estadístico, intención de voto por comuna, tracking diario y análisis predictivo.
+                    </p>
                   </div>
-                  <h4 className="font-extrabold text-white text-sm group-hover:text-cyan-300 transition-colors">
-                    Encuestas y Sondeos
-                  </h4>
-                  <p className="text-xs text-slate-300 mt-1">
-                    Muestreo estadístico, intención de voto por comuna, tracking diario y análisis predictivo.
-                  </p>
+                  <div className="mt-4 pt-2.5 border-t border-slate-800/60 flex items-center justify-between text-[11px] text-slate-400 group-hover:text-indigo-400 transition-colors duration-200 font-medium">
+                    <span>Ver métricas predictivas</span>
+                    <ArrowUpRight className="w-3.5 h-3.5 group-hover:translate-x-[2px] group-hover:-translate-y-[2px] transition-transform duration-200" />
+                  </div>
                 </button>
-
               </div>
             </div>
           </div>
@@ -2997,6 +2845,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
 
                     <div className="flex justify-end pt-1">
                       <button
+                        type="button"
                         onClick={handleCreateUserReal}
                         disabled={rbacLoading}
                         className="px-4 py-2 bg-emerald-500 text-slate-950 font-black text-xs rounded-xl shadow-lg hover:bg-emerald-400 transition-all cursor-pointer"
@@ -3015,7 +2864,13 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                     <div className="col-span-2">Estado Acceso</div>
                     <div className="col-span-2 text-right">Ajuste Accesos</div>
                   </div>
-                  {usersList
+                  {usersList.filter(u => u.name.toLowerCase().includes(userSearchTerm.toLowerCase()) || u.email.toLowerCase().includes(userSearchTerm.toLowerCase())).length === 0 ? (
+                    <div className="py-10 px-4 text-center rounded-xl border border-cyan-500/15 bg-[#030d1f]/40">
+                      <ShieldCheck className="w-8 h-8 text-cyan-400/60 mx-auto mb-2" />
+                      <p className="text-xs font-bold text-slate-200">No hay cuentas secundarias registradas en esta campaña</p>
+                      <p className="text-[11px] text-slate-400 mt-1">Utiliza el botón &quot;+ Registrar&quot; para crear y asignar roles operativos a tu equipo en Supabase.</p>
+                    </div>
+                  ) : usersList
                     .filter(u => u.name.toLowerCase().includes(userSearchTerm.toLowerCase()) || u.email.toLowerCase().includes(userSearchTerm.toLowerCase()))
                     .map(usr => (
                       <div 
@@ -3203,7 +3058,12 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
             {/* Sub-tab Selector for Form Types */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-[#030d1f] p-1.5 rounded-2xl border border-cyan-500/30">
               <button
-                onClick={() => setFormTypeSubTab('votantes')}
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setFormTypeSubTab('votantes');
+                }}
                 className={`flex-1 py-2.5 px-3 sm:px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer text-center ${
                   formTypeSubTab === 'votantes'
                     ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-extrabold shadow'
@@ -3215,7 +3075,12 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
               </button>
 
               <button
-                onClick={() => setFormTypeSubTab('lideres_coordinadores')}
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setFormTypeSubTab('lideres_coordinadores');
+                }}
                 className={`flex-1 py-2.5 px-3 sm:px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer text-center ${
                   formTypeSubTab === 'lideres_coordinadores'
                     ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40 font-extrabold shadow'
@@ -3231,22 +3096,43 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
             {/* SUB-TAB 1: FORMULARIO DE VOTANTES */}
             {/* ---------------------------------------------------------------------- */}
             {formTypeSubTab === 'votantes' && (
-              <div className="bg-[#041733]/90 rounded-2xl p-4 sm:p-6 border border-cyan-500/30 shadow-xl space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-cyan-500/20 pb-4">
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-white text-sm sm:text-base flex items-center gap-2">
-                      <Users className="w-5 h-5 text-cyan-400 shrink-0" />
-                      <span className="break-words">Gestión y Configuración del Formulario de Registro de Votantes</span>
-                    </h3>
+              <div className="bg-[#041733]/95 backdrop-blur-md rounded-2xl p-4 sm:p-6 border border-cyan-500/20 shadow-2xl space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-cyan-500/15 pb-4">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="p-2.5 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.15)] flex items-center justify-center shrink-0">
+                      <Users className="w-5 h-5 text-cyan-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="text-sm sm:text-base md:text-lg font-semibold tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent break-words">
+                        Gestión y Configuración del Formulario de Registro de Votantes
+                      </h3>
+                      <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5 truncate">
+                        Padrón electoral, control anti-duplicados por cédula y vinculación territorial
+                      </p>
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0">
                     <button
-                      onClick={() => setShowAddVoterForm(!showAddVoterForm)}
-                      className="w-full sm:w-auto px-4 py-2 bg-gradient-to-r from-cyan-600 to-teal-600 hover:brightness-110 text-white font-extrabold text-xs rounded-xl shadow hover:shadow-cyan-500/25 transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-cyan-400/30"
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setShowAddVoterForm(!showAddVoterForm);
+                      }}
+                      className="w-full sm:w-auto px-4 py-2.5 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 font-semibold text-xs sm:text-sm rounded-xl shadow-[0_0_20px_rgba(20,184,166,0.3)] hover:shadow-[0_0_25px_rgba(20,184,166,0.45)] active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer border border-teal-300/30"
                     >
-                      <UserPlus className="w-4 h-4 shrink-0" />
-                      <span>{showAddVoterForm ? 'Cerrar formulario' : 'Registrar votante'}</span>
+                      {showAddVoterForm ? (
+                        <>
+                          <X className="w-4 h-4 stroke-[2.5]" />
+                          <span>Cerrar formulario</span>
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus className="w-4 h-4 stroke-[2.5]" />
+                          <span>+ Registrar votante</span>
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>
@@ -3369,6 +3255,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                           className="w-full bg-[#020712] border border-cyan-500/30 rounded-xl px-3 py-2 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
                         >
                           <option value="">Seleccione el líder</option>
+                          <option value="DIRECTO">Asignación Directa Central (Sin líder intermedio)</option>
                           {leadersAndCoordinators.map(leader => (
                             <option key={leader.id} value={leader.id}>{leader.nombre} — {leader.zona}</option>
                           ))}
@@ -3468,50 +3355,63 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                 )}
 
                 {/* Duplicate Check Tool Box */}
-                <div className="bg-[#030d1f] text-white rounded-2xl p-4 border border-cyan-500/30 space-y-3 shadow-lg">
-                  <div className="flex items-center justify-between">
+                <div className="bg-slate-900/40 backdrop-blur-md border border-slate-800 hover:border-slate-700/80 transition-colors duration-300 rounded-2xl p-4 sm:p-5 shadow-lg space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                     <div className="flex items-center gap-2">
-                      <Search className="w-4 h-4 text-cyan-400" />
-                      <h4 className="text-xs font-bold text-cyan-300">Regla de Negocio Anti-Duplicados por Cédula & Cruce Censo</h4>
+                      <Search className="w-4 h-4 text-cyan-400 shrink-0" />
+                      <h4 className="text-xs sm:text-sm font-semibold text-cyan-300 tracking-wide">
+                        Regla de Negocio Anti-Duplicados por Cédula & Cruce Censo
+                      </h4>
                     </div>
-                    <span className="text-[10px] bg-cyan-950 text-cyan-300 px-2 py-0.5 rounded border border-cyan-700/50 font-mono">
-                      Sincronización Offline Drift / SQLite
-                    </span>
+                    <div className="inline-flex items-center font-mono text-xs border border-cyan-500/30 bg-cyan-950/40 text-cyan-300 px-3 py-1 rounded-full w-fit">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse inline-block mr-1.5 shadow-[0_0_8px_#34d399]" />
+                      <span>Sincronización Offline Drift / SQLite</span>
+                    </div>
                   </div>
 
                   <form 
                     onSubmit={(e) => {
                       e.preventDefault();
-                      handleSearchCedula();
+                      void handleSearchCedula();
                     }}
-                    className="flex flex-col sm:flex-row gap-2"
+                    className="flex flex-col sm:flex-row gap-2.5"
                   >
-                    <input
-                      type="text"
-                      value={cedulaSearch}
-                      onChange={(e) => setCedulaSearch(e.target.value)}
-                      placeholder="Prueba de cédula para consultar en Censo Electoral y CRM (Ej: 25970436 o 1017123456)..."
-                      className="flex-1 bg-slate-950 border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400 font-mono placeholder:text-slate-500"
-                    />
+                    <div className="relative flex-1">
+                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                        <Search className="w-4 h-4" />
+                      </div>
+                      <input
+                        type="text"
+                        value={cedulaSearch}
+                        onChange={(e) => setCedulaSearch(e.target.value)}
+                        placeholder="Prueba de cédula para consultar en Censo Electoral y CRM (Ej: 25970436 o 1017123456)..."
+                        className="w-full bg-slate-950/70 border border-slate-800 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 rounded-xl pl-10 pr-4 py-2.5 text-xs sm:text-sm text-white font-mono placeholder:text-slate-500 transition-all outline-none"
+                      />
+                    </div>
                     <button
                       type="submit"
-                      className="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-1.5 shrink-0"
+                      disabled={isValidatingCedula}
+                      className="px-4 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 active:scale-95 text-slate-950 font-bold text-xs sm:text-sm rounded-xl shadow-md hover:shadow-cyan-500/20 transition-all cursor-pointer flex items-center justify-center gap-2 shrink-0 disabled:opacity-60"
                     >
-                      <Search className="w-3.5 h-3.5 text-slate-950" />
-                      <span>Validar Cédula</span>
+                      {isValidatingCedula ? (
+                        <RefreshCw className="w-4 h-4 animate-spin text-slate-950" />
+                      ) : (
+                        <Search className="w-4 h-4 text-slate-950 stroke-[2.5]" />
+                      )}
+                      <span>{isValidatingCedula ? 'Validando...' : 'Validar Cédula'}</span>
                     </button>
                   </form>
 
                   {/* Notification of Successful Save */}
                   {consultationSavedSuccess && (
-                    <div className="p-3 bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 rounded-xl text-xs flex items-center justify-between gap-2 animate-fadeIn">
-                      <div className="flex items-center gap-2">
+                    <div className="p-3.5 bg-emerald-950/40 border border-emerald-500/30 text-emerald-200 rounded-xl text-xs flex items-center justify-between gap-3 animate-fadeIn">
+                      <div className="flex items-center gap-2.5">
                         <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                        <span className="font-bold">{consultationSavedSuccess}</span>
+                        <span className="font-semibold">{consultationSavedSuccess}</span>
                       </div>
                       <button
                         onClick={() => setConsultationSavedSuccess(null)}
-                        className="text-emerald-400 hover:text-white p-1 cursor-pointer"
+                        className="text-emerald-400 hover:text-white p-1 rounded-lg hover:bg-emerald-900/50 transition-colors cursor-pointer"
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
@@ -3520,12 +3420,12 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
 
                   {/* Warning on Duplicate */}
                   {duplicateWarning && (
-                    <div className="p-3 bg-rose-500/20 border border-rose-400/40 text-rose-300 rounded-xl text-xs space-y-2 animate-fadeIn">
-                      <div className="flex items-start gap-2">
+                    <div className="p-4 bg-rose-950/40 border border-rose-500/30 text-rose-200 rounded-xl text-xs space-y-2.5 animate-fadeIn">
+                      <div className="flex items-start gap-2.5">
                         <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
                         <div>
-                          <p className="font-bold">{duplicateWarning}</p>
-                          <p className="text-[11px] text-rose-200/80 mt-0.5">El sistema previene la duplicación de votantes entre líderes de la misma campaña.</p>
+                          <p className="font-bold text-rose-300">{duplicateWarning}</p>
+                          <p className="text-[11px] text-rose-300/70 mt-0.5">El sistema previene la duplicación de votantes entre líderes de la misma campaña territorial.</p>
                         </div>
                       </div>
                       <div className="flex justify-end">
@@ -3535,7 +3435,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                             setDuplicateWarning(null);
                             setCedulaSearchResult(null);
                           }}
-                          className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-rose-200 text-[11px] font-bold rounded-lg border border-rose-500/30 cursor-pointer"
+                          className="px-3 py-1 bg-slate-900/90 hover:bg-slate-800 text-rose-300 text-xs font-semibold rounded-lg border border-rose-500/30 transition-colors cursor-pointer"
                         >
                           Cerrar Alerta
                         </button>
@@ -3545,32 +3445,32 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
 
                   {/* Result with Save/Discard Option */}
                   {cedulaSearchResult && !duplicateWarning && (
-                    <div className="p-3.5 bg-[#041733] border border-emerald-500/40 text-emerald-300 rounded-xl text-xs space-y-3 animate-fadeIn shadow-md">
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-emerald-500/20 pb-2.5">
-                        <div className="flex items-start sm:items-center gap-2">
+                    <div className="p-4 bg-slate-900/70 border border-emerald-500/30 text-emerald-200 rounded-xl text-xs space-y-3.5 animate-fadeIn shadow-md">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-emerald-500/20 pb-3">
+                        <div className="flex items-start sm:items-center gap-2.5">
                           <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5 sm:mt-0" />
                           <div>
-                            <div className="font-extrabold text-white text-xs">
-                              {cedulaSearchResult.nombre} (CC: {cedulaSearchResult.cc})
+                            <div className="font-bold text-white text-xs sm:text-sm">
+                              {cedulaSearchResult.nombre} <span className="font-mono text-cyan-300 font-normal">(CC: {cedulaSearchResult.cc})</span>
                             </div>
-                            <div className="text-[11px] text-emerald-300/80 font-mono mt-0.5">
+                            <div className="text-[11px] text-slate-400 font-mono mt-0.5">
                               {cedulaSearchResult.municipio} • {cedulaSearchResult.puesto} • {cedulaSearchResult.mesa}
                             </div>
                           </div>
                         </div>
-                        <span className="text-[9px] bg-emerald-500/20 text-emerald-300 font-bold px-2 py-0.5 rounded border border-emerald-500/40 w-fit self-start sm:self-auto">
+                        <span className="text-[10px] font-mono bg-emerald-950/60 text-emerald-300 font-semibold px-2.5 py-1 rounded-full border border-emerald-500/30 w-fit self-start sm:self-auto">
                           Habilitado en Censo CNE
                         </span>
                       </div>
 
                       {/* Decision: Save or Discard Option */}
-                      <div className="bg-[#020712] p-3 rounded-lg border border-cyan-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="bg-slate-950/80 p-3.5 rounded-xl border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div>
-                          <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                          <div className="text-xs font-semibold text-white flex items-center gap-1.5">
                             <CheckSquare className="w-3.5 h-3.5 text-cyan-400" />
                             <span>¿Desea guardar la información consultada en la base de datos?</span>
                           </div>
-                          <div className="text-[10px] text-cyan-200/70 mt-0.5">
+                          <div className="text-[11px] text-slate-400 mt-0.5">
                             Incorpore este ciudadano empadronado a la campaña o descarte el resultado.
                           </div>
                         </div>
@@ -3579,7 +3479,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                           <button
                             type="button"
                             onClick={handleDiscardConsultedVoter}
-                            className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold text-xs rounded-lg border border-slate-700 transition-all cursor-pointer flex items-center gap-1"
+                            className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white font-medium text-xs rounded-lg border border-slate-700/80 transition-all cursor-pointer flex items-center gap-1.5"
                           >
                             <X className="w-3.5 h-3.5 text-rose-400" />
                             <span>No, Descartar</span>
@@ -3588,7 +3488,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                           <button
                             type="button"
                             onClick={handleFillFormWithConsultedVoter}
-                            className="px-3 py-1.5 bg-cyan-600/30 hover:bg-cyan-600/50 text-cyan-300 hover:text-white font-bold text-xs rounded-lg border border-cyan-500/40 transition-all cursor-pointer flex items-center gap-1"
+                            className="px-3 py-1.5 bg-cyan-950/50 hover:bg-cyan-900/60 text-cyan-300 hover:text-white font-medium text-xs rounded-lg border border-cyan-500/30 transition-all cursor-pointer flex items-center gap-1.5"
                             title="Completar datos adicionales en el formulario antes de guardar"
                           >
                             <Edit3 className="w-3.5 h-3.5" />
@@ -3598,9 +3498,9 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                           <button
                             type="button"
                             onClick={handleSaveConsultedVoter}
-                            className="px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs rounded-lg shadow-md transition-all cursor-pointer flex items-center gap-1"
+                            className="px-3.5 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 active:scale-95 text-slate-950 font-bold text-xs rounded-lg shadow-md transition-all cursor-pointer flex items-center gap-1.5"
                           >
-                            <Check className="w-3.5 h-3.5 stroke-[3]" />
+                            <Check className="w-3.5 h-3.5 stroke-[2.5]" />
                             <span>Sí, Guardar Información</span>
                           </button>
                         </div>
@@ -3609,32 +3509,106 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                   )}
                 </div>
 
-                <div className="space-y-3">
+                {/* Table: Votantes Reales Registrados */}
+                <div className="space-y-3.5">
                   <div className="flex items-center justify-between">
-                    <h4 className="font-bold text-white text-sm flex items-center gap-2"><Users className="w-4 h-4 text-cyan-400" /> Votantes reales registrados</h4>
-                    <span className="text-xs text-slate-400">Total: <strong className="text-cyan-300">{voters.length}</strong></span>
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-1.5 rounded-lg bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
+                        <Users className="w-4 h-4" />
+                      </div>
+                      <h4 className="font-bold text-white text-sm sm:text-base tracking-tight">
+                        Votantes reales registrados
+                      </h4>
+                    </div>
+                    <span className="inline-flex items-center gap-1.5 bg-slate-800/80 border border-slate-700 text-slate-300 text-xs px-2.5 py-1 rounded-full font-mono">
+                      <span>Total:</span>
+                      <strong className="text-cyan-400 font-semibold">{voters.length}</strong>
+                    </span>
                   </div>
-                  <div className="overflow-x-auto border border-cyan-500/20 rounded-xl bg-[#030d1d]">
-                    <table className="w-full text-left text-xs">
-                      <thead className="bg-cyan-950/70 text-cyan-200 border-b border-cyan-800/40">
-                        <tr><th className="p-3">Cédula</th><th className="p-3">Nombre</th><th className="p-3">Líder</th><th className="p-3">Puesto / Mesa</th><th className="p-3">Estado</th><th className="p-3 text-center">Acciones</th></tr>
+
+                  <div className="table-responsive-container border border-slate-800 rounded-2xl bg-slate-900/30 backdrop-blur-md overflow-hidden shadow-lg">
+                    <table className="w-full text-left text-xs min-w-[640px]">
+                      <thead className="bg-slate-950/80 text-slate-400 border-b border-slate-800/80">
+                        <tr>
+                          <th className="py-3.5 px-4 text-xs uppercase tracking-wider font-semibold text-slate-400">Cédula</th>
+                          <th className="py-3.5 px-4 text-xs uppercase tracking-wider font-semibold text-slate-400">Nombre</th>
+                          <th className="py-3.5 px-4 text-xs uppercase tracking-wider font-semibold text-slate-400">Líder</th>
+                          <th className="py-3.5 px-4 text-xs uppercase tracking-wider font-semibold text-slate-400">Puesto / Mesa</th>
+                          <th className="py-3.5 px-4 text-xs uppercase tracking-wider font-semibold text-slate-400">Estado</th>
+                          <th className="py-3.5 px-4 text-xs uppercase tracking-wider font-semibold text-slate-400 text-center">Acciones</th>
+                        </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-800">
+                      <tbody className="divide-y divide-slate-800/60">
                         {voters.length === 0 ? (
-                          <tr><td colSpan={6} className="p-6 text-center text-slate-500">No hay votantes registrados en esta campaña.</td></tr>
-                        ) : voters.map(voter => (
-                          <tr key={voter.id} className="hover:bg-cyan-950/20">
-                            <td className="p-3 font-mono text-cyan-300">{voter.cc}</td>
-                            <td className="p-3"><button onClick={() => setSelectedVoterDetail(voter)} className="font-bold text-white hover:text-cyan-300 cursor-pointer">{voter.nombre}</button><div className="text-[10px] text-slate-500">{voter.telefono}</div></td>
-                            <td className="p-3 text-slate-300">{voter.lider}</td>
-                            <td className="p-3 text-slate-300">{voter.puesto} · {voter.mesa}</td>
-                            <td className="p-3"><span className={`px-2 py-1 rounded border text-[10px] font-bold ${voter.estado === 'Suspendido' ? 'bg-amber-950 text-amber-300 border-amber-700' : 'bg-emerald-950 text-emerald-300 border-emerald-700'}`}>{voter.estado}</span></td>
-                            <td className="p-3"><div className="flex justify-center gap-1.5">
-                              <button onClick={() => void togglePoliticalCrmStatus('voters', voter.id, voter.estado)} className="px-2 py-1 bg-amber-950/60 text-amber-300 border border-amber-700/50 rounded cursor-pointer">{voter.estado === 'Suspendido' ? 'Activar' : 'Suspender'}</button>
-                              <button onClick={() => void deletePoliticalCrmRecord('voters', voter.id, voter.nombre)} className="p-1.5 bg-rose-950/60 text-rose-300 border border-rose-700/50 rounded cursor-pointer" title="Eliminar votante"><Trash2 className="w-3.5 h-3.5" /></button>
-                            </div></td>
+                          <tr>
+                            <td colSpan={6} className="py-12 px-4 text-center">
+                              <div className="flex flex-col items-center justify-center max-w-sm mx-auto space-y-3">
+                                <div className="w-14 h-14 rounded-2xl bg-slate-800/50 border border-slate-700/60 flex items-center justify-center text-slate-400 shadow-inner">
+                                  <UserCheck className="w-7 h-7 text-slate-400" />
+                                </div>
+                                <div>
+                                  <h5 className="text-slate-200 font-medium text-sm">
+                                    Sin registros electorales vinculados
+                                  </h5>
+                                  <p className="text-slate-500 text-xs mt-1 max-w-sm mx-auto leading-relaxed">
+                                    Valide una cédula en el censo o utilice el botón de registro para añadir votantes a este territorio.
+                                  </p>
+                                </div>
+                              </div>
+                            </td>
                           </tr>
-                        ))}
+                        ) : voters.map(voter => {
+                          const isSuspended = voter.estado === 'Suspendido';
+                          return (
+                            <tr key={voter.id} className="hover:bg-slate-850/40 hover:bg-cyan-950/20 transition-colors">
+                              <td className="py-3 px-4 font-mono font-medium text-cyan-400">{voter.cc}</td>
+                              <td className="py-3 px-4">
+                                <button 
+                                  onClick={() => setSelectedVoterDetail(voter)} 
+                                  className="font-semibold text-white hover:text-cyan-300 transition-colors text-left cursor-pointer"
+                                >
+                                  {voter.nombre}
+                                </button>
+                                {voter.telefono && voter.telefono !== 'Sin teléfono' && (
+                                  <div className="text-[10px] text-slate-400 font-mono mt-0.5">{voter.telefono}</div>
+                                )}
+                              </td>
+                              <td className="py-3 px-4 text-slate-300">{voter.lider}</td>
+                              <td className="py-3 px-4 text-slate-300 font-mono text-[11px]">{voter.puesto} · {voter.mesa}</td>
+                              <td className="py-3 px-4">
+                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-semibold font-mono border ${
+                                  isSuspended 
+                                    ? 'bg-amber-950/60 text-amber-300 border-amber-500/30' 
+                                    : 'bg-emerald-950/60 text-emerald-400 border-emerald-500/30'
+                                }`}>
+                                  <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${isSuspended ? 'bg-amber-400' : 'bg-emerald-400'}`} />
+                                  {voter.estado}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4">
+                                <div className="flex items-center justify-center gap-2">
+                                  <button 
+                                    onClick={() => void togglePoliticalCrmStatus('voters', voter.id, voter.estado)} 
+                                    className={`px-2.5 py-1 text-[11px] font-semibold rounded-lg border transition-all cursor-pointer ${
+                                      isSuspended
+                                        ? 'bg-emerald-950/50 hover:bg-emerald-900/60 text-emerald-300 border-emerald-700/50'
+                                        : 'bg-amber-950/50 hover:bg-amber-900/60 text-amber-300 border-amber-700/50'
+                                    }`}
+                                  >
+                                    {isSuspended ? 'Activar' : 'Suspender'}
+                                  </button>
+                                  <button 
+                                    onClick={() => void deletePoliticalCrmRecord('voters', voter.id, voter.nombre)} 
+                                    className="p-1.5 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 hover:text-white border border-rose-700/40 rounded-lg transition-colors cursor-pointer" 
+                                    title="Eliminar votante"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -3745,6 +3719,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
 
                   <div className="flex items-center gap-2 shrink-0">
                     <button
+                      type="button"
                       onClick={() => setShowAddLeaderForm(!showAddLeaderForm)}
                       className="w-full sm:w-auto px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:brightness-110 text-white font-extrabold text-xs rounded-xl shadow-lg hover:shadow-purple-500/25 transition-all flex items-center justify-center gap-1.5 cursor-pointer border border-purple-400/30"
                     >
@@ -3995,8 +3970,8 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                     </span>
                   </div>
 
-                  <div className="overflow-x-auto border border-purple-500/20 rounded-xl bg-[#030d1d]">
-                    <table className="w-full text-left text-xs border-collapse">
+                  <div className="table-responsive-container border border-purple-500/20 rounded-xl bg-[#030d1d]">
+                    <table className="w-full text-left text-xs border-collapse min-w-[650px]">
                       <thead>
                         <tr className="bg-purple-950/70 text-purple-200 font-bold border-b border-purple-800/40">
                           <th className="p-3">Cédula (CC)</th>
@@ -4009,7 +3984,17 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-800 font-medium">
-                        {leadersAndCoordinators.map((l) => (
+                        {leadersAndCoordinators.length === 0 ? (
+                          <tr>
+                            <td colSpan={7} className="p-8 text-center text-slate-400">
+                              <div className="flex flex-col items-center gap-2">
+                                <UserCheck2 className="w-7 h-7 text-purple-400/50" />
+                                <span className="font-bold text-slate-300">No hay líderes ni coordinadores registrados en la estructura</span>
+                                <span className="text-[11px] text-slate-400">Haz clic en &quot;Registrar líder / coordinador&quot; para inscribir el primer líder de la campaña.</span>
+                              </div>
+                            </td>
+                          </tr>
+                        ) : leadersAndCoordinators.map((l) => (
                           <tr key={l.id} className="hover:bg-purple-950/30 transition-colors">
                             <td className="p-3 font-mono font-bold text-purple-300">{l.cc}</td>
                             <td className="p-3">
@@ -4038,9 +4023,9 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                             <td className="p-3 text-slate-300 font-semibold">{l.supervisor}</td>
                             <td className="p-3 text-center">
                               <div className="flex justify-center gap-1.5 flex-wrap">
-                                <button onClick={() => setSelectedLeaderDetail(l)} className="px-2.5 py-1 bg-purple-900/40 hover:bg-purple-800/60 text-purple-200 font-bold text-[11px] rounded-lg border border-purple-700/50 transition-all cursor-pointer">Ver expediente</button>
-                                <button onClick={() => void togglePoliticalCrmStatus('leaders', l.id, l.documentos)} className="px-2 py-1 bg-amber-950/60 text-amber-300 border border-amber-700/50 rounded cursor-pointer text-[10px]">{l.documentos === 'Suspendido' ? 'Activar' : 'Suspender'}</button>
-                                <button onClick={() => void deletePoliticalCrmRecord('leaders', l.id, l.nombre)} className="p-1.5 bg-rose-950/60 text-rose-300 border border-rose-700/50 rounded cursor-pointer" title="Eliminar líder"><Trash2 className="w-3.5 h-3.5" /></button>
+                                <button type="button" onClick={() => setSelectedLeaderDetail(l)} className="px-2.5 py-1 bg-purple-900/40 hover:bg-purple-800/60 text-purple-200 font-bold text-[11px] rounded-lg border border-purple-700/50 transition-all cursor-pointer">Ver expediente</button>
+                                <button type="button" onClick={() => void togglePoliticalCrmStatus('leaders', l.id, l.documentos)} className="px-2 py-1 bg-amber-950/60 text-amber-300 border border-amber-700/50 rounded cursor-pointer text-[10px]">{l.documentos === 'Suspendido' ? 'Activar' : 'Suspender'}</button>
+                                <button type="button" onClick={() => void deletePoliticalCrmRecord('leaders', l.id, l.nombre)} className="p-1.5 bg-rose-950/60 text-rose-300 border border-rose-700/50 rounded cursor-pointer" title="Eliminar líder"><Trash2 className="w-3.5 h-3.5" /></button>
                               </div>
                             </td>
                           </tr>
@@ -4332,34 +4317,38 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
         {/* TAB 8: JURADOS ELECTORALES (POSTULACIÓN A REGISTRADURÍA & CONFRONTACIÓN) */}
         {/* ---------------------------------------------------------------------- */}
         {activeTab === 'jurados_electorales' && (
-          <div className="space-y-6 animate-fadeIn jurados-electorales-admin">
-            {jurorError && (
-              <div className="rounded-xl border p-3.5 text-xs font-bold flex items-center gap-2.5 bg-rose-50 border-rose-200 text-rose-800 shadow-sm">
-                <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
-                <span>Error de sincronización: {jurorError}</span>
-              </div>
-            )}
-            {/* Input Oculto para Anexar Archivos de Resolución */}
+          <div className="animate-fadeIn space-y-6">
             <input
-              type="file"
               ref={resolutionFileInputRef}
+              type="file"
+              accept=".pdf,.xlsx,.xls,.csv,.txt"
               className="hidden"
-              accept=".pdf,.csv,.xlsx,.xls,.png,.jpg,.jpeg,.txt"
               onChange={handleAttachResolutionFile}
             />
-
-            <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-6">
+            <div className="rounded-3xl p-6 shadow-xl space-y-6 transition-all bg-[#041733]/90 border border-cyan-500/30 text-white">
+              {jurorError && (
+                <div className="p-3 rounded-xl border border-rose-500/40 bg-rose-950/60 text-rose-200 text-xs font-bold flex items-center justify-between gap-2">
+                  <span>{jurorError}</span>
+                  <button
+                    type="button"
+                    onClick={() => setJurorError('')}
+                    className="text-rose-300 hover:text-white font-black px-2 cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
               {/* Header Top Row: Title, Description & '+ Postular Jurado' Button */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/80 pb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
                 <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-blue-50 text-blue-600 border border-blue-200 rounded-2xl shrink-0">
+                  <div className="p-2.5 rounded-2xl shrink-0 border bg-cyan-500/20 text-cyan-300 border-cyan-500/40">
                     <Vote className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="font-extrabold text-slate-900 text-lg flex items-center gap-2">
+                    <h3 className="font-extrabold text-lg flex items-center gap-2 text-white">
                       Listas de Jurados para Registraduría & Confrontación de Resolución
                     </h3>
-                    <p className="text-xs text-slate-500 font-medium">
+                    <p className="text-xs font-medium text-slate-400">
                       Control integral de candidatos postulados, cruce OCR con resoluciones oficiales y asignaciones de mesa.
                     </p>
                   </div>
@@ -4375,7 +4364,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                     }}
                     className={`w-full sm:w-auto px-5 py-2.5 font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer flex items-center justify-center gap-2 ${
                       showJuradoForm
-                        ? 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-300'
+                        ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
                         : 'bg-blue-600 hover:bg-blue-700 text-white'
                     }`}
                   >
@@ -4386,9 +4375,9 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
               </div>
 
               {/* Header Bottom Row: Action Buttons for Export, Annex Resolution, and Confrontation */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80">
-                <div className="text-xs font-bold text-slate-700 flex items-center gap-2 px-1 shrink-0">
-                  <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse shrink-0"></span>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3.5 rounded-2xl border bg-[#020b18]/80 border-cyan-500/20">
+                <div className="text-xs font-bold flex items-center gap-2 px-1 shrink-0 text-cyan-200">
+                  <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse shrink-0"></span>
                   <span className="whitespace-nowrap">Acciones de Resolución y Exportación:</span>
                 </div>
 
@@ -4397,10 +4386,10 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                   <button
                     type="button"
                     onClick={handleExportJuradosExcel}
-                    className="px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer flex items-center gap-2 border border-emerald-300"
+                    className="px-4 py-2 font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer flex items-center gap-2 border bg-emerald-950/60 hover:bg-emerald-900 text-emerald-300 border-emerald-500/40"
                     title="Exportar archivo CSV/Excel listo para enviar a la Registraduría"
                   >
-                    <FileSpreadsheet className="w-4 h-4 text-emerald-700" />
+                    <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
                     <span>Exportar Lista Excel Registraduría</span>
                   </button>
 
@@ -4409,13 +4398,13 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                     type="button"
                     onClick={() => resolutionFileInputRef.current?.click()}
                     disabled={isReadingResolution}
-                    className="px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-800 font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer flex items-center gap-2 border border-blue-300 disabled:opacity-50"
+                    className="px-4 py-2 font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer flex items-center gap-2 border disabled:opacity-50 bg-cyan-950/60 hover:bg-cyan-900 text-cyan-300 border-cyan-500/40"
                     title="Anexar documento de Resolución emitida por la Registraduría (PDF/Excel) para lectura"
                   >
                     {isReadingResolution ? (
-                      <RefreshCw className="w-4 h-4 text-blue-600 animate-spin" />
+                      <RefreshCw className="w-4 h-4 animate-spin text-cyan-400" />
                     ) : (
-                      <FileUp className="w-4 h-4 text-blue-600" />
+                      <FileUp className="w-4 h-4 text-cyan-400" />
                     )}
                     <span>{isReadingResolution ? 'Leyendo Resolución...' : 'Anexar Resolución PDF/Excel'}</span>
                   </button>
@@ -4424,10 +4413,10 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                   <button
                     type="button"
                     onClick={() => setShowConfrontationModal(!showConfrontationModal)}
-                    className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer flex items-center gap-2"
+                    className="px-4 py-2 font-bold text-xs rounded-xl shadow-sm transition-all cursor-pointer flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
                     title="Cargar y confrontar resolución oficial de sorteo emitida por la Registraduría"
                   >
-                    <Scale className="w-4 h-4 text-blue-300" />
+                    <Scale className="w-4 h-4 text-cyan-200" />
                     <span>Confrontar Resolución Sorteo</span>
                   </button>
                 </div>
@@ -4435,54 +4424,54 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
 
               {/* KPI Summary Metrics Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-1">
-                  <div className="flex items-center justify-between text-xs text-slate-600 font-bold">
+                <div className="p-4 rounded-2xl border space-y-1 bg-[#020b18]/90 border-cyan-500/30 text-white">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-400">
                     <span>Total Candidatos Postulados</span>
-                    <Users className="w-4 h-4 text-blue-600" />
+                    <Users className="w-4 h-4 text-cyan-400" />
                   </div>
-                  <div className="text-2xl font-black text-slate-900">{jurados.length}</div>
-                  <div className="text-[10px] text-slate-500 font-medium">
+                  <div className="text-2xl font-black text-white">{jurados.length}</div>
+                  <div className="text-[10px] font-medium text-slate-400">
                     Listas para Sorteo Registraduría
                   </div>
                 </div>
 
-                <div className="p-4 bg-emerald-50/70 rounded-2xl border border-emerald-200 space-y-1">
-                  <div className="flex items-center justify-between text-xs text-emerald-800 font-bold">
+                <div className="p-4 rounded-2xl border space-y-1 bg-emerald-950/40 border-emerald-500/40 text-emerald-300">
+                  <div className="flex items-center justify-between text-xs font-bold text-emerald-300">
                     <span>Seleccionados en Resolución</span>
-                    <CheckCircle className="w-4 h-4 text-emerald-600" />
+                    <CheckCircle className="w-4 h-4 text-emerald-400" />
                   </div>
-                  <div className="text-2xl font-black text-emerald-700">
+                  <div className="text-2xl font-black text-emerald-400">
                     {jurados.filter(j => j.estadoSorteo.includes('Seleccionado')).length}
                   </div>
-                  <div className="text-[10px] text-emerald-700 font-bold">
+                  <div className="text-[10px] font-bold text-emerald-300">
                     Designados como Jurados Oficiales
                   </div>
                 </div>
 
-                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-1">
-                  <div className="flex items-center justify-between text-xs text-slate-600 font-bold">
+                <div className="p-4 rounded-2xl border space-y-1 bg-[#020b18]/90 border-slate-700/80 text-slate-200">
+                  <div className="flex items-center justify-between text-xs font-bold text-slate-400">
                     <span>No Seleccionados en Sorteo</span>
-                    <XCircle className="w-4 h-4 text-slate-400" />
+                    <XCircle className="w-4 h-4 text-slate-500" />
                   </div>
-                  <div className="text-2xl font-black text-slate-700">
+                  <div className="text-2xl font-black text-slate-300">
                     {jurados.filter(j => j.estadoSorteo === 'No Seleccionado').length}
                   </div>
-                  <div className="text-[10px] text-slate-500 font-medium">
+                  <div className="text-[10px] font-medium text-slate-400">
                     Postulaciones Sin Asignación
                   </div>
                 </div>
 
-                <div className="p-4 bg-blue-50/70 rounded-2xl border border-blue-200 space-y-1">
-                  <div className="flex items-center justify-between text-xs text-blue-800 font-bold">
+                <div className="p-4 rounded-2xl border space-y-1 bg-cyan-950/40 border-cyan-500/40 text-cyan-300">
+                  <div className="flex items-center justify-between text-xs font-bold text-cyan-300">
                     <span>Tasa Efectividad en Sorteo</span>
-                    <Award className="w-4 h-4 text-blue-600" />
+                    <Award className="w-4 h-4 text-cyan-400" />
                   </div>
-                  <div className="text-2xl font-black text-blue-700">
+                  <div className="text-2xl font-black text-cyan-400">
                     {jurados.length > 0 
                       ? `${Math.round((jurados.filter(j => j.estadoSorteo.includes('Seleccionado')).length / jurados.length) * 100)}%` 
                       : '0%'}
                   </div>
-                  <div className="text-[10px] text-blue-700 font-bold">
+                  <div className="text-[10px] font-bold text-cyan-300">
                     Proporción de Éxito Político
                   </div>
                 </div>
@@ -4490,36 +4479,36 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
 
               {/* Panel de Confrontación de Resolución Registraduría (Expandible / Modal) */}
               {(showConfrontationModal || isConfronting) && (
-                <div className="bg-slate-50 text-slate-900 rounded-2xl p-5 border border-slate-200 shadow-md space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-3">
+                <div className="rounded-2xl p-5 border shadow-xl space-y-4 bg-[#030d1d] text-white border-cyan-500/40">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
                     <div className="flex items-center gap-3">
-                      <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-xl text-blue-600">
-                        <Scale className="w-6 h-6 text-blue-600" />
+                      <div className="p-2.5 rounded-xl border bg-cyan-500/20 border-cyan-500/40 text-cyan-300">
+                        <Scale className="w-6 h-6 text-cyan-400" />
                       </div>
                       <div>
-                        <h4 className="text-sm font-black text-slate-900 tracking-wide uppercase">
+                        <h4 className="text-sm font-black tracking-wide uppercase text-white">
                           Módulo de Lector & Confrontación de Resolución de Jurados
                         </h4>
-                        <p className="text-xs text-slate-600 mt-0.5">
+                        <p className="text-xs mt-0.5 text-slate-400">
                           Lectura automatizada por OCR/Texto de la resolución expedida por la Registraduría Nacional / CNE y confrontación de cédulas.
                         </p>
                       </div>
                     </div>
 
-                    <span className="px-3 py-1 bg-white text-blue-700 font-mono text-xs font-bold rounded-xl border border-slate-200 shadow-sm shrink-0">
+                    <span className="px-3 py-1 font-mono text-xs font-bold rounded-xl border shadow-sm shrink-0 bg-[#020712] text-cyan-300 border-slate-700">
                       {resolutionFile.resolutionNumber}
                     </span>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-                    <div className="md:col-span-8 space-y-3 bg-white p-4 rounded-xl border border-slate-200">
+                    <div className="md:col-span-8 space-y-3 p-4 rounded-xl border bg-[#020712] border-slate-800 text-white">
                       <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-                        <span className="font-bold text-slate-800 flex items-center gap-1.5">
-                          <FileText className="w-4 h-4 text-blue-600" />
+                        <span className="font-bold flex items-center gap-1.5 text-slate-200">
+                          <FileText className="w-4 h-4 text-cyan-400" />
                           <span>Resolución Oficial Anexada:</span>
                         </span>
                         <div className="flex items-center gap-2">
-                          <span className="font-mono text-emerald-800 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-300">
+                          <span className="font-mono font-bold px-2 py-0.5 rounded border text-emerald-300 bg-emerald-950/60 border-emerald-500/40">
                             {resolutionFile.name} ({resolutionFile.size})
                           </span>
                           <button
@@ -4534,46 +4523,46 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                         </div>
                       </div>
 
-                      <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-1.5 text-xs text-slate-700">
+                      <div className="p-3 rounded-lg border space-y-1.5 text-xs bg-[#041733] border-slate-800 text-slate-300">
                         <div className="flex items-center justify-between font-mono text-[11px]">
-                          <span className="text-slate-500">Estado de Lectura OCR:</span>
-                          <span className="text-emerald-700 font-bold flex items-center gap-1">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                          <span className="text-slate-400">Estado de Lectura OCR:</span>
+                          <span className="font-bold flex items-center gap-1 text-emerald-400">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                             <span>{resolutionFile.status}</span>
                           </span>
                         </div>
                         <div className="flex items-center justify-between font-mono text-[11px]">
-                          <span className="text-slate-500">Registros y Cédulas Identificadas:</span>
-                          <span className="text-slate-900 font-bold">{resolutionFile.numRecordsExtracted} Jurados Registrados</span>
+                          <span className="text-slate-400">Registros y Cédulas Identificadas:</span>
+                          <span className="font-bold text-white">{resolutionFile.numRecordsExtracted} Jurados Registrados</span>
                         </div>
-                        <p className="text-[11px] text-slate-500 pt-1 leading-relaxed border-t border-slate-200">
+                        <p className="text-[11px] pt-1 leading-relaxed border-t text-slate-400 border-slate-800">
                           Este proceso ejecuta un algoritmo de cruce directo entre el documento anexado de la Registraduría y el listado de postulados del partido para determinar quiénes quedaron asignados como Jurados Oficiales, en qué puesto, mesa y rol.
                         </p>
                       </div>
 
                       {/* Distribution breakdown by designated roles */}
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-[11px]">
-                        <div className="bg-white p-2 rounded-lg border border-slate-200 text-center">
-                          <span className="text-slate-500 block text-[10px]">Presidentes</span>
-                          <strong className="text-blue-700 font-black text-sm">
+                        <div className="p-2 rounded-lg border text-center bg-[#020712] border-slate-800">
+                          <span className="block text-[10px] text-slate-400">Presidentes</span>
+                          <strong className="font-black text-sm text-cyan-400">
                             {jurados.filter(j => j.rolDesignado === 'Presidente de Mesa').length}
                           </strong>
                         </div>
-                        <div className="bg-white p-2 rounded-lg border border-slate-200 text-center">
-                          <span className="text-slate-500 block text-[10px]">Vocales 1 y 2</span>
-                          <strong className="text-emerald-700 font-black text-sm">
+                        <div className="p-2 rounded-lg border text-center bg-[#020712] border-slate-800">
+                          <span className="block text-[10px] text-slate-400">Vocales 1 y 2</span>
+                          <strong className="font-black text-sm text-emerald-400">
                             {jurados.filter(j => j.rolDesignado.includes('Vocal')).length}
                           </strong>
                         </div>
-                        <div className="bg-white p-2 rounded-lg border border-slate-200 text-center">
-                          <span className="text-slate-500 block text-[10px]">Remanentes</span>
-                          <strong className="text-amber-700 font-black text-sm">
+                        <div className="p-2 rounded-lg border text-center bg-[#020712] border-slate-800">
+                          <span className="block text-[10px] text-slate-400">Remanentes</span>
+                          <strong className="font-black text-sm text-amber-400">
                             {jurados.filter(j => j.rolDesignado === 'Jurado Remanente').length}
                           </strong>
                         </div>
-                        <div className="bg-white p-2 rounded-lg border border-slate-200 text-center">
-                          <span className="text-slate-500 block text-[10px]">No Designados</span>
-                          <strong className="text-slate-500 font-black text-sm">
+                        <div className="p-2 rounded-lg border text-center bg-[#020712] border-slate-800">
+                          <span className="block text-[10px] text-slate-400">No Designados</span>
+                          <strong className="font-black text-sm text-slate-400">
                             {jurados.filter(j => j.rolDesignado === 'No Designado' || j.rolDesignado === 'Pendiente').length}
                           </strong>
                         </div>
@@ -4604,16 +4593,16 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                         type="button"
                         onClick={() => resolutionFileInputRef.current?.click()}
                         disabled={isReadingResolution}
-                        className="w-full py-2.5 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl border border-slate-300 flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm"
+                        className="w-full py-2.5 font-bold text-xs rounded-xl border flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-sm bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700"
                       >
-                        <FileUp className="w-4 h-4 text-blue-600" />
+                        <FileUp className="w-4 h-4 text-cyan-400" />
                         <span>Anexar Nueva Resolución (PDF)</span>
                       </button>
 
                       <button
                         type="button"
                         onClick={() => setShowConfrontationModal(false)}
-                        className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs rounded-xl border border-slate-200 transition-colors cursor-pointer"
+                        className="w-full py-2 font-bold text-xs rounded-xl border transition-colors cursor-pointer bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700"
                       >
                         Ocultar Panel Confrontación
                       </button>
@@ -4624,16 +4613,16 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
 
               {/* Formulario de Postulación de Jurado */}
               {showJuradoForm && (
-                <form onSubmit={handleSaveJuradoCandidate} className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4 animate-fadeIn">
-                  <div className="flex items-center justify-between border-b border-slate-200 pb-3">
-                    <h4 className="font-extrabold text-slate-900 text-sm flex items-center gap-2">
-                      <UserPlus className="w-4 h-4 text-blue-600" />
+                <form onSubmit={handleSaveJuradoCandidate} className="border rounded-2xl p-5 space-y-4 animate-fadeIn bg-[#030d1d] border-cyan-500/40 text-white">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <h4 className="font-extrabold text-sm flex items-center gap-2 text-white">
+                      <UserPlus className="w-4 h-4 text-cyan-400" />
                       <span>{editingJuradoId ? 'Editar Postulante a Jurado de Votación' : 'Postular Nuevo Candidato a Jurado (Lista para Registraduría)'}</span>
                     </h4>
                     <button
                       type="button"
                       onClick={() => setShowJuradoForm(false)}
-                      className="p-1 text-slate-400 hover:text-slate-700 rounded-lg cursor-pointer"
+                      className="p-1 rounded-lg cursor-pointer text-slate-400 hover:text-white"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -4641,59 +4630,59 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">Nombre Completo *</label>
+                      <label className="block font-bold mb-1 text-slate-300">Nombre Completo *</label>
                       <input
                         type="text"
                         required
                         placeholder="Ej: Laura Gómez Pérez"
                         value={jurNombre}
                         onChange={(e) => setJurNombre(e.target.value)}
-                        className="w-full p-2.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium text-slate-900 placeholder:text-slate-400 shadow-sm"
+                        className="w-full p-2.5 rounded-xl font-medium focus:outline-none transition-all bg-[#020712] border border-slate-700 text-white placeholder:text-slate-500 focus:border-cyan-400"
                       />
                     </div>
 
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">Cédula de Ciudadanía *</label>
+                      <label className="block font-bold mb-1 text-slate-300">Cédula de Ciudadanía *</label>
                       <input
                         type="text"
                         required
                         placeholder="Ej: 1017889900"
                         value={jurCc}
                         onChange={(e) => setJurCc(e.target.value)}
-                        className="w-full p-2.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-mono font-bold text-slate-900 placeholder:text-slate-400 shadow-sm"
+                        className="w-full p-2.5 rounded-xl font-mono font-bold focus:outline-none transition-all bg-[#020712] border border-slate-700 text-white placeholder:text-slate-500 focus:border-cyan-400"
                       />
                     </div>
 
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">Teléfono Móvil *</label>
+                      <label className="block font-bold mb-1 text-slate-300">Teléfono Móvil *</label>
                       <input
                         type="text"
                         required
                         placeholder="Ej: +57 300 123 4567"
                         value={jurTelefono}
                         onChange={(e) => setJurTelefono(e.target.value)}
-                        className="w-full p-2.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium text-slate-900 placeholder:text-slate-400 shadow-sm"
+                        className="w-full p-2.5 rounded-xl font-medium focus:outline-none transition-all bg-[#020712] border border-slate-700 text-white placeholder:text-slate-500 focus:border-cyan-400"
                       />
                     </div>
 
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">Correo Electrónico *</label>
+                      <label className="block font-bold mb-1 text-slate-300">Correo Electrónico *</label>
                       <input
                         type="email"
                         required
                         placeholder="Ej: laura.gomez@gmail.com"
                         value={jurEmail}
                         onChange={(e) => setJurEmail(e.target.value)}
-                        className="w-full p-2.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium text-slate-900 placeholder:text-slate-400 shadow-sm"
+                        className="w-full p-2.5 rounded-xl font-medium focus:outline-none transition-all bg-[#020712] border border-slate-700 text-white placeholder:text-slate-500 focus:border-cyan-400"
                       />
                     </div>
 
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">Partido Político / Movimiento</label>
+                      <label className="block font-bold mb-1 text-slate-300">Partido Político / Movimiento</label>
                       <select
                         value={jurPartido}
                         onChange={(e) => setJurPartido(e.target.value)}
-                        className="w-full p-2.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold text-slate-900 shadow-sm"
+                        className="w-full p-2.5 rounded-xl font-bold focus:outline-none transition-all bg-[#020712] border border-slate-700 text-slate-200 focus:border-cyan-400"
                       >
                         <option value="">Seleccione el partido / movimiento</option>
                         {partidosPoliticosOpt.map((p, idx) => (
@@ -4703,18 +4692,18 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                     </div>
 
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">Ocupación / Empresa / Sector</label>
+                      <label className="block font-bold mb-1 text-slate-300">Ocupación / Empresa / Sector</label>
                       <input
                         type="text"
                         placeholder="Ej: Docente / Ingeniero / Sector Público"
                         value={jurOcupacion}
                         onChange={(e) => setJurOcupacion(e.target.value)}
-                        className="w-full p-2.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium text-slate-900 placeholder:text-slate-400 shadow-sm"
+                        className="w-full p-2.5 rounded-xl font-medium focus:outline-none transition-all bg-[#020712] border border-slate-700 text-white placeholder:text-slate-500 focus:border-cyan-400"
                       />
                     </div>
 
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">Municipio / Distrito</label>
+                      <label className="block font-bold mb-1 text-slate-300">Municipio / Distrito</label>
                       <select
                         value={jurMunicipio}
                         onChange={(e) => {
@@ -4722,7 +4711,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                           setJurPuestoPreferente('');
                         }}
                         required
-                        className="w-full p-2.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium text-slate-900 shadow-sm"
+                        className="w-full p-2.5 rounded-xl font-medium focus:outline-none transition-all bg-[#020712] border border-slate-700 text-slate-200 focus:border-cyan-400"
                       >
                         <option value="">Seleccione el municipio / distrito</option>
                         {jurMunicipioOptions.map(municipality => (
@@ -4732,13 +4721,13 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                     </div>
 
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">Puesto Preferente de Votación</label>
+                      <label className="block font-bold mb-1 text-slate-300">Puesto Preferente de Votación</label>
                       <select
                         value={jurPuestoPreferente}
                         onChange={(e) => setJurPuestoPreferente(e.target.value)}
                         disabled={!jurMunicipio || jurPuestoOptions.length === 0}
                         required
-                        className="w-full p-2.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-bold text-slate-900 shadow-sm disabled:opacity-50"
+                        className="w-full p-2.5 rounded-xl font-bold focus:outline-none transition-all disabled:opacity-50 bg-[#020712] border border-slate-700 text-slate-200 focus:border-cyan-400"
                       >
                         <option value="">Seleccione el puesto</option>
                         {jurPuestoOptions.map((pst, idx) => (
@@ -4748,11 +4737,11 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-200">
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
                     <button
                       type="button"
                       onClick={() => setShowJuradoForm(false)}
-                      className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs rounded-xl border border-slate-300 cursor-pointer"
+                      className="px-4 py-2 font-bold text-xs rounded-xl border cursor-pointer bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700"
                     >
                       Cancelar
                     </button>
@@ -4771,13 +4760,13 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                 <div className="flex flex-wrap items-center gap-2 flex-1">
                   {/* Búsqueda */}
                   <div className="relative flex-1 min-w-[200px]">
-                    <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-cyan-400" />
                     <input
                       type="text"
                       placeholder="Buscar por candidato, cédula o puesto..."
                       value={juradoSearchQuery}
                       onChange={(e) => setJuradoSearchQuery(e.target.value)}
-                      className="w-full pl-9 pr-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-medium text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder-slate-400 shadow-sm"
+                      className="w-full pl-9 pr-3 py-2 rounded-xl text-xs font-medium focus:outline-none transition-all bg-[#020712] border border-slate-700 text-white placeholder:text-slate-500 focus:border-cyan-400"
                     />
                   </div>
 
@@ -4785,7 +4774,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                   <select
                     value={juradoPartidoFilter}
                     onChange={(e) => setJuradoPartidoFilter(e.target.value)}
-                    className="p-2 min-w-[160px] bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500 shadow-sm"
+                    className="p-2 min-w-[160px] rounded-xl text-xs font-bold focus:outline-none transition-all bg-[#020712] border border-slate-700 text-slate-200 focus:border-cyan-400"
                   >
                     <option value="Todos">Todos los Partidos</option>
                     {partidosPoliticosOpt.map((p, idx) => (
@@ -4797,7 +4786,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                   <select
                     value={juradoSorteoFilter}
                     onChange={(e) => setJuradoSorteoFilter(e.target.value)}
-                    className="p-2 min-w-[200px] bg-white border border-slate-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:border-blue-500 shadow-sm"
+                    className="p-2 min-w-[200px] rounded-xl text-xs font-bold focus:outline-none transition-all bg-[#020712] border border-slate-700 text-slate-200 focus:border-cyan-400"
                   >
                     <option value="Todos">Todos los Estados de Sorteo</option>
                     <option value="Seleccionado en Resolución">Seleccionados en Resolución ✅</option>
@@ -4806,8 +4795,8 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                   </select>
                 </div>
 
-                <div className="text-xs text-slate-500 font-semibold self-center">
-                  Mostrando: <strong className="text-slate-900 font-extrabold">{
+                <div className="text-xs font-semibold self-center text-slate-400">
+                  Mostrando: <strong className="text-white font-extrabold">{
                     jurados.filter(j => {
                       if (juradoPartidoFilter !== 'Todos' && j.partido !== juradoPartidoFilter) return false;
                       if (juradoSorteoFilter !== 'Todos' && j.estadoSorteo !== juradoSorteoFilter) return false;
@@ -4822,10 +4811,10 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
               </div>
 
               {/* Tabla Principal de Postulados y Confrontación */}
-              <div className="overflow-x-auto border border-slate-200/80 rounded-2xl bg-white shadow-sm">
-                <table className="w-full text-left text-xs border-collapse">
+              <div className="table-responsive-container border rounded-2xl shadow-xl border-cyan-500/30 bg-[#020b18]/80">
+                <table className="w-full text-left text-xs border-collapse min-w-[700px]">
                   <thead>
-                    <tr className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
+                    <tr className="font-bold border-b bg-[#031326] text-slate-300 border-slate-700/80">
                       <th className="p-3.5 whitespace-nowrap">Candidato a Jurado</th>
                       <th className="p-3.5 whitespace-nowrap">Partido Político</th>
                       <th className="p-3.5 whitespace-nowrap">Ocupación / Profesión</th>
@@ -4835,9 +4824,9 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                       <th className="p-3.5 text-right whitespace-nowrap">Acciones</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 font-medium bg-white">
-                    {jurados
-                      .filter(j => {
+                  <tbody className="divide-y font-medium divide-slate-800 bg-[#020b18]/40 text-slate-200">
+                    {(() => {
+                      const filteredJurados = jurados.filter(j => {
                         if (juradoPartidoFilter !== 'Todos' && j.partido !== juradoPartidoFilter) return false;
                         if (juradoSorteoFilter !== 'Todos' && j.estadoSorteo !== juradoSorteoFilter) return false;
                         if (juradoSearchQuery.trim()) {
@@ -4845,44 +4834,65 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                           return j.nombre.toLowerCase().includes(q) || j.cc.includes(q) || j.puestoPreferente.toLowerCase().includes(q);
                         }
                         return true;
-                      })
-                      .map((j) => (
-                        <tr key={j.id} className="hover:bg-slate-50/80 transition-colors">
+                      });
+                      if (filteredJurados.length === 0) {
+                        return (
+                          <tr>
+                            <td colSpan={7} className="p-8 text-center text-slate-400">
+                              <div className="flex flex-col items-center gap-2">
+                                <Vote className="w-7 h-7 text-cyan-400/50" />
+                                <span className="font-bold text-slate-300">
+                                  {jurados.length === 0
+                                    ? 'No hay candidatos a jurado postulados en la base de datos'
+                                    : 'No se encontraron candidatos con los filtros aplicados'}
+                                </span>
+                                <span className="text-[11px] text-slate-400">
+                                  {jurados.length === 0
+                                    ? 'Haz clic en "+ Postular Jurado" para registrar el primer postulante para el sorteo de la Registraduría.'
+                                    : 'Ajusta el término de búsqueda o los filtros de partido/estado.'}
+                                </span>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      }
+                      return filteredJurados.map((j) => (
+                        <tr key={j.id} className="transition-colors hover:bg-[#041733]/40">
                           <td className="p-3.5">
-                            <div className="font-bold text-slate-900">{j.nombre}</div>
-                            <div className="text-[10px] text-blue-600 font-mono font-bold">CC: {j.cc}</div>
-                            <div className="text-[10px] text-slate-500">{j.telefono} | {j.email}</div>
+                            <div className="font-bold text-white">{j.nombre}</div>
+                            <div className="text-[10px] font-mono font-bold text-cyan-400">CC: {j.cc}</div>
+                            <div className="text-[10px] text-slate-400">{j.telefono} | {j.email}</div>
                           </td>
 
                           <td className="p-3.5">
-                            <span className="px-2.5 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 font-bold text-[10px] rounded-md block w-fit">
+                            <span className="px-2.5 py-0.5 border font-bold text-[10px] rounded-md block w-fit bg-cyan-950/60 text-cyan-300 border-cyan-500/40">
                               {j.partido}
                             </span>
                           </td>
 
-                          <td className="p-3.5 text-slate-700 font-medium">
+                          <td className="p-3.5 font-medium text-slate-300">
                             {j.ocupacion}
                           </td>
 
                           <td className="p-3.5">
-                            <div className="font-bold text-slate-900">{j.puestoPreferente}</div>
-                            <div className="text-[10px] text-slate-500">{j.municipio}</div>
+                            <div className="font-bold text-white">{j.puestoPreferente}</div>
+                            <div className="text-[10px] text-slate-400">{j.municipio}</div>
                           </td>
 
                           <td className="p-3.5">
                             {j.estadoSorteo.includes('Seleccionado') ? (
-                              <span className="px-2.5 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-[10px] rounded-md inline-flex items-center gap-1 shadow-sm">
-                                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                              <span className="px-2.5 py-0.5 border font-bold text-[10px] rounded-md inline-flex items-center gap-1 shadow-sm bg-emerald-950/60 text-emerald-300 border-emerald-500/40">
+                                <CheckCircle2 className="w-3 h-3 text-emerald-400" />
                                 <span>SELECCIONADO EN RESOLUCIÓN</span>
                               </span>
                             ) : j.estadoSorteo === 'No Seleccionado' ? (
-                              <span className="px-2.5 py-0.5 bg-slate-100 text-slate-600 border border-slate-200 font-medium text-[10px] rounded-md inline-flex items-center gap-1">
+                              <span className="px-2.5 py-0.5 border font-medium text-[10px] rounded-md inline-flex items-center gap-1 bg-slate-800 text-slate-400 border-slate-700">
                                 <XCircle className="w-3 h-3 text-slate-400" />
                                 <span>NO SELECCIONADO</span>
                               </span>
                             ) : (
-                              <span className="px-2.5 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 font-bold text-[10px] rounded-md inline-flex items-center gap-1">
-                                <Clock className="w-3 h-3 text-amber-600" />
+                              <span className="px-2.5 py-0.5 border font-bold text-[10px] rounded-md inline-flex items-center gap-1 bg-amber-950/60 text-amber-300 border-amber-500/40">
+                                <Clock className="w-3 h-3 text-amber-400" />
                                 <span>PENDIENTE SORTEO</span>
                               </span>
                             )}
@@ -4891,27 +4901,29 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                           <td className="p-3.5">
                             {j.estadoSorteo.includes('Seleccionado') ? (
                               <div>
-                                <div className="font-extrabold text-slate-900 text-xs">{j.rolDesignado}</div>
-                                <div className="text-[10px] text-blue-700 font-bold">{j.puestoDesignado} ({j.mesaDesignada})</div>
-                                <div className="text-[9px] text-slate-500 font-mono mt-0.5">{j.resolucion}</div>
+                                <div className="font-extrabold text-xs text-white">{j.rolDesignado}</div>
+                                <div className="text-[10px] font-bold text-cyan-400">{j.puestoDesignado} ({j.mesaDesignada})</div>
+                                <div className="text-[9px] font-mono mt-0.5 text-slate-400">{j.resolucion}</div>
                               </div>
                             ) : (
-                              <span className="text-[11px] text-slate-400 italic">Sin designación oficial</span>
+                              <span className="text-[11px] italic text-slate-500">Sin designación oficial</span>
                             )}
                           </td>
 
                           <td className="p-3.5 text-right">
                             <div className="flex items-center justify-end gap-1.5">
                               <button
+                                type="button"
                                 onClick={() => handleStartEditJurado(j)}
-                                className="p-1.5 bg-slate-50 hover:bg-slate-100 text-blue-700 border border-slate-200 rounded-lg transition-colors cursor-pointer"
+                                className="p-1.5 rounded-lg border transition-colors cursor-pointer bg-slate-800 hover:bg-slate-700 text-cyan-300 border-slate-700"
                                 title="Editar información del candidato a jurado"
                               >
                                 <Edit3 className="w-3.5 h-3.5" />
                               </button>
                               <button
-                                onClick={() => handleDeleteJurado(j.id)}
-                                className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg transition-colors cursor-pointer"
+                                type="button"
+                                onClick={() => void handleDeleteJurado(j.id)}
+                                className="p-1.5 rounded-lg border transition-colors cursor-pointer bg-slate-800 hover:bg-rose-950 text-slate-400 hover:text-rose-400 border-slate-700"
                                 title="Eliminar de la lista de postulados"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -4919,7 +4931,8 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                             </div>
                           </td>
                         </tr>
-                      ))}
+                      ));
+                    })()}
                   </tbody>
                 </table>
               </div>

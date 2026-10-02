@@ -1557,6 +1557,53 @@ button:not(:disabled),
   filter: drop-shadow(0 0 6px rgba(217, 70, 239, 0.65));
 }
 
+/* Live Badge Radar Pulse */
+@keyframes radarPulse {
+  0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6); }
+  70% { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+
+.badge-live-dot {
+  animation: radarPulse 2s infinite ease-out;
+  will-change: box-shadow;
+}
+
+/* Tablero Administrativo KPI & Quick Access Stagger Entrance */
+@keyframes kpiEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px) translateZ(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) translateZ(0);
+  }
+}
+
+@keyframes quickAccessEnter {
+  from {
+    opacity: 0;
+    transform: translateY(12px) translateZ(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) translateZ(0);
+  }
+}
+
+.animate-kpi-stagger {
+  animation: kpiEnter 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
+  transform: translateZ(0);
+}
+
+.animate-quick-access-stagger {
+  animation: quickAccessEnter 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
+  transform: translateZ(0);
+}
+
 /* Fluid Table & List Row Microinteractions */
 table tbody tr {
   transition: background-color 0.15s ease, border-color 0.15s ease;
