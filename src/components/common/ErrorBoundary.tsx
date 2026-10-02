@@ -50,6 +50,21 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     console.error('[Bee Campaign AI ErrorBoundary]: Uncaught exception captured:', error, errorInfo);
   }
 
+  componentDidUpdate(prevProps: ErrorBoundaryProps): void {
+    if (
+      this.state.hasError &&
+      (prevProps.moduleName !== this.props.moduleName || prevProps.children !== this.props.children)
+    ) {
+      this.setState({
+        hasError: false,
+        error: null,
+        errorInfo: null,
+        copied: false,
+        showDetails: false,
+      });
+    }
+  }
+
   handleReset = () => {
     this.setState({
       hasError: false,

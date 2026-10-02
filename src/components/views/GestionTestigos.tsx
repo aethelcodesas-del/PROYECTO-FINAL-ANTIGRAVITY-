@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { ViewMode } from '../../types';
 import { supabase } from '../../lib/supabase';
 import { isExpectedEmptyCampaignState } from '../../lib/campaignSetupState';
+import { confirmModal, showToast as showGlobalToast } from '../common/ConfirmModal';
 import { 
   Award, 
   Users, 
@@ -44,6 +45,7 @@ import {
   PlusCircle
 } from 'lucide-react';
 import { useCampaignData } from '../../contexts/CampaignContext';
+import { useModuleColorMode } from '../../utils/themeColorMode';
 import { 
   getPartidosPrioritariosCandidato, 
   getPuestosPorCircunscripcion,
@@ -106,6 +108,8 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
   onSelectView,
   onNavigateToTab
 }) => {
+  const { isWhiteMode } = useModuleColorMode('gestion_administrativa');
+
   // -------------------------------------------------------------------------
   // 1. CARGA DE CAMPAÑA & CIRCUNSCRIPCIÓN DEL ASPIRANTE
   // -------------------------------------------------------------------------
@@ -130,6 +134,7 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
 
   const [hasActiveCampaign, setHasActiveCampaign] = useState(true);
   const [customPuestosVersion, setCustomPuestosVersion] = useState(0);
+  const [campaignPollingPlaces, setCampaignPollingPlaces] = useState<PuestoVotacionInfo[]>([]);
 
   // Escuchar cambios en la campaña (sincronización en tiempo real)
   useEffect(() => {
@@ -175,10 +180,11 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
 
   // Puestos de votación cargados automáticamente según la circunscripción territorial del aspirante
   const puestosTerritorioOpt = useMemo(() => {
+    if (campaignPollingPlaces.length > 0) return campaignPollingPlaces;
     const dep = candidateDepartamento || 'Córdoba';
     const mun = candidateMunicipio || 'Cotorra';
     return getPuestosPorCircunscripcion(dep, mun, resolvedScope);
-  }, [candidateDepartamento, candidateMunicipio, resolvedScope, customPuestosVersion]);
+  }, [campaignPollingPlaces, candidateDepartamento, candidateMunicipio, resolvedScope, customPuestosVersion]);
 
   // Partidos prioritarios calculados según avales y coalición del candidato
   const partidosPoliticosOpt = useMemo(() => {
@@ -186,22 +192,9 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
   }, [campaignDossier]);
 
   // -------------------------------------------------------------------------
-  // 3. PERSISTENCIA DE TESTIGOS ELECTORALES
+  // 3. PERSISTENCIA DE TESTIGOS ELECTORALES (100% Supabase)
   // -------------------------------------------------------------------------
-  const [testigos, setTestigos] = useState<TestigoElectoral[]>(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_TESTIGOS_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch (e) {
-      console.error('Error loading witnesses from storage', e);
-    }
-
-    // Default starts clean from zero for real campaign usage
-    return [];
-  });
+  const [testigos, setTestigos] = useState<TestigoElectoral[]>([]);
   const [witnessClientId, setWitnessClientId] = useState<string | null>(null);
   const [witnessLoading, setWitnessLoading] = useState(true);
   const [witnessSaving, setWitnessSaving] = useState(false);
@@ -210,15 +203,6 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
     () => [...new Set(testigos.map(testigo => testigo.partido?.trim()).filter(Boolean) as string[])].sort((a, b) => a.localeCompare(b, 'es')),
     [testigos]
   );
-
-  // Sincronizar testigos a localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_TESTIGOS_KEY, JSON.stringify(testigos));
-    } catch (e) {
-      console.error('Error saving witnesses to storage', e);
-    }
-  }, [testigos]);
 
   const databaseStatusFor = (status: TestigoElectoral['estado']) =>
     status === 'Acreditado' ? 'ACREDITADO' : status === 'Inactivo' ? 'INACTIVO' : status === 'Inscrito' ? 'CAPACITADO' : 'PENDIENTE';
@@ -567,24 +551,35 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
 
   const handleDeleteWitness = async (id: string) => {
     const target = testigos.find(t => t.id === id);
-    if (confirm(`¿Está seguro de eliminar al testigo electoral "${target?.nombre || id}" de la lista oficial?`)) {
-      setWitnessSaving(true);
-      const { error } = await supabase.from('witnesses').delete().eq('id', id);
-      setWitnessSaving(false);
-      if (error) return setWitnessSyncError(error.message);
-      setTestigos(prev => prev.filter(t => t.id !== id));
-      showToast(`Testigo eliminado correctamente del sistema.`);
-    }
+    await confirmModal({
+      title: 'Eliminar testigo electoral',
+      message: `¿Está seguro de eliminar al testigo electoral "${target?.nombre || id}" de la lista oficial? Esta acción no se puede deshacer.`,
+      confirmText: 'Sí, eliminar testigo',
+      cancelText: 'Cancelar',
+      variant: 'danger',
+      onConfirm: async () => {
+        setWitnessSaving(true);
+        const { error } = await supabase.from('witnesses').delete().eq('id', id);
+        setWitnessSaving(false);
+        if (error) {
+          setWitnessSyncError(error.message);
+          showGlobalToast(error.message, 'error');
+          return false;
+        }
+        setTestigos(prev => prev.filter(t => t.id !== id));
+        showToast(`Testigo eliminado correctamente del sistema.`);
+      }
+    });
   };
 
   const handleSaveWitness = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!hasActiveCampaign) {
-      alert('⚠️ No se puede inscribir ni modificar un testigo porque no existe una campaña creada aún.');
+      showGlobalToast('⚠️ No se puede inscribir ni modificar un testigo porque no existe una campaña creada aún.', 'warning');
       return;
     }
     if (!witNombre.trim() || !witCc.trim() || !witTelefono.trim() || !witEmail.trim()) {
-      alert('Nombre, cédula, teléfono y correo electrónico son obligatorios para registrar y localizar al testigo.');
+      showGlobalToast('Nombre, cédula, teléfono y correo electrónico son obligatorios para registrar y localizar al testigo.', 'warning');
       return;
     }
 
@@ -610,7 +605,7 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
     if (!editingWitnessId) {
       // Duplicate check
       if (testigos.some(t => t.cc === witCc.trim())) {
-        alert(`Error: La cédula ${witCc.trim()} ya se encuentra inscrita en la lista de testigos.`);
+        showGlobalToast(`Error: La cédula ${witCc.trim()} ya se encuentra inscrita en la lista de testigos.`, 'error');
         return;
       }
     }
@@ -657,7 +652,7 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
   const handleCreateCustomPuesto = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPuestoNombre.trim()) {
-      alert('Por favor ingrese el nombre del puesto de votación.');
+      showGlobalToast('Por favor ingrese el nombre del puesto de votación.', 'warning');
       return;
     }
 
@@ -699,7 +694,7 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
 
   const handleProcessImportCsv = async () => {
     if (!importTextData.trim()) {
-      alert('Pegue datos en formato CSV o ingrese líneas válidas.');
+      showGlobalToast('Pegue datos en formato CSV o ingrese líneas válidas.', 'warning');
       return;
     }
 
@@ -751,7 +746,7 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
       setImportTextData('');
       showToast(`🎉 ¡${importedCount} testigos importados al sistema y asignados a ${candidateMunicipio}!`);
     } else {
-      alert('No se pudieron importar testigos (posibles cédulas duplicadas o formato inválido).');
+      showGlobalToast('No se pudieron importar testigos (posibles cédulas duplicadas o formato inválido).', 'error');
     }
   };
 
@@ -849,15 +844,25 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
       {/* ========================================================================= */}
       {/* MAIN CONTAINER */}
       {/* ========================================================================= */}
-      <div className="gestion-testigos-container bg-white rounded-2xl p-4 sm:p-6 border border-slate-200/80 shadow-sm space-y-6">
+      <div className={`gestion-testigos-container rounded-2xl p-4 sm:p-6 transition-all duration-200 space-y-6 ${
+        isWhiteMode 
+          ? 'bg-white border border-slate-200/80 shadow-sm' 
+          : 'bg-[#030d1d]/90 border border-cyan-500/30 shadow-xl'
+      }`}>
         
         {/* ========================================================================= */}
         {/* TOP ACTION BUTTONS BAR (ONLY BUTTONS) */}
         {/* ========================================================================= */}
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3 border-b border-slate-200 pb-4">
+        <div className={`flex flex-wrap items-center gap-2 sm:gap-3 border-b pb-4 ${
+          isWhiteMode ? 'border-slate-200' : 'border-cyan-500/20'
+        }`}>
           {/* Status indicator */}
-          <div className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-black rounded-xl shadow-sm whitespace-nowrap">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+          <div className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-black rounded-xl shadow-sm whitespace-nowrap border ${
+            isWhiteMode 
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-700' 
+              : 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300'
+          }`}>
+            <CheckCircle2 className={`w-4 h-4 shrink-0 ${isWhiteMode ? 'text-emerald-600' : 'text-emerald-400'}`} />
             <span>Campaña Activa: Creada ✓</span>
           </div>
 
@@ -873,28 +878,40 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
           <button
             type="button"
             onClick={() => setShowImportModal(true)}
-            className="px-3.5 py-2 bg-slate-50 hover:bg-slate-100 active:scale-95 text-blue-700 font-bold text-xs rounded-xl border border-slate-200 flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap"
+            className={`px-3.5 py-2 active:scale-95 font-bold text-xs rounded-xl border flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+              isWhiteMode 
+                ? 'bg-slate-50 hover:bg-slate-100 text-blue-700 border-slate-200 shadow-sm' 
+                : 'bg-[#041733] hover:bg-[#07244f] text-cyan-300 border-cyan-500/30'
+            }`}
           >
-            <FileSpreadsheet className="w-4 h-4 text-blue-600" />
+            <FileSpreadsheet className={`w-4 h-4 ${isWhiteMode ? 'text-blue-600' : 'text-cyan-400'}`} />
             <span>Importar Masivo</span>
           </button>
 
           <button
             type="button"
             onClick={handleExportCsv}
-            className="px-3.5 py-2 bg-slate-50 hover:bg-slate-100 active:scale-95 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap"
+            className={`px-3.5 py-2 active:scale-95 font-bold text-xs rounded-xl border flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+              isWhiteMode 
+                ? 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200 shadow-sm' 
+                : 'bg-[#041733] hover:bg-[#07244f] text-slate-200 border-cyan-500/30'
+            }`}
             title="Descargar base de testigos en archivo CSV"
           >
-            <Download className="w-4 h-4 text-emerald-600" />
+            <Download className={`w-4 h-4 ${isWhiteMode ? 'text-emerald-600' : 'text-emerald-400'}`} />
             <span>CSV</span>
           </button>
 
           <button
             type="button"
             onClick={() => setShowAddPuestoModal(true)}
-            className="px-3.5 py-2 bg-blue-50 hover:bg-blue-100 active:scale-95 text-blue-700 font-bold text-xs rounded-xl border border-blue-200 flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap"
+            className={`px-3.5 py-2 active:scale-95 font-bold text-xs rounded-xl border flex items-center justify-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
+              isWhiteMode 
+                ? 'bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200 shadow-sm' 
+                : 'bg-[#041733] hover:bg-[#07244f] text-cyan-300 border-cyan-500/30'
+            }`}
           >
-            <PlusCircle className="w-4 h-4 text-blue-600" />
+            <PlusCircle className={`w-4 h-4 ${isWhiteMode ? 'text-blue-600' : 'text-cyan-400'}`} />
             <span>+ Añadir puesto</span>
           </button>
         </div>
@@ -904,62 +921,106 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
           
           {/* KPI Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-            <div className="p-4 bg-slate-50/80 rounded-xl border border-slate-200/80 space-y-1 shadow-sm">
-              <div className="flex items-center justify-between text-slate-500 font-bold text-[11px] uppercase tracking-wider">
+            <div className={`p-4 rounded-xl border space-y-1 transition-all ${
+              isWhiteMode 
+                ? 'bg-slate-50/80 border-slate-200/80 shadow-sm' 
+                : 'bg-[#041733]/80 border-cyan-500/30 shadow-md'
+            }`}>
+              <div className={`flex items-center justify-between font-bold text-[11px] uppercase tracking-wider ${
+                isWhiteMode ? 'text-slate-500' : 'text-cyan-300'
+              }`}>
                 <span>Testigos Acreditados</span>
-                <Award className="w-4 h-4 text-emerald-600" />
+                <Award className={`w-4 h-4 ${isWhiteMode ? 'text-emerald-600' : 'text-emerald-400'}`} />
               </div>
-              <div className="text-xl sm:text-2xl font-black text-slate-900">{totalAcreditados} / {totalInscritos}</div>
-              <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+              <div className={`text-xl sm:text-2xl font-black ${
+                isWhiteMode ? 'text-slate-900' : 'text-white'
+              }`}>{totalAcreditados} / {totalInscritos}</div>
+              <div className={`w-full h-1.5 rounded-full overflow-hidden ${
+                isWhiteMode ? 'bg-slate-200' : 'bg-slate-800'
+              }`}>
                 <div 
                   className="bg-emerald-500 h-full rounded-full transition-all" 
                   style={{ width: `${totalInscritos > 0 ? (totalAcreditados / totalInscritos) * 100 : 0}%` }}
                 />
               </div>
-              <span className="text-[10px] text-emerald-700 font-bold">
+              <span className={`text-[10px] font-bold ${
+                isWhiteMode ? 'text-emerald-700' : 'text-emerald-400'
+              }`}>
                 {totalInscritos > 0 ? Math.round((totalAcreditados / totalInscritos) * 100) : 0}% con Formulario E-16 OK
               </span>
             </div>
 
-            <div className="p-4 bg-slate-50/80 rounded-xl border border-slate-200/80 space-y-1 shadow-sm">
-              <div className="flex items-center justify-between text-slate-500 font-bold text-[11px] uppercase tracking-wider">
+            <div className={`p-4 rounded-xl border space-y-1 transition-all ${
+              isWhiteMode 
+                ? 'bg-slate-50/80 border-slate-200/80 shadow-sm' 
+                : 'bg-[#041733]/80 border-cyan-500/30 shadow-md'
+            }`}>
+              <div className={`flex items-center justify-between font-bold text-[11px] uppercase tracking-wider ${
+                isWhiteMode ? 'text-slate-500' : 'text-cyan-300'
+              }`}>
                 <span>Cobertura de Mesas</span>
-                <MapPin className="w-4 h-4 text-blue-600" />
+                <MapPin className={`w-4 h-4 ${isWhiteMode ? 'text-blue-600' : 'text-blue-400'}`} />
               </div>
-              <div className="text-xl sm:text-2xl font-black text-slate-900">{mesasCubiertas} / {totalMesasConsignadas}</div>
-              <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+              <div className={`text-xl sm:text-2xl font-black ${
+                isWhiteMode ? 'text-slate-900' : 'text-white'
+              }`}>{mesasCubiertas} / {totalMesasConsignadas}</div>
+              <div className={`w-full h-1.5 rounded-full overflow-hidden ${
+                isWhiteMode ? 'bg-slate-200' : 'bg-slate-800'
+              }`}>
                 <div 
                   className="bg-blue-600 h-full rounded-full transition-all" 
                   style={{ width: `${pctCobertura}%` }}
                 />
               </div>
-              <span className="text-[10px] text-blue-700 font-bold">
+              <span className={`text-[10px] font-bold ${
+                isWhiteMode ? 'text-blue-700' : 'text-cyan-300'
+              }`}>
                 {pctCobertura}% Mesas con testigo
               </span>
             </div>
 
-            <div className="p-4 bg-slate-50/80 rounded-xl border border-slate-200/80 space-y-1 shadow-sm">
-              <div className="flex items-center justify-between text-slate-500 font-bold text-[11px] uppercase tracking-wider">
+            <div className={`p-4 rounded-xl border space-y-1 transition-all ${
+              isWhiteMode 
+                ? 'bg-slate-50/80 border-slate-200/80 shadow-sm' 
+                : 'bg-[#041733]/80 border-cyan-500/30 shadow-md'
+            }`}>
+              <div className={`flex items-center justify-between font-bold text-[11px] uppercase tracking-wider ${
+                isWhiteMode ? 'text-slate-500' : 'text-cyan-300'
+              }`}>
                 <span>Puestos Asignados</span>
-                <Building className="w-4 h-4 text-indigo-600" />
+                <Building className={`w-4 h-4 ${isWhiteMode ? 'text-indigo-600' : 'text-indigo-400'}`} />
               </div>
-              <div className="text-xl sm:text-2xl font-black text-slate-900">
+              <div className={`text-xl sm:text-2xl font-black ${
+                isWhiteMode ? 'text-slate-900' : 'text-white'
+              }`}>
                 {puestosAsignados} / {puestosTerritorioOpt.length}
               </div>
-              <span className="text-[10px] text-indigo-700 font-bold">
+              <span className={`text-[10px] font-bold ${
+                isWhiteMode ? 'text-indigo-700' : 'text-indigo-300'
+              }`}>
                 Puestos electorales de la circunscripción
               </span>
             </div>
 
-            <div className="p-4 bg-slate-50/80 rounded-xl border border-slate-200/80 space-y-1 shadow-sm">
-              <div className="flex items-center justify-between text-slate-500 font-bold text-[11px] uppercase tracking-wider">
+            <div className={`p-4 rounded-xl border space-y-1 transition-all ${
+              isWhiteMode 
+                ? 'bg-slate-50/80 border-slate-200/80 shadow-sm' 
+                : 'bg-[#041733]/80 border-cyan-500/30 shadow-md'
+            }`}>
+              <div className={`flex items-center justify-between font-bold text-[11px] uppercase tracking-wider ${
+                isWhiteMode ? 'text-slate-500' : 'text-cyan-300'
+              }`}>
                 <span>Cerco GPS en Tiempo Real</span>
-                <Locate className="w-4 h-4 text-amber-600" />
+                <Locate className={`w-4 h-4 ${isWhiteMode ? 'text-amber-600' : 'text-amber-400'}`} />
               </div>
-              <div className="text-xl sm:text-2xl font-black text-slate-900">
+              <div className={`text-xl sm:text-2xl font-black ${
+                isWhiteMode ? 'text-slate-900' : 'text-white'
+              }`}>
                 {testigosDentroCerco} / {totalInscritos}
               </div>
-              <span className="text-[10px] text-amber-700 font-bold">
+              <span className={`text-[10px] font-bold ${
+                isWhiteMode ? 'text-amber-700' : 'text-amber-400'
+              }`}>
                 Testigos en posición asignada
               </span>
             </div>
@@ -968,15 +1029,19 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
           {/* Solo se muestra el resumen de partidos que ya tienen testigos reales registrados. */}
           {registeredWitnessParties.length > 0 && <div className="space-y-2 pt-1">
             <div className="flex items-center justify-between">
-              <h4 className="text-xs font-bold text-cyan-300 uppercase tracking-wider flex items-center gap-1.5 gestion-testigos-parties-heading">
-                <Users className="w-4 h-4 text-cyan-400" />
+              <h4 className={`text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 gestion-testigos-parties-heading ${
+                isWhiteMode ? 'text-slate-900' : 'text-cyan-300'
+              }`}>
+                <Users className={`w-4 h-4 ${isWhiteMode ? 'text-blue-600' : 'text-cyan-400'}`} />
                 <span>Resumen de Testigos por Partido Político / Aval de Campaña</span>
               </h4>
               {witnessPartidoFilter !== 'Todos' && (
                 <button
                   type="button"
                   onClick={() => setWitnessPartidoFilter('Todos')}
-                  className="text-[10px] text-slate-400 hover:text-white flex items-center gap-1 cursor-pointer"
+                  className={`text-[10px] flex items-center gap-1 cursor-pointer transition-colors ${
+                    isWhiteMode ? 'text-slate-500 hover:text-slate-800' : 'text-slate-400 hover:text-white'
+                  }`}
                 >
                   <X className="w-3 h-3" />
                   <span>Limpiar Filtro ({witnessPartidoFilter})</span>
@@ -995,23 +1060,35 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
                     key={partido}
                     onClick={() => setWitnessPartidoFilter(isSelected ? 'Todos' : partido)}
                     className={`gestion-testigos-party-card p-3.5 rounded-xl border transition-all cursor-pointer flex flex-col justify-between space-y-2 ${
-                      isSelected 
-                        ? 'bg-cyan-950/80 border-cyan-400 shadow-md ring-2 ring-cyan-500/50' 
-                        : 'bg-[#030d1f] hover:bg-[#071b38] border-cyan-500/30'
+                      isWhiteMode
+                        ? isSelected
+                          ? 'bg-blue-50/90 border-blue-500 shadow-md ring-2 ring-blue-500/30'
+                          : 'bg-white hover:bg-slate-50 border-slate-200 shadow-sm'
+                        : isSelected 
+                          ? 'bg-cyan-950/80 border-cyan-400 shadow-md ring-2 ring-cyan-500/50' 
+                          : 'bg-[#030d1f] hover:bg-[#071b38] border-cyan-500/30'
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-extrabold text-white text-xs truncate max-w-[170px]" title={partido}>
+                      <span className={`font-extrabold text-xs truncate max-w-[170px] ${
+                        isWhiteMode ? 'text-slate-900' : 'text-white'
+                      }`} title={partido}>
                         {partido}
                       </span>
-                      <span className="text-[10px] font-mono bg-cyan-500/20 text-cyan-300 px-1.5 py-0.5 rounded border border-cyan-500/30">
+                      <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${
+                        isWhiteMode 
+                          ? 'bg-blue-50 text-blue-700 border-blue-200 font-bold' 
+                          : 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30'
+                      }`}>
                         {count} Testigos
                       </span>
                     </div>
 
-                    <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1">
-                      <span>E-16 Aprobados: <strong className="text-emerald-400">{acreditados}</strong></span>
-                      <span className="text-cyan-300 font-bold">{count > 0 ? Math.round((acreditados / count) * 100) : 0}% OK</span>
+                    <div className={`flex items-center justify-between text-[11px] pt-1 ${
+                      isWhiteMode ? 'text-slate-500' : 'text-slate-400'
+                    }`}>
+                      <span>E-16 Aprobados: <strong className={isWhiteMode ? 'text-emerald-700' : 'text-emerald-400'}>{acreditados}</strong></span>
+                      <span className={`font-bold ${isWhiteMode ? 'text-blue-700' : 'text-cyan-300'}`}>{count > 0 ? Math.round((acreditados / count) * 100) : 0}% OK</span>
                     </div>
                   </div>
                 );
@@ -1022,10 +1099,20 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
           {/* ========================================================================= */}
           {/* GEOFENCING & RADAR GPS PANEL */}
           {/* ========================================================================= */}
-          <div className="gestion-testigos-geofence-card rounded-2xl border border-indigo-500/30 bg-[#04142b] p-6 text-center">
-            <Locate className="mx-auto mb-3 h-8 w-8 text-slate-600" />
-            <h4 className="font-extrabold text-white">Sin reportes GPS reales</h4>
-            <p className="mt-2 text-xs text-slate-400">
+          <div className={`gestion-testigos-geofence-card rounded-2xl border p-6 text-center transition-all ${
+            isWhiteMode 
+              ? 'bg-slate-50/80 border-slate-200 shadow-sm' 
+              : 'border-indigo-500/30 bg-[#04142b]'
+          }`}>
+            <Locate className={`mx-auto mb-3 h-8 w-8 ${
+              isWhiteMode ? 'text-slate-400' : 'text-slate-600'
+            }`} />
+            <h4 className={`font-extrabold text-sm ${
+              isWhiteMode ? 'text-slate-900' : 'text-white'
+            }`}>Sin reportes GPS reales</h4>
+            <p className={`mt-2 text-xs max-w-lg mx-auto ${
+              isWhiteMode ? 'text-slate-500' : 'text-slate-400'
+            }`}>
               El cerco perimetral se habilitará cuando existan puestos oficiales y los testigos registrados reporten su ubicación desde la mesa asignada.
             </p>
           </div>
@@ -1335,13 +1422,19 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
             <div className="flex flex-wrap items-center gap-2 flex-1">
               {/* Search */}
               <div className="relative w-full sm:w-auto flex-1 min-w-[200px]">
-                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Search className={`w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 ${
+                  isWhiteMode ? 'text-slate-400' : 'text-cyan-400'
+                }`} />
                 <input
                   type="text"
                   value={witnessSearchQuery}
                   onChange={(e) => setWitnessSearchQuery(e.target.value)}
                   placeholder="Buscar por nombre, CC o mesa..."
-                  className="w-full bg-[#020712] border border-slate-700 rounded-xl pl-8 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400"
+                  className={`w-full rounded-xl pl-8 pr-3 py-2 text-xs transition-colors focus:outline-none ${
+                    isWhiteMode 
+                      ? 'bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm' 
+                      : 'bg-[#020712] border border-slate-700 text-white placeholder-slate-500 focus:border-cyan-400'
+                  }`}
                 />
               </div>
 
@@ -1350,7 +1443,11 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
                 <select
                   value={witnessPartidoFilter}
                   onChange={(e) => setWitnessPartidoFilter(e.target.value)}
-                  className="w-full bg-[#020712] border border-slate-700 rounded-xl px-2.5 py-2 text-xs font-semibold text-slate-200 focus:outline-none focus:border-cyan-400"
+                  className={`w-full rounded-xl px-2.5 py-2 text-xs font-semibold transition-colors focus:outline-none ${
+                    isWhiteMode 
+                      ? 'bg-white border border-slate-300 text-slate-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm' 
+                      : 'bg-[#020712] border border-slate-700 text-slate-200 focus:border-cyan-400'
+                  }`}
                 >
                   <option value="Todos">Todos los Partidos</option>
                   {partidosPoliticosOpt.map((p, i) => (
@@ -1364,7 +1461,11 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
                 <select
                   value={witnessPuestoFilter}
                   onChange={(e) => setWitnessPuestoFilter(e.target.value)}
-                  className="w-full bg-[#020712] border border-slate-700 rounded-xl px-2.5 py-2 text-xs font-semibold text-slate-200 focus:outline-none focus:border-cyan-400"
+                  className={`w-full rounded-xl px-2.5 py-2 text-xs font-semibold transition-colors focus:outline-none ${
+                    isWhiteMode 
+                      ? 'bg-white border border-slate-300 text-slate-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm' 
+                      : 'bg-[#020712] border border-slate-700 text-slate-200 focus:border-cyan-400'
+                  }`}
                 >
                   <option value="Todos">Todos los puestos</option>
                   {puestosTerritorioOpt.map((pst, i) => (
@@ -1378,7 +1479,11 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
                 <select
                   value={witnessAcreditacionFilter}
                   onChange={(e) => setWitnessAcreditacionFilter(e.target.value)}
-                  className="w-full bg-[#020712] border border-slate-700 rounded-xl px-2.5 py-2 text-xs font-semibold text-slate-200 focus:outline-none focus:border-cyan-400"
+                  className={`w-full rounded-xl px-2.5 py-2 text-xs font-semibold transition-colors focus:outline-none ${
+                    isWhiteMode 
+                      ? 'bg-white border border-slate-300 text-slate-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm' 
+                      : 'bg-[#020712] border border-slate-700 text-slate-200 focus:border-cyan-400'
+                  }`}
                 >
                   <option value="Todos">Acreditaciones E-16</option>
                   <option value="Formulario E-16 Aprobado">Formulario E-16 Aprobado</option>
@@ -1392,7 +1497,11 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
                 <select
                   value={witnessGpsFilter}
                   onChange={(e) => setWitnessGpsFilter(e.target.value as any)}
-                  className="w-full bg-[#020712] border border-slate-700 rounded-xl px-2.5 py-2 text-xs font-semibold text-slate-200 focus:outline-none focus:border-cyan-400"
+                  className={`w-full rounded-xl px-2.5 py-2 text-xs font-semibold transition-colors focus:outline-none ${
+                    isWhiteMode 
+                      ? 'bg-white border border-slate-300 text-slate-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm' 
+                      : 'bg-[#020712] border border-slate-700 text-slate-200 focus:border-cyan-400'
+                  }`}
                 >
                   <option value="Todos">Estados GPS</option>
                   <option value="DENTRO">Dentro de Cerco (OK)</option>
@@ -1411,7 +1520,7 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
                   setShowWitnessForm(true);
                 }
               }}
-              className="w-full lg:w-auto px-4 py-2.5 bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-black text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+              className="w-full lg:w-auto px-4 py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-black text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
             >
               <Plus className="w-4 h-4" />
               <span>{showWitnessForm ? 'Cerrar Formulario' : '+ Inscribir Nuevo Testigo'}</span>
@@ -1422,21 +1531,33 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
           {/* FORM TO CREATE OR MODIFY WITNESS INFO */}
           {/* ========================================================================= */}
           {showWitnessForm && (
-            <form onSubmit={handleSaveWitness} className="bg-[#030d1d] border-2 border-cyan-500/40 rounded-2xl p-5 space-y-4 animate-fadeIn shadow-2xl">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <form onSubmit={handleSaveWitness} className={`rounded-2xl p-5 space-y-4 animate-fadeIn transition-all ${
+              isWhiteMode 
+                ? 'bg-slate-50/90 border border-slate-200 shadow-lg' 
+                : 'bg-[#030d1d] border-2 border-cyan-500/40 shadow-2xl'
+            }`}>
+              <div className={`flex items-center justify-between border-b pb-3 ${
+                isWhiteMode ? 'border-slate-200' : 'border-slate-800'
+              }`}>
                 <div>
-                  <h4 className="font-extrabold text-white text-sm flex items-center gap-2">
-                    <UserCheck className="w-4 h-4 text-cyan-400" />
+                  <h4 className={`font-extrabold text-sm flex items-center gap-2 ${
+                    isWhiteMode ? 'text-slate-900' : 'text-white'
+                  }`}>
+                    <UserCheck className={`w-4 h-4 ${isWhiteMode ? 'text-blue-600' : 'text-cyan-400'}`} />
                     <span>{editingWitnessId ? 'Modificar Información y Asignación de Testigo' : 'Inscribir nuevo testigo electoral'}</span>
                   </h4>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
-                    Territorio oficial: <strong>{activeTerritoryLabel || 'Pendiente de configurar'}</strong>
+                  <p className={`text-[11px] mt-0.5 ${
+                    isWhiteMode ? 'text-slate-500' : 'text-slate-400'
+                  }`}>
+                    Territorio oficial: <strong className={isWhiteMode ? 'text-slate-800' : 'text-slate-200'}>{activeTerritoryLabel || 'Pendiente de configurar'}</strong>
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={resetWitnessForm}
-                  className="text-slate-400 hover:text-white p-1 cursor-pointer"
+                  className={`p-1 cursor-pointer transition-colors ${
+                    isWhiteMode ? 'text-slate-400 hover:text-slate-700' : 'text-slate-400 hover:text-white'
+                  }`}
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -1444,60 +1565,80 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Nombre Completo *</label>
+                  <label className={`block font-bold mb-1 ${isWhiteMode ? 'text-slate-700' : 'text-slate-300'}`}>Nombre Completo *</label>
                   <input
                     type="text"
                     required
                     value={witNombre}
                     onChange={(e) => setWitNombre(e.target.value)}
                     placeholder="Ej: Laura Camila Restrepo"
-                    className="w-full p-2.5 bg-white border border-slate-300 rounded-xl font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm"
+                    className={`w-full p-2.5 rounded-xl font-medium focus:outline-none transition-all ${
+                      isWhiteMode 
+                        ? 'bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm' 
+                        : 'bg-[#020712] border border-slate-700 text-white placeholder:text-slate-500 focus:border-cyan-400'
+                    }`}
                   />
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Cédula de Ciudadanía (CC) *</label>
+                  <label className={`block font-bold mb-1 ${isWhiteMode ? 'text-slate-700' : 'text-slate-300'}`}>Cédula de Ciudadanía (CC) *</label>
                   <input
                     type="text"
                     required
                     value={witCc}
                     onChange={(e) => setWitCc(e.target.value)}
                     placeholder="Ej: 1025889900"
-                    className="w-full p-2.5 bg-white border border-slate-300 rounded-xl font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-mono shadow-sm"
+                    className={`w-full p-2.5 rounded-xl font-medium font-mono focus:outline-none transition-all ${
+                      isWhiteMode 
+                        ? 'bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm' 
+                        : 'bg-[#020712] border border-slate-700 text-white placeholder:text-slate-500 focus:border-cyan-400'
+                    }`}
                   />
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Teléfono Móvil / WhatsApp *</label>
+                  <label className={`block font-bold mb-1 ${isWhiteMode ? 'text-slate-700' : 'text-slate-300'}`}>Teléfono Móvil / WhatsApp *</label>
                   <input
                     type="text"
                     required
                     value={witTelefono}
                     onChange={(e) => setWitTelefono(e.target.value)}
                     placeholder="+57 300 123 4567"
-                    className="w-full p-2.5 bg-white border border-slate-300 rounded-xl font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-mono shadow-sm"
+                    className={`w-full p-2.5 rounded-xl font-medium font-mono focus:outline-none transition-all ${
+                      isWhiteMode 
+                        ? 'bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm' 
+                        : 'bg-[#020712] border border-slate-700 text-white placeholder:text-slate-500 focus:border-cyan-400'
+                    }`}
                   />
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Correo Electrónico *</label>
+                  <label className={`block font-bold mb-1 ${isWhiteMode ? 'text-slate-700' : 'text-slate-300'}`}>Correo Electrónico *</label>
                   <input
                     type="email"
                     required
                     value={witEmail}
                     onChange={(e) => setWitEmail(e.target.value)}
                     placeholder="testigo@campana.co"
-                    className="w-full p-2.5 bg-white border border-slate-300 rounded-xl font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm"
+                    className={`w-full p-2.5 rounded-xl font-medium focus:outline-none transition-all ${
+                      isWhiteMode 
+                        ? 'bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm' 
+                        : 'bg-[#020712] border border-slate-700 text-white placeholder:text-slate-500 focus:border-cyan-400'
+                    }`}
                   />
                 </div>
 
                 {/* Partido Político Selection */}
                 <div className="md:col-span-2">
-                  <label className="block font-bold text-slate-700 mb-1">Partido Político o Movimiento Avalador *</label>
+                  <label className={`block font-bold mb-1 ${isWhiteMode ? 'text-slate-700' : 'text-slate-300'}`}>Partido Político o Movimiento Avalador *</label>
                   <select
                     value={witPartido}
                     onChange={(e) => setWitPartido(e.target.value)}
-                    className="w-full p-2.5 bg-white border border-slate-300 rounded-xl font-medium text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm"
+                    className={`w-full p-2.5 rounded-xl font-medium focus:outline-none transition-all ${
+                      isWhiteMode 
+                        ? 'bg-white border border-slate-300 text-slate-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm' 
+                        : 'bg-[#020712] border border-slate-700 text-slate-200 focus:border-cyan-400'
+                    }`}
                   >
                     {partidosPoliticosOpt.map((p, idx) => (
                       <option key={idx} value={p}>{p}</option>
@@ -1507,11 +1648,15 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
 
                 {/* Rol del Testigo */}
                 <div className="md:col-span-2">
-                  <label className="block font-bold text-slate-700 mb-1">Rol de Testigo *</label>
+                  <label className={`block font-bold mb-1 ${isWhiteMode ? 'text-slate-700' : 'text-slate-300'}`}>Rol de Testigo *</label>
                   <select
                     value={witRol}
                     onChange={(e) => setWitRol(e.target.value as any)}
-                    className="w-full p-2.5 bg-white border border-slate-300 rounded-xl font-medium text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm"
+                    className={`w-full p-2.5 rounded-xl font-medium focus:outline-none transition-all ${
+                      isWhiteMode 
+                        ? 'bg-white border border-slate-300 text-slate-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm' 
+                        : 'bg-[#020712] border border-slate-700 text-slate-200 focus:border-cyan-400'
+                    }`}
                   >
                     <option value="Testigo de Mesa (E-16)">Testigo de Mesa (E-16)</option>
                     <option value="Testigo Rematador / Coordinador de Puesto">Testigo Rematador / Coordinador de Puesto</option>
@@ -1522,7 +1667,7 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
 
                 {/* Puesto de Votación (Circunscripción Dinámica) */}
                 <div className="md:col-span-2">
-                  <label className="block font-bold text-slate-700 mb-1">
+                  <label className={`block font-bold mb-1 ${isWhiteMode ? 'text-slate-700' : 'text-slate-300'}`}>
                     Puesto de votación *
                   </label>
                   <select
@@ -1532,7 +1677,11 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
                       setWitPuesto(e.target.value);
                       if (pstObj) setWitComuna(pstObj.comuna);
                     }}
-                    className="w-full p-2.5 bg-white border border-slate-300 rounded-xl font-medium text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm"
+                    className={`w-full p-2.5 rounded-xl font-medium focus:outline-none transition-all ${
+                      isWhiteMode 
+                        ? 'bg-white border border-slate-300 text-slate-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm' 
+                        : 'bg-[#020712] border border-slate-700 text-slate-200 focus:border-cyan-400'
+                    }`}
                   >
                     {puestosTerritorioOpt.map((pst, idx) => (
                       <option key={idx} value={pst.nombre}>
@@ -1544,13 +1693,17 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
 
                 {/* Mesa Asignada */}
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">
+                  <label className={`block font-bold mb-1 ${isWhiteMode ? 'text-slate-700' : 'text-slate-300'}`}>
                     Mesa Asignada (Capacidad: {maxMesasEnPuesto} mesas) *
                   </label>
                   <select
                     value={witMesa}
                     onChange={(e) => setWitMesa(e.target.value)}
-                    className="w-full p-2.5 bg-white border border-slate-300 rounded-xl font-medium text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-mono shadow-sm"
+                    className={`w-full p-2.5 rounded-xl font-medium font-mono focus:outline-none transition-all ${
+                      isWhiteMode 
+                        ? 'bg-white border border-slate-300 text-slate-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-mono shadow-sm' 
+                        : 'bg-[#020712] border border-slate-700 text-slate-200 focus:border-cyan-400'
+                    }`}
                   >
                     {Array.from({ length: maxMesasEnPuesto }, (_, i) => `Mesa ${String(i + 1).padStart(2, '0')}`).map((m) => (
                       <option key={m} value={m}>{m}</option>
@@ -1561,11 +1714,15 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
 
                 {/* Estado Acreditación Registraduría */}
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Acreditación Registraduría</label>
+                  <label className={`block font-bold mb-1 ${isWhiteMode ? 'text-slate-700' : 'text-slate-300'}`}>Acreditación Registraduría</label>
                   <select
                     value={witAcreditacion}
                     onChange={(e) => setWitAcreditacion(e.target.value as any)}
-                    className="w-full p-2.5 bg-white border border-slate-300 rounded-xl font-medium text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm"
+                    className={`w-full p-2.5 rounded-xl font-medium focus:outline-none transition-all ${
+                      isWhiteMode 
+                        ? 'bg-white border border-slate-300 text-slate-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm' 
+                        : 'bg-[#020712] border border-slate-700 text-slate-200 focus:border-cyan-400'
+                    }`}
                   >
                     <option value="Formulario E-16 En Trámite">Formulario E-16 En Trámite</option>
                     <option value="Formulario E-16 Aprobado">Formulario E-16 Aprobado</option>
@@ -1575,11 +1732,15 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
 
                 {/* Estado General */}
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Estado General</label>
+                  <label className={`block font-bold mb-1 ${isWhiteMode ? 'text-slate-700' : 'text-slate-300'}`}>Estado General</label>
                   <select
                     value={witEstado}
                     onChange={(e) => setWitEstado(e.target.value as any)}
-                    className="w-full p-2.5 bg-white border border-slate-300 rounded-xl font-medium text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm"
+                    className={`w-full p-2.5 rounded-xl font-medium focus:outline-none transition-all ${
+                      isWhiteMode 
+                        ? 'bg-white border border-slate-300 text-slate-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm' 
+                        : 'bg-[#020712] border border-slate-700 text-slate-200 focus:border-cyan-400'
+                    }`}
                   >
                     <option value="Inscrito">Inscrito</option>
                     <option value="Acreditado">Acreditado</option>
@@ -1590,34 +1751,48 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
 
                 {/* Vehículo Asignado */}
                 <div className="md:col-span-2">
-                  <label className="block font-bold text-slate-700 mb-1">Transporte / Vehículo Logístico (Opcional)</label>
+                  <label className={`block font-bold mb-1 ${isWhiteMode ? 'text-slate-700' : 'text-slate-300'}`}>Transporte / Vehículo Logístico (Opcional)</label>
                   <input
                     type="text"
                     value={witVehiculo}
                     onChange={(e) => setWitVehiculo(e.target.value)}
                     placeholder="Ej: Motocicleta AKT 125 (Placa ABC-12D)"
-                    className="w-full p-2.5 bg-white border border-slate-300 rounded-xl font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm"
+                    className={`w-full p-2.5 rounded-xl font-medium focus:outline-none transition-all ${
+                      isWhiteMode 
+                        ? 'bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm' 
+                        : 'bg-[#020712] border border-slate-700 text-white placeholder:text-slate-500 focus:border-cyan-400'
+                    }`}
                   />
                 </div>
 
                 {/* Observaciones */}
                 <div className="md:col-span-2 lg:col-span-4">
-                  <label className="block font-bold text-slate-700 mb-1">Observaciones / Notas del Testigo</label>
+                  <label className={`block font-bold mb-1 ${isWhiteMode ? 'text-slate-700' : 'text-slate-300'}`}>Observaciones / Notas del Testigo</label>
                   <input
                     type="text"
                     value={witObservaciones}
                     onChange={(e) => setWitObservaciones(e.target.value)}
                     placeholder="Ej: Tiene capacitación CNE, cuenta con smartphone y plan de datos."
-                    className="w-full p-2.5 bg-white border border-slate-300 rounded-xl font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm"
+                    className={`w-full p-2.5 rounded-xl font-medium focus:outline-none transition-all ${
+                      isWhiteMode 
+                        ? 'bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm' 
+                        : 'bg-[#020712] border border-slate-700 text-white placeholder:text-slate-500 focus:border-cyan-400'
+                    }`}
                   />
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200">
+              <div className={`flex items-center justify-end gap-3 pt-3 border-t ${
+                isWhiteMode ? 'border-slate-200' : 'border-slate-800'
+              }`}>
                 <button
                   type="button"
                   onClick={resetWitnessForm}
-                  className="px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs rounded-xl border border-slate-300 cursor-pointer shadow-sm"
+                  className={`px-4 py-2 font-bold text-xs rounded-xl border cursor-pointer shadow-sm transition-colors ${
+                    isWhiteMode 
+                      ? 'bg-white hover:bg-slate-100 text-slate-700 border-slate-300' 
+                      : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                  }`}
                 >
                   Cancelar
                 </button>
@@ -1635,23 +1810,23 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
           {/* ========================================================================= */}
           {/* WITNESSES LIST (DUAL RESPONSIVE: CARDS ON MOBILE & TABLE ON DESKTOP) */}
           {/* ========================================================================= */}
-          <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-            <div className="p-3.5 sm:p-4 border-b border-slate-200 bg-slate-50/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="rounded-2xl overflow-hidden shadow-xl transition-all bg-[#030d1d] border border-cyan-500/30">
+            <div className="p-3.5 sm:p-4 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-slate-800 bg-[#020b18]/90 text-white">
               <div className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-blue-600" />
-                <h4 className="font-bold text-slate-900 text-xs sm:text-sm">
+                <Users className="w-4 h-4 text-cyan-400" />
+                <h4 className="font-bold text-xs sm:text-sm text-white">
                   Lista Oficial de Testigos Electorales ({filteredTestigos.length} de {testigos.length})
                 </h4>
               </div>
-              <span className="text-[11px] text-slate-500">
-                Territorio: <strong className="text-slate-700">{activeTerritoryLabel || 'Pendiente de configurar'}</strong>
+              <span className="text-[11px] text-slate-400">
+                Territorio: <strong className="text-cyan-300">{activeTerritoryLabel || 'Pendiente de configurar'}</strong>
               </span>
             </div>
 
             {/* 1. MOBILE CARDS VIEW (<lg screens) */}
-            <div className="block lg:hidden divide-y divide-slate-100">
+            <div className="block lg:hidden divide-y divide-slate-800">
               {filteredTestigos.length === 0 ? (
-                <div className="text-center py-10 text-slate-400 text-xs px-4">
+                <div className="text-center py-10 text-xs px-4 text-slate-500">
                   No se encontraron testigos con los filtros aplicados.
                 </div>
               ) : (
@@ -1667,15 +1842,15 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
                   const isInside = geofenceActive ? (gps.distanciaMetros <= geofenceRadius) : true;
 
                   return (
-                    <div key={t.id} className="p-3.5 sm:p-4 space-y-3 hover:bg-slate-50/80 transition-colors">
+                    <div key={t.id} className="p-3.5 sm:p-4 space-y-3 transition-colors hover:bg-[#041733]/50">
                       {/* Top Row: Name, Status & QR */}
                       <div className="flex items-start justify-between gap-2">
                         <div className="space-y-0.5">
-                          <h5 className="font-bold text-slate-900 text-sm leading-tight">{t.nombre}</h5>
-                          <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500 font-mono">
+                          <h5 className="font-bold text-sm leading-tight text-white">{t.nombre}</h5>
+                          <div className="flex flex-wrap items-center gap-2 text-[11px] font-mono text-slate-400">
                             <span>CC: {t.cc}</span>
                             <span>•</span>
-                            <span className="text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded text-[10px] font-sans font-bold">{t.rol}</span>
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-sans font-bold border text-cyan-300 bg-cyan-950/60 border-cyan-500/40">{t.rol}</span>
                           </div>
                         </div>
 
@@ -1683,7 +1858,7 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
                           <button
                             type="button"
                             onClick={() => setSelectedWitnessForCard(t)}
-                            className="p-2 bg-slate-100 hover:bg-slate-200 text-blue-700 rounded-xl border border-slate-200 transition-colors shadow-sm"
+                            className="p-2 rounded-xl border transition-colors shadow-sm bg-[#041733] hover:bg-[#07244f] text-cyan-300 border-cyan-500/30"
                             title="Ver Carnet Oficial E-16 con QR"
                           >
                             <QrCode className="w-4 h-4" />
@@ -1691,7 +1866,7 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
                           <button
                             type="button"
                             onClick={() => handleOpenWhatsApp(t)}
-                            className="p-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-xl border border-emerald-200 transition-colors shadow-sm"
+                            className="p-2 rounded-xl border transition-colors shadow-sm bg-emerald-950/60 hover:bg-emerald-900 text-emerald-300 border-emerald-500/40"
                             title="Enviar WhatsApp"
                           >
                             <Smartphone className="w-4 h-4" />
@@ -1700,16 +1875,16 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
                       </div>
 
                       {/* Middle Details Grid */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs bg-slate-50 p-3 rounded-xl border border-slate-200/80">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs p-3 rounded-xl border bg-[#020712] border-slate-800 text-slate-200">
                         <div>
-                          <span className="text-[10px] text-slate-500 uppercase font-bold block">Puesto & Mesa:</span>
-                          <span className="font-bold text-slate-800 block truncate">{t.puesto}</span>
-                          <span className="text-blue-700 font-mono font-bold text-[11px]">{t.mesa} • {t.comuna}</span>
+                          <span className="text-[10px] uppercase font-bold block text-slate-400">Puesto & Mesa:</span>
+                          <span className="font-bold block truncate text-white">{t.puesto}</span>
+                          <span className="font-mono font-bold text-[11px] text-cyan-400">{t.mesa} • {t.comuna}</span>
                         </div>
                         <div>
-                          <span className="text-[10px] text-slate-500 uppercase font-bold block">Partido / Aval:</span>
-                          <span className="font-semibold text-slate-700 block truncate">{t.partido}</span>
-                          <span className="text-[10px] text-slate-500 font-mono">{t.telefono}</span>
+                          <span className="text-[10px] uppercase font-bold block text-slate-400">Partido / Aval:</span>
+                          <span className="font-semibold block truncate text-slate-300">{t.partido}</span>
+                          <span className="text-[10px] font-mono text-slate-400">{t.telefono}</span>
                         </div>
                       </div>
 
@@ -1722,8 +1897,8 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
                             onClick={() => handleToggleAcreditacion(t.id)}
                             className={`px-2.5 py-1 text-[10px] font-bold rounded-lg border transition-all flex items-center gap-1 cursor-pointer ${
                               t.acreditacion === 'Formulario E-16 Aprobado'
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                                : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+                                ? 'bg-emerald-950/60 text-emerald-300 border-emerald-500/40 hover:bg-emerald-900'
+                                : 'bg-amber-950/60 text-amber-300 border-amber-500/40 hover:bg-amber-900'
                             }`}
                           >
                             <FileCheck className="w-3 h-3" />
@@ -1734,17 +1909,17 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
                           <div className="flex items-center gap-1">
                             <span className={`px-2 py-0.5 text-[9px] font-bold rounded border font-mono ${
                               !geofenceActive
-                                ? 'bg-slate-100 text-slate-600 border-slate-200'
+                                ? 'bg-slate-800 text-slate-400 border-slate-700'
                                 : isInside
-                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                  : 'bg-rose-50 text-rose-700 border-rose-200 animate-pulse'
+                                  ? 'bg-emerald-950/60 text-emerald-300 border-emerald-500/40'
+                                  : 'bg-rose-950/60 text-rose-300 border-rose-500/40 animate-pulse'
                             }`}>
                               {!geofenceActive ? 'GPS Inactivo' : isInside ? `GPS OK (${gps.distanciaMetros}m)` : `FUERA (${gps.distanciaMetros}m)`}
                             </span>
                             <button
                               type="button"
                               onClick={() => handleSimulateWitnessPing(t.id)}
-                              className="p-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded border border-slate-200 cursor-pointer"
+                              className="p-1 rounded border cursor-pointer bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700"
                               title="Ping GPS"
                             >
                               <RefreshCw className="w-3 h-3" />
@@ -1753,22 +1928,22 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
                         </div>
 
                         {/* Edit & Delete Actions */}
-                        <div className="flex items-center gap-1.5 ml-auto">
+                        <div className="flex items-center gap-2 ml-auto">
                           <button
                             type="button"
                             onClick={() => handleStartEditWitness(t)}
-                            className="px-2.5 py-1 bg-white hover:bg-slate-100 text-blue-700 text-xs font-bold rounded-lg border border-slate-200 flex items-center gap-1 shadow-sm"
+                            className="px-3 py-2 text-xs font-bold rounded-xl border flex items-center gap-1.5 shadow-sm bg-slate-800 hover:bg-slate-700 text-cyan-300 border-slate-700 min-h-[44px]"
                           >
-                            <Edit3 className="w-3 h-3" />
+                            <Edit3 className="w-3.5 h-3.5" />
                             <span>Editar</span>
                           </button>
                           <button
                             type="button"
                             onClick={() => handleDeleteWitness(t.id)}
-                            className="p-1.5 bg-white hover:bg-rose-50 text-slate-500 hover:text-rose-600 rounded-lg border border-slate-200 shadow-sm"
+                            className="p-2.5 rounded-xl border shadow-sm bg-slate-800 hover:bg-rose-950 text-slate-400 hover:text-rose-400 border-slate-700 min-h-[44px] min-w-[44px] flex items-center justify-center cursor-pointer"
                             title="Eliminar"
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
@@ -1779,9 +1954,9 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
             </div>
 
             {/* 2. DESKTOP FULL TABLE VIEW (>=lg screens) */}
-            <div className="hidden lg:block overflow-x-auto w-full max-w-full">
-              <table className="w-full text-left text-xs text-slate-700">
-                <thead className="bg-slate-50 text-slate-700 uppercase tracking-wider text-[10px] font-bold border-b border-slate-200">
+            <div className="hidden lg:block table-responsive-container w-full max-w-full rounded-2xl border border-slate-800">
+              <table className="w-full text-left text-xs min-w-[700px]">
+                <thead className="uppercase tracking-wider text-[10px] font-bold border-b bg-[#020b18] text-slate-300 border-slate-800">
                   <tr>
                     <th className="py-3 px-3 whitespace-nowrap">Testigo / Documento</th>
                     <th className="py-3 px-3 whitespace-nowrap">Partido Avalador</th>
@@ -1792,10 +1967,10 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
                     <th className="py-3 px-3 text-right whitespace-nowrap">Acciones</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 font-medium">
+                <tbody className="font-medium divide-y divide-slate-800 text-slate-200">
                   {filteredTestigos.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="text-center py-10 text-slate-400 text-xs">
+                      <td colSpan={7} className="text-center py-10 text-xs text-slate-500">
                         No se encontraron testigos con los filtros aplicados.
                       </td>
                     </tr>
@@ -1812,12 +1987,12 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
                       const isInside = geofenceActive ? (gps.distanciaMetros <= geofenceRadius) : true;
 
                       return (
-                        <tr key={t.id} className="hover:bg-slate-50/80 transition-colors">
+                        <tr key={t.id} className="transition-colors hover:bg-[#041733]/40">
                           {/* Testigo / CC */}
                           <td className="py-3 px-3">
-                            <div className="font-bold text-slate-900">{t.nombre}</div>
-                            <div className="text-[11px] text-slate-500 font-mono">CC {t.cc}</div>
-                            <div className="text-[10px] text-blue-600 flex items-center gap-1 mt-0.5 font-semibold">
+                            <div className="font-bold text-white">{t.nombre}</div>
+                            <div className="text-[11px] font-mono text-slate-400">CC {t.cc}</div>
+                            <div className="text-[10px] flex items-center gap-1 mt-0.5 font-semibold text-cyan-400">
                               <Phone className="w-2.5 h-2.5" />
                               <span>{t.telefono}</span>
                             </div>
@@ -1825,22 +2000,22 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
 
                           {/* Partido */}
                           <td className="py-3 px-3">
-                            <span className="font-bold text-slate-800 block">{t.partido}</span>
-                            <span className="text-[10px] text-slate-500">{t.estado}</span>
+                            <span className="font-bold block text-slate-200">{t.partido}</span>
+                            <span className="text-[10px] text-slate-400">{t.estado}</span>
                           </td>
 
                           {/* Rol */}
                           <td className="py-3 px-3">
-                            <span className="text-[11px] bg-slate-100 px-2 py-0.5 rounded text-slate-700 font-semibold border border-slate-200 inline-block">
+                            <span className="text-[11px] px-2 py-0.5 rounded font-semibold border inline-block bg-[#020712] text-slate-300 border-slate-700">
                               {t.rol}
                             </span>
                           </td>
 
                           {/* Puesto & Mesa */}
                           <td className="py-3 px-3">
-                            <div className="font-bold text-slate-900 text-xs">{t.puesto}</div>
-                            <div className="text-[11px] text-blue-700 font-mono font-bold">{t.mesa}</div>
-                            <div className="text-[10px] text-slate-500">{t.comuna}</div>
+                            <div className="font-bold text-xs text-white">{t.puesto}</div>
+                            <div className="text-[11px] font-mono font-bold text-cyan-400">{t.mesa}</div>
+                            <div className="text-[10px] text-slate-400">{t.comuna}</div>
                           </td>
 
                           {/* Acreditación E-16 */}
@@ -1850,8 +2025,8 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
                               onClick={() => handleToggleAcreditacion(t.id)}
                               className={`px-2.5 py-1 text-[10px] font-bold rounded-lg border transition-all cursor-pointer flex items-center gap-1 ${
                                 t.acreditacion === 'Formulario E-16 Aprobado'
-                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                                  : 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100'
+                                  ? 'bg-emerald-950/60 text-emerald-300 border-emerald-500/40 hover:bg-emerald-900'
+                                  : 'bg-amber-950/60 text-amber-300 border-amber-500/40 hover:bg-amber-900'
                               }`}
                               title="Clic para alternar estado de acreditación"
                             >
@@ -1865,23 +2040,23 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
                             <div className="flex items-center gap-1.5">
                               <span className={`px-2 py-0.5 text-[9px] font-bold rounded border font-mono ${
                                 !geofenceActive
-                                  ? 'bg-slate-100 text-slate-600 border-slate-200'
+                                  ? 'bg-slate-800 text-slate-400 border-slate-700'
                                   : isInside
-                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                    : 'bg-rose-50 text-rose-700 border-rose-200 animate-pulse'
+                                    ? 'bg-emerald-950/60 text-emerald-300 border-emerald-500/40'
+                                    : 'bg-rose-950/60 text-rose-300 border-rose-500/40 animate-pulse'
                               }`}>
                                 {!geofenceActive ? 'Inactivo' : isInside ? `OK (${gps.distanciaMetros}m)` : `FUERA (${gps.distanciaMetros}m)`}
                               </span>
                               <button
                                 type="button"
                                 onClick={() => handleSimulateWitnessPing(t.id)}
-                                className="p-1 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded border border-slate-200 cursor-pointer"
+                                className="p-1 rounded border cursor-pointer bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700"
                                 title="Ping GPS"
                               >
                                 <RefreshCw className="w-3 h-3" />
                               </button>
                             </div>
-                            <div className="text-[9px] text-slate-500 font-mono mt-0.5">
+                            <div className="text-[9px] font-mono mt-0.5 text-slate-400">
                               {gps.ultimoPing} • {gps.bateriaPct}% Bat
                             </div>
                           </td>
@@ -1913,7 +2088,7 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
                               <button
                                 type="button"
                                 onClick={() => handleStartEditWitness(t)}
-                                className="p-1.5 bg-white hover:bg-slate-100 text-slate-700 rounded-lg border border-slate-200 transition-colors cursor-pointer shadow-sm"
+                                className="p-1.5 rounded-lg border transition-colors cursor-pointer shadow-sm bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700"
                                 title="Editar Testigo"
                               >
                                 <Edit3 className="w-3.5 h-3.5" />
@@ -1923,7 +2098,7 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
                               <button
                                 type="button"
                                 onClick={() => handleDeleteWitness(t.id)}
-                                className="p-1.5 bg-white hover:bg-rose-50 text-slate-500 hover:text-rose-600 rounded-lg border border-slate-200 transition-colors cursor-pointer shadow-sm"
+                                className="p-1.5 rounded-lg border transition-colors cursor-pointer shadow-sm bg-slate-800 hover:bg-rose-950 text-slate-400 hover:text-rose-400 border-slate-700"
                                 title="Eliminar Testigo"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -1942,17 +2117,17 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
           {/* ========================================================================= */}
           {/* TERRITORIAL POLLING STATION COVERAGE SUMMARY */}
           {/* ========================================================================= */}
-          <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-4 shadow-sm">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-3">
+          <div className="rounded-2xl p-4 sm:p-5 space-y-4 shadow-xl transition-all bg-[#030d1d] border border-cyan-500/30">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b pb-3 border-slate-800">
               <div>
-                <h4 className="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-1.5 uppercase tracking-wider">
-                  <MapPin className="w-4 h-4 text-blue-600" />
+                <h4 className="text-xs sm:text-sm font-bold flex items-center gap-1.5 uppercase tracking-wider text-white">
+                  <MapPin className="w-4 h-4 text-cyan-400" />
                   <span>Matriz de cobertura de mesas{activeTerritoryLabel ? ` en ${activeTerritoryLabel}` : ''}</span>
                 </h4>
               </div>
 
               <div className="flex items-center gap-2">
-                <span className="text-[11px] text-blue-700 font-bold bg-blue-50 px-3 py-1 rounded-xl border border-blue-200">
+                <span className="text-[11px] font-bold px-3 py-1 rounded-xl border text-cyan-300 bg-cyan-950/60 border-cyan-500/40">
                   {puestosTerritorioOpt.length} Puestos • {totalMesasConsignadas} Mesas Totales
                 </span>
                 <button
@@ -1968,7 +2143,7 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
               {puestosTerritorioOpt.length === 0 && (
-                <div className="md:col-span-2 lg:col-span-3 rounded-xl border border-dashed border-slate-300 p-8 text-center text-slate-500 bg-slate-50">
+                <div className="md:col-span-2 lg:col-span-3 rounded-xl border border-dashed p-8 text-center border-slate-700 text-slate-400 bg-[#020712]">
                   No hay puestos ni mesas oficiales cargados para esta campaña.
                 </div>
               )}
@@ -1983,21 +2158,21 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
                     onClick={() => setWitnessPuestoFilter(isSelected ? 'Todos' : pst.nombre)}
                     className={`p-3.5 rounded-xl border transition-all cursor-pointer space-y-2 shadow-sm ${
                       isSelected 
-                        ? 'bg-blue-50/90 border-blue-500 ring-2 ring-blue-500/20' 
-                        : 'bg-slate-50 hover:bg-slate-100 border-slate-200/80'
+                        ? 'bg-cyan-950/60 border-cyan-400 ring-2 ring-cyan-500/30 text-white'
+                        : 'bg-[#020b18]/80 hover:bg-[#041733]/60 border-slate-800'
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-slate-900 truncate max-w-[200px]" title={pst.nombre}>
+                      <span className="font-bold truncate max-w-[200px] text-white" title={pst.nombre}>
                         {pst.nombre}
                       </span>
-                      <span className="text-[10px] bg-white text-slate-700 font-mono px-1.5 py-0.5 rounded border border-slate-200 shrink-0 font-bold">
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded border shrink-0 font-bold bg-[#020712] text-slate-300 border-slate-700">
                         {pst.mesas} Mesas
                       </span>
                     </div>
-                    <div className="text-[11px] text-slate-500">{pst.comuna}</div>
+                    <div className="text-[11px] text-slate-400">{pst.comuna}</div>
                     
-                    <div className="w-full bg-slate-200 h-1.5 rounded-full overflow-hidden">
+                    <div className="w-full h-1.5 rounded-full overflow-hidden bg-slate-800">
                       <div 
                         className={`h-full rounded-full transition-all ${
                           testigosEnPuesto.length >= pst.mesas ? 'bg-emerald-500' : 'bg-amber-500'
@@ -2007,10 +2182,12 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
                     </div>
 
                     <div className="pt-1 flex items-center justify-between text-[10px]">
-                      <span className="text-slate-600 font-medium">
-                        Testigos: <strong className="text-blue-700">{testigosEnPuesto.length}</strong>
+                      <span className="font-medium text-slate-400">
+                        Testigos: <strong className="text-cyan-400">{testigosEnPuesto.length}</strong>
                       </span>
-                      <span className={`font-bold ${isCovered ? 'text-emerald-700' : 'text-amber-700'}`}>
+                      <span className={`font-bold ${
+                        isCovered ? 'text-emerald-400' : 'text-amber-400'
+                      }`}>
                         {isCovered ? 'Cubierto ✅' : 'Pendiente Asignar ⚠️'}
                       </span>
                     </div>
@@ -2026,55 +2203,71 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
       {/* MODAL: AGREGAR / PERSONALIZAR PUESTO DE VOTACIÓN EN ESTA CIRCUNSCRIPCIÓN */}
       {/* ========================================================================= */}
       {showAddPuestoModal && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 animate-fadeIn">
-          <form onSubmit={handleCreateCustomPuesto} className="bg-white rounded-2xl max-w-[95vw] sm:max-w-lg w-full p-4 sm:p-6 shadow-2xl border border-slate-200 space-y-4 text-slate-900 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 animate-fadeIn">
+          <form onSubmit={handleCreateCustomPuesto} className={`rounded-2xl max-w-[95vw] sm:max-w-lg w-full p-4 sm:p-6 shadow-2xl border space-y-4 max-h-[90vh] overflow-y-auto ${
+            isWhiteMode ? 'bg-white border-slate-200 text-slate-900' : 'bg-[#030d1d] border-cyan-500/40 text-white'
+          }`}>
+            <div className={`flex items-center justify-between border-b pb-3 ${
+              isWhiteMode ? 'border-slate-200' : 'border-slate-800'
+            }`}>
               <div className="flex items-center gap-2">
-                <Building className="w-5 h-5 text-blue-600" />
-                <h4 className="font-bold text-slate-900 text-base">
+                <Building className={`w-5 h-5 ${isWhiteMode ? 'text-blue-600' : 'text-cyan-400'}`} />
+                <h4 className={`font-bold text-base ${isWhiteMode ? 'text-slate-900' : 'text-white'}`}>
                   Registrar puesto de votación
                 </h4>
               </div>
               <button
                 type="button"
                 onClick={() => setShowAddPuestoModal(false)}
-                className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors"
+                className={`p-1 rounded-lg transition-colors ${
+                  isWhiteMode ? 'hover:bg-slate-100 text-slate-400 hover:text-slate-700' : 'hover:bg-slate-800 text-slate-400 hover:text-white'
+                }`}
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="space-y-3 text-xs">
-              <div className="p-3 bg-blue-50/80 rounded-xl border border-blue-200 text-[11px] text-blue-900">
+              <div className={`p-3 rounded-xl border text-[11px] ${
+                isWhiteMode ? 'bg-blue-50/80 border-blue-200 text-blue-900' : 'bg-[#041733] border-cyan-500/30 text-cyan-200'
+              }`}>
                 📍 <strong>Territorio activo:</strong> {activeTerritoryLabel || 'Pendiente de configurar'}
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Nombre Oficial del Puesto *</label>
+                <label className={`block font-bold mb-1 ${isWhiteMode ? 'text-slate-700' : 'text-slate-300'}`}>Nombre Oficial del Puesto *</label>
                 <input
                   type="text"
                   required
                   value={newPuestoNombre}
                   onChange={(e) => setNewPuestoNombre(e.target.value)}
                   placeholder="Ej: Colegio Departamental San José"
-                  className="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium shadow-sm"
+                  className={`w-full p-2.5 rounded-xl font-medium focus:outline-none transition-all ${
+                    isWhiteMode 
+                      ? 'bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm' 
+                      : 'bg-[#020712] border border-slate-700 text-white placeholder:text-slate-500 focus:border-cyan-400'
+                  }`}
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Comuna / Localidad / Corregimiento</label>
+                  <label className={`block font-bold mb-1 ${isWhiteMode ? 'text-slate-700' : 'text-slate-300'}`}>Comuna / Localidad / Corregimiento</label>
                   <input
                     type="text"
                     value={newPuestoComuna}
                     onChange={(e) => setNewPuestoComuna(e.target.value)}
                     placeholder="Ej: Zona Centro / Comuna 01"
-                    className="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium shadow-sm"
+                    className={`w-full p-2.5 rounded-xl font-medium focus:outline-none transition-all ${
+                      isWhiteMode 
+                        ? 'bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm' 
+                        : 'bg-[#020712] border border-slate-700 text-white placeholder:text-slate-500 focus:border-cyan-400'
+                    }`}
                   />
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Cantidad Total de Mesas *</label>
+                  <label className={`block font-bold mb-1 ${isWhiteMode ? 'text-slate-700' : 'text-slate-300'}`}>Cantidad Total de Mesas *</label>
                   <input
                     type="number"
                     min="1"
@@ -2082,40 +2275,58 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
                     required
                     value={newPuestoMesas}
                     onChange={(e) => setNewPuestoMesas(Number(e.target.value))}
-                    className="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-mono font-bold shadow-sm"
+                    className={`w-full p-2.5 rounded-xl font-mono font-bold focus:outline-none transition-all ${
+                      isWhiteMode 
+                        ? 'bg-white border border-slate-300 text-slate-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm' 
+                        : 'bg-[#020712] border border-slate-700 text-white focus:border-cyan-400'
+                    }`}
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Censo Electoral Estimado (Votantes)</label>
+                  <label className={`block font-bold mb-1 ${isWhiteMode ? 'text-slate-700' : 'text-slate-300'}`}>Censo Electoral Estimado (Votantes)</label>
                   <input
                     type="number"
                     value={newPuestoCenso}
                     onChange={(e) => setNewPuestoCenso(Number(e.target.value))}
-                    className="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-mono shadow-sm"
+                    className={`w-full p-2.5 rounded-xl font-mono focus:outline-none transition-all ${
+                      isWhiteMode 
+                        ? 'bg-white border border-slate-300 text-slate-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm' 
+                        : 'bg-[#020712] border border-slate-700 text-white focus:border-cyan-400'
+                    }`}
                   />
                 </div>
 
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1">Dirección / Sede</label>
+                  <label className={`block font-bold mb-1 ${isWhiteMode ? 'text-slate-700' : 'text-slate-300'}`}>Dirección / Sede</label>
                   <input
                     type="text"
                     value={newPuestoDireccion}
                     onChange={(e) => setNewPuestoDireccion(e.target.value)}
                     placeholder="Calle Principal # 10-20"
-                    className="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 font-medium shadow-sm"
+                    className={`w-full p-2.5 rounded-xl font-medium focus:outline-none transition-all ${
+                      isWhiteMode 
+                        ? 'bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm' 
+                        : 'bg-[#020712] border border-slate-700 text-white placeholder:text-slate-500 focus:border-cyan-400'
+                    }`}
                   />
                 </div>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center justify-end gap-2 pt-3 border-t border-slate-200">
+            <div className={`flex flex-wrap items-center justify-end gap-2 pt-3 border-t ${
+              isWhiteMode ? 'border-slate-200' : 'border-slate-800'
+            }`}>
               <button
                 type="button"
                 onClick={() => setShowAddPuestoModal(false)}
-                className="px-4 py-2 bg-white text-slate-700 font-bold text-xs rounded-xl border border-slate-300 hover:bg-slate-100 cursor-pointer shadow-sm"
+                className={`px-4 py-2 font-bold text-xs rounded-xl border cursor-pointer shadow-sm ${
+                  isWhiteMode 
+                    ? 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100' 
+                    : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                }`}
               >
                 Cancelar
               </button>
@@ -2135,38 +2346,50 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
       {/* MODAL 1: CREDENCIAL OFICIAL DIGITAL E-16 (CARNET CON QR) */}
       {/* ========================================================================= */}
       {selectedWitnessForCard && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 animate-fadeIn">
-          <div className="bg-white rounded-2xl max-w-[95vw] sm:max-w-md w-full p-4 sm:p-6 shadow-2xl border border-slate-200 space-y-5 text-slate-900 max-h-[95vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 animate-fadeIn">
+          <div className={`rounded-2xl max-w-[95vw] sm:max-w-md w-full p-4 sm:p-6 shadow-2xl border space-y-5 max-h-[95vh] overflow-y-auto ${
+            isWhiteMode ? 'bg-white border-slate-200 text-slate-900' : 'bg-[#030d1d] border-cyan-500/40 text-white'
+          }`}>
+            <div className={`flex items-center justify-between border-b pb-3 ${
+              isWhiteMode ? 'border-slate-200' : 'border-slate-800'
+            }`}>
               <div className="flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-blue-600" />
-                <h4 className="font-bold text-slate-900 text-base">Credencial Oficial de Testigo Electoral</h4>
+                <ShieldCheck className={`w-5 h-5 ${isWhiteMode ? 'text-blue-600' : 'text-cyan-400'}`} />
+                <h4 className={`font-bold text-base ${isWhiteMode ? 'text-slate-900' : 'text-white'}`}>Credencial Oficial de Testigo Electoral</h4>
               </div>
               <button
                 type="button"
                 onClick={() => setSelectedWitnessForCard(null)}
-                className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors"
+                className={`p-1 rounded-lg transition-colors ${
+                  isWhiteMode ? 'hover:bg-slate-100 text-slate-400 hover:text-slate-700' : 'hover:bg-slate-800 text-slate-400 hover:text-white'
+                }`}
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Printable Badge Card */}
-            <div className="bg-gradient-to-b from-slate-50 to-white border-2 border-blue-500/30 rounded-2xl p-4 sm:p-5 shadow-sm space-y-4 text-center relative overflow-hidden">
+            <div className={`border-2 rounded-2xl p-4 sm:p-5 shadow-sm space-y-4 text-center relative overflow-hidden ${
+              isWhiteMode 
+                ? 'bg-gradient-to-b from-slate-50 to-white border-blue-500/30 text-slate-900' 
+                : 'bg-gradient-to-b from-[#041733] to-[#020b18] border-cyan-500/40 text-white'
+            }`}>
               {/* Watermark Logo */}
               <div className="absolute top-0 right-0 p-4 opacity-5 pointer-events-none">
-                <Award className="w-32 h-32 text-blue-600" />
+                <Award className={`w-32 h-32 ${isWhiteMode ? 'text-blue-600' : 'text-cyan-400'}`} />
               </div>
 
               {/* Header Badge */}
-              <div className="border-b border-slate-200 pb-3">
-                <span className="text-[10px] font-black text-blue-700 uppercase tracking-widest block">
+              <div className={`border-b pb-3 ${isWhiteMode ? 'border-slate-200' : 'border-slate-800'}`}>
+                <span className={`text-[10px] font-black uppercase tracking-widest block ${
+                  isWhiteMode ? 'text-blue-700' : 'text-cyan-400'
+                }`}>
                   REPÚBLICA DE COLOMBIA • REGISTRADURÍA NACIONAL
                 </span>
-                <h5 className="font-bold text-sm text-slate-900 mt-0.5">
+                <h5 className={`font-bold text-sm mt-0.5 ${isWhiteMode ? 'text-slate-900' : 'text-white'}`}>
                   FORMULARIO E-16 • CREDENCIAL OFICIAL
                 </h5>
-                <span className="text-[9px] text-slate-500 block font-mono">
+                <span className={`text-[9px] block font-mono ${isWhiteMode ? 'text-slate-500' : 'text-slate-400'}`}>
                   Elecciones territoriales
                 </span>
               </div>
@@ -2182,50 +2405,52 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
               </div>
 
               {/* Witness Details */}
-              <div className="space-y-2 text-xs text-left bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-slate-800">
+              <div className={`space-y-2 text-xs text-left p-3.5 rounded-xl border ${
+                isWhiteMode ? 'bg-slate-50 border-slate-200 text-slate-800' : 'bg-[#020712] border-slate-800 text-slate-200'
+              }`}>
                 <div>
-                  <span className="text-[10px] text-slate-500 uppercase font-bold block">Nombre del Testigo:</span>
-                  <span className="font-bold text-slate-900 text-sm">{selectedWitnessForCard.nombre}</span>
+                  <span className={`text-[10px] uppercase font-bold block ${isWhiteMode ? 'text-slate-500' : 'text-slate-400'}`}>Nombre del Testigo:</span>
+                  <span className={`font-bold text-sm ${isWhiteMode ? 'text-slate-900' : 'text-white'}`}>{selectedWitnessForCard.nombre}</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div>
-                    <span className="text-[10px] text-slate-500 uppercase font-bold block">Cédula:</span>
-                    <span className="font-mono font-bold text-blue-700">{selectedWitnessForCard.cc}</span>
+                    <span className={`text-[10px] uppercase font-bold block ${isWhiteMode ? 'text-slate-500' : 'text-slate-400'}`}>Cédula:</span>
+                    <span className={`font-mono font-bold ${isWhiteMode ? 'text-blue-700' : 'text-cyan-400'}`}>{selectedWitnessForCard.cc}</span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-500 uppercase font-bold block">Partido:</span>
-                    <span className="font-bold text-slate-800 truncate block">{selectedWitnessForCard.partido}</span>
+                    <span className={`text-[10px] uppercase font-bold block ${isWhiteMode ? 'text-slate-500' : 'text-slate-400'}`}>Partido:</span>
+                    <span className={`font-bold truncate block ${isWhiteMode ? 'text-slate-800' : 'text-slate-200'}`}>{selectedWitnessForCard.partido}</span>
                   </div>
                 </div>
 
-                <div className="border-t border-slate-200 pt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div className={`border-t pt-2 grid grid-cols-1 sm:grid-cols-2 gap-2 ${isWhiteMode ? 'border-slate-200' : 'border-slate-800'}`}>
                   <div>
-                    <span className="text-[10px] text-slate-500 uppercase font-bold block">Puesto Asignado:</span>
-                    <span className="font-bold text-slate-900 text-[11px] truncate block">{selectedWitnessForCard.puesto}</span>
+                    <span className={`text-[10px] uppercase font-bold block ${isWhiteMode ? 'text-slate-500' : 'text-slate-400'}`}>Puesto Asignado:</span>
+                    <span className={`font-bold text-[11px] truncate block ${isWhiteMode ? 'text-slate-900' : 'text-white'}`}>{selectedWitnessForCard.puesto}</span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-slate-500 uppercase font-bold block">Mesa:</span>
-                    <span className="font-black text-emerald-700 text-xs font-mono">{selectedWitnessForCard.mesa}</span>
+                    <span className={`text-[10px] uppercase font-bold block ${isWhiteMode ? 'text-slate-500' : 'text-slate-400'}`}>Mesa:</span>
+                    <span className={`font-black text-xs font-mono ${isWhiteMode ? 'text-emerald-700' : 'text-emerald-400'}`}>{selectedWitnessForCard.mesa}</span>
                   </div>
                 </div>
 
                 <div>
-                  <span className="text-[10px] text-slate-500 uppercase font-bold block">Candidato / Campaña:</span>
-                  <span className="font-bold text-blue-900 text-[11px]">
+                  <span className={`text-[10px] uppercase font-bold block ${isWhiteMode ? 'text-slate-500' : 'text-slate-400'}`}>Candidato / Campaña:</span>
+                  <span className={`font-bold text-[11px] ${isWhiteMode ? 'text-blue-900' : 'text-cyan-300'}`}>
                     {candidateName} ({candidateCorporacion} de {candidateMunicipio})
                   </span>
                 </div>
               </div>
 
               {/* Security Seal */}
-              <div className="pt-1 flex items-center justify-between text-[9px] text-slate-500 font-mono">
+              <div className={`pt-1 flex items-center justify-between text-[9px] font-mono ${isWhiteMode ? 'text-slate-500' : 'text-slate-400'}`}>
                 <span>COD-E16: {selectedWitnessForCard.id.toUpperCase()}</span>
-                <span className="text-emerald-700 font-bold">Acreditación Verificada ✔</span>
+                <span className={`font-bold ${isWhiteMode ? 'text-emerald-700' : 'text-emerald-400'}`}>Acreditación Verificada ✔</span>
               </div>
             </div>
 
             {/* Actions */}
-            <div className="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-slate-200">
+            <div className={`flex flex-wrap items-center justify-end gap-2 pt-2 border-t ${isWhiteMode ? 'border-slate-200' : 'border-slate-800'}`}>
               <button
                 type="button"
                 onClick={() => handleOpenWhatsApp(selectedWitnessForCard)}
@@ -2251,37 +2476,47 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
       {/* MODAL 2: FORMULARIO OFICIAL E-16 REGISTRADURÍA */}
       {/* ========================================================================= */}
       {showE16Modal && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 animate-fadeIn">
-          <div className="bg-white rounded-2xl max-w-[95vw] sm:max-w-3xl lg:max-w-4xl w-full p-4 sm:p-6 shadow-2xl border border-slate-200 space-y-4 text-slate-900 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 animate-fadeIn">
+          <div className={`rounded-2xl max-w-[95vw] sm:max-w-3xl lg:max-w-4xl w-full p-4 sm:p-6 shadow-2xl border space-y-4 max-h-[90vh] overflow-y-auto ${
+            isWhiteMode ? 'bg-white border-slate-200 text-slate-900' : 'bg-[#030d1d] border-cyan-500/40 text-white'
+          }`}>
+            <div className={`flex items-center justify-between border-b pb-3 ${
+              isWhiteMode ? 'border-slate-200' : 'border-slate-800'
+            }`}>
               <div className="flex items-center gap-2">
-                <FileCheck className="w-5 h-5 text-blue-600" />
-                <h4 className="font-bold text-slate-900 text-base">
+                <FileCheck className={`w-5 h-5 ${isWhiteMode ? 'text-blue-600' : 'text-cyan-400'}`} />
+                <h4 className={`font-bold text-base ${isWhiteMode ? 'text-slate-900' : 'text-white'}`}>
                   Planilla Oficial de Postulación y Acreditación de Testigos (Formulario E-16)
                 </h4>
               </div>
               <button
                 type="button"
                 onClick={() => setShowE16Modal(false)}
-                className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors"
+                className={`p-1 rounded-lg transition-colors ${
+                  isWhiteMode ? 'hover:bg-slate-100 text-slate-400 hover:text-slate-700' : 'hover:bg-slate-800 text-slate-400 hover:text-white'
+                }`}
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="bg-white text-slate-950 p-4 sm:p-6 rounded-2xl space-y-4 text-xs border border-slate-200 shadow-sm">
-              <div className="text-center border-b-2 border-slate-900 pb-3">
-                <h3 className="font-black text-sm sm:text-base uppercase">República de Colombia • Consejo Nacional Electoral</h3>
-                <h4 className="font-bold text-xs uppercase text-slate-700">Registraduría Nacional del Estado Civil</h4>
-                <div className="font-mono text-[11px] font-bold text-indigo-900 mt-1">
+            <div className={`p-4 sm:p-6 rounded-2xl space-y-4 text-xs border shadow-sm ${
+              isWhiteMode ? 'bg-white text-slate-950 border-slate-200' : 'bg-[#020712] text-slate-200 border-slate-800'
+            }`}>
+              <div className={`text-center border-b-2 pb-3 ${isWhiteMode ? 'border-slate-900' : 'border-cyan-500/50'}`}>
+                <h3 className={`font-black text-sm sm:text-base uppercase ${isWhiteMode ? 'text-slate-900' : 'text-white'}`}>República de Colombia • Consejo Nacional Electoral</h3>
+                <h4 className={`font-bold text-xs uppercase ${isWhiteMode ? 'text-slate-700' : 'text-slate-300'}`}>Registraduría Nacional del Estado Civil</h4>
+                <div className={`font-mono text-[11px] font-bold mt-1 ${isWhiteMode ? 'text-indigo-900' : 'text-cyan-400'}`}>
                   ACTA DE POSTULACIÓN DE TESTIGOS ELECTORALES - FORMULARIO E-16
                 </div>
-                <div className="text-[10px] text-slate-600 font-semibold mt-0.5">
+                <div className={`text-[10px] font-semibold mt-0.5 ${isWhiteMode ? 'text-slate-600' : 'text-slate-400'}`}>
                   Circunscripción: {candidateCorporacion} de {candidateMunicipio}, Departamento de {candidateDepartamento} • Elecciones 2026
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-100 p-3 rounded-lg text-[11px]">
+              <div className={`grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-lg text-[11px] ${
+                isWhiteMode ? 'bg-slate-100' : 'bg-[#041733] border border-cyan-500/20'
+              }`}>
                 <div>
                   <strong>Candidato / Organización:</strong> {candidateName}
                 </div>
@@ -2296,26 +2531,26 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
                 </div>
               </div>
 
-              <div className="overflow-x-auto w-full max-w-full">
-                <table className="w-full text-left text-[11px] border border-slate-300">
-                  <thead className="bg-slate-200 font-bold border-b border-slate-300">
+              <div className="table-responsive-container w-full max-w-full">
+                <table className={`w-full text-left text-[11px] border min-w-[650px] ${isWhiteMode ? 'border-slate-300' : 'border-slate-700'}`}>
+                  <thead className={`font-bold border-b ${isWhiteMode ? 'bg-slate-200 border-slate-300 text-slate-800' : 'bg-[#031326] border-slate-700 text-slate-200'}`}>
                     <tr>
-                      <th className="p-1.5 border-r border-slate-300 whitespace-nowrap">#</th>
-                      <th className="p-1.5 border-r border-slate-300 whitespace-nowrap">Cédula</th>
-                      <th className="p-1.5 border-r border-slate-300 whitespace-nowrap">Nombre Completo</th>
-                      <th className="p-1.5 border-r border-slate-300 whitespace-nowrap">Puesto ({candidateMunicipio})</th>
-                      <th className="p-1.5 border-r border-slate-300 whitespace-nowrap">Mesa</th>
+                      <th className="p-1.5 border-r whitespace-nowrap">#</th>
+                      <th className="p-1.5 border-r whitespace-nowrap">Cédula</th>
+                      <th className="p-1.5 border-r whitespace-nowrap">Nombre Completo</th>
+                      <th className="p-1.5 border-r whitespace-nowrap">Puesto ({candidateMunicipio})</th>
+                      <th className="p-1.5 border-r whitespace-nowrap">Mesa</th>
                       <th className="p-1.5 whitespace-nowrap">Acreditación</th>
                     </tr>
                   </thead>
                   <tbody>
                     {testigos.map((t, idx) => (
-                      <tr key={t.id} className="border-b border-slate-200">
-                        <td className="p-1.5 border-r border-slate-300">{idx + 1}</td>
-                        <td className="p-1.5 border-r border-slate-300 font-mono">{t.cc}</td>
-                        <td className="p-1.5 border-r border-slate-300 font-bold">{t.nombre}</td>
-                        <td className="p-1.5 border-r border-slate-300">{t.puesto}</td>
-                        <td className="p-1.5 border-r border-slate-300 font-mono font-bold">{t.mesa}</td>
+                      <tr key={t.id} className={`border-b ${isWhiteMode ? 'border-slate-200' : 'border-slate-800'}`}>
+                        <td className="p-1.5 border-r">{idx + 1}</td>
+                        <td className="p-1.5 border-r font-mono">{t.cc}</td>
+                        <td className="p-1.5 border-r font-bold">{t.nombre}</td>
+                        <td className="p-1.5 border-r">{t.puesto}</td>
+                        <td className="p-1.5 border-r font-mono font-bold">{t.mesa}</td>
                         <td className="p-1.5">{t.acreditacion}</td>
                       </tr>
                     ))}
@@ -2324,11 +2559,13 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-200">
+            <div className={`flex items-center justify-end gap-3 pt-2 border-t ${isWhiteMode ? 'border-slate-200' : 'border-slate-800'}`}>
               <button
                 type="button"
                 onClick={handleExportCsv}
-                className="px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs rounded-xl border border-slate-300 flex items-center gap-1.5 shadow-sm"
+                className={`px-4 py-2 font-bold text-xs rounded-xl border flex items-center gap-1.5 shadow-sm transition-colors ${
+                  isWhiteMode ? 'bg-white hover:bg-slate-100 text-slate-700 border-slate-300' : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                }`}
               >
                 <Download className="w-4 h-4" />
                 <span>Exportar CSV</span>
@@ -2350,46 +2587,59 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
       {/* MODAL 3: IMPORTACIÓN MASIVA DE TESTIGOS */}
       {/* ========================================================================= */}
       {showImportModal && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 animate-fadeIn">
-          <div className="bg-white rounded-2xl max-w-[95vw] sm:max-w-lg w-full p-4 sm:p-6 shadow-2xl border border-slate-200 space-y-4 text-slate-900 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 animate-fadeIn">
+          <div className={`rounded-2xl max-w-[95vw] sm:max-w-lg w-full p-4 sm:p-6 shadow-2xl border space-y-4 max-h-[90vh] overflow-y-auto ${
+            isWhiteMode ? 'bg-white border-slate-200 text-slate-900' : 'bg-[#030d1d] border-cyan-500/40 text-white'
+          }`}>
+            <div className={`flex items-center justify-between border-b pb-3 ${
+              isWhiteMode ? 'border-slate-200' : 'border-slate-800'
+            }`}>
               <div className="flex items-center gap-2">
-                <FileUp className="w-5 h-5 text-blue-600" />
-                <h4 className="font-bold text-slate-900 text-base">
+                <FileUp className={`w-5 h-5 ${isWhiteMode ? 'text-blue-600' : 'text-cyan-400'}`} />
+                <h4 className={`font-bold text-base ${isWhiteMode ? 'text-slate-900' : 'text-white'}`}>
                   Importación masiva de testigos
                 </h4>
               </div>
               <button
                 type="button"
                 onClick={() => setShowImportModal(false)}
-                className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors"
+                className={`p-1 rounded-lg transition-colors ${
+                  isWhiteMode ? 'hover:bg-slate-100 text-slate-400 hover:text-slate-700' : 'hover:bg-slate-800 text-slate-400 hover:text-white'
+                }`}
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="space-y-2 text-xs">
-              <p className="text-slate-600">
+              <p className={isWhiteMode ? 'text-slate-600' : 'text-slate-300'}>
                 Pegue líneas de texto en formato separado por comas (CSV) con el siguiente orden:
               </p>
-              <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200 font-mono text-[10px] text-blue-700 overflow-x-auto">
+              <div className={`p-2.5 rounded-xl border font-mono text-[10px] overflow-x-auto ${
+                isWhiteMode ? 'bg-slate-50 border-slate-200 text-blue-700' : 'bg-[#020712] border-slate-800 text-cyan-400'
+              }`}>
                 CEDULA, NOMBRE COMPLETO, TELEFONO, PARTIDO, PUESTO, MESA
               </div>
               <textarea
                 rows={6}
                 value={importTextData}
                 onChange={(e) => setImportTextData(e.target.value)}
-                placeholder={`1025889901, Andrés Morales Restrepo, +57 310 111 2233, ${partidosPoliticosOpt[0] || 'Partido Liberal'}, ${puestosTerritorioOpt[0]?.nombre || 'Puesto Central'}, Mesa 01
-1025889902, Claudia Patricia Giraldo, +57 312 222 3344, ${partidosPoliticosOpt[0] || 'Partido Liberal'}, ${puestosTerritorioOpt[1]?.nombre || puestosTerritorioOpt[0]?.nombre || 'Puesto Central'}, Mesa 02`}
-                className="w-full bg-white border border-slate-300 rounded-xl p-3 font-mono text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm"
+                placeholder={`1025889901, Andrés Morales Restrepo, +57 310 111 2233, ${partidosPoliticosOpt[0] || 'Partido Liberal'}, ${puestosTerritorioOpt[0]?.nombre || 'Puesto Central'}, Mesa 01\n1025889902, Claudia Patricia Giraldo, +57 312 222 3344, ${partidosPoliticosOpt[0] || 'Partido Liberal'}, ${puestosTerritorioOpt[1]?.nombre || puestosTerritorioOpt[0]?.nombre || 'Puesto Central'}, Mesa 02`}
+                className={`w-full rounded-xl p-3 font-mono text-xs focus:outline-none transition-all ${
+                  isWhiteMode 
+                    ? 'bg-white border border-slate-300 text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 shadow-sm' 
+                    : 'bg-[#020712] border border-slate-700 text-white placeholder:text-slate-500 focus:border-cyan-400'
+                }`}
               />
             </div>
 
-            <div className="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-slate-200">
+            <div className={`flex flex-wrap items-center justify-end gap-2 pt-2 border-t ${isWhiteMode ? 'border-slate-200' : 'border-slate-800'}`}>
               <button
                 type="button"
                 onClick={() => setShowImportModal(false)}
-                className="px-4 py-2 bg-white text-slate-700 font-bold text-xs rounded-xl border border-slate-300 hover:bg-slate-100 cursor-pointer shadow-sm"
+                className={`px-4 py-2 font-bold text-xs rounded-xl border cursor-pointer shadow-sm ${
+                  isWhiteMode ? 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100' : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                }`}
               >
                 Cancelar
               </button>
@@ -2410,17 +2660,23 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
       {/* MODAL 4: BANDEJA DE ALERTAS DE CERCO GPS */}
       {/* ========================================================================= */}
       {showAlertsModal && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 animate-fadeIn">
-          <div className="bg-white rounded-2xl max-w-[95vw] sm:max-w-lg w-full p-4 sm:p-6 shadow-2xl border border-slate-200 space-y-4 text-slate-900 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 animate-fadeIn">
+          <div className={`rounded-2xl max-w-[95vw] sm:max-w-lg w-full p-4 sm:p-6 shadow-2xl border space-y-4 max-h-[90vh] overflow-y-auto ${
+            isWhiteMode ? 'bg-white border-slate-200 text-slate-900' : 'bg-[#030d1d] border-cyan-500/40 text-white'
+          }`}>
+            <div className={`flex items-center justify-between border-b pb-3 ${
+              isWhiteMode ? 'border-slate-200' : 'border-slate-800'
+            }`}>
               <div className="flex items-center gap-2">
                 <AlertTriangle className="w-5 h-5 text-rose-600" />
-                <h4 className="font-bold text-slate-900 text-base">Alertas por Abandono de Cerco Perimetral GPS</h4>
+                <h4 className={`font-bold text-base ${isWhiteMode ? 'text-slate-900' : 'text-white'}`}>Alertas por Abandono de Cerco Perimetral GPS</h4>
               </div>
               <button
                 type="button"
                 onClick={() => setShowAlertsModal(false)}
-                className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 transition-colors"
+                className={`p-1 rounded-lg transition-colors ${
+                  isWhiteMode ? 'hover:bg-slate-100 text-slate-400 hover:text-slate-700' : 'hover:bg-slate-800 text-slate-400 hover:text-white'
+                }`}
               >
                 <X className="w-5 h-5" />
               </button>
@@ -2428,19 +2684,23 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
 
             <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
               {geofenceAlerts.length === 0 ? (
-                <div className="text-center p-6 text-slate-500 text-xs">
+                <div className={`text-center p-6 text-xs ${isWhiteMode ? 'text-slate-500' : 'text-slate-400'}`}>
                   No hay alertas registradas. Todos los testigos permanecen dentro del cerco perimetral.
                 </div>
               ) : (
                 geofenceAlerts.map((alt) => (
-                  <div key={alt.id} className="p-3 bg-rose-50/70 border border-rose-200 rounded-xl space-y-1 text-xs text-slate-800">
+                  <div key={alt.id} className={`p-3 border rounded-xl space-y-1 text-xs ${
+                    isWhiteMode ? 'bg-rose-50/70 border-rose-200 text-slate-800' : 'bg-rose-950/40 border-rose-500/40 text-rose-200'
+                  }`}>
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-slate-900">{alt.testigoNombre}</span>
-                      <span className="text-[10px] text-rose-700 font-mono font-bold bg-rose-100 px-2 py-0.5 rounded border border-rose-200">
+                      <span className={`font-bold ${isWhiteMode ? 'text-slate-900' : 'text-white'}`}>{alt.testigoNombre}</span>
+                      <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${
+                        isWhiteMode ? 'text-rose-700 bg-rose-100 border-rose-200' : 'text-rose-300 bg-rose-950/70 border-rose-500/50'
+                      }`}>
                         {alt.distanciaMetros}m de distancia
                       </span>
                     </div>
-                    <div className="text-slate-600 text-[11px]">
+                    <div className={`text-[11px] ${isWhiteMode ? 'text-slate-600' : 'text-slate-400'}`}>
                       Puesto: {alt.puesto} • Hora de Alerta: {alt.hora}
                     </div>
                     <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
@@ -2450,7 +2710,9 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
                           setGeofenceAlerts(prev => prev.filter(a => a.id !== alt.id));
                           showToast(`Alerta de ${alt.testigoNombre} marcada como justificada.`);
                         }}
-                        className="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-700 font-bold text-[10px] rounded-lg border border-slate-300 cursor-pointer shadow-sm"
+                        className={`px-2.5 py-1 font-bold text-[10px] rounded-lg border cursor-pointer shadow-sm ${
+                          isWhiteMode ? 'bg-white hover:bg-slate-100 text-slate-700 border-slate-300' : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                        }`}
                       >
                         Justificar Salida
                       </button>
@@ -2471,11 +2733,13 @@ export const GestionTestigos: React.FC<GestionTestigosProps> = ({
               )}
             </div>
 
-            <div className="flex justify-end pt-2 border-t border-slate-200">
+            <div className={`flex justify-end pt-2 border-t ${isWhiteMode ? 'border-slate-200' : 'border-slate-800'}`}>
               <button
                 type="button"
                 onClick={() => setShowAlertsModal(false)}
-                className="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 cursor-pointer"
+                className={`px-4 py-1.5 font-bold text-xs rounded-xl border cursor-pointer ${
+                  isWhiteMode ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200' : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700'
+                }`}
               >
                 Cerrar
               </button>

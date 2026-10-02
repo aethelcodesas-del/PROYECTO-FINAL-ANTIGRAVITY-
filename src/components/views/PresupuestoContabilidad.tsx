@@ -3,6 +3,7 @@ import { useCampaignData, useCampaignLive } from '../../contexts/CampaignContext
 import { ViewMode, BankTransaction, BudgetItem, AuthUser } from '../../types';
 import { supabase } from '../../lib/supabase';
 import { isExpectedEmptyCampaignState } from '../../lib/campaignSetupState';
+import { confirmModal, showToast } from '../common/ConfirmModal';
 import { 
   UploadCloud, 
   CheckCircle2, 
@@ -17,12 +18,8 @@ import {
   AlertTriangle,
   Layers,
   Building2,
-  FileSpreadsheet,
   PieChart,
   Filter,
-  CheckSquare,
-  ChevronLeft,
-  ChevronRight,
   Eye,
   PenSquare,
   Trash2,
@@ -32,7 +29,9 @@ import {
   X,
   FileCode,
   Calendar,
-  Share2
+  Share2,
+  Award,
+  FileSpreadsheet
 } from 'lucide-react';
 
 interface PresupuestoContabilidadProps {
@@ -54,7 +53,7 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
   authUser
 }) => {
   // Master Active Sub-Tab
-  const [activeSubTab, setActiveSubTab] = useState<'oficial_cne' | 'borrador_estrategico' | 'gestion_items' | 'ocr_scanner'>('oficial_cne');
+  const [activeSubTab, setActiveSubTab] = useState<'oficial_cne' | 'gestion_items' | 'ocr_scanner'>('oficial_cne');
   const subTabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const tabsContainerRef = useRef<HTMLDivElement | null>(null);
 
@@ -73,14 +72,6 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
     }
   }, [activeSubTab]);
 
-  // Scroll tabs helper
-  const handleScrollTabs = (direction: 'left' | 'right') => {
-    if (tabsContainerRef.current) {
-      const scrollAmount = direction === 'left' ? -260 : 260;
-      tabsContainerRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-    }
-  };
-
   const [showSignModal, setShowSignModal] = useState(false);
   const [isSignedCNE, setIsSignedCNE] = useState<boolean>(() => {
     return localStorage.getItem('presupuesto_cne_signed') === 'true';
@@ -89,29 +80,14 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
     return localStorage.getItem('presupuesto_cne_hash') || 'CNE-SHA256-99A82B3F001D4E';
   });
 
-  // Budget Items State with Persistence
-  const [items, setItems] = useState<BudgetItem[]>(() => {
-    const saved = localStorage.getItem('presupuesto_items_master_v2');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        console.error('Error reading saved budget items', e);
-      }
-    }
-    return initialBudgetItems;
-  });
+  // Budget Items State (100% Real Persistence from Supabase)
+  const [items, setItems] = useState<BudgetItem[]>(initialBudgetItems);
   const [activeCampaignId, setActiveCampaignId] = useState<string | null>(null);
   const [activeClientId, setActiveClientId] = useState<string | null>(null);
   const [budgetLoading, setBudgetLoading] = useState(true);
   const [budgetSaving, setBudgetSaving] = useState(false);
   const [budgetSyncError, setBudgetSyncError] = useState('');
   const [campaignBudgetLimit, setCampaignBudgetLimit] = useState<number | null>(null);
-
-  // Save to LocalStorage on every item change
-  useEffect(() => {
-    localStorage.setItem('presupuesto_items_master_v2', JSON.stringify(items));
-  }, [items]);
 
   const statusToDatabase = (status: BudgetItem['estado']) => {
     if (status === 'Auditado CNE' || status === 'Soportado OCR' || status === 'Ejecutado') return 'VERIFICADO';
@@ -463,7 +439,7 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
   const [statusFilter, setStatusFilter] = useState<string>('Todos');
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Draft Simulator States with Persistence
+  // Corporation State with Persistence
   const [selectedCorporation, setSelectedCorporation] = useState<'Alcaldía' | 'Gobernación' | 'Concejo' | 'Asamblea' | 'Ediles'>(() => {
     return (localStorage.getItem('presupuesto_corporation') as any) || 'Alcaldía';
   });
@@ -472,12 +448,6 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
     localStorage.setItem('presupuesto_corporation', selectedCorporation);
   }, [selectedCorporation]);
 
-  const [selectedScenario, setSelectedScenario] = useState<'Pesimista' | 'Base' | 'Optimista'>('Base');
-  const [pctPauta, setPctPauta] = useState<number>(35);
-  const [pctEventos, setPctEventos] = useState<number>(25);
-  const [pctDiaE, setPctDiaE] = useState<number>(20);
-  const [pctAdmin, setPctAdmin] = useState<number>(12);
-  const [pctJuridico, setPctJuridico] = useState<number>(8);
   const [notificationMsg, setNotificationMsg] = useState<{ type: 'success' | 'info' | 'error'; text: string } | null>(null);
 
   // Item Add/Edit Modal
@@ -668,14 +638,26 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
   // Delete Item
   const handleDeleteItem = async (id: string) => {
     const itemToDelete = items.find(i => i.id === id);
-    if (confirm(`¿Está seguro de eliminar "${itemToDelete?.nombre || 'este ítem'}" del presupuesto oficial?`)) {
-      setBudgetSaving(true);
-      const { error } = await deleteBudgetItemApi({ id });
-      setBudgetSaving(false);
-      if (error) return showNotification(`No se pudo eliminar: ${error.message}`, 'error');
-      setItems(prev => prev.filter(i => i.id !== id));
-      showNotification('Ítem eliminado del presupuesto.', 'info');
-    }
+    await confirmModal({
+      title: 'Eliminar ítem del presupuesto',
+      message: `¿Está seguro de eliminar "${itemToDelete?.nombre || 'este ítem'}" del presupuesto oficial? Esta acción afectará el balance ejecutado y no se puede deshacer.`,
+      confirmText: 'Sí, eliminar',
+      cancelText: 'Cancelar',
+      variant: 'danger',
+      onConfirm: async () => {
+        setBudgetSaving(true);
+        const { error } = await deleteBudgetItemApi({ id });
+        setBudgetSaving(false);
+        if (error) {
+          showNotification(`No se pudo eliminar: ${error.message}`, 'error');
+          showToast(`No se pudo eliminar: ${error.message}`, 'error');
+          return false;
+        }
+        setItems(prev => prev.filter(i => i.id !== id));
+        showNotification('Ítem eliminado del presupuesto.', 'info');
+        showToast('Ítem eliminado del presupuesto oficial.', 'success');
+      }
+    });
   };
 
   // Toggle item audit status quickly
@@ -688,118 +670,6 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
     const { error } = await updateBudgetItemApi(id, budgetItemPayload(updated));
     if (error) return showNotification(`No se pudo cambiar el estado: ${error.message}`, 'error');
     setItems(prev => prev.map(item => item.id === id ? updated : item));
-  };
-
-  // Load Preset Template for Draft
-  const handleLoadDraftTemplate = async () => {
-    const scenarioMultiplier = selectedScenario === 'Pesimista' ? 0.40 : selectedScenario === 'Base' ? 0.75 : 0.95;
-    const baseAmount = currentLimit * scenarioMultiplier;
-
-    const newDraftItems: BudgetItem[] = [
-      {
-        id: 'drf-' + Date.now() + '-1',
-        codigoRubro: '202',
-        nombreRubro: 'Propaganda Electoral y Publicidad',
-        nombre: `[Borrador ${selectedCorporation}] Pauta Digital, Vallas y Materiales Impresos`,
-        tipo: 'Gasto',
-        centroCosto: 'Comunicaciones & Pauta',
-        montoAsignado: Math.round((baseAmount * pctPauta) / 100),
-        montoEjecutado: 0,
-        estado: 'Borrador',
-        fechaRegistro: new Date().toISOString().split('T')[0]
-      },
-      {
-        id: 'drf-' + Date.now() + '-2',
-        codigoRubro: '203',
-        nombreRubro: 'Actos Públicos y Eventos',
-        nombre: `[Borrador ${selectedCorporation}] Eventos de Lanzamiento, Tarimas y Sonido`,
-        tipo: 'Gasto',
-        centroCosto: 'Eventos & Logística',
-        montoAsignado: Math.round((baseAmount * pctEventos) / 100),
-        montoEjecutado: 0,
-        estado: 'Borrador',
-        fechaRegistro: new Date().toISOString().split('T')[0]
-      },
-      {
-        id: 'drf-' + Date.now() + '-3',
-        codigoRubro: '205',
-        nombreRubro: 'Capacitación Electoral y Testigos',
-        nombre: `[Borrador ${selectedCorporation}] Kits y Logística de Testigos Día E`,
-        tipo: 'Gasto',
-        centroCosto: 'Operación Día E',
-        montoAsignado: Math.round((baseAmount * pctDiaE) / 100),
-        montoEjecutado: 0,
-        estado: 'Borrador',
-        fechaRegistro: new Date().toISOString().split('T')[0]
-      },
-      {
-        id: 'drf-' + Date.now() + '-4',
-        codigoRubro: '201',
-        nombreRubro: 'Gastos de Administración',
-        nombre: `[Borrador ${selectedCorporation}] Arriendo Sedes y Servicios Administrativos`,
-        tipo: 'Gasto',
-        centroCosto: 'Administración & Sedes',
-        montoAsignado: Math.round((baseAmount * pctAdmin) / 100),
-        montoEjecutado: 0,
-        estado: 'Borrador',
-        fechaRegistro: new Date().toISOString().split('T')[0]
-      },
-      {
-        id: 'drf-' + Date.now() + '-5',
-        codigoRubro: '206',
-        nombreRubro: 'Gastos de Financiamiento',
-        nombre: `[Borrador ${selectedCorporation}] Asesoría Jurídica y Póliza de Cumplimiento CNE`,
-        tipo: 'Gasto',
-        centroCosto: 'Estrategia Jurídica',
-        montoAsignado: Math.round((baseAmount * pctJuridico) / 100),
-        montoEjecutado: 0,
-        estado: 'Borrador',
-        fechaRegistro: new Date().toISOString().split('T')[0]
-      }
-    ];
-
-    if (!activeCampaignId || !activeClientId) return showNotification('No hay campaña activa.', 'error');
-    setBudgetSaving(true);
-    try {
-      const oldDraftIds = items.filter(i => i.estado === 'Borrador').map(i => i.id);
-      if (oldDraftIds.length) {
-        const { error: deleteError } = await deleteBudgetItemApi({ ids: oldDraftIds });
-        if (deleteError) throw deleteError;
-      }
-      const { error } = await saveBudgetItemApi(newDraftItems.map(budgetItemPayload));
-      if (error) throw error;
-      await reloadBudgetItems();
-      showNotification(`✅ Plantilla guardada en el sistema para [${selectedCorporation} - ${selectedScenario}]. Presupuesto proyectado: $${baseAmount.toLocaleString()} COP.`);
-    } catch (error: any) {
-      showNotification(`No se pudo crear el borrador: ${error?.message || 'error del servidor'}`, 'error');
-    } finally {
-      setBudgetSaving(false);
-    }
-  };
-
-  // Convert Draft to Official
-  const handleApproveDraft = async () => {
-    const draftCount = items.filter(i => i.estado === 'Borrador').length;
-    if (draftCount === 0) {
-      showNotification('No hay ítems en estado Borrador para convertir. Primero cargue o cree una plantilla borrador.', 'info');
-      return;
-    }
-    setBudgetSaving(true);
-    try {
-      const drafts = items.filter(item => item.estado === 'Borrador');
-      const results = await Promise.all(drafts.map(item => {
-        const approved = { ...item, estado: 'Aprobado' as const };
-        return updateBudgetItemApi(item.id, budgetItemPayload(approved));
-      }));
-      const failed = results.find(result => result.error);
-      if (failed?.error) throw failed.error;
-      await reloadBudgetItems();
-      showNotification(`🎉 Se formalizaron ${draftCount} ítems en el sistema como Presupuesto Oficial CNE.`);
-    } catch (error: any) {
-      showNotification(`No se pudo aprobar el borrador: ${error?.message || 'error del servidor'}`, 'error');
-    } finally {
-      setBudgetSaving(false);
-    }
   };
 
   // Interactive OCR Process Simulation
@@ -890,14 +760,28 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
 
   // Reset Budget items to defaults
   const handleResetDefaults = async () => {
-    if (confirm('¿Desea restaurar los datos iniciales de presupuesto y topes CNE?')) {
-      if (!activeCampaignId) return showNotification('No hay campaña activa.', 'error');
-      const { error } = await deleteBudgetItemApi({ campaign_id: activeCampaignId });
-      if (error) return showNotification(`No se pudo limpiar el presupuesto: ${error.message}`, 'error');
-      setItems(initialBudgetItems);
-      localStorage.removeItem('presupuesto_items_master_v2');
-      showNotification('Presupuesto restaurado a valores estándar CNE.', 'info');
-    }
+    await confirmModal({
+      title: 'Restaurar presupuesto CNE',
+      message: '¿Desea restaurar los datos iniciales de presupuesto y topes CNE? Esta acción eliminará los registros actuales y no se puede deshacer.',
+      confirmText: 'Sí, restaurar',
+      cancelText: 'Cancelar',
+      variant: 'danger',
+      onConfirm: async () => {
+        if (!activeCampaignId) {
+          showNotification('No hay campaña activa.', 'error');
+          return false;
+        }
+        const { error } = await deleteBudgetItemApi({ campaign_id: activeCampaignId });
+        if (error) {
+          showNotification(`No se pudo limpiar el presupuesto: ${error.message}`, 'error');
+          return false;
+        }
+        setItems(initialBudgetItems);
+        localStorage.removeItem('presupuesto_items_master_v2');
+        showNotification('Presupuesto restaurado a valores estándar CNE.', 'info');
+        showToast('Presupuesto restaurado a valores iniciales CNE.', 'success');
+      }
+    });
   };
 
   // Filtered Budget Items
@@ -972,15 +856,6 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
 
         {/* Sub-Tabs Navigation Bar (Professional Clean Design without crude scrollbar) */}
         <div className="pt-2.5 border-t border-slate-800/80 flex items-center gap-2 relative">
-          {/* Scroll Left Button */}
-          <button
-            onClick={() => handleScrollTabs('left')}
-            className="hidden sm:flex items-center justify-center p-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-400 hover:text-cyan-300 border border-slate-800 shadow-md transition-all cursor-pointer shrink-0"
-            title="Desplazar a la izquierda"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-
           {/* Clean Scroll Container */}
           <div 
             ref={tabsContainerRef}
@@ -988,9 +863,8 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
           >
             {[
               { id: 'oficial_cne', label: '1. Presupuesto Oficial CNE & Cuentas Claras', icon: <Building2 className="w-4 h-4" /> },
-              { id: 'borrador_estrategico', label: '2. Plantilla Borrador & Simulador', icon: <FileSpreadsheet className="w-4 h-4" /> },
-              { id: 'gestion_items', label: '3. Gestión Integral de Ítems (' + items.length + ')', icon: <Layers className="w-4 h-4" /> },
-              { id: 'ocr_scanner', label: '4. Escáner OCR & Comprobantes IA', icon: <Sparkles className="w-4 h-4 text-teal-300" /> }
+              { id: 'gestion_items', label: '2. Gestión Integral de Ítems (' + items.length + ')', icon: <Layers className="w-4 h-4" /> },
+              { id: 'ocr_scanner', label: '3. Escáner OCR & Comprobantes IA', icon: <Sparkles className="w-4 h-4 text-teal-300" /> }
             ].map(tab => {
               const isActive = activeSubTab === tab.id;
               return (
@@ -1018,15 +892,6 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
               );
             })}
           </div>
-
-          {/* Scroll Right Button */}
-          <button
-            onClick={() => handleScrollTabs('right')}
-            className="hidden sm:flex items-center justify-center p-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-400 hover:text-cyan-300 border border-slate-800 shadow-md transition-all cursor-pointer shrink-0"
-            title="Desplazar a la derecha"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
         </div>
       </div>
 
@@ -1200,234 +1065,7 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
       )}
 
       {/* ---------------------------------------------------------------------- */}
-      {/* SUB-TAB 2: PLANTILLA BORRADOR & SIMULADOR ESTRATÉGICO */}
-      {/* ---------------------------------------------------------------------- */}
-      {activeSubTab === 'borrador_estrategico' && (
-        <div className="space-y-6">
-          
-          <div className="bg-[#030d1d] rounded-2xl p-6 border border-slate-800 shadow-sm space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
-              <div>
-                <h3 className="font-extrabold text-white text-base flex items-center gap-2">
-                  <FileSpreadsheet className="w-5 h-5 text-purple-400" />
-                  Plantilla de Borrador & Simulador Financiero Interno
-                </h3>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  onClick={handleLoadDraftTemplate}
-                  className="px-4 py-2 bg-purple-700 hover:bg-purple-600 text-white font-extrabold text-xs rounded-xl shadow transition-all flex items-center gap-1.5 cursor-pointer"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                  <span>Cargar Plantilla Sugerida</span>
-                </button>
-
-                <button
-                  onClick={handleApproveDraft}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-xl shadow transition-all flex items-center gap-1.5 cursor-pointer"
-                >
-                  <CheckSquare className="w-4 h-4" />
-                  <span>Convertir a Presupuesto Oficial</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Selectors Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-[#020712] p-4 rounded-2xl border border-purple-900/40">
-              
-              {/* Corporation Selector */}
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">Tipo de Campaña / Corporación *</label>
-                <select
-                  value={selectedCorporation}
-                  disabled
-                  className="w-full bg-[#030d1d] border border-purple-700/50 rounded-xl px-3 py-2 font-bold text-xs text-white opacity-80 cursor-not-allowed"
-                >
-                  <option value="Alcaldía">Alcaldía Municipal</option>
-                  <option value="Gobernación">Gobernación Departamental</option>
-                  <option value="Concejo">Concejo Municipal</option>
-                  <option value="Asamblea">Asamblea Departamental</option>
-                  <option value="Ediles">Ediles / JAL</option>
-                </select>
-                <p className="text-[10px] text-purple-300/80 mt-1">La corporación y el tope se heredan de la campaña activa y no pueden alterarse desde este simulador.</p>
-              </div>
-
-              {/* Scenario Selector */}
-              <div>
-                <label className="block text-xs font-bold text-slate-300 mb-1">Escenario de Recaudación / Simulación *</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {(['Pesimista', 'Base', 'Optimista'] as const).map(sc => (
-                    <button
-                      key={sc}
-                      type="button"
-                      onClick={() => {
-                        setSelectedScenario(sc);
-                        showNotification(`Escenario ajustado a: ${sc} (${sc === 'Pesimista' ? '40%' : sc === 'Base' ? '75%' : '95%'} del tope legal)`, 'info');
-                      }}
-                      className={`py-2 text-xs font-extrabold rounded-xl transition-all cursor-pointer ${
-                        selectedScenario === sc
-                          ? 'bg-purple-600 text-white shadow-sm'
-                          : 'bg-[#030d1d] border border-slate-700 text-slate-300 hover:bg-slate-800'
-                      }`}
-                    >
-                      {sc} ({sc === 'Pesimista' ? '40%' : sc === 'Base' ? '75%' : '95%'})
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-            </div>
-
-            {/* Cost Centers Allocation Sliders */}
-            <div className="space-y-4">
-              <h4 className="font-extrabold text-white text-xs uppercase tracking-wider">
-                Distribución Porcentual por Centros de Costos
-              </h4>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                
-                {/* Comunicaciones */}
-                <div className="bg-[#020712] p-4 rounded-xl border border-slate-800 space-y-2">
-                  <div className="flex justify-between text-xs font-bold">
-                    <span className="text-slate-300">1. Comunicaciones, Pauta & Imprenta</span>
-                    <span className="text-purple-400 font-mono">{pctPauta}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="10"
-                    max="60"
-                    value={pctPauta}
-                    onChange={(e) => setPctPauta(Number(e.target.value))}
-                    className="w-full accent-purple-500 cursor-pointer"
-                  />
-                  <div className="text-[10px] text-slate-400 font-mono">
-                    Monto Estimado: ${Math.round(((currentLimit * (selectedScenario === 'Pesimista' ? 0.4 : selectedScenario === 'Base' ? 0.75 : 0.95)) * pctPauta) / 100).toLocaleString()} COP
-                  </div>
-                </div>
-
-                {/* Eventos */}
-                <div className="bg-[#020712] p-4 rounded-xl border border-slate-800 space-y-2">
-                  <div className="flex justify-between text-xs font-bold">
-                    <span className="text-slate-300">2. Eventos Públicos & Logística</span>
-                    <span className="text-purple-400 font-mono">{pctEventos}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="10"
-                    max="50"
-                    value={pctEventos}
-                    onChange={(e) => setPctEventos(Number(e.target.value))}
-                    className="w-full accent-purple-500 cursor-pointer"
-                  />
-                  <div className="text-[10px] text-slate-400 font-mono">
-                    Monto Estimado: ${Math.round(((currentLimit * (selectedScenario === 'Pesimista' ? 0.4 : selectedScenario === 'Base' ? 0.75 : 0.95)) * pctEventos) / 100).toLocaleString()} COP
-                  </div>
-                </div>
-
-                {/* Operación Día E */}
-                <div className="bg-[#020712] p-4 rounded-xl border border-slate-800 space-y-2">
-                  <div className="flex justify-between text-xs font-bold">
-                    <span className="text-slate-300">3. Operación Día E (Testigos & Logística)</span>
-                    <span className="text-purple-400 font-mono">{pctDiaE}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="10"
-                    max="40"
-                    value={pctDiaE}
-                    onChange={(e) => setPctDiaE(Number(e.target.value))}
-                    className="w-full accent-purple-500 cursor-pointer"
-                  />
-                  <div className="text-[10px] text-slate-400 font-mono">
-                    Monto Estimado: ${Math.round(((currentLimit * (selectedScenario === 'Pesimista' ? 0.4 : selectedScenario === 'Base' ? 0.75 : 0.95)) * pctDiaE) / 100).toLocaleString()} COP
-                  </div>
-                </div>
-
-                {/* Administración */}
-                <div className="bg-[#020712] p-4 rounded-xl border border-slate-800 space-y-2">
-                  <div className="flex justify-between text-xs font-bold">
-                    <span className="text-slate-300">4. Administración, Sedes & Staff</span>
-                    <span className="text-purple-400 font-mono">{pctAdmin}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="5"
-                    max="30"
-                    value={pctAdmin}
-                    onChange={(e) => setPctAdmin(Number(e.target.value))}
-                    className="w-full accent-purple-500 cursor-pointer"
-                  />
-                  <div className="text-[10px] text-slate-400 font-mono">
-                    Monto Estimado: ${Math.round(((currentLimit * (selectedScenario === 'Pesimista' ? 0.4 : selectedScenario === 'Base' ? 0.75 : 0.95)) * pctAdmin) / 100).toLocaleString()} COP
-                  </div>
-                </div>
-
-              </div>
-            </div>
-
-            {/* Current Draft Items Table */}
-            <div className="space-y-3 pt-4 border-t border-slate-800">
-              <h4 className="font-extrabold text-white text-sm">
-                Lista de Ítems en Borrador Estratégico
-              </h4>
-
-              <div className="overflow-x-auto border border-slate-800 rounded-xl bg-[#020712]">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="bg-slate-900/90 text-slate-300 font-bold border-b border-slate-800">
-                      <th className="p-3 whitespace-nowrap">Rubro CNE</th>
-                      <th className="p-3 whitespace-nowrap">Concepto / Ítem Borrador</th>
-                      <th className="p-3 whitespace-nowrap">Centro de Costo</th>
-                      <th className="p-3 text-right whitespace-nowrap">Monto Estimado</th>
-                      <th className="p-3 text-center whitespace-nowrap">Estado</th>
-                      <th className="p-3 text-right whitespace-nowrap">Acción</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-800 font-medium">
-                    {items.filter(i => i.estado === 'Borrador').map(drf => (
-                      <tr key={drf.id} className="hover:bg-slate-800/40">
-                        <td className="p-3 font-mono font-bold text-purple-400">{drf.codigoRubro}</td>
-                        <td className="p-3 font-bold text-white">{drf.nombre}</td>
-                        <td className="p-3 text-slate-300">{drf.centroCosto}</td>
-                        <td className="p-3 text-right font-mono font-bold text-purple-300">${drf.montoAsignado.toLocaleString()} COP</td>
-                        <td className="p-3 text-center">
-                          <span className="px-2 py-0.5 bg-amber-950/60 text-amber-300 border border-amber-700/50 text-[10px] font-bold rounded">
-                            Borrador
-                          </span>
-                        </td>
-                        <td className="p-3 text-right">
-                          <button
-                            onClick={() => {
-                              setItems(prev => prev.map(i => i.id === drf.id ? { ...i, estado: 'Aprobado' } : i));
-                              showNotification(`Ítem "${drf.nombre}" aprobado e incorporado al presupuesto oficial.`);
-                            }}
-                            className="px-2.5 py-1 bg-emerald-600/30 hover:bg-emerald-600 text-emerald-300 hover:text-white rounded-lg border border-emerald-500/40 font-bold text-[10px] transition-all cursor-pointer"
-                          >
-                            Aprobar
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                    {items.filter(i => i.estado === 'Borrador').length === 0 && (
-                      <tr>
-                        <td colSpan={6} className="p-8 text-center text-slate-400 italic">
-                          No hay ítems en estado borrador. Haga clic en &quot;Cargar Plantilla Sugerida&quot; para generar la proyección borrador automática.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-          </div>
-
-        </div>
-      )}
-
-      {/* ---------------------------------------------------------------------- */}
-      {/* SUB-TAB 3: GESTIÓN INTEGRAL DE ÍTEMS DE PRESUPUESTO (MAESTRO) */}
+      {/* SUB-TAB 2: GESTIÓN INTEGRAL DE ÍTEMS DE PRESUPUESTO (MAESTRO) */}
       {/* ---------------------------------------------------------------------- */}
       {activeSubTab === 'gestion_items' && (
         <div className="space-y-6">
@@ -1608,7 +1246,7 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
       )}
 
       {/* ---------------------------------------------------------------------- */}
-      {/* SUB-TAB 4: ESCÁNER OCR & COMPROBANTES IA */}
+      {/* SUB-TAB 3: ESCÁNER OCR & COMPROBANTES IA */}
       {/* ---------------------------------------------------------------------- */}
       {activeSubTab === 'ocr_scanner' && (
         <div className="space-y-6">

@@ -17,13 +17,15 @@ import { usePlatformRealtime } from './hooks/usePlatformRealtime';
 import { CampaignProvider } from './contexts/CampaignContext';
 import { useModuleColorMode, ModuleThemeId } from './utils/themeColorMode';
 
-// Global Navigation Components
-import { Header } from './components/Header';
-import { Sidebar } from './components/Sidebar';
-import { FooterBar } from './components/FooterBar';
-import { Modals } from './components/common/Modals';
-import { LoginModal } from './components/LoginModal';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
+import { showToast } from './components/common/ConfirmModal';
+import { LoginModal } from './components/LoginModal';
+import { RedSunBeeCampaignLanding } from './components/RedSunBeeCampaignLanding';
+import { ModuleSelectPage } from './components/ModuleSelectPage';
+
+const Sidebar = lazy(() => import('./components/Sidebar').then(module => ({ default: module.Sidebar })));
+const BottomNavBar = lazy(() => import('./components/BottomNavBar').then(module => ({ default: module.BottomNavBar })));
+const Modals = lazy(() => import('./components/common/Modals').then(module => ({ default: module.Modals })));
 
 // Heavy private modules are downloaded only on demand when opened
 const PrimeraInterfaz = lazy(() => import('./components/views/PrimeraInterfaz').then(module => ({ default: module.PrimeraInterfaz })));
@@ -39,32 +41,17 @@ const PruebasElectoralesView = lazy(() => import('./components/views/PruebasElec
 const PanelAdministrativoSaaS = lazy(() => import('./components/views/PanelAdministrativoSaaS').then(module => ({ default: module.PanelAdministrativoSaaS })));
 const GlobalAdminGuard = lazy(() => import('./components/global-admin/GlobalAdminGuard').then(module => ({ default: module.GlobalAdminGuard })));
 const PasswordRecoveryPage = lazy(() => import('./components/PasswordRecoveryPage').then(module => ({ default: module.PasswordRecoveryPage })));
-const RedSunBeeCampaignLanding = lazy(() => import('./components/RedSunBeeCampaignLanding').then(module => ({ default: module.RedSunBeeCampaignLanding })));
-const ModuleSelectPage = lazy(() => import('./components/ModuleSelectPage').then(module => ({ default: module.ModuleSelectPage })));
 import { supabase } from './lib/supabaseClient';
 
-// Initial Mock Datasets
+// Initial Territorial Zones Config
 import { initialTerritorialZones } from './data/initialData';
 
-const initialCalendarEvents: CalendarEvent[] = [
-  { id: 'ev-1', title: 'Debate regional de candidatos', date: '22 May', type: 'Medios' },
-  { id: 'ev-2', title: 'Caravana de la Victoria Comuna 13', date: '23 May', type: 'Territorio' },
-  { id: 'ev-3', title: 'Cierre de Campaña La Alpujarra', date: '24 May', type: 'Evento Masivo' },
-  { id: 'ev-4', title: 'Reunión Jurídica y Testigos Electorales', date: '25 May', type: 'Escrutinio' },
-  { id: 'ev-5', title: 'Día D: Instalación de Puestos de Mando', date: '26 May', type: 'Operación Día D' }
-];
-
-const initialTransactions: BankTransaction[] = [
-  { id: 'tx-1', descripcion: 'Impresión de Volantes y Microperforados', categoria: 'Publicidad', monto: 8500000, fecha: '18 May', estado: 'Completado' },
-  { id: 'tx-2', descripcion: 'Honorarios Coordinadores Territoriales Comunas 1 a 6', categoria: 'Personal', monto: 14200000, fecha: '19 May', estado: 'Completado' },
-  { id: 'tx-3', descripcion: 'Logística Caravana Móvil y Sonido Comuna 13', categoria: 'Eventos', monto: 4800000, fecha: '20 May', estado: 'Completado' },
-  { id: 'tx-4', descripcion: 'Aporte Donación Sector Productivo Aprobado CNE', categoria: 'Ingresos', monto: 35000000, fecha: '20 May', estado: 'Completado' },
-  { id: 'tx-5', descripcion: 'Pauta Digital y Segmentación Meta/Google Ads', categoria: 'Publicidad', monto: 12000000, fecha: '21 May', estado: 'Completado' }
-];
+const initialCalendarEvents: CalendarEvent[] = [];
+const initialTransactions: BankTransaction[] = [];
 
 const ModuleFallback = () => (
-  <div className="min-h-screen bg-[#020617] flex items-center justify-center text-cyan-300">
-    <div className="h-8 w-8 rounded-full border-2 border-cyan-500/30 border-t-cyan-400 animate-spin" aria-label="Cargando módulo" />
+  <div className="fixed top-0 left-0 right-0 z-[9999] pointer-events-none">
+    <div className="h-[2px] w-full bg-gradient-to-r from-cyan-500 via-emerald-400 to-blue-500 animate-pulse" />
   </div>
 );
 
@@ -164,7 +151,8 @@ export default function App() {
   const [liveDataRevision, setLiveDataRevision] = useState(0);
 
   usePlatformRealtime(Boolean(authUser || initialRoute?.view === 'global_admin'), () => {
-    setLiveDataRevision(revision => revision + 1);
+    // Individual modules listen to 'platform-data-changed' window event directly;
+    // avoid re-rendering or remounting the entire root App tree on every DB event.
   });
 
   if (isPasswordRecovery) {
@@ -209,38 +197,31 @@ export default function App() {
   })();
   const { isWhiteMode: isActiveModuleWhite } = useModuleColorMode(activeModuleId);
 
-  // Logout handler - immediately cleans state and returns to landing
-  const handleLogout = () => {
-    void supabase.auth.signOut();
+  // Logout handler - executes supabase.auth.signOut(), cleans state and returns to landing
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch {
+      // ignore network signOut error and clean local state anyway
+    }
     setAuthUser(null);
     try {
       localStorage.removeItem('bee_auth_user');
       localStorage.removeItem('bee_current_view');
       localStorage.removeItem('bee_last_activity_timestamp');
-      localStorage.removeItem('active_demo_expires_at');
+      localStorage.removeItem('admin_dashboard_stats_cache');
+      localStorage.removeItem('presupuesto_items_master_v2');
+      localStorage.removeItem('elecciones_testigos_lista_v2');
     } catch {
       // ignore
     }
     setCurrentView('landing');
   };
 
-  useEffect(() => {
-    if (!authUser) return;
-    const expiration = localStorage.getItem('active_demo_expires_at');
-    if (!expiration) return;
-    const remainingMs = new Date(expiration).getTime() - Date.now();
-    if (remainingMs <= 0) {
-      handleLogout();
-      return;
-    }
-    const timer = window.setTimeout(() => handleLogout(), remainingMs);
-    return () => window.clearTimeout(timer);
-  }, [authUser]);
-
   // Security: Auto-logout after 15 minutes of user inactivity
   useAutoLogout(
-    Boolean(authUser || currentView !== 'landing'),
-    () => handleLogout()
+    Boolean(authUser),
+    () => { void handleLogout(); }
   );
 
   // Synchronize browser URL hash with current view and active subtabs
@@ -309,12 +290,55 @@ export default function App() {
   const [transactions, setTransactions] = useState<BankTransaction[]>(initialTransactions);
   const [zones] = useState<TerritorialZone[]>(initialTerritorialZones);
 
-  // A cached UI persona is never sufficient: a real Supabase session is required.
+  // A cached UI persona is never sufficient: a real Supabase session is required and hydrated from profiles.
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(async ({ data }) => {
       if (!data.session) {
         setAuthUser(null);
         localStorage.removeItem('bee_auth_user');
+        return;
+      }
+      const uid = data.session.user.id;
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id, email, display_name, role, campaign_id')
+        .eq('id', uid)
+        .maybeSingle();
+      if (profile) {
+        const roleLabels: Record<string, string> = {
+          GLOBAL_ADMIN: 'Superadministrador',
+          SUPERADMIN: 'Superadministrador',
+          superadmin: 'Superadministrador',
+          ADMIN: 'Administrador de campaña',
+          admin: 'Administrador de campaña',
+          administrador: 'Administrador de campaña',
+          CANDIDATO: 'Candidato Oficial',
+          candidato: 'Candidato Oficial',
+          ESTRATEGICO: 'Estratega de campaña',
+          estrategico: 'Estratega de campaña',
+          TERRITORIAL: 'Coordinador Territorial',
+          territorial: 'Coordinador Territorial',
+          AUDITOR: 'Auditor CNE',
+          auditor: 'Auditor CNE',
+        };
+        setAuthUser(prev => {
+          const base = prev || {
+            id: profile.id,
+            name: profile.display_name || profile.email || '',
+            email: profile.email || data.session?.user.email || '',
+            role: 'administrador' as const,
+            roleName: 'Administrador de campaña',
+            moduleName: 'modulo_admin',
+          };
+          return {
+            ...base,
+            id: profile.id,
+            name: profile.display_name || base.name,
+            email: profile.email || base.email,
+            roleName: roleLabels[String(profile.role || '')] || base.roleName,
+            campaignId: profile.campaign_id ? String(profile.campaign_id) : base.campaignId,
+          };
+        });
       }
     });
   }, []);
@@ -391,12 +415,12 @@ export default function App() {
 
   // Safe navigation with RBAC check
   const handleSelectView = (view: ViewMode) => {
-    // Cleanly set initial subtabs for each module whenever navigated to
-    if (view === 'modulo_admin') {
+    // Cleanly set initial subtabs for each module only when entering a different module
+    if (view === 'modulo_admin' && currentView !== 'modulo_admin') {
       setAdminTab('inicio');
-    } else if (view === 'gestion_estrategica') {
+    } else if (view === 'gestion_estrategica' && currentView !== 'gestion_estrategica') {
       setStrategicTab('diagnostico');
-    } else if (view === 'gestion_territorial') {
+    } else if (view === 'gestion_territorial' && currentView !== 'gestion_territorial') {
       setTerritorialSubTab('registro');
     }
 
@@ -428,7 +452,7 @@ export default function App() {
       setSidebarOpen(false);
     } else {
       // If forbidden, fallback to accessible module
-      alert(`El rol ${userRole} no tiene permisos asignados para acceder a este módulo.`);
+      showToast(`El rol ${userRole} no tiene permisos asignados para acceder a este módulo.`, 'warning');
     }
   };
 
@@ -448,11 +472,9 @@ export default function App() {
   if (currentView === 'landing') {
     return (
       <div className="min-h-screen bg-[#080808] text-white relative">
-        <Suspense fallback={<ModuleFallback />}>
-          <RedSunBeeCampaignLanding 
-            onLogin={() => setCurrentView('module_select')}
-          />
-        </Suspense>
+        <RedSunBeeCampaignLanding 
+          onLogin={() => setCurrentView('module_select')}
+        />
 
         {/* Global Login Modal */}
         <LoginModal 
@@ -469,21 +491,19 @@ export default function App() {
   if (currentView === 'module_select') {
     return (
       <div className="min-h-screen bg-[#020712] text-white">
-        <Suspense fallback={<ModuleFallback />}>
-          <ModuleSelectPage 
-            onBack={() => setCurrentView('landing')}
-            onSelectModule={(view, moduleTitle) => {
-              setLoginTargetModule(moduleTitle);
-              setLoginTargetView(view);
-              setIsLoginModalOpen(true);
-            }}
-            onOpenLogin={() => {
-              setLoginTargetModule(undefined);
-              setLoginTargetView(undefined);
-              setIsLoginModalOpen(true);
-            }}
-          />
-        </Suspense>
+        <ModuleSelectPage 
+          onBack={() => setCurrentView('landing')}
+          onSelectModule={(view, moduleTitle) => {
+            setLoginTargetModule(moduleTitle);
+            setLoginTargetView(view);
+            setIsLoginModalOpen(true);
+          }}
+          onOpenLogin={() => {
+            setLoginTargetModule(undefined);
+            setLoginTargetView(undefined);
+            setIsLoginModalOpen(true);
+          }}
+        />
 
         <LoginModal 
           isOpen={isLoginModalOpen}
@@ -498,7 +518,7 @@ export default function App() {
 
   if (currentView === 'saas_admin') {
     return (
-      <div key={`saas-${liveDataRevision}`} className="min-h-screen bg-[#020813] text-slate-100">
+      <div className="min-h-screen bg-[#020813] text-slate-100">
         <Suspense fallback={<ModuleFallback />}>
         <PanelAdministrativoSaaS 
           onSelectView={handleSelectView}
@@ -520,7 +540,7 @@ export default function App() {
 
   if (currentView === 'global_admin') {
     return (
-      <div key={`global-${liveDataRevision}`} className="min-h-screen bg-[#020617] text-slate-100">
+      <div className="min-h-screen bg-[#020617] text-slate-100">
         <Suspense fallback={<ModuleFallback />}>
         <GlobalAdminGuard 
           onBackToApp={() => {
@@ -539,8 +559,20 @@ export default function App() {
     || hasFullCampaignAccess(authUser)
     || (restrictedPermissionsReady
       && isAssignedLocation(authUser, currentView, adminTab, strategicTab, territorialSubTab));
-  if (!restrictedPermissionsReady || !restrictedLocationAllowed) {
-    return <ModuleFallback />;
+  if (restrictedPermissionsReady && !restrictedLocationAllowed) {
+    return (
+      <div className="min-h-screen bg-[#020617] flex items-center justify-center p-6 text-center">
+        <div className="max-w-md space-y-4">
+          <p className="text-sm text-slate-300">No cuentas con asignación territorial para esta sección.</p>
+          <button 
+            onClick={() => handleSelectView('modulo_admin')}
+            className="px-4 py-2 bg-cyan-500 text-slate-950 font-bold rounded-xl text-xs"
+          >
+            Volver al inicio
+          </button>
+        </div>
+      </div>
+    );
   }
 
   // Render Main Dashboard Layout Shell
@@ -554,24 +586,26 @@ export default function App() {
       {/* Main Workspace: Sidebar + Dynamic View Content */}
       <div className="flex-1 flex h-full overflow-hidden relative">
         {/* Left Navigation Sidebar */}
-        <Sidebar 
-          currentView={currentView}
-          onSelectView={handleSelectView}
-          adminTab={adminTab}
-          onSelectAdminTab={setAdminTab}
-          strategicTab={strategicTab}
-          onSelectStrategicTab={setStrategicTab}
-          territorialSubTab={territorialSubTab}
-          onSelectTerritorialSubTab={setTerritorialSubTab}
-          onOpenUserRolesModal={() => setActiveModal('user_roles')}
-          isOpen={sidebarOpen}
-          onCloseMobile={() => setSidebarOpen(false)}
-          authUser={authUser}
-          onLogout={handleLogout}
-        />
+        <Suspense fallback={null}>
+          <Sidebar 
+            currentView={currentView}
+            onSelectView={handleSelectView}
+            adminTab={adminTab}
+            onSelectAdminTab={setAdminTab}
+            strategicTab={strategicTab}
+            onSelectStrategicTab={setStrategicTab}
+            territorialSubTab={territorialSubTab}
+            onSelectTerritorialSubTab={setTerritorialSubTab}
+            onOpenUserRolesModal={() => setActiveModal('user_roles')}
+            isOpen={sidebarOpen}
+            onCloseMobile={() => setSidebarOpen(false)}
+            authUser={authUser}
+            onLogout={handleLogout}
+          />
+        </Suspense>
 
         {/* Main Content Area with Smooth Motion Transitions */}
-        <main ref={mainContainerRef} className="app-main min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-gradient-to-b from-[#040e21] via-[#020817] to-[#01040a] relative custom-scrollbar">
+        <main ref={mainContainerRef} className="app-main min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-gradient-to-b from-[#040e21] via-[#020817] to-[#01040a] relative custom-scrollbar pb-20 md:pb-6">
           {/* Top Mobile Bar for fast drawer access on phones & tablets */}
           <div className="lg:hidden sticky top-0 z-30 flex items-center justify-between px-4 py-2.5 bg-[#051329]/95 border-b border-cyan-500/20 backdrop-blur-md">
             <button
@@ -595,14 +629,9 @@ export default function App() {
             }}
           >
             <Suspense fallback={<ModuleFallback />}>
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={currentView + (currentView === 'modulo_admin' ? adminTab : '') + (currentView === 'gestion_estrategica' ? strategicTab : '') + (currentView === 'modulo_admin' ? '' : `-live-${liveDataRevision}`)}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.25, ease: 'easeOut' }}
-                className="w-full h-full"
+              <div
+                key={`${currentView}-${liveDataRevision}`}
+                className="w-full h-full view-transition-enter"
               >
                 {/* Executive Command Center / Sala de Control */}
                 {currentView === 'primera_interfaz' && (
@@ -702,28 +731,45 @@ export default function App() {
                     onSelectView={handleSelectView}
                   />
                 )}
-              </motion.div>
-            </AnimatePresence>
+              </div>
             </Suspense>
           </ErrorBoundary>
         </main>
       </div>
 
       {/* Global Modals Manager */}
-      <Modals 
-        activeModal={activeModal}
-        onClose={() => setActiveModal(null)}
-        selectedE14={selectedE14}
-        onAddCalendarEvent={handleAddCalendarEvent}
-        onAddTransaction={handleAddTransaction}
-      />
+      {activeModal && (
+        <Suspense fallback={null}>
+          <Modals 
+            activeModal={activeModal}
+            onClose={() => setActiveModal(null)}
+            selectedE14={selectedE14}
+            onAddCalendarEvent={handleAddCalendarEvent}
+            onAddTransaction={handleAddTransaction}
+          />
+        </Suspense>
+      )}
 
       {/* Global Login & Persona Switcher Modal */}
-      <LoginModal 
-        isOpen={isLoginModalOpen}
-        onClose={() => setIsLoginModalOpen(false)}
-        onLoginSuccess={handleLoginSuccess}
-      />
+      {isLoginModalOpen && (
+        <Suspense fallback={null}>
+          <LoginModal 
+            isOpen={isLoginModalOpen}
+            onClose={() => setIsLoginModalOpen(false)}
+            onLoginSuccess={handleLoginSuccess}
+          />
+        </Suspense>
+      )}
+
+      {/* Mobile Bottom Navigation Bar (Visible only on < 768px) */}
+      <Suspense fallback={null}>
+        <BottomNavBar 
+          currentView={currentView}
+          onSelectView={handleSelectView}
+          onOpenSidebar={() => setSidebarOpen(true)}
+          userRole={authUser?.role}
+        />
+      </Suspense>
     </div>
     </CampaignProvider>
   );

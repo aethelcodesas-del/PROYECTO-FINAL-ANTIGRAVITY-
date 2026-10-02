@@ -126,7 +126,7 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
 
             {showNotifications && (
-              <div className="fixed sm:absolute right-2 sm:right-0 top-14 sm:top-auto sm:mt-2 w-[calc(100vw-1rem)] sm:w-80 max-w-[340px] bg-slate-900 border border-slate-700 rounded-xl p-3.5 shadow-2xl backdrop-blur-xl z-50 text-left space-y-3">
+              <div className="fixed sm:absolute right-2 sm:right-0 top-14 sm:top-auto sm:mt-2 w-[calc(100vw-1rem)] sm:w-80 max-w-[340px] bg-slate-900 border border-slate-700 rounded-xl p-3.5 shadow-2xl backdrop-blur-xl z-50 text-left space-y-3 dropdown-animate">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-200">Notificaciones</h3>
                   {unreadNotifications > 0 && (
