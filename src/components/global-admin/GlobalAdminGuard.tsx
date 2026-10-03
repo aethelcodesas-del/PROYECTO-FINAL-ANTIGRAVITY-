@@ -263,15 +263,25 @@ export const GlobalAdminGuard: React.FC<GlobalAdminGuardProps> = ({ onBackToApp 
           </button>
         </form>
 
-        {/* Back Link */}
+        {/* Back Button (Premium Action) */}
         {onBackToApp && (
-          <div className="mt-6 pt-4 border-t border-slate-800/70 text-center">
+          <div className="mt-6 pt-5 border-t border-slate-800/80">
             <button
+              type="button"
               onClick={onBackToApp}
-              className="text-xs font-sans text-slate-400 hover:text-slate-200 transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+              className="group relative w-full flex items-center justify-center gap-2.5 py-3 px-4 rounded-xl bg-slate-950/60 hover:bg-slate-800/80 active:bg-slate-900 border border-slate-800 hover:border-cyan-500/40 text-slate-300 hover:text-white transition-all duration-200 shadow-md hover:shadow-lg hover:shadow-cyan-950/20 cursor-pointer overflow-hidden backdrop-blur-sm"
             >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Volver a la interfaz electoral pública</span>
+              {/* Subtle ambient light shimmer on hover */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-500/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out pointer-events-none" />
+
+              {/* Icon badge with interactive motion */}
+              <div className="w-7 h-7 rounded-lg bg-slate-900/90 border border-slate-700/70 group-hover:border-cyan-500/50 flex items-center justify-center text-slate-400 group-hover:text-cyan-300 group-hover:bg-cyan-950/40 shadow-inner transition-all duration-200 shrink-0">
+                <ArrowLeft className="w-3.5 h-3.5 transition-transform duration-200 group-hover:-translate-x-0.5" />
+              </div>
+
+              <span className="text-xs sm:text-sm font-semibold tracking-wide font-sans text-slate-300 group-hover:text-white transition-colors">
+                Volver a la interfaz electoral pública
+              </span>
             </button>
           </div>
         )}
