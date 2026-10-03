@@ -1957,6 +1957,70 @@ textarea {
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* ==========================================================================
+   DIAGNÓSTICO TERRITORIAL SECTORIAL - MICROINTERACTIONS & 60 FPS GPU ANIMATIONS
+   ========================================================================== */
+@keyframes territorialStaggerEnter {
+  from {
+    opacity: 0;
+    transform: translateY(8px) translateZ(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) translateZ(0);
+  }
+}
+
+@keyframes subtleFloating {
+  0%, 100% {
+    transform: translateY(0) translateZ(0);
+  }
+  50% {
+    transform: translateY(-3px) translateZ(0);
+  }
+}
+
+.animate-territorial-stagger {
+  animation: territorialStaggerEnter 0.24s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
+  transform: translateZ(0);
+}
+
+.territorial-floating-icon {
+  animation: subtleFloating 3s ease-in-out infinite;
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+.territorial-card-hover {
+  will-change: transform, border-color, box-shadow;
+  transform: translateZ(0);
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.territorial-card-hover:hover {
+  transform: translateY(-2px) translateZ(0);
+}
+
+.territorial-btn-action {
+  will-change: transform, filter, box-shadow;
+  transform: translateZ(0);
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1),
+              filter 0.15s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.territorial-btn-action:hover {
+  transform: scale(1.02) translateZ(0);
+}
+
+.territorial-btn-action:active {
+  transform: scale(0.98) translateZ(0);
+}
+
+
 /* --------------------------------------------------------------------------
    E. ACCESSIBILITY & PREFERS-REDUCED-MOTION
    Respect user operating system reduced-motion preferences
