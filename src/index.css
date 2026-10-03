@@ -1033,9 +1033,9 @@ div[class*="bg-[#0b1b36]"] {
 }
 
 /* 4. Form Controls & Cyber Interactive Inputs */
-input:not([type="checkbox"]):not([type="radio"]):not(.login-decorated-input):not(.bg-transparent),
-select,
-textarea {
+input:not([type="checkbox"]):not([type="radio"]):not(.login-decorated-input):not(.search-clean-input):not(.bg-transparent),
+select:not(.bg-transparent):not(.comms-filter-select),
+textarea:not(.bg-transparent) {
   background-color: rgba(2, 6, 23, 0.85) !important;
   color: #f8fafc !important;
   border: 1px solid rgba(6, 182, 212, 0.3) !important;
@@ -1043,17 +1043,19 @@ textarea {
   transition: all 180ms ease;
 }
 
-input:not([type="checkbox"]):not([type="radio"]):not(.login-decorated-input):not(.bg-transparent):focus,
-select:focus,
-textarea:focus {
+input:not([type="checkbox"]):not([type="radio"]):not(.login-decorated-input):not(.search-clean-input):not(.bg-transparent):focus,
+select:not(.bg-transparent):not(.comms-filter-select):focus,
+textarea:not(.bg-transparent):focus {
   border-color: #06b6d4 !important;
   box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.25), 0 0 16px rgba(6, 182, 212, 0.2) !important;
   outline: none !important;
 }
 
-/* Decorated login inputs reset - container handles borders and backgrounds */
+/* Decorated login and search inputs reset - container handles borders and backgrounds */
 .login-decorated-input,
-input.login-decorated-input {
+input.login-decorated-input,
+.search-clean-input,
+input.search-clean-input {
   background-color: transparent !important;
   background: transparent !important;
   border: none !important;
@@ -1065,7 +1067,9 @@ input.login-decorated-input {
 }
 
 .login-decorated-input:focus,
-input.login-decorated-input:focus {
+input.login-decorated-input:focus,
+.search-clean-input:focus,
+input.search-clean-input:focus {
   background-color: transparent !important;
   background: transparent !important;
   border: none !important;
@@ -2988,8 +2992,8 @@ textarea {
 }
 
 .comms-search-box-focus:focus-within {
-  border-color: #06b6d4 !important;
-  box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.25) !important;
+  border-color: #c084fc !important;
+  box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.25) !important;
 }
 
 .comms-filter-box-focus {
@@ -2998,8 +3002,8 @@ textarea {
 }
 
 .comms-filter-box-focus:focus-within {
-  border-color: #06b6d4 !important;
-  box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.25) !important;
+  border-color: #c084fc !important;
+  box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.25) !important;
 }
 
 /* --------------------------------------------------------------------------

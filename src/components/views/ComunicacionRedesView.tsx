@@ -791,30 +791,41 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
           {/* SEARCH & FILTERS BAR */}
           <div className="bg-[#05162a] border border-purple-500/20 p-4 rounded-2xl flex flex-wrap items-center justify-between gap-3 text-xs comms-filter-bar animate-comms-stagger-4">
             
-            <div className="flex items-center gap-2 flex-1 min-w-[240px] bg-[#030e1c] border border-purple-500/30 rounded-xl px-3 py-2 comms-search-box comms-search-box-focus">
-              <Search className="w-4 h-4 text-slate-400" />
+            <div className="relative flex items-center w-full md:flex-1 md:min-w-[280px] bg-[#0b1329]/80 border border-purple-500/40 rounded-xl px-4 py-2.5 transition-all duration-200 focus-within:border-purple-400 focus-within:ring-2 focus-within:ring-purple-500/20 comms-search-box">
+              {/* Icono de Lupa alineado y sin colisión */}
+              <Search className="w-4 h-4 text-purple-400/80 mr-3 shrink-0 select-none" />
+              
+              {/* Input de texto limpio y fluido */}
               <input
                 type="text"
-                placeholder="Buscar publicación por título, pilar o palabra clave..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-transparent text-white w-full outline-none text-xs comms-search-input"
+                placeholder="Buscar publicación por título, pilar o palabra clave..."
+                className="search-clean-input w-full bg-transparent border-none p-0 text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:ring-0"
               />
+
+              {/* Botón de limpiar si hay texto */}
               {searchQuery && (
-                <button type="button" onClick={() => setSearchQuery('')} className="text-slate-400 hover:text-white cursor-pointer">
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="ml-2 text-slate-400 hover:text-slate-200 focus:outline-none cursor-pointer p-0.5 shrink-0"
+                  title="Limpiar búsqueda"
+                  aria-label="Limpiar búsqueda"
+                >
                   <X className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
-              <div className="flex items-center gap-1.5 bg-[#030e1c] px-3 py-1.5 rounded-xl border border-purple-500/30 comms-filter-box comms-filter-box-focus">
-                <Filter className="w-3.5 h-3.5 text-purple-400" />
-                <span className="text-slate-400 font-bold">Red:</span>
+              <div className="flex items-center gap-1.5 bg-[#0b1329]/80 px-3.5 py-2 rounded-xl border border-purple-500/40 transition-all duration-200 focus-within:border-purple-400 focus-within:ring-2 focus-within:ring-purple-500/20 comms-filter-box">
+                <Filter className="w-3.5 h-3.5 text-purple-400 shrink-0 select-none" />
+                <span className="text-slate-400 font-bold shrink-0">Red:</span>
                 <select
                   value={selectedPlatformFilter}
                   onChange={(e) => setSelectedPlatformFilter(e.target.value)}
-                  className="bg-transparent text-white font-bold outline-none cursor-pointer comms-filter-select"
+                  className="bg-transparent border-none p-0 text-white font-bold outline-none cursor-pointer comms-filter-select text-xs focus:ring-0"
                 >
                   <option value="Todas" className="bg-slate-900">Todas las redes</option>
                   <option value="Instagram" className="bg-slate-900">Instagram</option>
@@ -826,12 +837,12 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
                 </select>
               </div>
 
-              <div className="flex items-center gap-1.5 bg-[#030e1c] px-3 py-1.5 rounded-xl border border-purple-500/30 comms-filter-box comms-filter-box-focus">
-                <span className="text-slate-400 font-bold">Estado:</span>
+              <div className="flex items-center gap-1.5 bg-[#0b1329]/80 px-3.5 py-2 rounded-xl border border-purple-500/40 transition-all duration-200 focus-within:border-purple-400 focus-within:ring-2 focus-within:ring-purple-500/20 comms-filter-box">
+                <span className="text-slate-400 font-bold shrink-0">Estado:</span>
                 <select
                   value={selectedStatusFilter}
                   onChange={(e) => setSelectedStatusFilter(e.target.value)}
-                  className="bg-transparent text-white font-bold outline-none cursor-pointer comms-filter-select"
+                  className="bg-transparent border-none p-0 text-white font-bold outline-none cursor-pointer comms-filter-select text-xs focus:ring-0"
                 >
                   <option value="Todos" className="bg-slate-900">Todos los estados</option>
                   <option value="Programado" className="bg-slate-900">Programado</option>
