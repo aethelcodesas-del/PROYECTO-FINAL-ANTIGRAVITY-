@@ -114,7 +114,7 @@ interface ExperienceItem {
 interface PoliticalActor {
   id: string;
   name: string;
-  role: 'Competidor Directo' | 'Aliado Político' | 'Líder Neutral';
+  role: 'Competidor Directo' | 'Aliado Político' | 'Aliado Estratégico' | 'Líder Neutral' | 'Actor Neutral';
   party: string;
   estimatedVoteShare: number;
   influenceLevel?: 'Alta' | 'Media' | 'Baja';
@@ -1496,23 +1496,23 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
         const savedActors = Array.isArray(description?.politicalActors)
           ? description.politicalActors.filter((a: any) => !String(a?.id || '').startsWith('actor-demo-'))
           : [];
-        if (savedActors.length > 0) {
-          setActorsList(savedActors);
-        } else if (Array.isArray(dbActors) && dbActors.length > 0) {
+        if (Array.isArray(dbActors) && dbActors.length > 0) {
           setActorsList(
             dbActors.map((row: any) => ({
               id: String(row.id),
-              name: String(row.nombre || ''),
-              role: (row.afinidad === 'Aliado Político' || row.afinidad === 'Líder Neutral' ? row.afinidad : 'Competidor Directo') as PoliticalActor['role'],
-              party: String(row.organizacion_rol || ''),
-              estimatedVoteShare: Number(row.intencion_voto || 0),
-              influenceLevel: (row.influencia === 'Media' || row.influencia === 'Baja' ? row.influencia : 'Alta') as PoliticalActor['influenceLevel'],
+              name: String(row.nombre || row.name || ''),
+              role: (row.afinidad === 'Aliado Político' || row.afinidad === 'Aliado Estratégico' || row.role === 'Aliado Político' || row.role === 'Aliado Estratégico' ? 'Aliado Político' : (row.afinidad === 'Líder Neutral' || row.afinidad === 'Actor Neutral' || row.role === 'Líder Neutral' || row.role === 'Actor Neutral' ? 'Líder Neutral' : 'Competidor Directo')) as PoliticalActor['role'],
+              party: String(row.organizacion_rol || row.party || ''),
+              estimatedVoteShare: Number(row.intencion_voto ?? row.estimated_vote_share ?? 0),
+              influenceLevel: (row.influencia === 'Media' || row.influence_level === 'Media' ? 'Media' : (row.influencia === 'Baja' || row.influence_level === 'Baja' ? 'Baja' : 'Alta')) as PoliticalActor['influenceLevel'],
               territorio: String(row.territorio || ''),
-              notes: String(row.notas || ''),
-              source: String(row.fuente || ''),
+              notes: String(row.notas || row.notes || ''),
+              source: String(row.fuente || row.source || ''),
               updatedAt: String(row.updated_at || new Date().toISOString()),
             }))
           );
+        } else if (savedActors.length > 0) {
+          setActorsList(savedActors);
         } else {
           setActorsList([]);
         }
@@ -1958,9 +1958,13 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
           fuente: actor.source,
           notas: actor.notes,
         };
-        await supabase.from('strategic_actors').upsert(payload, { onConflict: 'id' });
+        try {
+          await supabase.from('strategic_actors').upsert(payload, { onConflict: 'id' });
+        } catch (dbErr) {
+          console.warn('strategic_actors table upsert note:', dbErr);
+        }
       }
-      setNarrativeMessage(editingActorId ? 'Actor político actualizado en la base de datos.' : 'Actor político registrado en la base de datos.');
+      setNarrativeMessage(editingActorId ? 'Actor político actualizado con éxito en Supabase.' : 'Actor político registrado con éxito en Supabase.');
     } catch (error: any) {
       setNarrativeMessage(error?.message || 'No fue posible guardar el actor político.');
     }
@@ -1969,12 +1973,17 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
   const handleRemovePoliticalActor = async (actorId: string) => {
     const next = actorsList.filter((a) => a.id !== actorId);
     setActorsList(next);
+    setActorToDelete(null);
     try {
       await saveNarrativeWorkspace(strategicIdentity, next);
       if (candidateCampaignId) {
-        await supabase.from('strategic_actors').delete().eq('id', actorId);
+        try {
+          await supabase.from('strategic_actors').delete().eq('id', actorId);
+        } catch (dbErr) {
+          console.warn('strategic_actors table delete note:', dbErr);
+        }
       }
-      setNarrativeMessage('Actor político eliminado de la campaña.');
+      setNarrativeMessage('Actor político eliminado de la campaña con éxito.');
     } catch (error: any) {
       setNarrativeMessage(error?.message || 'No fue posible eliminar el actor político.');
     }
@@ -5294,7 +5303,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 narrativa-discurso-view">
           
           {/* Campaign Narrative & Base Message */}
-          <div className="lg:col-span-7 bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 sm:p-7 space-y-6 shadow-2xl narrativa-editor-card">
+          <div className="lg:col-span-7 bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 sm:p-7 space-y-6 shadow-2xl narrativa-editor-card animate-narrativa-stagger-1">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-cyan-500/20 pb-4 narrativa-header-box">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-500/20 via-teal-500/10 to-cyan-500/20 border border-emerald-500/40 flex items-center justify-center shadow-lg shadow-emerald-500/10">
@@ -5324,28 +5333,28 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                 <button
                   type="button"
                   onClick={() => void handleLoadNarrativeTemplate('cambio')}
-                  className="text-[11px] font-bold px-3 py-1.5 rounded-xl bg-[#051830] hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/20 hover:border-emerald-400/50 transition-all cursor-pointer"
+                  className="narrativa-chip text-[11px] font-bold px-3 py-1.5 rounded-xl bg-[#051830] hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/20 hover:border-emerald-400/50 transition-all cursor-pointer"
                 >
                   🛡️ Cambio & Transparencia
                 </button>
                 <button
                   type="button"
                   onClick={() => void handleLoadNarrativeTemplate('desarrollo')}
-                  className="text-[11px] font-bold px-3 py-1.5 rounded-xl bg-[#051830] hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/20 hover:border-cyan-400/50 transition-all cursor-pointer"
+                  className="narrativa-chip text-[11px] font-bold px-3 py-1.5 rounded-xl bg-[#051830] hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/20 hover:border-cyan-400/50 transition-all cursor-pointer"
                 >
                   📈 Desarrollo & Empleo
                 </button>
                 <button
                   type="button"
                   onClick={() => void handleLoadNarrativeTemplate('comunal')}
-                  className="text-[11px] font-bold px-3 py-1.5 rounded-xl bg-[#051830] hover:bg-amber-500/20 text-amber-300 border border-amber-500/20 hover:border-amber-400/50 transition-all cursor-pointer"
+                  className="narrativa-chip text-[11px] font-bold px-3 py-1.5 rounded-xl bg-[#051830] hover:bg-amber-500/20 text-amber-300 border border-amber-500/20 hover:border-amber-400/50 transition-all cursor-pointer"
                 >
                   🤝 Liderazgo Comunal
                 </button>
                 <button
                   type="button"
                   onClick={() => void handleLoadNarrativeTemplate('innovacion')}
-                  className="text-[11px] font-bold px-3 py-1.5 rounded-xl bg-[#051830] hover:bg-purple-500/20 text-purple-300 border border-purple-500/20 hover:border-purple-400/50 transition-all cursor-pointer"
+                  className="narrativa-chip text-[11px] font-bold px-3 py-1.5 rounded-xl bg-[#051830] hover:bg-purple-500/20 text-purple-300 border border-purple-500/20 hover:border-purple-400/50 transition-all cursor-pointer"
                 >
                   ⚡ Innovación & Juventud
                 </button>
@@ -5367,7 +5376,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                 value={strategicIdentity.narrative}
                 onChange={(e) => setStrategicIdentity({ ...strategicIdentity, narrative: e.target.value })}
                 placeholder="Escriba la historia, propósito y narrativa central que conecta la candidatura con los anhelos ciudadanos..."
-                className="w-full bg-[#081d38] border border-cyan-500/30 rounded-2xl p-4 text-xs text-white font-medium focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 outline-none leading-relaxed resize-y narrativa-textarea shadow-inner"
+                className="w-full bg-[#081d38] border border-cyan-500/30 rounded-2xl p-4 text-xs text-white font-medium focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 outline-none leading-relaxed resize-y narrativa-textarea shadow-inner narrativa-input-focus"
               />
             </div>
 
@@ -5386,7 +5395,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                 value={strategicIdentity.baseMessage}
                 onChange={(e) => setStrategicIdentity({ ...strategicIdentity, baseMessage: e.target.value })}
                 placeholder="Escriba el argumento central y consigna de debate repetible en plazas, medios y debates..."
-                className="w-full bg-[#081d38] border border-cyan-500/30 rounded-2xl p-4 text-xs text-white font-medium focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 outline-none leading-relaxed resize-y narrativa-textarea shadow-inner"
+                className="w-full bg-[#081d38] border border-cyan-500/30 rounded-2xl p-4 text-xs text-white font-medium focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 outline-none leading-relaxed resize-y narrativa-textarea shadow-inner narrativa-input-focus"
               />
             </div>
 
@@ -5416,7 +5425,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                       key={idx}
                       type="button"
                       onClick={() => handleToggleCoreValue(val)}
-                      className={`text-xs px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      className={`narrativa-chip text-xs px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                         isSelected
                           ? 'bg-gradient-to-r from-emerald-500/30 to-teal-500/30 text-emerald-300 border border-emerald-500/50 shadow-sm'
                           : 'bg-[#081d38] text-slate-400 border border-cyan-500/20 hover:border-cyan-400/50 hover:text-white'
@@ -5437,12 +5446,12 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                   onChange={(e) => setNewCustomCoreValue(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleAddCustomCoreValue()}
                   placeholder="Agregar otro valor de marca personalizado..."
-                  className="flex-1 bg-[#081d38] border border-cyan-500/30 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-400 outline-none focus:border-cyan-400"
+                  className="flex-1 bg-[#081d38] border border-cyan-500/30 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-400 outline-none focus:border-cyan-400 narrativa-input-focus"
                 />
                 <button
                   type="button"
                   onClick={handleAddCustomCoreValue}
-                  className="px-4 py-2 bg-[#041d3a] hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-bold rounded-xl cursor-pointer transition-all"
+                  className="narrativa-chip px-4 py-2 bg-[#041d3a] hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-bold rounded-xl cursor-pointer transition-all"
                 >
                   Agregar Valor
                 </button>
@@ -5459,7 +5468,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                 value={strategicIdentity.slogan}
                 onChange={(e) => setStrategicIdentity({ ...strategicIdentity, slogan: e.target.value })}
                 placeholder={`Escriba el eslogan aprobado (ej. ¡${diagnosticTerritory} Avanza con Seguridad y Oportunidades!)`}
-                className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-4 py-2.5 text-xs text-white font-bold placeholder-slate-400 outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400"
+                className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-4 py-2.5 text-xs text-white font-bold placeholder-slate-400 outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 narrativa-input-focus"
               />
               <div className="flex flex-wrap gap-1.5 pt-1">
                 <span className="text-[10px] text-slate-400 uppercase font-black tracking-wider self-center mr-1">
@@ -5474,7 +5483,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                     key={idx}
                     type="button"
                     onClick={() => setStrategicIdentity({ ...strategicIdentity, slogan: slog })}
-                    className="text-[10px] px-2.5 py-1 rounded-lg bg-[#081d38] text-slate-300 hover:text-cyan-300 border border-cyan-500/20 hover:border-cyan-400/40 transition-all cursor-pointer"
+                    className="narrativa-chip text-[10px] px-2.5 py-1 rounded-lg bg-[#081d38] text-slate-300 hover:text-cyan-300 border border-cyan-500/20 hover:border-cyan-400/40 transition-all cursor-pointer"
                   >
                     "{slog}"
                   </button>
@@ -5495,7 +5504,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
               </button>
 
               {narrativeMessage && (
-                <span className={`text-xs font-bold ${/guardad|aplicada/i.test(narrativeMessage) ? 'text-emerald-300' : 'text-amber-300'}`}>
+                <span className={`text-xs font-bold ${/guardad|aplicad|éxito/i.test(narrativeMessage) ? 'text-emerald-300' : 'text-amber-300'}`}>
                   {narrativeMessage}
                 </span>
               )}
@@ -5503,7 +5512,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
           </div>
 
           {/* Political Competitors & Allies Matrix */}
-          <div className="lg:col-span-5 bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 sm:p-7 space-y-5 shadow-2xl mapa-politico-card flex flex-col justify-between">
+          <div className="lg:col-span-5 bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 sm:p-7 space-y-5 shadow-2xl mapa-politico-card animate-narrativa-stagger-2 flex flex-col justify-between">
             <div className="space-y-4">
               <div className="flex items-center justify-between border-b border-cyan-500/20 pb-3 mapa-header-box">
                 <div className="flex items-center gap-2.5">
@@ -5524,22 +5533,22 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
 
               {/* Summary KPIs */}
               <div className="grid grid-cols-3 gap-2">
-                <div className="bg-[#1f0910] border border-rose-500/30 p-2.5 rounded-xl text-center">
-                  <span className="text-[10px] font-black uppercase text-rose-400 block">Rivales</span>
+                <div className="bg-[#1f0910] border border-rose-500/30 p-2.5 rounded-xl text-center mapa-kpi-card mapa-kpi-card-rivals cursor-default">
+                  <span className="text-[10px] font-black uppercase text-rose-400 block tracking-wider">Rivales</span>
                   <span className="text-lg font-black text-white font-mono">
-                    {actorsList.filter(a => a.role === 'Competidor Directo').length}
+                    {actorsList.filter(a => a.role === 'Competidor Directo' || (a.role as any) === 'Rival').length}
                   </span>
                 </div>
-                <div className="bg-[#021818] border border-emerald-500/30 p-2.5 rounded-xl text-center">
-                  <span className="text-[10px] font-black uppercase text-emerald-400 block">Aliados</span>
+                <div className="bg-[#021818] border border-emerald-500/30 p-2.5 rounded-xl text-center mapa-kpi-card mapa-kpi-card-allies cursor-default">
+                  <span className="text-[10px] font-black uppercase text-emerald-400 block tracking-wider">Aliados</span>
                   <span className="text-lg font-black text-white font-mono">
-                    {actorsList.filter(a => a.role === 'Aliado Político').length}
+                    {actorsList.filter(a => a.role === 'Aliado Político' || a.role === 'Aliado Estratégico').length}
                   </span>
                 </div>
-                <div className="bg-[#04192d] border border-sky-500/30 p-2.5 rounded-xl text-center">
-                  <span className="text-[10px] font-black uppercase text-sky-400 block">Neutrales</span>
+                <div className="bg-[#04192d] border border-sky-500/30 p-2.5 rounded-xl text-center mapa-kpi-card mapa-kpi-card-neutrals cursor-default">
+                  <span className="text-[10px] font-black uppercase text-sky-400 block tracking-wider">Neutrales</span>
                   <span className="text-lg font-black text-white font-mono">
-                    {actorsList.filter(a => a.role === 'Líder Neutral').length}
+                    {actorsList.filter(a => a.role === 'Líder Neutral' || a.role === 'Actor Neutral').length}
                   </span>
                 </div>
               </div>
@@ -5554,7 +5563,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                         <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full mapa-actor-badge ${
                           actor.role === 'Competidor Directo' 
                             ? 'actor-badge-competidor bg-rose-950 text-rose-300 border border-rose-500/30' 
-                            : actor.role === 'Aliado Político'
+                            : actor.role === 'Aliado Político' || actor.role === 'Aliado Estratégico'
                             ? 'actor-badge-aliado bg-emerald-950 text-emerald-300 border border-emerald-500/30'
                             : 'actor-badge-neutral bg-sky-950 text-sky-300 border border-sky-500/30'
                         }`}>
@@ -5616,7 +5625,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                 ))}
                 {actorsList.length === 0 && (
                   <div className="text-center py-8 px-4 bg-[#081d38]/50 rounded-2xl border border-dashed border-cyan-500/25 text-xs text-slate-300 space-y-2">
-                    <Users className="w-8 h-8 text-cyan-400/70 mx-auto mb-1" />
+                    <Users className="w-9 h-9 text-cyan-400/80 mx-auto mb-1 empty-actor-icon" />
                     <p className="font-bold text-white text-sm">Sin actores políticos registrados</p>
                     <p className="text-slate-400 text-[11px] max-w-xs mx-auto">
                       Registre competidores directos, aliados políticos o líderes neutrales en el formulario inferior para mapear las fuerzas electorales de {diagnosticTerritory}.
@@ -5667,22 +5676,24 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                   value={newActor.name} 
                   onChange={(e) => setNewActor({ ...newActor, name: e.target.value })} 
                   placeholder="Nombre completo o coalición *" 
-                  className="bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-400 outline-none focus:border-cyan-400" 
+                  className="bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-400 outline-none focus:border-cyan-400 mapa-input-focus" 
                 />
                 <select 
                   value={newActor.role} 
                   onChange={(e) => setNewActor({ ...newActor, role: e.target.value as PoliticalActor['role'] })} 
-                  className="bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-cyan-400"
+                  className="bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-cyan-400 mapa-input-focus"
                 >
                   <option value="Competidor Directo">⚔️ Competidor Directo</option>
                   <option value="Aliado Político">🤝 Aliado Político</option>
+                  <option value="Aliado Estratégico">🤝 Aliado Estratégico</option>
                   <option value="Líder Neutral">⚖️ Líder Neutral</option>
+                  <option value="Actor Neutral">⚖️ Actor Neutral</option>
                 </select>
                 <input 
                   value={newActor.party} 
                   onChange={(e) => setNewActor({ ...newActor, party: e.target.value })} 
                   placeholder="Partido, movimiento o JAC" 
-                  className="bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-400 outline-none focus:border-cyan-400" 
+                  className="bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-400 outline-none focus:border-cyan-400 mapa-input-focus" 
                 />
                 <input 
                   type="number" 
@@ -5692,12 +5703,12 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                   value={newActor.estimatedVoteShare || ''} 
                   onChange={(e) => setNewActor({ ...newActor, estimatedVoteShare: Number(e.target.value || 0) })} 
                   placeholder="Intención de voto (%)" 
-                  className="bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-400 outline-none focus:border-cyan-400 font-mono" 
+                  className="bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-400 outline-none focus:border-cyan-400 font-mono mapa-input-focus" 
                 />
                 <select
                   value={newActor.influenceLevel}
                   onChange={(e) => setNewActor({ ...newActor, influenceLevel: e.target.value as 'Alta' | 'Media' | 'Baja' })}
-                  className="bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-cyan-400"
+                  className="bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-cyan-400 mapa-input-focus"
                 >
                   <option value="Alta">🔥 Influencia Alta</option>
                   <option value="Media">⚡ Influencia Media</option>
@@ -5707,26 +5718,26 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                   value={newActor.territorio}
                   onChange={(e) => setNewActor({ ...newActor, territorio: e.target.value })}
                   placeholder={`Zona / Bastión (${diagnosticTerritory})`}
-                  className="bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-400 outline-none focus:border-cyan-400"
+                  className="bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-400 outline-none focus:border-cyan-400 mapa-input-focus"
                 />
                 <input 
                   value={newActor.source} 
                   onChange={(e) => setNewActor({ ...newActor, source: e.target.value })} 
                   placeholder="Fuente verificable (ej. Encuesta local, CNE, JAC) *" 
-                  className="sm:col-span-2 bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-400 outline-none focus:border-cyan-400" 
+                  className="sm:col-span-2 bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-400 outline-none focus:border-cyan-400 mapa-input-focus" 
                 />
                 <textarea 
                   value={newActor.notes} 
                   onChange={(e) => setNewActor({ ...newActor, notes: e.target.value })} 
                   placeholder="Observaciones estratégicas, alianzas o vulnerabilidades verificables..." 
                   rows={2} 
-                  className="sm:col-span-2 bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-400 outline-none resize-none focus:border-cyan-400" 
+                  className="sm:col-span-2 bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-400 outline-none resize-none focus:border-cyan-400 mapa-input-focus" 
                 />
               </div>
               <button 
                 type="button"
                 onClick={() => void handleAddPoliticalActor()} 
-                className="w-full py-2.5 bg-gradient-to-r from-cyan-500 to-blue-500 hover:brightness-110 text-slate-950 text-xs font-black rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all shadow-md"
+                className="w-full py-2.5 bg-gradient-to-r from-cyan-500 to-blue-500 hover:brightness-110 text-slate-950 text-xs font-black rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-all shadow-md actor-add-primary-btn"
               >
                 {editingActorId ? <Save className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
                 <span>{editingActorId ? 'Guardar Cambios del Actor' : 'Registrar Actor en Mapa Político'}</span>

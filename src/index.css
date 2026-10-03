@@ -2656,6 +2656,174 @@ textarea {
 }
 
 /* --------------------------------------------------------------------------
+   IDENTIDAD ESTRATÉGICA & MAPA POLÍTICO (GPU 60 FPS ANIMATION SUITE)
+   -------------------------------------------------------------------------- */
+
+@keyframes actorFloat {
+  0%, 100% {
+    transform: translateY(0) translateZ(0);
+  }
+  50% {
+    transform: translateY(-6px) translateZ(0);
+  }
+}
+
+.empty-actor-icon {
+  animation: actorFloat 3.5s ease-in-out infinite;
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+@keyframes narrativaStaggerEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) translateZ(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) translateZ(0);
+  }
+}
+
+.animate-narrativa-stagger-1 {
+  animation: narrativaStaggerEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-narrativa-stagger-2 {
+  animation: narrativaStaggerEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.08s forwards;
+  opacity: 0;
+}
+
+.animate-narrativa-stagger-3 {
+  animation: narrativaStaggerEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.16s forwards;
+  opacity: 0;
+}
+
+.animate-narrativa-stagger-4 {
+  animation: narrativaStaggerEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.24s forwards;
+  opacity: 0;
+}
+
+/* Mapa Político KPI Summary Cards */
+.mapa-kpi-card {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, box-shadow, border-color;
+  transform: translateZ(0);
+}
+
+.mapa-kpi-card:hover {
+  transform: translateY(-2px) translateZ(0);
+}
+
+.mapa-kpi-card-rivals:hover {
+  border-color: rgba(244, 63, 94, 0.6) !important;
+  box-shadow: 0 4px 20px rgba(244, 63, 94, 0.25);
+}
+
+.mapa-kpi-card-allies:hover {
+  border-color: rgba(16, 185, 129, 0.6) !important;
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.25);
+}
+
+.mapa-kpi-card-neutrals:hover {
+  border-color: rgba(14, 165, 233, 0.6) !important;
+  box-shadow: 0 4px 20px rgba(14, 165, 233, 0.25);
+}
+
+/* Mapa Político Actor Item Card */
+.mapa-actor-card {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, border-color, box-shadow;
+  transform: translateZ(0);
+}
+
+.mapa-actor-card:hover {
+  transform: translateY(-2px) translateZ(0);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+/* Narrativa Action Buttons */
+.narrativa-save-btn {
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.25);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              filter 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, box-shadow, filter;
+  transform: translateZ(0);
+}
+
+.narrativa-save-btn:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px) translateZ(0);
+  box-shadow: 0 0 25px rgba(16, 185, 129, 0.45);
+}
+
+.narrativa-save-btn:active {
+  transform: scale(0.97) translateZ(0);
+}
+
+.actor-add-primary-btn {
+  box-shadow: 0 0 15px rgba(6, 182, 212, 0.25);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              filter 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, box-shadow, filter;
+  transform: translateZ(0);
+}
+
+.actor-add-primary-btn:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px) translateZ(0);
+  box-shadow: 0 0 24px rgba(6, 182, 212, 0.45);
+}
+
+.actor-add-primary-btn:active {
+  transform: scale(0.97) translateZ(0);
+}
+
+/* Microinteracciones para inputs y selectores */
+.narrativa-input-focus {
+  transition: border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.narrativa-input-focus:focus {
+  border-color: #10b981 !important;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25) !important;
+}
+
+.mapa-input-focus {
+  transition: border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.mapa-input-focus:focus {
+  border-color: #06b6d4 !important;
+  box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.25) !important;
+}
+
+.narrativa-chip {
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 0.15s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.15s cubic-bezier(0.16, 1, 0.3, 1),
+              color 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+.narrativa-chip:hover {
+  transform: translateY(-1px) translateZ(0);
+}
+
+.narrativa-chip:active {
+  transform: scale(0.95) translateZ(0);
+}
+
+/* --------------------------------------------------------------------------
    E. ACCESSIBILITY & PREFERS-REDUCED-MOTION
    Respect user operating system reduced-motion preferences
    -------------------------------------------------------------------------- */
