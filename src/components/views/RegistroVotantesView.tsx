@@ -195,7 +195,7 @@ export const RegistroVotantesView: React.FC<RegistroVotantesViewProps> = ({
   // Role and Admin privileges (Strict Rule: Only Administrative role can register voters and assign leaders)
   const isAdmin = authUser 
     ? (authUser.role === 'superadmin' || authUser.role === 'administrador')
-    : (activeOperator.includes('Administrador') || activeOperator.includes('Coordinador') || activeOperator.includes('Superadmin') || activeOperator.includes('Operación General'));
+    : (String(activeOperator || '').includes('Administrador') || String(activeOperator || '').includes('Coordinador') || String(activeOperator || '').includes('Superadmin') || String(activeOperator || '').includes('Operación General'));
 
   // Strict Leader Privacy Rule: Each leader/user can only view their own registered voters
   // Always true for non-admin users
@@ -227,6 +227,179 @@ export const RegistroVotantesView: React.FC<RegistroVotantesViewProps> = ({
     };
   }, []);
 
+  // API Search State
+  const [cedulaInput, setCedulaInput] = useState<string>('');
+  const [isConsulting, setIsConsulting] = useState<boolean>(false);
+  const [consultaResult, setConsultaResult] = useState<CensoConsultaResult | null>(null);
+
+  // Registration Form State for Active Voter
+  const [formData, setFormData] = useState({
+    nombreCompleto: '',
+    telefono: '',
+    barrio: '',
+    liderAsignado: activeOperator,
+    intencionVoto: 'Voto Seguro' as VotanteRegistrado['intencionVoto'],
+    requiereTransporte: false,
+    observaciones: ''
+  });
+
+  // Archive Form State (used when archiving a rejected voter)
+  const [archiveForm, setArchiveForm] = useState({
+    nombreCompleto: '',
+    telefono: '',
+    liderAsignado: activeOperator,
+    observaciones: ''
+  });
+
+  // Keep leader form values synchronized when active operator changes
+  useEffect(() => {
+    setFormData(prev => ({ ...prev, liderAsignado: activeOperator }));
+    setArchiveForm(prev => ({ ...prev, liderAsignado: activeOperator }));
+  }, [activeOperator]);
+
+  const [isSyncingArchived, setIsSyncingArchived] = useState<boolean>(false);
+
+  // State for Reassigning Leader Modal
+  const [reassignModal, setReassignModal] = useState<{
+    isOpen: boolean;
+    voterId: string;
+    voterName: string;
+    currentLeader: string;
+    voterType: 'activo' | 'archivado';
+    selectedNewLeader: string;
+  } | null>(null);
+
+  // Duplicate Voter Report Modal State
+  const [duplicateReport, setDuplicateReport] = useState<{
+    isOpen: boolean;
+    record: VotanteRegistrado | VotanteArchivado | null;
+    type: 'activo' | 'archivado';
+    attemptedCedula: string;
+    attemptedByLeader: string;
+    attemptTimestamp: string;
+  }>({
+    isOpen: false,
+    record: null,
+    type: 'activo',
+    attemptedCedula: '',
+    attemptedByLeader: '',
+    attemptTimestamp: ''
+  });
+
+  const handleDownloadDuplicateReportPDF = () => {
+    if (!duplicateReport.record) return;
+    const r = duplicateReport.record;
+    const isActivo = duplicateReport.type === 'activo';
+
+    const doc = new jsPDF();
+
+    // Top Brand Banner
+    doc.setFillColor(7, 29, 56);
+    doc.rect(0, 0, 210, 38, 'F');
+
+    // Header Title
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.text('CAMPAÑA GANADORA AI', 14, 14);
+    doc.setFontSize(10);
+    doc.setTextColor(45, 212, 191);
+    doc.text('REPORTE OFICIAL DE AUDITORÍA Y DUPLICIDAD ELECTORAL', 14, 22);
+
+    doc.setFontSize(8);
+    doc.setTextColor(203, 213, 225);
+    doc.text(`Fecha y Hora de Generación: ${duplicateReport.attemptTimestamp}`, 14, 30);
+    doc.text('SISTEMA DE CONTROL TERRITORIAL', 135, 30);
+
+    // Red Alert Strip
+    doc.setFillColor(225, 29, 72);
+    doc.rect(14, 44, 182, 12, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text('ALERTA: REGISTRO BLOQUEADO POR DUPLICIDAD DE CÉDULA', 18, 51.5);
+
+    let y = 64;
+
+    // Section 1: Attempt Info
+    doc.setFillColor(248, 250, 252);
+    doc.rect(14, y, 182, 22, 'F');
+    doc.setDrawColor(226, 232, 240);
+    doc.rect(14, y, 182, 22, 'S');
+
+    doc.setTextColor(15, 23, 42);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text('1. INFORMACIÓN DEL INTENTO DE REGISTRO', 18, y + 6);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.text(`Cédula Consultada: ${duplicateReport.attemptedCedula}`, 18, y + 12);
+    doc.text(`Usuario / Líder que Solicitó Registro: ${duplicateReport.attemptedByLeader}`, 18, y + 17);
+
+    y += 28;
+
+    // Section 2: Owner/Leader Registered
+    doc.setFillColor(15, 23, 42);
+    doc.rect(14, y, 182, 30, 'F');
+
+    doc.setTextColor(45, 212, 191);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text('2. LÍDER / PERSONA RESPONSABLE REGISTRADA (TITULAR)', 18, y + 8);
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(10);
+    doc.text(`Líder Asignado: ${r.liderAsignado}`, 18, y + 17);
+
+    doc.setFontSize(8.5);
+    doc.setTextColor(203, 213, 225);
+    const fechaReg = 'fechaRegistro' in r ? r.fechaRegistro : r.fechaArchivado;
+    doc.text(`Fecha de Registro Inicial en Sistema: ${fechaReg}`, 18, y + 24);
+
+    y += 36;
+
+    // Section 3: Technical Details of Registered Voter
+    doc.setFillColor(241, 245, 249);
+    doc.rect(14, y, 182, 70, 'F');
+    doc.setDrawColor(203, 213, 225);
+    doc.rect(14, y, 182, 70, 'S');
+
+    doc.setTextColor(15, 23, 42);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text('3. FICHA TÉCNICA DEL VOTANTE REGISTRADO EN BASE DE DATOS', 18, y + 9);
+
+    doc.setFontSize(8.5);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`• Nombre Completo: ${r.nombreCompleto}`, 18, y + 18);
+    doc.text(`• Cédula de Ciudadanía: ${r.cedula}`, 18, y + 25);
+    doc.text(`• Teléfono Contacto: ${r.telefono}`, 18, y + 32);
+    doc.text(`• Estado en Sistema: ${isActivo ? `Padrón Activo (${territoryLabel})` : 'Carpeta de Archivados CNE'}`, 18, y + 39);
+
+    const puesto = 'puestoVotacion' in r ? (r as VotanteRegistrado).puestoVotacion : (r as VotanteArchivado).puestoOriginal;
+    const mesaStr = 'mesa' in r ? ` (Mesa ${(r as VotanteRegistrado).mesa})` : '';
+    const comunaStr = 'comunaSector' in r ? (r as VotanteRegistrado).comunaSector : (r as VotanteArchivado).circunscripcionOriginal;
+
+    doc.text(`• Puesto y Mesa de Votación: ${puesto}${mesaStr}`, 18, y + 46);
+    doc.text(`• Comuna / Sector Territorial: ${comunaStr}`, 18, y + 53);
+
+    const obs = ('observaciones' in r ? (r as VotanteRegistrado).observaciones : (r as VotanteArchivado).motivo) || 'Sin observaciones.';
+    doc.text(`• Observaciones del Registro: ${obs}`, 18, y + 60);
+
+    y += 80;
+
+    // Footer Certification Stamp
+    doc.setDrawColor(203, 213, 225);
+    doc.line(14, y, 196, y);
+
+    doc.setFontSize(7.5);
+    doc.setTextColor(100, 116, 139);
+    doc.text('Documento oficial generado en formato PDF por el Sistema Territorial.', 14, y + 6);
+    doc.text('Certificación válida para resolución de conflictos de asignación territorial y auditoría de votantes.', 14, y + 10);
+
+    doc.save(`Auditoria_Duplicidad_${duplicateReport.attemptedCedula}.pdf`);
+  };
+
   // Synchronize with live server database
   const loadVotersAndLeadersFromDb = async () => {
     try {
@@ -254,39 +427,39 @@ export const RegistroVotantesView: React.FC<RegistroVotantesViewProps> = ({
           const leaderName = row.leaders?.nombre || (authUser?.name ? `${authUser.name} (${authUser.roleName || 'Líder'})` : 'Asignación Central');
           if (row.status === 'ARCHIVED') {
             archivedList.push({
-              id: row.id,
-              cedula: row.cedula,
-              nombreCompleto: row.nombre,
-              telefono: row.telefono || 'Sin teléfono',
-              barrio: row.barrio || 'Sin barrio',
-              liderAsignado: leaderName,
+              id: row.id || `arch-${Math.random().toString(36).slice(2, 7)}`,
+              cedula: String(row.cedula || ''),
+              nombreCompleto: String(row.nombre || 'Ciudadano Registrado'),
+              telefono: String(row.telefono || 'Sin teléfono'),
+              barrio: String(row.barrio || 'Sin barrio'),
+              liderAsignado: String(leaderName || 'Asignación Central'),
               liderId: row.lider_id || undefined,
               circunscripcionOriginal: row.departamento ? `${row.municipio || 'Otra'} - ${row.departamento}` : 'Otra Circunscripción',
-              puestoOriginal: row.puesto || 'Puesto Foráneo',
-              motivo: row.observaciones || 'Registrado en otra circunscripción. Solicitó traslado.',
+              puestoOriginal: String(row.puesto || 'Puesto Foráneo'),
+              motivo: String(row.observaciones || 'Registrado en otra circunscripción. Solicitó traslado.'),
               fechaArchivado: row.created_at?.slice(0, 10) || new Date().toISOString().slice(0, 10),
               fechaUltimaConsultaApi: row.updated_at?.slice(0, 10) || new Date().toISOString().slice(0, 10),
               estadoCne: 'En Espera de Traslado CNE'
             });
           } else {
             activeList.push({
-              id: row.id,
-              cedula: row.cedula,
-              nombreCompleto: row.nombre,
-              telefono: row.telefono || 'Sin teléfono',
-              barrio: row.barrio || 'Zona Centro',
-              comunaSector: row.comuna || 'Cabecera Municipal',
-              puestoVotacion: row.puesto || `I.E. Central de ${municipality}`,
-              direccionPuesto: row.direccion || 'Sede Electoral',
+              id: row.id || `vot-${Math.random().toString(36).slice(2, 7)}`,
+              cedula: String(row.cedula || ''),
+              nombreCompleto: String(row.nombre || 'Ciudadano Registrado'),
+              telefono: String(row.telefono || 'Sin teléfono'),
+              barrio: String(row.barrio || 'Zona Centro'),
+              comunaSector: String(row.comuna || 'Cabecera Municipal'),
+              puestoVotacion: String(row.puesto || `I.E. Central de ${municipality}`),
+              direccionPuesto: String(row.direccion || 'Sede Electoral'),
               mesa: parseInt(row.mesa, 10) || 1,
-              liderAsignado: leaderName,
+              liderAsignado: String(leaderName || 'Asignación Central'),
               liderId: row.lider_id || undefined,
               intencionVoto: (row.intencion as any) || 'Voto Seguro',
-              requiereTransporte: Boolean(row.transporte_requerido || (row.observaciones && row.observaciones.toLowerCase().includes('transporte'))),
-              observaciones: row.observaciones || '',
+              requiereTransporte: Boolean(row.transporte_requerido || (row.observaciones && String(row.observaciones).toLowerCase().includes('transporte'))),
+              observaciones: String(row.observaciones || ''),
               fechaRegistro: row.created_at?.slice(0, 10) || new Date().toISOString().slice(0, 10),
               estadoCenso: `Validado API ${municipality}`,
-              circunscripcion: row.municipio || municipality
+              circunscripcion: String(row.municipio || municipality)
             });
           }
         });
@@ -309,11 +482,11 @@ export const RegistroVotantesView: React.FC<RegistroVotantesViewProps> = ({
 
       if (!leadersError && Array.isArray(dbLeaders)) {
         setLeadersList(dbLeaders.map((l: any) => ({
-          id: l.id,
-          nombre: l.nombre,
-          cargo: l.puesto || 'Líder Territorial',
-          comunaZone: l.comuna || l.barrio || municipality,
-          telefono: l.telefono || ''
+          id: l.id || `ldr-${Math.random().toString(36).slice(2, 7)}`,
+          nombre: String(l.nombre || 'Líder Territorial'),
+          cargo: String(l.puesto || 'Líder Territorial'),
+          comunaZone: String(l.comuna || l.barrio || municipality),
+          telefono: String(l.telefono || '')
         })));
       }
     } catch (err) {
@@ -542,7 +715,7 @@ export const RegistroVotantesView: React.FC<RegistroVotantesViewProps> = ({
       return;
     }
 
-    const matchedLeader = leadersList.find(l => formData.liderAsignado.includes(l.nombre));
+    const matchedLeader = (leadersList || []).find(l => l?.nombre && String(formData.liderAsignado || '').includes(l.nombre));
     const activeCampaign = campaignCtx.campaign;
     const targetClientId = activeCampaign?.client_id || campaignCtx.campaignId || authUser?.clientId || null;
 
@@ -642,7 +815,7 @@ export const RegistroVotantesView: React.FC<RegistroVotantesViewProps> = ({
       return;
     }
 
-    const matchedLeader = leadersList.find(l => archiveForm.liderAsignado.includes(l.nombre));
+    const matchedLeader = (leadersList || []).find(l => l?.nombre && String(archiveForm.liderAsignado || '').includes(l.nombre));
     const activeCampaign = campaignCtx.campaign;
     const targetClientId = activeCampaign?.client_id || campaignCtx.campaignId || authUser?.clientId || null;
 
@@ -719,7 +892,7 @@ export const RegistroVotantesView: React.FC<RegistroVotantesViewProps> = ({
     if (!reassignModal) return;
 
     const { voterId, voterName, voterType, selectedNewLeader } = reassignModal;
-    const matchedLeader = leadersList.find(l => selectedNewLeader.includes(l.nombre));
+    const matchedLeader = (leadersList || []).find(l => l?.nombre && String(selectedNewLeader || '').includes(l.nombre));
 
     const updatePayload: any = {
       lider_id: matchedLeader?.id || null
@@ -937,21 +1110,27 @@ export const RegistroVotantesView: React.FC<RegistroVotantesViewProps> = ({
   };
 
   // Filtered Active Votantes List (Enforces Privacy Rule: Each leader/user only sees their own registered voters)
-  const filteredVotantes = votantes.filter(v => {
-    const isMyVoter = v.liderAsignado.toLowerCase().includes(activeOperator.toLowerCase()) || 
-                      v.liderAsignado.toLowerCase().includes((authUser?.name || '').toLowerCase());
+  const filteredVotantes = (votantes || []).filter(v => {
+    if (!v) return false;
+    const vLeader = String(v.liderAsignado || '').toLowerCase();
+    const activeOp = String(activeOperator || '').toLowerCase();
+    const authName = String(authUser?.name || '').toLowerCase();
+    const isMyVoter = (activeOp && vLeader.includes(activeOp)) || 
+                      (authName && vLeader.includes(authName));
 
     // REGLA: cada lider o usuario solo puede ver sus votantes registrados
     if (strictLeaderMode && !isMyVoter) {
       return false;
     }
 
-    const matchesSearch = v.nombreCompleto.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          v.cedula.includes(searchTerm) ||
-                          v.puestoVotacion.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          v.liderAsignado.toLowerCase().includes(searchTerm.toLowerCase());
+    const sTerm = String(searchTerm || '').toLowerCase();
+    const matchesSearch = !sTerm ||
+                          String(v.nombreCompleto || '').toLowerCase().includes(sTerm) ||
+                          String(v.cedula || '').includes(sTerm) ||
+                          String(v.puestoVotacion || '').toLowerCase().includes(sTerm) ||
+                          vLeader.includes(sTerm);
 
-    const matchesComuna = comunaFilter === 'Todas' || v.comunaSector.includes(comunaFilter);
+    const matchesComuna = comunaFilter === 'Todas' || String(v.comunaSector || '').includes(comunaFilter);
     const matchesIntencion = intencionFilter === 'Todas' || v.intencionVoto === intencionFilter;
     
     // Leader Filter
@@ -959,43 +1138,55 @@ export const RegistroVotantesView: React.FC<RegistroVotantesViewProps> = ({
       ? true
       : liderFilter === 'Mis Votantes'
       ? isMyVoter
-      : v.liderAsignado.toLowerCase().includes(liderFilter.toLowerCase());
+      : vLeader.includes(String(liderFilter || '').toLowerCase());
 
     return matchesSearch && matchesComuna && matchesIntencion && matchesLider;
   });
 
   // Filtered Archived List (Enforces Privacy Rule)
-  const filteredArchivados = archivados.filter(a => {
-    const isMyArchived = a.liderAsignado.toLowerCase().includes(activeOperator.toLowerCase()) ||
-                         a.liderAsignado.toLowerCase().includes((authUser?.name || '').toLowerCase());
+  const filteredArchivados = (archivados || []).filter(a => {
+    if (!a) return false;
+    const aLeader = String(a.liderAsignado || '').toLowerCase();
+    const activeOp = String(activeOperator || '').toLowerCase();
+    const authName = String(authUser?.name || '').toLowerCase();
+    const isMyArchived = (activeOp && aLeader.includes(activeOp)) ||
+                         (authName && aLeader.includes(authName));
 
     // REGLA: cada lider o usuario solo puede ver sus votantes archivados
     if (strictLeaderMode && !isMyArchived) {
       return false;
     }
 
-    const matchesSearch = a.nombreCompleto.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          a.cedula.includes(searchTerm) ||
-                          a.liderAsignado.toLowerCase().includes(searchTerm.toLowerCase());
+    const sTerm = String(searchTerm || '').toLowerCase();
+    const matchesSearch = !sTerm ||
+                          String(a.nombreCompleto || '').toLowerCase().includes(sTerm) ||
+                          String(a.cedula || '').includes(sTerm) ||
+                          aLeader.includes(sTerm);
 
     return matchesSearch;
   });
 
   // Calculate Metrics
-  const totalVotantes = votantes.length;
-  const myVotantesCount = votantes.filter(v => 
-    v.liderAsignado.toLowerCase().includes(activeOperator.toLowerCase()) || 
-    v.liderAsignado.toLowerCase().includes((authUser?.name || '').toLowerCase())
-  ).length;
+  const totalVotantes = (votantes || []).length;
+  const myVotantesCount = (votantes || []).filter(v => {
+    if (!v) return false;
+    const vLeader = String(v.liderAsignado || '').toLowerCase();
+    const activeOp = String(activeOperator || '').toLowerCase();
+    const authName = String(authUser?.name || '').toLowerCase();
+    return (activeOp && vLeader.includes(activeOp)) || (authName && vLeader.includes(authName));
+  }).length;
 
-  const totalArchivados = archivados.length;
-  const myArchivadosCount = archivados.filter(a => 
-    a.liderAsignado.toLowerCase().includes(activeOperator.toLowerCase()) || 
-    a.liderAsignado.toLowerCase().includes((authUser?.name || '').toLowerCase())
-  ).length;
+  const totalArchivados = (archivados || []).length;
+  const myArchivadosCount = (archivados || []).filter(a => {
+    if (!a) return false;
+    const aLeader = String(a.liderAsignado || '').toLowerCase();
+    const activeOp = String(activeOperator || '').toLowerCase();
+    const authName = String(authUser?.name || '').toLowerCase();
+    return (activeOp && aLeader.includes(activeOp)) || (authName && aLeader.includes(authName));
+  }).length;
 
-  const totalNotificacionesNuevas = (strictLeaderMode ? filteredArchivados : archivados)
-    .filter(a => a.estadoCne?.includes('¡LUGAR ACTUALIZADO')).length;
+  const totalNotificacionesNuevas = (strictLeaderMode ? filteredArchivados : (archivados || []))
+    .filter(a => String(a?.estadoCne || '').includes('¡LUGAR ACTUALIZADO')).length;
 
   return (
     <div className="registro-votantes-view p-4 sm:p-6 md:p-8 space-y-6 max-w-7xl mx-auto text-slate-800">
@@ -1063,7 +1254,7 @@ export const RegistroVotantesView: React.FC<RegistroVotantesViewProps> = ({
                     ) : (
                       <option value="Sin Asignar">Sin Asignar</option>
                     )}
-                    {leadersList.map(m => (
+                    {(leadersList || []).map(m => (
                       <option key={m.id} value={`${m.nombre} (${m.cargo})`}>
                         👤 {m.nombre} - {m.cargo} ({m.comunaZone})
                       </option>
@@ -1603,7 +1794,7 @@ export const RegistroVotantesView: React.FC<RegistroVotantesViewProps> = ({
                                     👤 Mi Usuario: ALEJANDRO DORIA (Administrador de campaña)
                                   </option>
                                 )}
-                                {leadersList.map(m => (
+                                {(leadersList || []).map(m => (
                                   <option key={m.id} value={`${m.nombre} (${m.cargo})`}>
                                     👥 {m.nombre} - {m.cargo} ({m.comunaZone})
                                   </option>
@@ -1750,7 +1941,7 @@ export const RegistroVotantesView: React.FC<RegistroVotantesViewProps> = ({
                             📌 Mi Usuario: ALEJANDRO DORIA (Administrador de campaña)
                           </option>
                         )}
-                        {leadersList.map(m => (
+                        {(leadersList || []).map(m => (
                           <option key={m.id} value={`${m.nombre} (${m.cargo})`}>
                             👥 {m.nombre} - {m.cargo} ({m.comunaZone})
                           </option>
@@ -1888,7 +2079,7 @@ export const RegistroVotantesView: React.FC<RegistroVotantesViewProps> = ({
                   >
                     <option value="Todas">👥 Todos los Líderes</option>
                     <option value="Mis Votantes">📌 Mis Votantes ({activeOperator})</option>
-                    {(leadersList.length > 0 ? leadersList : LISTA_MIEMBROS_CAMPAÑA).map(m => (
+                    {((leadersList && leadersList.length > 0) ? leadersList : LISTA_MIEMBROS_CAMPAÑA).map(m => (
                       <option key={m.id} value={m.nombre}>
                         {m.nombre} ({m.cargo})
                       </option>
@@ -1907,10 +2098,10 @@ export const RegistroVotantesView: React.FC<RegistroVotantesViewProps> = ({
                   className="bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-slate-200 font-semibold outline-none cursor-pointer"
                 >
                   <option value="Todas">Todas las Zonas / Comunas</option>
-                  {Array.from(new Set(votantes.map(v => v.comunaSector).filter(Boolean))).map(com => (
-                    <option key={com} value={com}>{com}</option>
+                  {Array.from(new Set((votantes || []).map(v => v?.comunaSector).filter(Boolean))).map(com => (
+                    <option key={String(com)} value={String(com)}>{String(com)}</option>
                   ))}
-                  {votantes.length === 0 && (
+                  {(votantes || []).length === 0 && (
                     <>
                       <option value="Cabecera Municipal">Cabecera Municipal ({territoryLabel})</option>
                       <option value="Zona Rural">Zona Rural / Corregimientos</option>
@@ -1957,8 +2148,11 @@ export const RegistroVotantesView: React.FC<RegistroVotantesViewProps> = ({
                     </tr>
                   ) : (
                     filteredVotantes.map((v) => {
-                      const isMyVoter = v.liderAsignado.toLowerCase().includes(activeOperator.toLowerCase()) || 
-                                        v.liderAsignado.toLowerCase().includes((authUser?.name || '').toLowerCase());
+                      const vLeader = String(v?.liderAsignado || '').toLowerCase();
+                      const activeOp = String(activeOperator || '').toLowerCase();
+                      const authName = String(authUser?.name || '').toLowerCase();
+                      const isMyVoter = (activeOp && vLeader.includes(activeOp)) || 
+                                        (authName && vLeader.includes(authName));
 
                       return (
                         <tr key={v.id} className="hover:bg-cyan-950/20 transition-all">
@@ -2148,7 +2342,7 @@ export const RegistroVotantesView: React.FC<RegistroVotantesViewProps> = ({
                     </tr>
                   ) : (
                     filteredArchivados.map((item) => {
-                      const isUpdated = item.estadoCne?.includes('¡LUGAR ACTUALIZADO');
+                      const isUpdated = Boolean(item?.estadoCne && String(item.estadoCne).includes('¡LUGAR ACTUALIZADO'));
 
                       return (
                         <tr 
