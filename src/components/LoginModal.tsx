@@ -14,7 +14,6 @@ import {
   Vote,
   Shield,
   Target,
-  ShieldAlert,
   ArrowRight,
   ArrowLeft,
   CheckCircle2,
@@ -30,7 +29,7 @@ export const isGlobalAdminRole = (role?: string) =>
   ['GLOBAL_ADMIN', 'SUPERADMIN', 'superadmin', 'master'].includes(String(role || ''));
 
 export interface AccessEnvironment {
-  id: 'estrategia' | 'territorio' | 'dia_e' | 'global_admin';
+  id: 'estrategia' | 'territorio' | 'dia_e';
   title: string;
   category: string;
   badge: string;
@@ -139,30 +138,6 @@ export const ACCESS_ENVIRONMENTS: AccessEnvironment[] = [
       'DIRECTOR', 'COORDINADOR', 'coordinador_general_zona'
     ],
     defaultModuleTitle: 'Testigos en Campo Día E'
-  },
-  {
-    id: 'global_admin',
-    title: 'Terminal de Gobernanza Global',
-    category: 'Super Administrador / Auditor Master',
-    badge: 'Master Governance',
-    description: 'Infraestructura, licenciamiento, cuotas de APIs y logs de seguridad global.',
-    context: 'Aislamiento estricto: Cero acceso a datos privados de campañas de clientes.',
-    targetView: 'global_admin',
-    icon: ShieldAlert,
-    colorScheme: {
-      border: 'border-cyan-500/40',
-      hoverBorder: 'hover:border-cyan-400/80',
-      bg: 'from-cyan-950/40 via-slate-900/90 to-slate-950/90',
-      iconBg: 'bg-cyan-950/80 border-cyan-500/40',
-      iconText: 'text-cyan-400',
-      badgeBg: 'bg-cyan-500/15',
-      badgeText: 'text-cyan-300',
-      badgeBorder: 'border-cyan-500/30',
-      glow: 'shadow-cyan-950/50 hover:shadow-cyan-900/30',
-      accentGradient: 'from-cyan-600 via-blue-600 to-indigo-600'
-    },
-    allowedRoles: ['superadmin', 'GLOBAL_ADMIN', 'SUPERADMIN'],
-    defaultModuleTitle: 'Panel de Gobernanza Global'
   }
 ];
 
@@ -465,7 +440,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
         moduleName: selectedEnv?.title || targetModule || 'Sistema Electoral',
         clientId: isSuperadmin ? undefined : (profile.client_id || undefined),
         clientName: isSuperadmin 
-          ? (selectedEnv?.id === 'global_admin' ? 'Administración Global' : 'Modo Exploración (Cero-Acceso)')
+          ? 'Modo Exploración (Cero-Acceso)'
           : (profile.client_id || profile.campaign_id ? 'Campaña autorizada' : 'Administración Electoral'),
         campaignId: isSuperadmin ? undefined : (profile.campaign_id ? String(profile.campaign_id) : undefined),
         permissions
@@ -543,7 +518,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           exit={{ opacity: 0, scale: 0.95, y: 16 }}
           transition={{ duration: 0.22, ease: 'easeOut' }}
           className={`relative w-full mx-auto bg-[#030d1d] border border-slate-800 rounded-3xl shadow-2xl shadow-cyan-950/40 p-5 sm:p-7 z-10 text-slate-100 overflow-hidden box-border font-sans transition-all duration-300 ${
-            step === 'select_environment' ? 'max-w-3xl' : 'max-w-md'
+            step === 'select_environment' ? 'max-w-5xl' : 'max-w-md'
           }`}
         >
           {/* Ambient Lighting */}
@@ -590,8 +565,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                 </p>
               </div>
 
-              {/* 4 Cards Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 my-4">
+              {/* 3 Cards Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5 my-4">
                 {ACCESS_ENVIRONMENTS.map((env) => {
                   const Icon = env.icon;
                   return (
