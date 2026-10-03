@@ -413,43 +413,86 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <p className={`px-3 text-[10px] font-black uppercase tracking-wider text-emerald-400/90 mb-2 ${isDesktopCollapsed ? 'lg:hidden' : ''}`}>
                 Funciones Estratégicas
               </p>
-              <nav className="space-y-1">
-                {strategicMenuItems.filter(item => hasPermission(item.id)).map((item) => {
-                  const isActive = currentView === 'gestion_estrategica' && strategicTab === item.tab;
-                  
-                  return (
-                    <motion.button
-                      key={item.id}
-                      type="button"
-                      whileHover={{ scale: 1.01, x: 2 }}
-                      whileTap={{ scale: 0.98 }}
-                      title={item.label}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        if (currentView !== 'gestion_estrategica') {
-                          onSelectView('gestion_estrategica');
-                        }
-                        if (item.tab && onSelectStrategicTab) {
-                          onSelectStrategicTab(item.tab);
-                        }
-                        if (onCloseMobile) onCloseMobile();
-                        document.querySelector('main')?.scrollTo({ top: 0, behavior: 'smooth' });
-                      }}
-                      className={`w-full flex items-center ${isDesktopCollapsed ? 'lg:justify-center lg:px-2' : 'gap-3 px-3'} min-h-[44px] py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                        isActive
-                          ? 'bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-md shadow-emerald-900/40 border border-emerald-400/50'
-                          : 'text-slate-300 hover:text-white hover:bg-emerald-500/10'
-                      }`}
-                    >
-                      <div className={`shrink-0 transition-transform ${isActive ? 'scale-110 text-white' : 'text-slate-400'}`}>
-                        {item.icon}
-                      </div>
-                      <span className={`truncate tracking-wide text-left ${isDesktopCollapsed ? 'lg:hidden' : ''}`}>{item.label}</span>
-                    </motion.button>
-                  );
-                })}
-              </nav>
+              <LayoutGroup id="sidebar-strategic-nav">
+                <nav className="space-y-1">
+                  {strategicMenuItems.filter(item => hasPermission(item.id)).map((item, index) => {
+                    const isActive = currentView === 'gestion_estrategica' && strategicTab === item.tab;
+                    
+                    return (
+                      <motion.button
+                        key={item.id}
+                        type="button"
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{
+                          duration: 0.2,
+                          delay: index * 0.025,
+                          ease: [0.16, 1, 0.3, 1],
+                        }}
+                        title={item.label}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (currentView !== 'gestion_estrategica') {
+                            onSelectView('gestion_estrategica');
+                          }
+                          if (item.tab && onSelectStrategicTab) {
+                            onSelectStrategicTab(item.tab);
+                          }
+                          if (onCloseMobile) onCloseMobile();
+                          document.querySelector('main')?.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        className={`group relative w-full flex items-center ${
+                          isDesktopCollapsed ? 'lg:justify-center lg:px-2' : 'gap-3 px-3'
+                        } min-h-[44px] py-2.5 rounded-xl text-xs font-bold cursor-pointer active:scale-[0.98] transition-all duration-75 select-none will-change-[transform,opacity] ${
+                          isActive
+                            ? 'text-white'
+                            : 'text-slate-300 hover:text-white hover:bg-slate-800/50 hover:translate-x-1'
+                        }`}
+                      >
+                        {/* Indicador de píldora activa con gradiente cian/azul y resplandor perimetral sutil */}
+                        {isActive && (
+                          <motion.div
+                            layoutId="activeStrategicPill"
+                            transition={{
+                              type: 'spring',
+                              stiffness: 450,
+                              damping: 34,
+                            }}
+                            className="absolute inset-0 rounded-xl bg-gradient-to-r from-cyan-500 to-[#0284c7] shadow-[0_4px_20px_-2px_rgba(6,182,212,0.35)] border border-cyan-400/40 z-0 pointer-events-none"
+                          />
+                        )}
+
+                        {/* Contenido con micro-interacciones GPU */}
+                        <div
+                          className={`relative z-10 flex items-center ${
+                            isDesktopCollapsed ? 'lg:justify-center' : 'gap-3'
+                          } w-full transition-transform duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]`}
+                        >
+                          {/* Icono con escala continua al estar activo y resplandor temático en hover */}
+                          <div
+                            className={`shrink-0 transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                              isActive
+                                ? 'scale-[1.04] text-white drop-shadow-[0_0_8px_rgba(6,182,212,0.45)]'
+                                : 'text-slate-400 group-hover:text-cyan-300 group-hover:drop-shadow-[0_0_6px_rgba(6,182,212,0.45)]'
+                            }`}
+                          >
+                            {item.icon}
+                          </div>
+
+                          <span
+                            className={`truncate tracking-wide text-left transition-colors duration-200 ${
+                              isDesktopCollapsed ? 'lg:hidden' : ''
+                            } ${isActive ? 'text-white font-extrabold' : 'text-slate-300 group-hover:text-white'}`}
+                          >
+                            {item.label}
+                          </span>
+                        </div>
+                      </motion.button>
+                    );
+                  })}
+                </nav>
+              </LayoutGroup>
             </div>
           )}
 
@@ -459,47 +502,86 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <p className={`px-3 text-[10px] font-black uppercase tracking-wider text-teal-400/90 mb-2 ${isDesktopCollapsed ? 'lg:hidden' : ''}`}>
                 Funciones Territoriales
               </p>
-              <div className="space-y-1">
-                {territorialMenuItems.filter(item => hasPermission(item.id)).map((item) => {
-                  const isActive = item.type === 'subtab'
-                    ? currentView === 'gestion_territorial' && territorialSubTab === item.subtab
-                    : currentView === item.view;
+              <LayoutGroup id="sidebar-territorial-nav">
+                <nav className="space-y-1">
+                  {territorialMenuItems.filter(item => hasPermission(item.id)).map((item, index) => {
+                    const isActive = item.type === 'subtab'
+                      ? currentView === 'gestion_territorial' && territorialSubTab === item.subtab
+                      : currentView === item.view;
 
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      title={item.label}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        if (item.type === 'subtab') {
-                          if (currentView !== 'gestion_territorial') {
-                            onSelectView('gestion_territorial');
+                    return (
+                      <motion.button
+                        key={item.id}
+                        type="button"
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{
+                          duration: 0.2,
+                          delay: index * 0.025,
+                          ease: [0.16, 1, 0.3, 1],
+                        }}
+                        title={item.label}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (item.type === 'subtab') {
+                            if (currentView !== 'gestion_territorial') {
+                              onSelectView('gestion_territorial');
+                            }
+                            if (onSelectTerritorialSubTab) onSelectTerritorialSubTab(item.subtab);
+                          } else {
+                            onSelectView(item.view);
                           }
-                          if (onSelectTerritorialSubTab) onSelectTerritorialSubTab(item.subtab);
-                        } else {
-                          onSelectView(item.view);
-                        }
-                        if (onCloseMobile) onCloseMobile();
-                        document.querySelector('main')?.scrollTo({ top: 0, behavior: 'smooth' });
-                      }}
-                      className={`w-full flex items-center ${isDesktopCollapsed ? 'lg:justify-center lg:px-2' : 'gap-3 px-3'} min-h-[44px] py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                        isActive
-                          ? 'bg-gradient-to-r from-teal-700 to-emerald-700 text-white shadow-md shadow-teal-900/40 border border-teal-400/50'
-                          : 'text-slate-300 hover:text-white hover:bg-teal-500/10'
-                      }`}
-                    >
-                      <div className={`shrink-0 transition-transform ${isActive ? 'scale-110 text-white' : ''}`}>
-                        {item.icon}
-                      </div>
-                      <div className={`text-left truncate ${isDesktopCollapsed ? 'lg:hidden' : ''}`}>
-                        <div className="tracking-wide text-white">{item.label}</div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
+                          if (onCloseMobile) onCloseMobile();
+                          document.querySelector('main')?.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
+                        className={`group relative w-full flex items-center ${
+                          isDesktopCollapsed ? 'lg:justify-center lg:px-2' : 'gap-3 px-3'
+                        } min-h-[44px] py-2.5 rounded-xl text-xs font-bold cursor-pointer active:scale-[0.98] transition-all duration-75 select-none will-change-[transform,opacity] ${
+                          isActive
+                            ? 'text-white'
+                            : 'text-slate-300 hover:text-white hover:bg-slate-800/50 hover:translate-x-1'
+                        }`}
+                      >
+                        {isActive && (
+                          <motion.div
+                            layoutId="activeTerritorialPill"
+                            transition={{
+                              type: 'spring',
+                              stiffness: 450,
+                              damping: 34,
+                            }}
+                            className="absolute inset-0 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-700 shadow-[0_4px_20px_-2px_rgba(20,184,166,0.35)] border border-teal-400/40 z-0 pointer-events-none"
+                          />
+                        )}
+
+                        <div
+                          className={`relative z-10 flex items-center ${
+                            isDesktopCollapsed ? 'lg:justify-center' : 'gap-3'
+                          } w-full transition-transform duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]`}
+                        >
+                          <div
+                            className={`shrink-0 transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                              isActive
+                                ? 'scale-[1.04] text-white drop-shadow-[0_0_8px_rgba(20,184,166,0.45)]'
+                                : 'text-slate-400 group-hover:text-teal-300 group-hover:drop-shadow-[0_0_6px_rgba(20,184,166,0.45)]'
+                            }`}
+                          >
+                            {item.icon}
+                          </div>
+                          <span
+                            className={`truncate tracking-wide text-left transition-colors duration-200 ${
+                              isDesktopCollapsed ? 'lg:hidden' : ''
+                            } ${isActive ? 'text-white font-extrabold' : 'text-slate-300 group-hover:text-white'}`}
+                          >
+                            {item.label}
+                          </span>
+                        </div>
+                      </motion.button>
+                    );
+                  })}
+                </nav>
+              </LayoutGroup>
             </div>
           )}
 
@@ -519,11 +601,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         key={item.id}
                         type="button"
                         title={item.label}
-                        initial={{ opacity: 0, x: -8 }}
+                        initial={{ opacity: 0, x: -10 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{
-                          duration: 0.22,
-                          delay: index * 0.03,
+                          duration: 0.2,
+                          delay: index * 0.025,
                           ease: [0.16, 1, 0.3, 1],
                         }}
                         onClick={(e) => {
@@ -540,10 +622,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         }}
                         className={`group relative w-full flex items-center ${
                           isDesktopCollapsed ? 'lg:justify-center lg:px-2' : 'gap-3 px-3'
-                        } min-h-[44px] py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer active:scale-[0.98] select-none ${
+                        } min-h-[44px] py-2.5 rounded-xl text-xs font-bold cursor-pointer active:scale-[0.98] transition-all duration-75 select-none will-change-[transform,opacity] ${
                           isActive
                             ? 'text-white'
-                            : 'text-slate-300 hover:text-white hover:bg-slate-800/40'
+                            : 'text-slate-300 hover:text-white hover:bg-slate-800/50 hover:translate-x-1'
                         }`}
                       >
                         {/* Indicador de píldora activa deslizante (Sliding Active Indicator) */}
@@ -552,33 +634,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             layoutId="activeAdminPill"
                             transition={{
                               type: 'spring',
-                              stiffness: 420,
-                              damping: 32,
+                              stiffness: 450,
+                              damping: 34,
                             }}
-                            className="absolute inset-0 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 shadow-[0_0_20px_rgba(6,182,212,0.35)] border border-cyan-400/40 z-0 pointer-events-none"
+                            className="absolute inset-0 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 shadow-[0_4px_20px_-2px_rgba(6,182,212,0.35)] border border-cyan-400/40 z-0 pointer-events-none"
                           />
                         )}
 
-                        {/* Contenido con desplazamiento sutil en hover (Subtle Indent) */}
+                        {/* Contenido con micro-interacciones GPU */}
                         <div
                           className={`relative z-10 flex items-center ${
                             isDesktopCollapsed ? 'lg:justify-center' : 'gap-3'
-                          } w-full transition-transform duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-                            !isActive ? 'group-hover:translate-x-1' : ''
-                          }`}
+                          } w-full transition-transform duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]`}
                         >
                           {/* Micro-animación en icono activo e iluminación tenue en hover */}
-                          <motion.div
-                            animate={isActive ? { scale: [1, 1.08, 1] } : { scale: 1 }}
-                            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-                            className={`shrink-0 transition-all duration-200 ${
+                          <div
+                            className={`shrink-0 transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] ${
                               isActive
-                                ? 'scale-105 drop-shadow-[0_0_8px_rgba(255,255,255,0.45)]'
-                                : (item.glowClass || '')
+                                ? 'scale-[1.04] drop-shadow-[0_0_8px_rgba(6,182,212,0.45)]'
+                                : (item.glowClass || '') + ' text-slate-400 group-hover:text-cyan-300 group-hover:drop-shadow-[0_0_6px_rgba(6,182,212,0.45)]'
                             }`}
                           >
                             {item.icon}
-                          </motion.div>
+                          </div>
 
                           <span
                             className={`truncate tracking-wide text-left transition-colors duration-200 ${
@@ -601,7 +679,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* User Profile Footer Card - Professional Cyber Design */}
-      <div className={`shrink-0 ${isDesktopCollapsed ? 'lg:mx-1.5 lg:p-2' : 'mx-2.5 p-3.5'} mt-2.5 mb-[max(0.625rem,env(safe-area-inset-bottom))] rounded-2xl bg-gradient-to-b from-[#072448]/90 to-[#031127]/95 border border-cyan-500/30 shadow-lg shadow-cyan-950/40 backdrop-blur-md transition-all`}>
+      <div className={`shrink-0 ${isDesktopCollapsed ? 'lg:mx-1.5 lg:p-2' : 'mx-2.5 p-3.5'} mt-2.5 mb-[max(0.625rem,env(safe-area-inset-bottom))] rounded-2xl bg-gradient-to-b from-[#072448]/90 to-[#031127]/95 border border-cyan-500/30 shadow-lg shadow-cyan-950/40 backdrop-blur-md transition-all group/profile`}>
         <div className={`flex items-center ${isDesktopCollapsed ? 'lg:justify-center' : 'gap-3'}`}>
           {/* Avatar with Status Indicator */}
           <div className="relative shrink-0">
@@ -611,7 +689,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 alt={userDisplayName}
                 loading="lazy"
                 decoding="async"
-                className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl border border-cyan-400/40 object-cover shadow-md"
+                className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl border border-cyan-400/40 object-cover shadow-[0_0_16px_rgba(59,130,246,0.35)]"
               />
             ) : authUser?.role === 'candidato' && candidatePhoto ? (
               <img
@@ -619,19 +697,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 alt={userDisplayName}
                 loading="lazy"
                 decoding="async"
-                className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl border border-cyan-400/40 object-cover shadow-md"
+                className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl border border-cyan-400/40 object-cover shadow-[0_0_16px_rgba(59,130,246,0.35)]"
               />
             ) : (
               <div 
-                className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br from-cyan-500 via-blue-600 to-indigo-700 text-white font-extrabold text-sm flex items-center justify-center shadow-md shadow-cyan-500/20 border border-cyan-400/50 tracking-wider select-none"
+                className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br from-cyan-500 via-blue-600 to-indigo-700 text-white font-extrabold text-sm flex items-center justify-center shadow-[0_0_16px_rgba(59,130,246,0.35)] border border-cyan-400/50 tracking-wider select-none"
               >
                 {getInitials(userDisplayName)}
               </div>
             )}
-            {/* Online pulse dot */}
-            <span className="absolute -bottom-1 -right-1 flex h-3 w-3">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500 ring-2 ring-[#072448]"></span>
+            {/* Online radar pulse dot */}
+            <span className="absolute -bottom-1 -right-1 flex h-3.5 w-3.5 items-center justify-center pointer-events-none">
+              <span className="status-dot-user inline-flex h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-[#051329]" />
             </span>
           </div>
 
@@ -651,7 +728,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
             {campaignTerritory && (
               <div 
-                className="mt-1.5 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[#020b18]/80 border border-cyan-500/25 text-[10px] font-medium text-cyan-200 max-w-full"
+                className="mt-1.5 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[#020b18]/80 border border-cyan-500/25 group-hover/profile:border-cyan-500/40 text-[10px] font-medium text-cyan-200 max-w-full transition-colors duration-200"
                 title={campaignTerritory}
               >
                 <MapPin className="w-3 h-3 text-cyan-400 shrink-0" />
@@ -662,10 +739,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {onLogout && (
-          <motion.button
+          <button
             type="button"
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.98 }}
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -673,11 +748,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
             }}
             title="Cerrar sesión"
             aria-label="Cerrar sesión"
-            className={`mt-3 w-full min-h-[44px] py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 bg-slate-800/80 hover:bg-rose-950/50 text-slate-300 hover:text-rose-200 border border-slate-700/80 hover:border-rose-500/40 shadow-sm transition-all cursor-pointer`}
+            className={`group/logout mt-3 w-full min-h-[44px] py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 bg-slate-800/80 hover:bg-rose-500/10 text-slate-300 hover:text-rose-300 border border-slate-700/80 hover:border-rose-500/40 shadow-sm transition-all duration-200 ease-out active:scale-[0.97] cursor-pointer will-change-transform`}
           >
-            <LogOut className="w-4 h-4 shrink-0" />
+            <LogOut className="w-4 h-4 shrink-0 transition-transform duration-200 ease-out group-hover/logout:-translate-x-0.5" />
             <span className={isDesktopCollapsed ? 'lg:hidden' : ''}>Cerrar sesión</span>
-          </motion.button>
+          </button>
         )}
       </div>
     </aside>
