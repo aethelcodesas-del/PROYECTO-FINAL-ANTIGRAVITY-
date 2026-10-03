@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { jsPDF } from 'jspdf';
 import { AuthUser } from '../../types';
@@ -215,6 +215,18 @@ export const RegistroVotantesView: React.FC<RegistroVotantesViewProps> = ({
   const [leadersList, setLeadersList] = useState<CampaignMember[]>([]);
   const [isLoadingDb, setIsLoadingDb] = useState<boolean>(true);
 
+  // Resilient Floating Toast State & Timeout Ref
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current);
+      }
+    };
+  }, []);
+
   // Synchronize with live server database
   const loadVotersAndLeadersFromDb = async () => {
     try {
@@ -334,10 +346,19 @@ export const RegistroVotantesView: React.FC<RegistroVotantesViewProps> = ({
   const [intencionFilter, setIntencionFilter] = useState('Todas');
   const [liderFilter, setLiderFilter] = useState('Todas');
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 4000);
-  };
+  const showToast = useCallback((msg: string) => {
+    try {
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current);
+      }
+      setToastMessage(msg ?? '');
+      toastTimeoutRef.current = setTimeout(() => {
+        setToastMessage(null);
+      }, 4000);
+    } catch (err) {
+      console.warn('[RegistroVotantes] Non-critical toast error:', err);
+    }
+  }, []);
 
   // API Call Handler
   const handleConsultarCenso = async (cedulaToSearch?: string) => {
@@ -981,15 +1002,15 @@ export const RegistroVotantesView: React.FC<RegistroVotantesViewProps> = ({
       
       {/* Toast Notification */}
       <AnimatePresence>
-        {toastMessage && (
+        {Boolean(toastMessage) && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="fixed top-24 right-6 z-[100] bg-gradient-to-r from-teal-700 to-emerald-800 text-white px-5 py-3 rounded-2xl shadow-2xl border border-teal-400/40 text-xs font-extrabold flex items-center gap-2 max-w-md"
+            className="fixed top-24 right-6 z-[100] bg-gradient-to-r from-teal-700 to-emerald-800 text-white px-5 py-3 rounded-2xl shadow-2xl border border-teal-400/40 text-xs font-extrabold flex items-center gap-2 max-w-md pointer-events-none"
           >
             <Sparkles className="w-4 h-4 text-teal-200 shrink-0" />
-            <span>{toastMessage}</span>
+            <span>{toastMessage ?? ''}</span>
           </motion.div>
         )}
       </AnimatePresence>

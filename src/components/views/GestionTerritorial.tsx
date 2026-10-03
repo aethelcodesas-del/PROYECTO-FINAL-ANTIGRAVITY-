@@ -9,6 +9,7 @@ import { supabase } from '../../lib/supabase';
 import { useModuleColorMode } from '../../utils/themeColorMode';
 import { ColorModeToggle } from '../common/ColorModeToggle';
 import { confirmModal, showToast } from '../common/ConfirmModal';
+import { ErrorBoundary } from '../common/ErrorBoundary';
 import { getPuestosPorCircunscripcion, PuestoVotacionInfo } from '../../data/puestosVotacionColombia';
 import { 
   Search, 
@@ -909,18 +910,20 @@ export const GestionTerritorial: React.FC<GestionTerritorialProps> = ({
 
       {/* ── CONTENIDO PRINCIPAL: SUBTAB REGISTRO O MAPA ─────────────────── */}
       {activeSubTab === 'registro' ? (
-        <Suspense fallback={
-          <div className="fixed top-0 left-0 right-0 z-[9999] pointer-events-none">
-            <div className="h-[2px] w-full bg-gradient-to-r from-teal-500 via-emerald-400 to-cyan-500 animate-pulse" />
-          </div>
-        }>
-          <RegistroVotantesView 
-            onSelectView={onSelectView} 
-            authUser={authUser} 
-            onSwitchToMap={() => handleSubTabSelect('mapa')}
-            onSelectSubTab={handleSubTabSelect}
-          />
-        </Suspense>
+        <ErrorBoundary moduleName="Registro de Votantes" level="component">
+          <Suspense fallback={
+            <div className="fixed top-0 left-0 right-0 z-[9999] pointer-events-none">
+              <div className="h-[2px] w-full bg-gradient-to-r from-teal-500 via-emerald-400 to-cyan-500 animate-pulse" />
+            </div>
+          }>
+            <RegistroVotantesView 
+              onSelectView={onSelectView} 
+              authUser={authUser} 
+              onSwitchToMap={() => handleSubTabSelect('mapa')}
+              onSelectSubTab={handleSubTabSelect}
+            />
+          </Suspense>
+        </ErrorBoundary>
       ) : (
         <motion.div
           variants={staggerContainerVariants}
