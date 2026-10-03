@@ -266,11 +266,46 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   // Territorial Operations Sub-Items (5 territorial functions)
   const territorialMenuItems = [
-    { id: 'terr_voters_reg', label: 'Registro de Votantes', type: 'subtab' as const, subtab: 'registro' as const, icon: <UserCheck className="w-4 h-4 text-teal-400" /> },
-    { id: 'terr_territorial_mgmt', label: 'Gestión Territorial', type: 'subtab' as const, subtab: 'mapa' as const, icon: <MapPin className="w-4 h-4 text-amber-400" /> },
-    { id: 'terr_field_witness', label: 'Testigos en Campo', type: 'view' as const, view: 'testigo_campo' as ViewMode, icon: <ClipboardList className="w-4 h-4 text-emerald-400" /> },
-    { id: 'terr_surveys', label: 'Módulo de Encuestas', type: 'view' as const, view: 'encuestas' as ViewMode, icon: <BarChart3 className="w-4 h-4 text-blue-400" /> },
-    { id: 'terr_table_witness', label: 'Jurados en Mesa', type: 'view' as const, view: 'jurado_campo' as ViewMode, icon: <Users className="w-4 h-4 text-cyan-400" /> },
+    { 
+      id: 'terr_voters_reg', 
+      label: 'Registro de Votantes', 
+      type: 'subtab' as const, 
+      subtab: 'registro' as const, 
+      icon: <UserCheck className="w-4 h-4 text-emerald-400" />,
+      hoverGlowClass: 'group-hover:drop-shadow-[0_0_6px_rgba(16,185,129,0.5)]'
+    },
+    { 
+      id: 'terr_territorial_mgmt', 
+      label: 'Gestión Territorial', 
+      type: 'subtab' as const, 
+      subtab: 'mapa' as const, 
+      icon: <MapPin className="w-4 h-4 text-amber-400" />,
+      hoverGlowClass: 'group-hover:drop-shadow-[0_0_6px_rgba(245,158,11,0.5)]'
+    },
+    { 
+      id: 'terr_field_witness', 
+      label: 'Testigos en Campo', 
+      type: 'view' as const, 
+      view: 'testigo_campo' as ViewMode, 
+      icon: <ClipboardList className="w-4 h-4 text-emerald-400" />,
+      hoverGlowClass: 'group-hover:drop-shadow-[0_0_6px_rgba(16,185,129,0.5)]'
+    },
+    { 
+      id: 'terr_surveys', 
+      label: 'Módulo de Encuestas', 
+      type: 'view' as const, 
+      view: 'encuestas' as ViewMode, 
+      icon: <BarChart3 className="w-4 h-4 text-cyan-400" />,
+      hoverGlowClass: 'group-hover:drop-shadow-[0_0_6px_rgba(6,182,212,0.5)]'
+    },
+    { 
+      id: 'terr_table_witness', 
+      label: 'Jurados en Mesa', 
+      type: 'view' as const, 
+      view: 'jurado_campo' as ViewMode, 
+      icon: <Users className="w-4 h-4 text-sky-400" />,
+      hoverGlowClass: 'group-hover:drop-shadow-[0_0_6px_rgba(14,165,233,0.5)]'
+    },
   ];
 
   // Administrative Section Sub-Items (8 administrative functions)
@@ -499,7 +534,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* 2. GESTIÓN TERRITORIAL */}
           {activeSection === 'territorial' && (
             <div>
-              <p className={`px-3 text-[10px] font-black uppercase tracking-wider text-teal-400/90 mb-2 ${isDesktopCollapsed ? 'lg:hidden' : ''}`}>
+              <p 
+                className={`px-3 text-[10px] font-black uppercase text-teal-400 mb-2 tracking-[0.05em] [text-shadow:0_0_10px_rgba(20,184,166,0.2)] ${isDesktopCollapsed ? 'lg:hidden' : ''}`}
+              >
                 Funciones Territoriales
               </p>
               <LayoutGroup id="sidebar-territorial-nav">
@@ -513,11 +550,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       <motion.button
                         key={item.id}
                         type="button"
-                        initial={{ opacity: 0, x: -10 }}
+                        initial={{ opacity: 0, x: -8 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{
-                          duration: 0.2,
-                          delay: index * 0.025,
+                          duration: 0.18,
+                          delay: index * 0.03,
                           ease: [0.16, 1, 0.3, 1],
                         }}
                         title={item.label}
@@ -537,12 +574,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         }}
                         className={`group relative w-full flex items-center ${
                           isDesktopCollapsed ? 'lg:justify-center lg:px-2' : 'gap-3 px-3'
-                        } min-h-[44px] py-2.5 rounded-xl text-xs font-bold cursor-pointer active:scale-[0.98] transition-all duration-75 select-none will-change-[transform,opacity] ${
+                        } min-h-[44px] py-2.5 rounded-xl text-xs font-bold cursor-pointer active:scale-[0.97] transition-all duration-75 select-none will-change-[transform,opacity] ${
                           isActive
                             ? 'text-white'
-                            : 'text-slate-300 hover:text-white hover:bg-slate-800/50 hover:translate-x-1'
+                            : 'text-slate-300 hover:text-white hover:bg-[#1e293b]/45 hover:translate-x-[5px]'
                         }`}
                       >
+                        {/* Indicador de píldora activa con resplandor esmeralda y respiración en reposo */}
                         {isActive && (
                           <motion.div
                             layoutId="activeTerritorialPill"
@@ -551,7 +589,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                               stiffness: 450,
                               damping: 34,
                             }}
-                            className="absolute inset-0 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-700 shadow-[0_4px_20px_-2px_rgba(20,184,166,0.35)] border border-teal-400/40 z-0 pointer-events-none"
+                            className="nav-item-active-emerald absolute inset-0 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 shadow-[0_4px_20px_-2px_rgba(16,185,129,0.35)] border border-emerald-400/40 z-0 pointer-events-none"
                           />
                         )}
 
@@ -563,8 +601,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           <div
                             className={`shrink-0 transition-all duration-200 ease-[cubic-bezier(0.16,1,0.3,1)] ${
                               isActive
-                                ? 'scale-[1.04] text-white drop-shadow-[0_0_8px_rgba(20,184,166,0.45)]'
-                                : 'text-slate-400 group-hover:text-teal-300 group-hover:drop-shadow-[0_0_6px_rgba(20,184,166,0.45)]'
+                                ? 'scale-[1.05] text-white drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]'
+                                : `text-slate-400 group-hover:scale-110 ${item.hoverGlowClass || 'group-hover:drop-shadow-[0_0_6px_rgba(16,185,129,0.5)]'}`
                             }`}
                           >
                             {item.icon}

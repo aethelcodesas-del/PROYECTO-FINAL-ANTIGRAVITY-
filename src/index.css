@@ -3168,6 +3168,17 @@ textarea {
   will-change: box-shadow;
 }
 
+@keyframes activeEmeraldGlow {
+  0%, 100% { filter: drop-shadow(0 0 4px rgba(16, 185, 129, 0.2)); }
+  50% { filter: drop-shadow(0 0 10px rgba(16, 185, 129, 0.45)); }
+}
+
+.nav-item-active-emerald {
+  animation: activeEmeraldGlow 3.5s ease-in-out infinite;
+  box-shadow: 0 4px 20px -2px rgba(16, 185, 129, 0.35);
+  will-change: filter, box-shadow;
+}
+
 /* --------------------------------------------------------------------------
    E. ACCESSIBILITY & PREFERS-REDUCED-MOTION
    Respect user operating system reduced-motion preferences
