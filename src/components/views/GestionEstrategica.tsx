@@ -1016,8 +1016,17 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
 
         if (!campaign) return;
 
-        let savedProfile: any = {};
-        try { savedProfile = JSON.parse(campaign.descripcion || '{}')?.candidateProfile || {}; } catch { savedProfile = {}; }
+        let descObj: any = {};
+        try { descObj = JSON.parse(campaign.descripcion || '{}'); } catch { descObj = {}; }
+        let savedProfile: any = descObj?.candidateProfile || {};
+        if (descObj?.candidateDofaVars) {
+          setCandidateDofaVars(prev => ({
+            strengths: Array.from(new Set([...prev.strengths, ...(descObj.candidateDofaVars.strengths || [])])),
+            opportunities: Array.from(new Set([...prev.opportunities, ...(descObj.candidateDofaVars.opportunities || [])])),
+            weaknesses: Array.from(new Set([...prev.weaknesses, ...(descObj.candidateDofaVars.weaknesses || [])])),
+            threats: Array.from(new Set([...prev.threats, ...(descObj.candidateDofaVars.threats || [])]))
+          }));
+        }
         const scope = String(campaign.circunscripcion || campaignCtx.circunscripcion || '').toUpperCase();
         const territory = scope === 'NACIONAL'
           ? 'Colombia'
@@ -1035,7 +1044,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
           territory,
           partyAlliance: savedProfile.partyAlliance || '',
           slogan: savedProfile.slogan || '',
-          avatarUrl: savedProfile.avatarUrl || '',
+          avatarUrl: savedProfile.avatarUrl || campaign.foto_candidato || campaign.candidate_photo_url || '',
           phone: savedProfile.phone || '',
           email: savedProfile.email || '',
           website: savedProfile.website || '',
@@ -1068,7 +1077,9 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
         candidate_name: candidateProfile.fullName.trim() || null,
         cargo_postulacion: candidateProfile.candidateOffice || null,
         election_type: candidateProfile.candidateOffice || null,
-        descripcion: JSON.stringify({ ...description, candidateProfile }),
+        foto_candidato: candidateProfile.avatarUrl || null,
+        candidate_photo_url: candidateProfile.avatarUrl || null,
+        descripcion: JSON.stringify({ ...description, candidateProfile, candidateDofaVars }),
         updated_at: new Date().toISOString(),
       }).eq('id', candidateCampaignId);
       if (error) throw error;
@@ -1082,6 +1093,74 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
     } finally {
       setCandidateProfileSaving(false);
     }
+  };
+
+  // Avatar / Photo upload handler with Supabase Storage & realtime sync
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || !e.target.files[0]) return;
+    const file = e.target.files[0];
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const base64Url = event.target?.result as string;
+      if (!base64Url) return;
+
+      let finalAvatarUrl = base64Url;
+      setCandidateProfile(p => ({ ...p, avatarUrl: finalAvatarUrl }));
+      try {
+        localStorage.setItem('candidate_photo', finalAvatarUrl);
+        window.dispatchEvent(new Event('candidate_photo_updated'));
+      } catch {
+        // ignore
+      }
+
+      if (candidateCampaignId) {
+        try {
+          const fileExt = file.name.split('.').pop() || 'png';
+          const fileName = `${candidateCampaignId}_avatar_${Date.now()}.${fileExt}`;
+          const filePath = `candidates/${fileName}`;
+
+          let uploadRes = await supabase.storage.from('candidate-assets').upload(filePath, file, { upsert: true });
+          let bucketName = 'candidate-assets';
+          if (uploadRes.error) {
+            uploadRes = await supabase.storage.from('avatars').upload(filePath, file, { upsert: true });
+            bucketName = 'avatars';
+          }
+
+          if (!uploadRes.error) {
+            const { data: publicUrlData } = supabase.storage.from(bucketName).getPublicUrl(filePath);
+            if (publicUrlData?.publicUrl) {
+              finalAvatarUrl = publicUrlData.publicUrl;
+              setCandidateProfile(p => ({ ...p, avatarUrl: finalAvatarUrl }));
+              try {
+                localStorage.setItem('candidate_photo', finalAvatarUrl);
+                window.dispatchEvent(new Event('candidate_photo_updated'));
+              } catch {}
+            }
+          }
+
+          const { data: campaign } = await supabase.from('campaigns').select('descripcion').eq('id', candidateCampaignId).single();
+          let description: any = {};
+          try { description = JSON.parse(campaign?.descripcion || '{}'); } catch { description = {}; }
+
+          await supabase.from('campaigns').update({
+            foto_candidato: finalAvatarUrl,
+            candidate_photo_url: finalAvatarUrl,
+            descripcion: JSON.stringify({
+              ...description,
+              candidateProfile: { ...candidateProfile, avatarUrl: finalAvatarUrl },
+              candidateDofaVars
+            }),
+            updated_at: new Date().toISOString(),
+          }).eq('id', candidateCampaignId);
+
+          setCandidateProfileMessage('Foto del candidato actualizada y sincronizada.');
+        } catch (storageErr) {
+          console.warn('Avatar upload fallback used:', storageErr);
+        }
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   // CV / Hoja de Vida State
@@ -1267,6 +1346,29 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
     threats: ''
   });
 
+  // Auto-persist DOFA changes to Supabase in background
+  const persistDofaToSupabase = async (
+    updatedProfile: typeof candidateProfile,
+    updatedDofaVars: typeof candidateDofaVars
+  ) => {
+    if (!candidateCampaignId) return;
+    try {
+      const { data: campaign } = await supabase.from('campaigns').select('descripcion').eq('id', candidateCampaignId).single();
+      let description: any = {};
+      try { description = JSON.parse(campaign?.descripcion || '{}'); } catch { description = {}; }
+      await supabase.from('campaigns').update({
+        descripcion: JSON.stringify({
+          ...description,
+          candidateProfile: updatedProfile,
+          candidateDofaVars: updatedDofaVars
+        }),
+        updated_at: new Date().toISOString(),
+      }).eq('id', candidateCampaignId);
+    } catch (e) {
+      console.warn('Auto-save DOFA to Supabase error:', e);
+    }
+  };
+
   // Handle adding custom variable to DOFA
   const handleAddCustomDofaVar = (
     category: 'strengths' | 'opportunities' | 'weaknesses' | 'threats',
@@ -1275,23 +1377,30 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
     const text = newDofaInputs[category].trim();
     if (!text) return;
 
+    let updatedVars = { ...candidateDofaVars };
     // Add to DOFA variables list if not exists
     if (!candidateDofaVars[category].some(v => v.toLowerCase() === text.toLowerCase())) {
-      setCandidateDofaVars(prev => ({
-        ...prev,
-        [category]: [...prev[category], text]
-      }));
+      updatedVars = {
+        ...candidateDofaVars,
+        [category]: [...candidateDofaVars[category], text]
+      };
+      setCandidateDofaVars(updatedVars);
     }
 
     // Automatically select / append to candidate profile field
     const currentText = candidateProfile[field] || '';
+    let updatedProfile = { ...candidateProfile };
     if (!currentText.toLowerCase().includes(text.toLowerCase())) {
       const newText = currentText.trim() ? `${currentText.trim()}; ${text}` : text;
-      setCandidateProfile(prev => ({ ...prev, [field]: newText }));
+      updatedProfile = { ...candidateProfile, [field]: newText };
+      setCandidateProfile(updatedProfile);
     }
 
     // Clear input
     setNewDofaInputs(prev => ({ ...prev, [category]: '' }));
+
+    // Auto-persist to Supabase
+    void persistDofaToSupabase(updatedProfile, updatedVars);
   };
 
   // Toggle candidate DOFA variable chip selection
@@ -1300,13 +1409,16 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
     varText: string
   ) => {
     const currentText = candidateProfile[field] || '';
+    let newText = '';
     if (currentText.toLowerCase().includes(varText.toLowerCase())) {
       const parts = currentText.split('; ').filter(p => p.trim().toLowerCase() !== varText.trim().toLowerCase());
-      setCandidateProfile({ ...candidateProfile, [field]: parts.join('; ') });
+      newText = parts.join('; ');
     } else {
-      const newText = currentText.trim() ? `${currentText.trim()}; ${varText}` : varText;
-      setCandidateProfile({ ...candidateProfile, [field]: newText });
+      newText = currentText.trim() ? `${currentText.trim()}; ${varText}` : varText;
     }
+    const updatedProfile = { ...candidateProfile, [field]: newText };
+    setCandidateProfile(updatedProfile);
+    void persistDofaToSupabase(updatedProfile, candidateDofaVars);
   };
 
   // Competitors & Allies State
@@ -2952,7 +3064,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start perfil-candidato-view">
           
           {/* Avatar & Key Badge Card */}
-          <div className="lg:col-span-4 bg-gradient-to-b from-[#04152d]/95 via-[#030e21]/95 to-[#010814] border border-cyan-500/30 rounded-3xl p-6 space-y-5 text-center flex flex-col items-center shadow-2xl self-start h-fit min-w-[200px] perfil-avatar-card">
+          <div className="lg:col-span-4 bg-gradient-to-b from-[#04152d]/95 via-[#030e21]/95 to-[#010814] border border-cyan-500/30 rounded-3xl p-6 space-y-5 text-center flex flex-col items-center shadow-2xl self-start h-fit min-w-[200px] perfil-avatar-card animate-perfil-stagger-1 perfil-avatar-glow">
             <div className="w-full flex flex-col items-center">
               <div className="relative group">
                 {candidateProfile.avatarUrl ? (
@@ -2966,31 +3078,13 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                     <UserCheck className="w-12 h-12 text-cyan-400/80" />
                   </div>
                 )}
-                <label className="absolute bottom-0 right-0 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 p-2.5 rounded-full cursor-pointer shadow-lg transition-transform hover:scale-110 border-2 border-[#030e21] perfil-avatar-edit-btn" title="Cambiar foto del candidato">
+                <label className="absolute bottom-0 right-0 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 p-2.5 rounded-full cursor-pointer shadow-lg transition-transform hover:scale-110 active:scale-90 border-2 border-[#030e21] perfil-avatar-edit-btn" title="Cambiar foto del candidato">
                   <Edit3 className="w-4 h-4" />
                   <input
                     type="file"
                     accept="image/*"
                     className="hidden"
-                    onChange={(e) => {
-                      if (e.target.files && e.target.files[0]) {
-                        const file = e.target.files[0];
-                        const reader = new FileReader();
-                        reader.onload = (event) => {
-                          const base64Url = event.target?.result as string;
-                          if (base64Url) {
-                            setCandidateProfile(p => ({ ...p, avatarUrl: base64Url }));
-                            try {
-                              localStorage.setItem('candidate_photo', base64Url);
-                              window.dispatchEvent(new Event('candidate_photo_updated'));
-                            } catch {
-                              // ignore
-                            }
-                          }
-                        };
-                        reader.readAsDataURL(file);
-                      }
-                    }}
+                    onChange={handleAvatarUpload}
                   />
                 </label>
               </div>
@@ -3039,7 +3133,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                   <ShieldCheck className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                   <div className="flex flex-col min-w-0">
                     <span className="text-slate-400 font-medium text-[10px] uppercase tracking-wider perfil-info-label">Sello Inhabilidades</span>
-                    <span className="text-amber-300 font-bold text-xs flex items-center gap-1 perfil-seal-badge">
+                    <span className="text-amber-300 font-bold text-xs flex items-center gap-1 perfil-seal-badge px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/30 badge-warning-pulse">
                       Pendiente de verificación oficial
                     </span>
                   </div>
@@ -3072,53 +3166,88 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
               )}
 
               {/* Candidate DOFA Summary Box */}
-              <div className="pt-2.5 border-t border-cyan-500/20 space-y-2 perfil-dofa-summary-box">
-                <span className="text-[10px] text-cyan-300 uppercase font-black tracking-wider flex items-center gap-1.5 perfil-dofa-summary-label">
-                  <PieChart className="w-3.5 h-3.5 text-cyan-400" /> Matriz DOFA Resumida:
-                </span>
-                {Boolean(
-                  (candidateProfile.dofaStrengths && candidateProfile.dofaStrengths.trim() !== '') ||
-                  (candidateProfile.dofaOpportunities && candidateProfile.dofaOpportunities.trim() !== '') ||
-                  (candidateProfile.dofaWeaknesses && candidateProfile.dofaWeaknesses.trim() !== '') ||
-                  (candidateProfile.dofaThreats && candidateProfile.dofaThreats.trim() !== '')
-                ) ? (
-                  <div className="grid grid-cols-1 gap-2 text-[10px]">
-                    {candidateProfile.dofaStrengths && candidateProfile.dofaStrengths.trim() !== '' && (
-                      <div className="bg-emerald-950/60 border border-emerald-500/30 p-2.5 rounded-xl dofa-mini-strength">
-                        <span className="font-bold text-emerald-300 block mb-0.5">Fortalezas:</span>
-                        <p className="text-slate-200 line-clamp-2 leading-tight">{candidateProfile.dofaStrengths}</p>
+              {(() => {
+                const sCount = candidateProfile.dofaStrengths?.split(';').map(s => s.trim()).filter(Boolean).length || 0;
+                const oCount = candidateProfile.dofaOpportunities?.split(';').map(s => s.trim()).filter(Boolean).length || 0;
+                const wCount = candidateProfile.dofaWeaknesses?.split(';').map(s => s.trim()).filter(Boolean).length || 0;
+                const tCount = candidateProfile.dofaThreats?.split(';').map(s => s.trim()).filter(Boolean).length || 0;
+                const totalVars = sCount + oCount + wCount + tCount;
+                return (
+                  <div className="pt-2.5 border-t border-cyan-500/20 space-y-2 perfil-dofa-summary-box">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-cyan-300 uppercase font-black tracking-wider flex items-center gap-1.5 perfil-dofa-summary-label">
+                        <PieChart className="w-3.5 h-3.5 text-cyan-400" /> Matriz DOFA Resumida:
+                      </span>
+                      {totalVars > 0 && (
+                        <span className="text-[10px] bg-cyan-500/20 text-cyan-300 px-1.5 py-0.5 rounded-md font-mono font-bold">
+                          {totalVars} {totalVars === 1 ? 'var.' : 'vars.'}
+                        </span>
+                      )}
+                    </div>
+                    {totalVars > 0 ? (
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap gap-1 text-[10px]">
+                          {sCount > 0 && (
+                            <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-semibold">
+                              {sCount} {sCount === 1 ? 'fortaleza' : 'fortalezas'}
+                            </span>
+                          )}
+                          {oCount > 0 && (
+                            <span className="px-2 py-0.5 rounded-md bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 font-semibold">
+                              {oCount} {oCount === 1 ? 'oportunidad' : 'oportunidades'}
+                            </span>
+                          )}
+                          {wCount > 0 && (
+                            <span className="px-2 py-0.5 rounded-md bg-amber-500/20 border border-amber-500/40 text-amber-300 font-semibold">
+                              {wCount} {wCount === 1 ? 'debilidad' : 'debilidades'}
+                            </span>
+                          )}
+                          {tCount > 0 && (
+                            <span className="px-2 py-0.5 rounded-md bg-rose-500/20 border border-rose-500/40 text-rose-300 font-semibold">
+                              {tCount} {tCount === 1 ? 'amenaza' : 'amenazas'}
+                            </span>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-1 gap-2 text-[10px]">
+                          {candidateProfile.dofaStrengths && candidateProfile.dofaStrengths.trim() !== '' && (
+                            <div className="bg-emerald-950/60 border border-emerald-500/30 p-2 rounded-xl dofa-mini-strength">
+                              <span className="font-bold text-emerald-300 block mb-0.5">Fortalezas:</span>
+                              <p className="text-slate-200 line-clamp-2 leading-tight">{candidateProfile.dofaStrengths}</p>
+                            </div>
+                          )}
+                          {candidateProfile.dofaOpportunities && candidateProfile.dofaOpportunities.trim() !== '' && (
+                            <div className="bg-cyan-950/60 border border-cyan-500/30 p-2 rounded-xl dofa-mini-opportunity">
+                              <span className="font-bold text-cyan-300 block mb-0.5">Oportunidades:</span>
+                              <p className="text-slate-200 line-clamp-2 leading-tight">{candidateProfile.dofaOpportunities}</p>
+                            </div>
+                          )}
+                          {candidateProfile.dofaWeaknesses && candidateProfile.dofaWeaknesses.trim() !== '' && (
+                            <div className="bg-amber-950/60 border border-amber-500/30 p-2 rounded-xl dofa-mini-weakness">
+                              <span className="font-bold text-amber-300 block mb-0.5">Debilidades:</span>
+                              <p className="text-slate-200 line-clamp-2 leading-tight">{candidateProfile.dofaWeaknesses}</p>
+                            </div>
+                          )}
+                          {candidateProfile.dofaThreats && candidateProfile.dofaThreats.trim() !== '' && (
+                            <div className="bg-rose-950/60 border border-rose-500/30 p-2 rounded-xl dofa-mini-threat">
+                              <span className="font-bold text-rose-300 block mb-0.5">Amenazas:</span>
+                              <p className="text-slate-200 line-clamp-2 leading-tight">{candidateProfile.dofaThreats}</p>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    )}
-                    {candidateProfile.dofaOpportunities && candidateProfile.dofaOpportunities.trim() !== '' && (
-                      <div className="bg-cyan-950/60 border border-cyan-500/30 p-2.5 rounded-xl dofa-mini-opportunity">
-                        <span className="font-bold text-cyan-300 block mb-0.5">Oportunidades:</span>
-                        <p className="text-slate-200 line-clamp-2 leading-tight">{candidateProfile.dofaOpportunities}</p>
-                      </div>
-                    )}
-                    {candidateProfile.dofaWeaknesses && candidateProfile.dofaWeaknesses.trim() !== '' && (
-                      <div className="bg-amber-950/60 border border-amber-500/30 p-2.5 rounded-xl dofa-mini-weakness">
-                        <span className="font-bold text-amber-300 block mb-0.5">Debilidades:</span>
-                        <p className="text-slate-200 line-clamp-2 leading-tight">{candidateProfile.dofaWeaknesses}</p>
-                      </div>
-                    )}
-                    {candidateProfile.dofaThreats && candidateProfile.dofaThreats.trim() !== '' && (
-                      <div className="bg-rose-950/60 border border-rose-500/30 p-2.5 rounded-xl dofa-mini-threat">
-                        <span className="font-bold text-rose-300 block mb-0.5">Amenazas:</span>
-                        <p className="text-slate-200 line-clamp-2 leading-tight">{candidateProfile.dofaThreats}</p>
+                    ) : (
+                      <div className="p-3 rounded-xl bg-[#030d1d] border border-cyan-500/15 text-center text-slate-400 text-[11px]">
+                        Sin variables DOFA registradas.
                       </div>
                     )}
                   </div>
-                ) : (
-                  <div className="p-3 rounded-xl bg-[#030d1d] border border-cyan-500/15 text-center text-slate-400 text-[11px]">
-                    Sin variables DOFA registradas.
-                  </div>
-                )}
-              </div>
+                );
+              })()}
             </div>
           </div>
 
           {/* Detailed Editable Profile Form */}
-          <div className="lg:col-span-8 bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 sm:p-8 space-y-6 shadow-xl min-w-0 perfil-form-card">
+          <div className="lg:col-span-8 bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 sm:p-8 space-y-6 shadow-xl min-w-0 perfil-form-card animate-perfil-stagger-2">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-cyan-500/20 pb-4">
               <div>
                 <h3 className="text-lg font-bold text-white flex items-center gap-2 perfil-form-title">
@@ -3129,7 +3258,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                   Ficha técnica oficial, identidad de campaña y análisis estratégico DOFA
                 </p>
               </div>
-              <span className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 font-semibold text-[11px] self-start sm:self-center">
+              <span className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 font-semibold text-[11px] self-start sm:self-center badge-registro-oficial">
                 Registro Oficial
               </span>
             </div>
@@ -3150,7 +3279,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                       // ignore
                     }
                   }}
-                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3.5 py-2.5 text-white font-medium focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 outline-none perfil-form-input transition-all"
+                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3.5 py-2.5 text-white font-medium focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 outline-none perfil-form-input perfil-input-focus transition-all"
                 />
               </div>
 
@@ -3160,7 +3289,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                   type="text"
                   value={candidateProfile.politicalName}
                   onChange={(e) => setCandidateProfile({ ...candidateProfile, politicalName: e.target.value })}
-                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3.5 py-2.5 text-white font-medium focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 outline-none perfil-form-input transition-all"
+                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3.5 py-2.5 text-white font-medium focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 outline-none perfil-form-input perfil-input-focus transition-all"
                 />
               </div>
 
@@ -3169,7 +3298,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                 <select
                   value={candidateProfile.candidateOffice}
                   onChange={(e) => setCandidateProfile({ ...candidateProfile, candidateOffice: e.target.value })}
-                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3.5 py-2.5 text-white font-medium focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 outline-none perfil-form-select transition-all cursor-pointer"
+                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3.5 py-2.5 text-white font-medium focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 outline-none perfil-form-select perfil-input-focus transition-all cursor-pointer"
                 >
                   <option value="">Seleccione el cargo</option>
                   <option value="Alcaldía">Alcaldía Municipal/Distrital</option>
@@ -3189,7 +3318,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                   type="text"
                   value={candidateProfile.partyAlliance}
                   onChange={(e) => setCandidateProfile({ ...candidateProfile, partyAlliance: e.target.value })}
-                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3.5 py-2.5 text-white font-medium focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 outline-none perfil-form-input transition-all"
+                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3.5 py-2.5 text-white font-medium focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 outline-none perfil-form-input perfil-input-focus transition-all"
                 />
               </div>
 
@@ -3211,7 +3340,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                   value={candidateProfile.cedula}
                   onChange={(e) => setCandidateProfile({ ...candidateProfile, cedula: e.target.value })}
                   placeholder="Ej. 1.067.890.123"
-                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3.5 py-2.5 text-white font-medium focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 outline-none perfil-form-input transition-all"
+                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3.5 py-2.5 text-white font-medium focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 outline-none perfil-form-input perfil-input-focus transition-all"
                 />
               </div>
 
@@ -3222,7 +3351,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                   value={candidateProfile.slogan}
                   onChange={(e) => setCandidateProfile({ ...candidateProfile, slogan: e.target.value })}
                   placeholder="Ej. Transformación, honestidad y futuro para todos"
-                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3.5 py-2.5 text-white font-bold focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 outline-none perfil-form-input transition-all"
+                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3.5 py-2.5 text-white font-bold focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 outline-none perfil-form-input perfil-input-focus transition-all"
                 />
               </div>
 
@@ -3233,7 +3362,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                   value={candidateProfile.professionalSummary}
                   onChange={(e) => setCandidateProfile({ ...candidateProfile, professionalSummary: e.target.value })}
                   placeholder="Síntesis de experiencia académica, cargos directivos, gestión pública o privada..."
-                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3.5 py-2.5 text-white text-xs leading-relaxed focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 outline-none resize-none perfil-form-textarea transition-all"
+                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3.5 py-2.5 text-white text-xs leading-relaxed focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 outline-none resize-none perfil-form-textarea perfil-input-focus transition-all"
                 />
               </div>
 
@@ -3244,7 +3373,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                   value={candidateProfile.candidateBio}
                   onChange={(e) => setCandidateProfile({ ...candidateProfile, candidateBio: e.target.value })}
                   placeholder="Reseña histórica, origen territorial, liderazgo comunitario, causas principales y logros destacados del candidato..."
-                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3.5 py-2.5 text-white text-xs leading-relaxed focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 outline-none resize-none perfil-form-textarea transition-all"
+                  className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3.5 py-2.5 text-white text-xs leading-relaxed focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 outline-none resize-none perfil-form-textarea perfil-input-focus transition-all"
                 />
               </div>
             </div>
@@ -3260,7 +3389,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs perfil-dofa-grid">
                 {/* Fortalezas */}
-                <div className="bg-[#041224] p-4 rounded-2xl border border-emerald-500/30 space-y-3 flex flex-col justify-between perfil-dofa-card dofa-fortalezas-card shadow-lg">
+                <div className="bg-[#041224] p-4 rounded-2xl border border-emerald-500/30 space-y-3 flex flex-col justify-between perfil-dofa-card dofa-fortalezas-card shadow-lg animate-perfil-stagger-3 dofa-quadrant-card dofa-quadrant-fortalezas">
                   <div className="space-y-1.5">
                     <label className="block font-extrabold text-emerald-400 text-xs flex items-center justify-between dofa-card-label">
                       <span>Fortalezas (Internas):</span>
@@ -3271,7 +3400,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                       value={candidateProfile.dofaStrengths}
                       onChange={(e) => setCandidateProfile({ ...candidateProfile, dofaStrengths: e.target.value })}
                       placeholder="Puntos fuertes, trayectoria ética, preparación, atributos diferenciadores..."
-                      className="w-full bg-[#081d38] border border-emerald-500/30 rounded-xl px-3 py-2 text-white text-xs leading-relaxed focus:border-emerald-400 outline-none resize-none dofa-card-textarea"
+                      className="w-full bg-[#081d38] border border-emerald-500/30 rounded-xl px-3 py-2 text-white text-xs leading-relaxed focus:border-emerald-400 outline-none resize-none dofa-card-textarea perfil-input-focus transition-all"
                     />
                   </div>
                   <div className="pt-2 border-t border-emerald-500/20 space-y-2 dofa-card-vars-section">
@@ -3284,7 +3413,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                             key={idx}
                             type="button"
                             onClick={() => toggleCandidateDofaVar('dofaStrengths', item)}
-                            className={`text-[10px] px-2 py-1 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 text-left leading-tight dofa-var-chip ${
+                            className={`text-[10px] px-2 py-1 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 text-left leading-tight dofa-var-chip dofa-var-pill ${
                               isSelected
                                 ? 'bg-emerald-500/25 text-emerald-300 border-emerald-400/60 font-bold shadow-sm dofa-var-chip-active'
                                 : 'bg-[#081d38] text-slate-300 border-emerald-500/20 hover:border-emerald-400/40 hover:text-white'
@@ -3310,12 +3439,12 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                           }
                         }}
                         placeholder="+ Agregar nueva variable de fortaleza..."
-                        className="flex-1 bg-[#081d38] border border-emerald-500/30 rounded-lg px-2.5 py-1 text-[11px] text-white placeholder-slate-400 focus:border-emerald-400 outline-none dofa-add-input"
+                        className="flex-1 bg-[#081d38] border border-emerald-500/30 rounded-lg px-2.5 py-1 text-[11px] text-white placeholder-slate-400 focus:border-emerald-400 outline-none dofa-add-input perfil-input-focus transition-all"
                       />
                       <button
                         type="button"
                         onClick={() => handleAddCustomDofaVar('strengths', 'dofaStrengths')}
-                        className="bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 shrink-0 dofa-add-btn cursor-pointer"
+                        className="bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 shrink-0 dofa-add-btn dofa-btn-add cursor-pointer active:scale-95"
                       >
                         <Plus className="w-3 h-3" /> Agregar
                       </button>
@@ -3324,7 +3453,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                 </div>
 
                 {/* Oportunidades */}
-                <div className="bg-[#041224] p-4 rounded-2xl border border-cyan-500/30 space-y-3 flex flex-col justify-between perfil-dofa-card dofa-oportunidades-card shadow-lg">
+                <div className="bg-[#041224] p-4 rounded-2xl border border-cyan-500/30 space-y-3 flex flex-col justify-between perfil-dofa-card dofa-oportunidades-card shadow-lg animate-perfil-stagger-4 dofa-quadrant-card dofa-quadrant-oportunidades">
                   <div className="space-y-1.5">
                     <label className="block font-extrabold text-cyan-400 text-xs flex items-center justify-between dofa-card-label">
                       <span>Oportunidades (Externas):</span>
@@ -3335,7 +3464,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                       value={candidateProfile.dofaOpportunities}
                       onChange={(e) => setCandidateProfile({ ...candidateProfile, dofaOpportunities: e.target.value })}
                       placeholder="Factores del contexto político, alianzas, coyuntura electoral a aprovechar..."
-                      className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white text-xs leading-relaxed focus:border-cyan-400 outline-none resize-none dofa-card-textarea"
+                      className="w-full bg-[#081d38] border border-cyan-500/30 rounded-xl px-3 py-2 text-white text-xs leading-relaxed focus:border-cyan-400 outline-none resize-none dofa-card-textarea perfil-input-focus transition-all"
                     />
                   </div>
                   <div className="pt-2 border-t border-cyan-500/20 space-y-2 dofa-card-vars-section">
@@ -3348,7 +3477,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                             key={idx}
                             type="button"
                             onClick={() => toggleCandidateDofaVar('dofaOpportunities', item)}
-                            className={`text-[10px] px-2 py-1 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 text-left leading-tight dofa-var-chip ${
+                            className={`text-[10px] px-2 py-1 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 text-left leading-tight dofa-var-chip dofa-var-pill ${
                               isSelected
                                 ? 'bg-cyan-500/25 text-cyan-300 border-cyan-400/60 font-bold shadow-sm dofa-var-chip-active'
                                 : 'bg-[#081d38] text-slate-300 border-cyan-500/20 hover:border-cyan-400/40 hover:text-white'
@@ -3374,12 +3503,12 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                           }
                         }}
                         placeholder="+ Agregar nueva variable de oportunidad..."
-                        className="flex-1 bg-[#081d38] border border-cyan-500/30 rounded-lg px-2.5 py-1 text-[11px] text-white placeholder-slate-400 focus:border-cyan-400 outline-none dofa-add-input"
+                        className="flex-1 bg-[#081d38] border border-cyan-500/30 rounded-lg px-2.5 py-1 text-[11px] text-white placeholder-slate-400 focus:border-cyan-400 outline-none dofa-add-input perfil-input-focus transition-all"
                       />
                       <button
                         type="button"
                         onClick={() => handleAddCustomDofaVar('opportunities', 'dofaOpportunities')}
-                        className="bg-cyan-600 hover:bg-cyan-500 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 shrink-0 dofa-add-btn cursor-pointer"
+                        className="bg-cyan-600 hover:bg-cyan-500 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 shrink-0 dofa-add-btn dofa-btn-add cursor-pointer active:scale-95"
                       >
                         <Plus className="w-3 h-3" /> Agregar
                       </button>
@@ -3388,7 +3517,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                 </div>
 
                 {/* Debilidades */}
-                <div className="bg-[#041224] p-4 rounded-2xl border border-amber-500/30 space-y-3 flex flex-col justify-between perfil-dofa-card dofa-debilidades-card shadow-lg">
+                <div className="bg-[#041224] p-4 rounded-2xl border border-amber-500/30 space-y-3 flex flex-col justify-between perfil-dofa-card dofa-debilidades-card shadow-lg animate-perfil-stagger-5 dofa-quadrant-card dofa-quadrant-debilidades">
                   <div className="space-y-1.5">
                     <label className="block font-extrabold text-amber-400 text-xs flex items-center justify-between dofa-card-label">
                       <span>Debilidades (Internas):</span>
@@ -3399,7 +3528,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                       value={candidateProfile.dofaWeaknesses}
                       onChange={(e) => setCandidateProfile({ ...candidateProfile, dofaWeaknesses: e.target.value })}
                       placeholder="Áreas de mejora, brechas de conocimiento o reconocimiento territorial..."
-                      className="w-full bg-[#081d38] border border-amber-500/30 rounded-xl px-3 py-2 text-white text-xs leading-relaxed focus:border-amber-400 outline-none resize-none dofa-card-textarea"
+                      className="w-full bg-[#081d38] border border-amber-500/30 rounded-xl px-3 py-2 text-white text-xs leading-relaxed focus:border-amber-400 outline-none resize-none dofa-card-textarea perfil-input-focus transition-all"
                     />
                   </div>
                   <div className="pt-2 border-t border-amber-500/20 space-y-2 dofa-card-vars-section">
@@ -3412,7 +3541,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                             key={idx}
                             type="button"
                             onClick={() => toggleCandidateDofaVar('dofaWeaknesses', item)}
-                            className={`text-[10px] px-2 py-1 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 text-left leading-tight dofa-var-chip ${
+                            className={`text-[10px] px-2 py-1 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 text-left leading-tight dofa-var-chip dofa-var-pill ${
                               isSelected
                                 ? 'bg-amber-500/25 text-amber-300 border-amber-400/60 font-bold shadow-sm dofa-var-chip-active'
                                 : 'bg-[#081d38] text-slate-300 border-amber-500/20 hover:border-amber-400/40 hover:text-white'
@@ -3438,12 +3567,12 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                           }
                         }}
                         placeholder="+ Agregar nueva variable de debilidad..."
-                        className="flex-1 bg-[#081d38] border border-amber-500/30 rounded-lg px-2.5 py-1 text-[11px] text-white placeholder-slate-400 focus:border-amber-400 outline-none dofa-add-input"
+                        className="flex-1 bg-[#081d38] border border-amber-500/30 rounded-lg px-2.5 py-1 text-[11px] text-white placeholder-slate-400 focus:border-amber-400 outline-none dofa-add-input perfil-input-focus transition-all"
                       />
                       <button
                         type="button"
                         onClick={() => handleAddCustomDofaVar('weaknesses', 'dofaWeaknesses')}
-                        className="bg-amber-600 hover:bg-amber-500 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 shrink-0 dofa-add-btn cursor-pointer"
+                        className="bg-amber-600 hover:bg-amber-500 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 shrink-0 dofa-add-btn dofa-btn-add cursor-pointer active:scale-95"
                       >
                         <Plus className="w-3 h-3" /> Agregar
                       </button>
@@ -3452,7 +3581,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                 </div>
 
                 {/* Amenazas */}
-                <div className="bg-[#041224] p-4 rounded-2xl border border-rose-500/30 space-y-3 flex flex-col justify-between perfil-dofa-card dofa-amenazas-card shadow-lg">
+                <div className="bg-[#041224] p-4 rounded-2xl border border-rose-500/30 space-y-3 flex flex-col justify-between perfil-dofa-card dofa-amenazas-card shadow-lg animate-perfil-stagger-6 dofa-quadrant-card dofa-quadrant-amenazas">
                   <div className="space-y-1.5">
                     <label className="block font-extrabold text-rose-400 text-xs flex items-center justify-between dofa-card-label">
                       <span>Amenazas (Externas):</span>
@@ -3463,7 +3592,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                       value={candidateProfile.dofaThreats}
                       onChange={(e) => setCandidateProfile({ ...candidateProfile, dofaThreats: e.target.value })}
                       placeholder="Ataques de oposición, abstencionismo, maquinarias rivales, desinformación..."
-                      className="w-full bg-[#081d38] border border-rose-500/30 rounded-xl px-3 py-2 text-white text-xs leading-relaxed focus:border-rose-400 outline-none resize-none dofa-card-textarea"
+                      className="w-full bg-[#081d38] border border-rose-500/30 rounded-xl px-3 py-2 text-white text-xs leading-relaxed focus:border-rose-400 outline-none resize-none dofa-card-textarea perfil-input-focus transition-all"
                     />
                   </div>
                   <div className="pt-2 border-t border-rose-500/20 space-y-2 dofa-card-vars-section">
@@ -3476,7 +3605,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                             key={idx}
                             type="button"
                             onClick={() => toggleCandidateDofaVar('dofaThreats', item)}
-                            className={`text-[10px] px-2 py-1 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 text-left leading-tight dofa-var-chip ${
+                            className={`text-[10px] px-2 py-1 rounded-lg border transition-all cursor-pointer flex items-center gap-1.5 text-left leading-tight dofa-var-chip dofa-var-pill ${
                               isSelected
                                 ? 'bg-rose-500/25 text-rose-300 border-rose-400/60 font-bold shadow-sm dofa-var-chip-active'
                                 : 'bg-[#081d38] text-slate-300 border-rose-500/20 hover:border-rose-400/40 hover:text-white'
@@ -3502,12 +3631,12 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                           }
                         }}
                         placeholder="+ Agregar nueva variable de amenaza..."
-                        className="flex-1 bg-[#081d38] border border-rose-500/30 rounded-lg px-2.5 py-1 text-[11px] text-white placeholder-slate-400 focus:border-rose-400 outline-none dofa-add-input"
+                        className="flex-1 bg-[#081d38] border border-rose-500/30 rounded-lg px-2.5 py-1 text-[11px] text-white placeholder-slate-400 focus:border-rose-400 outline-none dofa-add-input perfil-input-focus transition-all"
                       />
                       <button
                         type="button"
                         onClick={() => handleAddCustomDofaVar('threats', 'dofaThreats')}
-                        className="bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 shrink-0 dofa-add-btn cursor-pointer"
+                        className="bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 shrink-0 dofa-add-btn dofa-btn-add cursor-pointer active:scale-95"
                       >
                         <Plus className="w-3 h-3" /> Agregar
                       </button>
@@ -3530,7 +3659,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                   placeholder="https://..."
                   value={candidateProfile.website}
                   onChange={(e) => setCandidateProfile({ ...candidateProfile, website: e.target.value })}
-                  className="w-full bg-[#081d38] border border-cyan-500/20 rounded-xl px-3 py-2 text-white text-xs outline-none focus:border-cyan-400 perfil-contact-input"
+                  className="w-full bg-[#081d38] border border-cyan-500/20 rounded-xl px-3 py-2 text-white text-xs outline-none focus:border-cyan-400 perfil-contact-input perfil-input-focus transition-all"
                 />
               </div>
               <div>
@@ -3540,7 +3669,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                   placeholder="prensa@campana.co"
                   value={candidateProfile.email}
                   onChange={(e) => setCandidateProfile({ ...candidateProfile, email: e.target.value })}
-                  className="w-full bg-[#081d38] border border-cyan-500/20 rounded-xl px-3 py-2 text-white text-xs outline-none focus:border-cyan-400 perfil-contact-input"
+                  className="w-full bg-[#081d38] border border-cyan-500/20 rounded-xl px-3 py-2 text-white text-xs outline-none focus:border-cyan-400 perfil-contact-input perfil-input-focus transition-all"
                 />
               </div>
               <div>
@@ -3550,7 +3679,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                   placeholder="+57 300 000 0000"
                   value={candidateProfile.phone}
                   onChange={(e) => setCandidateProfile({ ...candidateProfile, phone: e.target.value })}
-                  className="w-full bg-[#081d38] border border-cyan-500/20 rounded-xl px-3 py-2 text-white text-xs outline-none focus:border-cyan-400 perfil-contact-input"
+                  className="w-full bg-[#081d38] border border-cyan-500/20 rounded-xl px-3 py-2 text-white text-xs outline-none focus:border-cyan-400 perfil-contact-input perfil-input-focus transition-all"
                 />
               </div>
             </div>
@@ -3563,7 +3692,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                 type="button"
                 onClick={() => void saveCandidateProfile()}
                 disabled={candidateProfileSaving || !candidateCampaignId}
-                className="px-6 py-2.5 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:brightness-110 disabled:opacity-50 text-slate-950 font-black rounded-xl flex items-center gap-2 cursor-pointer shadow-lg shadow-emerald-500/20 transition-all perfil-save-btn"
+                className="px-6 py-2.5 bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:brightness-110 active:scale-95 disabled:opacity-50 text-slate-950 font-black rounded-xl flex items-center gap-2 cursor-pointer shadow-lg shadow-emerald-500/20 transition-all perfil-save-btn"
               >
                 <Save className="w-4 h-4" />
                 {candidateProfileSaving ? 'Guardando...' : 'Guardar Perfil del Candidato'}
