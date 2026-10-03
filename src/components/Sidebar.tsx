@@ -276,7 +276,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
     { 
       id: 'terr_territorial_mgmt', 
-      label: 'Gestión Territorial', 
+      label: 'Mapa & Cobertura', 
       type: 'subtab' as const, 
       subtab: 'mapa' as const, 
       icon: <MapPin className="w-4 h-4 text-amber-400" />,

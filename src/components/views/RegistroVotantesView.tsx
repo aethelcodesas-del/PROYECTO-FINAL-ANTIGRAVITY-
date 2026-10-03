@@ -1319,44 +1319,6 @@ export const RegistroVotantesView: React.FC<RegistroVotantesViewProps> = ({
         )}
       </AnimatePresence>
 
-      {/* TOP VIEW SWITCHER (Registro de Votantes / Mapa & Cobertura) */}
-      <div className="flex items-center justify-between pb-1">
-        <div className="flex items-center bg-[#071d38]/80 border border-slate-750 p-1 rounded-xl backdrop-blur-md shadow-sm">
-          <button
-            type="button"
-            onClick={() => {
-              setActiveSubTab('registro');
-              if (onSelectSubTab) onSelectSubTab('registro');
-            }}
-            className={`px-4 py-2 rounded-lg text-xs font-black transition-all duration-150 flex items-center gap-2 cursor-pointer ${
-              activeSubTab === 'registro'
-                ? 'bg-gradient-to-r from-teal-500 to-emerald-600 text-white shadow-md'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-            }`}
-          >
-            <UserCheck className="w-3.5 h-3.5" />
-            <span>Registro de Votantes</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setActiveSubTab('mapa');
-              if (onSelectSubTab) onSelectSubTab('mapa');
-              if (onSwitchToMap) onSwitchToMap();
-            }}
-            className={`px-4 py-2 rounded-lg text-xs font-black transition-all duration-150 flex items-center gap-2 cursor-pointer ${
-              activeSubTab === 'mapa'
-                ? 'bg-gradient-to-r from-teal-500 to-emerald-600 text-white shadow-md'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
-            }`}
-          >
-            <Map className="w-3.5 h-3.5" />
-            <span>Mapa & Cobertura</span>
-          </button>
-        </div>
-      </div>
-
       {/* HEADER BANNER */}
       <motion.div 
         variants={staggerItemVariants}

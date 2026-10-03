@@ -855,59 +855,6 @@ export const GestionTerritorial: React.FC<GestionTerritorialProps> = ({
         }
       `}</style>
 
-      {/* ── BARRA SUPERIOR: TÍTULO, SUBTABS & COLOR MODE ────────────────── */}
-      <motion.div 
-        variants={staggerItemVariants}
-        initial="hidden"
-        animate="show"
-        className="gestion-territorial-header flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-cyan-500/20"
-      >
-        <div className="flex items-center gap-3">
-          <div className="gestion-territorial-icon-box w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-950 to-slate-900 border border-emerald-500/40 text-emerald-400 flex items-center justify-center shrink-0 shadow-md shadow-emerald-950/40">
-            <MapPin className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="gestion-territorial-title font-extrabold text-lg sm:text-xl text-white tracking-tight">
-                Gestión Territorial & Censo
-              </h2>
-              <span className="gestion-territorial-badge text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/40">
-                Módulo 3
-              </span>
-            </div>
-            <p className="gestion-territorial-subtitle text-xs text-slate-400 mt-0.5">
-              Despliegue en territorio, líderes, mapa de calor y testigos electorales ({municipality}, {department})
-            </p>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3 shrink-0">
-          <div className="gestion-territorial-subtabs flex items-center gap-1.5 bg-slate-900/90 p-1 rounded-xl border border-slate-800 shadow-md">
-            <button
-              onClick={() => handleSubTabSelect('registro')}
-              className={`gestion-territorial-subtab-btn px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                activeSubTab === 'registro'
-                  ? 'gestion-territorial-subtab-active bg-gradient-to-r from-teal-600 to-emerald-600 text-white shadow'
-                  : 'gestion-territorial-subtab-inactive text-slate-400 hover:text-white'
-              }`}
-            >
-              Registro de Votantes
-            </button>
-            <button
-              onClick={() => handleSubTabSelect('mapa')}
-              className={`gestion-territorial-subtab-btn px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                activeSubTab === 'mapa'
-                  ? 'gestion-territorial-subtab-active bg-gradient-to-r from-teal-600 to-emerald-600 text-white shadow'
-                  : 'gestion-territorial-subtab-inactive text-slate-400 hover:text-white'
-              }`}
-            >
-              Mapa & Cobertura
-            </button>
-          </div>
-          <ColorModeToggle moduleId="gestion_territorial" />
-        </div>
-      </motion.div>
-
       {/* ── CONTENIDO PRINCIPAL: SUBTAB REGISTRO O MAPA ─────────────────── */}
       {activeSubTab === 'registro' ? (
         <ErrorBoundary moduleName="Registro de Votantes" level="component">
@@ -919,18 +866,48 @@ export const GestionTerritorial: React.FC<GestionTerritorialProps> = ({
             <RegistroVotantesView 
               onSelectView={onSelectView} 
               authUser={authUser} 
-              onSwitchToMap={() => handleSubTabSelect('mapa')}
-              onSelectSubTab={handleSubTabSelect}
             />
           </Suspense>
         </ErrorBoundary>
       ) : (
-        <motion.div
-          variants={staggerContainerVariants}
-          initial="hidden"
-          animate="show"
-          className="space-y-6"
-        >
+        <>
+          {/* ── BARRA SUPERIOR AUTÓNOMA: MAPA & COBERTURA ─────────────────── */}
+          <motion.div 
+            variants={staggerItemVariants}
+            initial="hidden"
+            animate="show"
+            className="gestion-territorial-header flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-cyan-500/20"
+          >
+            <div className="flex items-center gap-3">
+              <div className="gestion-territorial-icon-box w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-950 to-slate-900 border border-emerald-500/40 text-emerald-400 flex items-center justify-center shrink-0 shadow-md shadow-emerald-950/40">
+                <MapPin className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="gestion-territorial-title font-extrabold text-lg sm:text-xl text-white tracking-tight">
+                    Mapa & Cobertura Territorial
+                  </h2>
+                  <span className="gestion-territorial-badge text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/40">
+                    Módulo Territorial
+                  </span>
+                </div>
+                <p className="gestion-territorial-subtitle text-xs text-slate-400 mt-0.5">
+                  Mapa de calor de intención de voto, despliegue operativo y cobertura ({municipality}, {department})
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 shrink-0">
+              <ColorModeToggle moduleId="gestion_territorial" />
+            </div>
+          </motion.div>
+
+          <motion.div
+            variants={staggerContainerVariants}
+            initial="hidden"
+            animate="show"
+            className="space-y-6"
+          >
           {/* Main Grid: Panel Lateral Izquierdo + Mapa Central GIS */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
             
@@ -1383,6 +1360,7 @@ export const GestionTerritorial: React.FC<GestionTerritorialProps> = ({
             </div>
           </motion.div>
         </motion.div>
+        </>
       )}
 
       {/* ── MODAL: + REGISTRO EN CAMPO (OFFLINE READY) ───────────────────── */}

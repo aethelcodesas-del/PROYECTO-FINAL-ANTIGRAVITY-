@@ -160,7 +160,7 @@ export function parseRouteFromHash(hash: string): RouteState | null {
   if (clean.startsWith('territorio') || clean.startsWith('gestion_territorial')) {
     const parts = clean.split('/');
     const sub = parts[1];
-    const territorialSubTab = sub === 'mapa' ? 'mapa' : 'registro';
+    const territorialSubTab = (sub === 'mapa' || sub === 'cobertura') ? 'mapa' : 'registro';
     return { view: 'gestion_territorial', territorialSubTab };
   }
 
