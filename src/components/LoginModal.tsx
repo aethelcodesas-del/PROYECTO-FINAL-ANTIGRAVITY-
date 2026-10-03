@@ -239,6 +239,19 @@ export const PRESET_PERSONAS: Array<{
   }
 ];
 
+export const getModuleContextLabel = (envId?: string) => {
+  switch (envId) {
+    case 'estrategia':
+      return 'ESTRATEGIA & DIRECCIÓN DE CAMPAÑA';
+    case 'territorio':
+      return 'GESTIÓN DE PADRÓN & TERRITORIO';
+    case 'dia_e':
+      return 'DÍA E & CONTROL ELECTORAL';
+    default:
+      return 'CONTROL ELECTORAL';
+  }
+};
+
 interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -261,6 +274,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberDevice, setRememberDevice] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isRecovering, setIsRecovering] = useState(false);
@@ -517,22 +531,24 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 16 }}
           transition={{ duration: 0.22, ease: 'easeOut' }}
-          className={`relative w-full mx-auto bg-[#030d1d] border border-slate-800 rounded-3xl shadow-2xl shadow-cyan-950/40 p-5 sm:p-7 z-10 text-slate-100 overflow-hidden box-border font-sans transition-all duration-300 ${
-            step === 'select_environment' ? 'max-w-5xl' : 'max-w-md'
+          className={`relative w-full mx-auto bg-[#080d1b] border border-slate-800/80 rounded-3xl shadow-2xl shadow-cyan-950/40 z-10 text-slate-100 overflow-hidden box-border font-sans transition-all duration-300 ${
+            step === 'select_environment' ? 'max-w-5xl p-5 sm:p-7' : 'max-w-4xl p-0'
           }`}
         >
           {/* Ambient Lighting */}
           <div className="absolute -top-24 -left-24 w-72 h-72 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute -bottom-24 -right-24 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
 
-          {/* Close button */}
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 p-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-white transition-all cursor-pointer z-20"
-            aria-label="Cerrar modal"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          {/* Close button for Step 1 */}
+          {step === 'select_environment' && (
+            <button
+              onClick={onClose}
+              className="absolute top-4 right-4 p-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-white transition-all cursor-pointer z-20"
+              aria-label="Cerrar modal"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
 
           {/* ======================================================== */}
           {/* STEP 1: SELECTOR DE ENTORNO / MÓDULO (MODULE GATEKEEPER) */}
@@ -625,178 +641,271 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           )}
 
           {/* ======================================================== */}
-          {/* STEP 2: FORMULARIO DE CREDENCIALES CONTEXTUAL           */}
+          {/* STEP 2: NUEVO DISEÑO SPLIT CARD GLASSMORPHISM 50/50     */}
           {/* ======================================================== */}
           {step === 'credentials' && selectedEnv && (
             <motion.div
               key="step-credentials"
-              initial={{ opacity: 0, x: 16 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -16 }}
-              transition={{ duration: 0.2 }}
-              className="relative z-10"
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.22, ease: 'easeOut' }}
+              className="relative z-10 w-full grid grid-cols-1 md:grid-cols-2 min-h-[520px]"
             >
-              {/* Back button to Step 1 */}
-              <div className="flex items-center justify-between mb-4">
-                <button
-                  type="button"
-                  onClick={handleBackToSelector}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-xs font-semibold text-slate-300 hover:text-white transition-all cursor-pointer"
+              {/* Botón de Cierre Superior Derecho para toda la tarjeta */}
+              <button
+                type="button"
+                onClick={onClose}
+                className="absolute top-4 right-4 p-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-white transition-all cursor-pointer z-30 shadow-md"
+                aria-label="Cerrar modal"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              {/* ---------------------------------------------------- */}
+              {/* COLUMNA IZQUIERDA: BRANDING & CONTEXTO DEL MÓDULO    */}
+              {/* ---------------------------------------------------- */}
+              <div className="relative p-6 sm:p-8 md:p-10 flex flex-col justify-between items-center text-center overflow-hidden bg-[#070c18] border-b md:border-b-0 md:border-r border-slate-800/80">
+                {/* Textura geométrica facetada / poligonal sutil */}
+                <svg
+                  className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none"
+                  viewBox="0 0 400 400"
+                  preserveAspectRatio="none"
                 >
-                  <ArrowLeft className="w-3.5 h-3.5" />
-                  <span>Cambiar módulo</span>
-                </button>
+                  <polygon points="0,0 220,70 140,200 0,150" fill="#1e3a8a" opacity="0.45" />
+                  <polygon points="220,70 400,0 330,170 140,200" fill="#0369a1" opacity="0.35" />
+                  <polygon points="0,150 140,200 90,320 0,340" fill="#0f172a" opacity="0.6" />
+                  <polygon points="140,200 330,170 270,300 90,320" fill="#1d4ed8" opacity="0.4" />
+                  <polygon points="330,170 400,0 400,240 270,300" fill="#0284c7" opacity="0.45" />
+                  <polygon points="90,320 270,300 210,400 0,400" fill="#0b1329" opacity="0.75" />
+                  <polygon points="270,300 400,240 400,400 210,400" fill="#0369a1" opacity="0.5" />
+                </svg>
 
-                <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${selectedEnv.colorScheme.badgeBg} ${selectedEnv.colorScheme.badgeText} border ${selectedEnv.colorScheme.badgeBorder}`}>
-                  {selectedEnv.badge}
-                </span>
-              </div>
+                {/* Resplandor radial suave detrás del imagotipo */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none" />
 
-              {/* Context Header */}
-              <div className="flex items-center gap-3 mb-4">
-                <div className={`w-10 h-10 rounded-xl ${selectedEnv.colorScheme.iconBg} border flex items-center justify-center ${selectedEnv.colorScheme.iconText} shadow-inner shrink-0`}>
-                  {React.createElement(selectedEnv.icon, { className: 'w-5 h-5' })}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h2 className="text-base sm:text-lg font-black text-white font-display truncate">
-                    {selectedEnv.title}
-                  </h2>
-                  <p className="text-xs text-slate-400 truncate">
-                    {selectedEnv.context}
-                  </p>
-                </div>
-              </div>
+                {/* Spacer top */}
+                <div className="hidden md:block w-full h-4" />
 
-              {/* RBAC Mismatch Notice & Direct Action */}
-              {rbacMismatch && (
-                <div className="p-4 mb-4 rounded-2xl bg-amber-950/40 border border-amber-500/40 text-amber-200 text-xs">
-                  <div className="flex items-start gap-2.5">
-                    <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                    <div>
-                      <strong className="block text-amber-300 font-bold mb-1">
-                        Acceso Restringido por Rol (RBAC)
-                      </strong>
-                      <p className="leading-relaxed">
-                        Credenciales válidas, pero su rol asignado (<strong>{rbacMismatch.userRoleLabel}</strong>) no cuenta con privilegios para el módulo <strong>{selectedEnv.title}</strong>.
-                      </p>
+                {/* Brand & Isotipo Container */}
+                <div className="relative z-10 flex flex-col items-center justify-center my-auto py-4 sm:py-6 w-full max-w-xs">
+                  {/* Isotipo: Escudo azul eléctrico con icono y sombra luminosa */}
+                  <div className="flex items-center gap-3.5 mb-6">
+                    <div className="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 via-cyan-500 to-sky-400 p-[2px] shadow-[0_0_30px_rgba(14,165,233,0.5)] shrink-0 flex items-center justify-center">
+                      <div className="w-full h-full bg-[#07132a] rounded-[14px] flex items-center justify-center">
+                        <Shield className="w-6 h-6 text-white stroke-[2.2]" />
+                      </div>
+                    </div>
+                    <div className="text-left">
+                      <span className="block text-[9px] font-mono font-bold tracking-[0.24em] text-slate-400 uppercase">
+                        PLATAFORMA OFICIAL
+                      </span>
+                      <span className="text-2xl font-black tracking-tight font-display">
+                        <span className="text-white">Control</span>
+                        <span className="text-cyan-400">Electoral</span>
+                      </span>
                     </div>
                   </div>
 
+                  {/* Separador: ACCESO AL SISTEMA */}
+                  <div className="relative w-full my-4 flex items-center justify-center">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-slate-800/90" />
+                    </div>
+                    <span className="relative px-3.5 bg-[#070c18] text-[9.5px] uppercase font-mono font-semibold tracking-[0.22em] text-slate-500">
+                      ACCESO AL SISTEMA
+                    </span>
+                  </div>
+
+                  {/* Contexto Dinámico del Módulo Seleccionado */}
+                  <div className="mt-2 text-center">
+                    <h3 className="text-xs sm:text-sm font-bold tracking-[0.16em] text-slate-200 uppercase font-mono leading-relaxed">
+                      {getModuleContextLabel(selectedEnv.id)}
+                    </h3>
+                  </div>
+
+                  {/* Enlace o botón interactivo: Cambiar de módulo */}
                   <button
                     type="button"
-                    onClick={() => {
-                      onLoginSuccess(rbacMismatch.user, rbacMismatch.suggestedRoute);
-                      onClose();
-                    }}
-                    className="w-full mt-3 py-2 px-3 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:brightness-110 active:scale-[0.98] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md cursor-pointer transition-all"
+                    onClick={handleBackToSelector}
+                    className="inline-flex items-center gap-1.5 mt-5 px-3.5 py-1.5 rounded-full bg-slate-900/80 hover:bg-slate-800/90 border border-slate-800 hover:border-cyan-500/40 text-xs font-medium text-cyan-400 hover:text-cyan-300 transition-all cursor-pointer group shadow-sm"
                   >
-                    <span>Ir a mi módulo asignado ({rbacMismatch.suggestedModuleName})</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
+                    <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
+                    <span>← Cambiar de módulo</span>
                   </button>
                 </div>
-              )}
 
-              {/* Error Message if any */}
-              {errorMsg && !rbacMismatch && (
-                <div className="p-3 mb-3.5 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
-                  <span className="break-words min-w-0">{errorMsg}</span>
+                {/* Footer de seguridad */}
+                <div className="relative z-10 w-full pt-3 flex items-center justify-center gap-1.5 text-[10px] font-mono text-slate-500">
+                  <ShieldCheck className="w-3.5 h-3.5 text-cyan-500/70" />
+                  <span>Cifrado TLS 1.3 • Zero-Knowledge</span>
                 </div>
-              )}
+              </div>
 
-              {recoveryMessage && (
-                <div className="p-3 mb-3.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-200 text-xs flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 shrink-0 text-emerald-400" />
-                  <span className="break-words min-w-0">{recoveryMessage}</span>
-                </div>
-              )}
-
-              {/* Form */}
-              <form onSubmit={handleCredentialsSubmit} className="space-y-3.5 w-full">
-                <div>
-                  <label htmlFor="login-email" className="block text-xs font-bold text-slate-300 mb-1.5">
-                    Correo Electrónico
-                  </label>
-                  <div className="relative flex items-center w-full">
-                    <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
-                    <input
-                      type="email"
-                      name="email"
-                      id="login-email"
-                      autoComplete="username email"
-                      value={identifier}
-                      onChange={(e) => setIdentifier(e.target.value)}
-                      placeholder="Correo electrónico registrado"
-                      className="w-full pl-10 pr-4 py-2.5 bg-slate-950/80 border border-slate-700/80 rounded-xl text-base sm:text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all dark-autofill min-h-[44px]"
-                    />
-                  </div>
+              {/* ---------------------------------------------------- */}
+              {/* COLUMNA DERECHA: FORMULARIO DE CREDENCIALES          */}
+              {/* ---------------------------------------------------- */}
+              <div className="relative p-6 sm:p-8 md:p-10 pb-8 bg-[#090f1d] flex flex-col justify-center">
+                {/* Cabecera */}
+                <div className="mb-6 pr-8">
+                  <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight font-display">
+                    Bienvenido
+                  </h2>
+                  <p className="text-slate-400 text-xs sm:text-sm mt-1">
+                    Ingresa tus credenciales oficiales para continuar.
+                  </p>
                 </div>
 
-                <div>
-                  <div className="mb-1.5 flex items-center justify-between gap-2">
-                    <label htmlFor="login-password" className="block text-xs font-bold text-slate-300">
-                      Contraseña
-                    </label>
+                {/* Alerta de Desajuste RBAC */}
+                {rbacMismatch && (
+                  <div className="p-3.5 mb-4 rounded-xl bg-amber-950/50 border border-amber-500/40 text-amber-200 text-xs">
+                    <div className="flex items-start gap-2.5">
+                      <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                      <div>
+                        <strong className="block text-amber-300 font-bold mb-0.5">
+                          Acceso Restringido por Rol (RBAC)
+                        </strong>
+                        <p className="leading-relaxed text-[11px]">
+                          Credenciales válidas, pero tu rol (<strong>{rbacMismatch.userRoleLabel}</strong>) no tiene acceso al módulo <strong>{selectedEnv.title}</strong>.
+                        </p>
+                      </div>
+                    </div>
                     <button
                       type="button"
-                      onClick={handlePasswordRecovery}
-                      disabled={isRecovering || isLoading}
-                      className="text-[11px] font-semibold text-cyan-400 hover:text-cyan-300 disabled:opacity-50 cursor-pointer shrink-0"
-                    >
-                      {isRecovering ? 'Enviando…' : '¿Olvidaste tu contraseña?'}
-                    </button>
-                  </div>
-                  <div className="relative flex items-center w-full">
-                    <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      name="password"
-                      id="login-password"
-                      autoComplete="current-password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Ingrese su contraseña"
-                      className="w-full pl-10 pr-11 py-2.5 bg-slate-950/80 border border-slate-700/80 rounded-xl text-base sm:text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all dark-autofill min-h-[44px]"
-                    />
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setShowPassword((prev) => !prev);
+                      onClick={() => {
+                        onLoginSuccess(rbacMismatch.user, rbacMismatch.suggestedRoute);
+                        onClose();
                       }}
-                      title={showPassword ? "Ocultar contraseña" : "Ver contraseña"}
-                      aria-label={showPassword ? "Ocultar contraseña" : "Ver contraseña"}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-slate-800/60 active:scale-95 transition-all cursor-pointer z-20 focus:outline-none min-h-[38px] min-w-[38px] flex items-center justify-center"
+                      className="w-full mt-2.5 py-2 px-3 rounded-lg bg-gradient-to-r from-amber-600 to-orange-600 hover:brightness-110 active:scale-[0.98] text-white font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-md transition-all"
                     >
-                      {showPassword ? (
-                        <EyeOff className="w-4 h-4 pointer-events-none" />
-                      ) : (
-                        <Eye className="w-4 h-4 pointer-events-none" />
-                      )}
+                      <span>Ir a mi módulo ({rbacMismatch.suggestedModuleName})</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   </div>
-                </div>
+                )}
 
-                {/* Submit button contextual to selected module */}
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className={`w-full py-3 px-3 rounded-xl bg-gradient-to-r ${selectedEnv.colorScheme.accentGradient} hover:brightness-110 active:scale-[0.98] text-white font-extrabold text-xs sm:text-sm shadow-lg border border-white/20 transition-all cursor-pointer flex items-center justify-center gap-2 mt-4 min-h-[44px]`}
-                >
-                  {isLoading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span>Validando credenciales...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Lock className="w-4 h-4 shrink-0" />
-                      <span className="truncate">Acceder a {selectedEnv.title}</span>
-                    </>
-                  )}
-                </button>
-              </form>
+                {/* Mensaje de Error */}
+                {errorMsg && !rbacMismatch && (
+                  <div className="p-3 mb-4 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+                    <span className="break-words min-w-0">{errorMsg}</span>
+                  </div>
+                )}
+
+                {/* Mensaje de Recuperación */}
+                {recoveryMessage && (
+                  <div className="p-3 mb-4 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-200 text-xs flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 shrink-0 text-emerald-400" />
+                    <span className="break-words min-w-0">{recoveryMessage}</span>
+                  </div>
+                )}
+
+                {/* Formulario */}
+                <form onSubmit={handleCredentialsSubmit} className="space-y-4 w-full">
+                  {/* Campo 1: USUARIO / CORREO ELECTRÓNICO */}
+                  <div>
+                    <label
+                      htmlFor="login-email"
+                      className="block text-xs font-semibold text-slate-300 tracking-wider uppercase mb-1.5"
+                    >
+                      USUARIO / CORREO ELECTRÓNICO
+                    </label>
+                    <div className="relative flex items-center w-full bg-[#0d1627] border border-slate-800 rounded-xl focus-within:border-cyan-500 focus-within:shadow-[0_0_0_2px_rgba(6,182,212,0.2)] transition-all">
+                      <span className="pl-3.5 pr-2 text-slate-500 font-mono text-sm select-none">
+                        @
+                      </span>
+                      <input
+                        type="email"
+                        name="email"
+                        id="login-email"
+                        autoComplete="username email"
+                        value={identifier}
+                        onChange={(e) => setIdentifier(e.target.value)}
+                        placeholder="usuario@campana.com"
+                        className="w-full pr-4 py-3 bg-transparent text-white placeholder:text-slate-500 text-sm outline-none dark-autofill"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Campo 2: CONTRASEÑA */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label
+                        htmlFor="login-password"
+                        className="text-xs font-semibold text-slate-300 tracking-wider uppercase"
+                      >
+                        CONTRASEÑA
+                      </label>
+                      <button
+                        type="button"
+                        onClick={handlePasswordRecovery}
+                        disabled={isRecovering || isLoading}
+                        className="text-xs font-medium text-cyan-400 hover:text-cyan-300 transition-colors cursor-pointer disabled:opacity-50"
+                      >
+                        {isRecovering ? 'Enviando enlace…' : '¿Olvidaste tu contraseña?'}
+                      </button>
+                    </div>
+                    <div className="relative flex items-center w-full bg-[#0d1627] border border-slate-800 rounded-xl focus-within:border-cyan-500 focus-within:shadow-[0_0_0_2px_rgba(6,182,212,0.2)] transition-all">
+                      <span className="pl-3.5 pr-2 text-slate-500 font-mono text-sm select-none">
+                        #
+                      </span>
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        name="password"
+                        id="login-password"
+                        autoComplete="current-password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full pr-11 py-3 bg-transparent text-white placeholder:text-slate-500 text-sm outline-none dark-autofill"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setShowPassword((prev) => !prev);
+                        }}
+                        title={showPassword ? "Ocultar contraseña" : "Ver contraseña"}
+                        aria-label={showPassword ? "Ocultar contraseña" : "Ver contraseña"}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-cyan-400 transition-colors cursor-pointer"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Checkbox: Recordar este dispositivo */}
+                  <div className="pt-0.5">
+                    <label className="flex items-center gap-2.5 cursor-pointer select-none text-slate-400 hover:text-slate-300 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={rememberDevice}
+                        onChange={(e) => setRememberDevice(e.target.checked)}
+                        className="w-4 h-4 rounded border-slate-700 bg-[#0d1627] text-cyan-500 focus:ring-cyan-500/30 accent-cyan-500 cursor-pointer"
+                      />
+                      <span>Recordar este dispositivo</span>
+                    </label>
+                  </div>
+
+                  {/* Botón Primario: Iniciar Sesión */}
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full mt-2 py-3.5 px-4 rounded-xl bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 hover:brightness-110 hover:-translate-y-0.5 active:scale-[0.98] text-white font-bold text-sm shadow-[0_4px_24px_rgba(14,165,233,0.45)] transition-all duration-150 cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    {isLoading ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        <span>Validando credenciales...</span>
+                      </>
+                    ) : (
+                      <span>Iniciar Sesión</span>
+                    )}
+                  </button>
+                </form>
+              </div>
             </motion.div>
           )}
         </motion.div>
