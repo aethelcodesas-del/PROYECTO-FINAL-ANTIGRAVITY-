@@ -490,7 +490,7 @@ export const AgendaCalendarioView: React.FC<AgendaCalendarioViewProps> = ({
         }
         const mapped = mapRowToEvent(insertedRow);
         setEvents(prev => [mapped, ...prev].sort((a, b) => a.date.localeCompare(b.date)));
-        showToast('Hito electoral programado y guardado en Supabase.');
+        showToast('Hito electoral programado y guardado en el servidor seguro.');
       }
 
       setShowAddModal(false);
@@ -907,7 +907,7 @@ export const AgendaCalendarioView: React.FC<AgendaCalendarioViewProps> = ({
           {isLoading ? (
             <div className="bg-[#05162a] border border-cyan-500/20 rounded-3xl p-10 text-center space-y-3">
               <RefreshCw className="w-7 h-7 text-cyan-400 animate-spin mx-auto" />
-              <p className="text-xs font-bold text-slate-300">Cargando cronograma real desde Supabase...</p>
+              <p className="text-xs font-bold text-slate-300">Cargando cronograma real desde el servidor seguro...</p>
             </div>
           ) : filteredEvents.length === 0 ? (
             <div className="bg-[#05162a] border border-dashed border-cyan-500/30 rounded-3xl p-10 text-center space-y-4 agenda-empty-state">
@@ -922,7 +922,7 @@ export const AgendaCalendarioView: React.FC<AgendaCalendarioViewProps> = ({
                 </h4>
                 <p className="text-xs text-slate-400 leading-relaxed">
                   {events.length === 0
-                    ? 'Cree el primer evento clave o hito legal para estructurar la línea de tiempo oficial de la campaña en Supabase.'
+                    ? 'Cree el primer evento clave o hito legal para estructurar la línea de tiempo oficial de la campaña en el servidor seguro.'
                     : 'Ajuste los filtros de estado, mes, categoría o prioridad para visualizar otros registros.'}
                 </p>
               </div>

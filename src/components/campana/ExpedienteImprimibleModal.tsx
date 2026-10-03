@@ -497,7 +497,7 @@ export const ExpedienteImprimibleModal: React.FC<ExpedienteImprimibleModalProps>
       renderInstitutionalTable([
         { field: 'Identificador Único del Expediente:', value: dossierId },
         { field: 'Fecha y Hora Exacta de Emisión:', value: generationTimestamp },
-        { field: 'Trazabilidad y Respaldo:', value: 'Servicio Cloudflare & Supabase Electoral Vault' },
+        { field: 'Trazabilidad y Respaldo:', value: 'Bóveda Cifrada de Alta Seguridad & Respaldo en la Nube' },
         { field: 'Estado General del Documento:', value: 'DOCUMENTO VÁLIDO PARA TRÁMITES OFICIALES', statusBadge: 'VÁLIDO' }
       ]);
 

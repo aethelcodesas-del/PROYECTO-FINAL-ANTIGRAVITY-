@@ -400,7 +400,7 @@ export const ProgramaGobiernoView: React.FC<ProgramaGobiernoViewProps> = ({
         }
       }
     } catch (err: any) {
-      showToast(err?.message || 'Error al sincronizar el Programa de Gobierno con Supabase.');
+      showToast(err?.message || 'Error al sincronizar el Programa de Gobierno con el servidor central.');
       throw err;
     } finally {
       setIsSaving(false);
@@ -503,7 +503,7 @@ export const ProgramaGobiernoView: React.FC<ProgramaGobiernoViewProps> = ({
     await persistGovernmentProgram(nextEjes);
     showToast(
       editingPropuestaId
-        ? 'Propuesta programática actualizada en Supabase.'
+        ? 'Propuesta programática actualizada en el servidor central.'
         : 'Nueva propuesta registrada en el Programa de Gobierno.'
     );
   };
@@ -566,7 +566,7 @@ export const ProgramaGobiernoView: React.FC<ProgramaGobiernoViewProps> = ({
     setEditingEjeId(null);
     setShowAddEjeModal(false);
     await persistGovernmentProgram(nextEjes);
-    showToast(editingEjeId ? 'Eje estratégico actualizado.' : 'Eje estratégico creado y guardado en Supabase.');
+    showToast(editingEjeId ? 'Eje estratégico actualizado.' : 'Eje estratégico creado y guardado en el servidor central.');
   };
 
   const confirmDeleteEje = async (e: React.MouseEvent) => {
@@ -596,7 +596,7 @@ export const ProgramaGobiernoView: React.FC<ProgramaGobiernoViewProps> = ({
     e.preventDefault();
     e.stopPropagation();
     await persistGovernmentProgram(ejes, programMeta, checklist);
-    showToast('Metadatos del Programa de Gobierno guardados en Supabase.');
+    showToast('Metadatos del Programa de Gobierno guardados en el servidor central.');
   };
 
   // Synthesize proposals from real territorial diagnosis stored in Supabase
@@ -923,7 +923,7 @@ export const ProgramaGobiernoView: React.FC<ProgramaGobiernoViewProps> = ({
             {isLoading ? (
               <div className="bg-[#05162a] border border-cyan-500/20 rounded-2xl p-6 text-center space-y-2">
                 <RefreshCw className="w-5 h-5 text-cyan-400 animate-spin mx-auto" />
-                <p className="text-xs text-slate-400">Cargando pilares desde Supabase...</p>
+                <p className="text-xs text-slate-400">Cargando pilares desde el servidor seguro...</p>
               </div>
             ) : ejes.length === 0 ? (
               <div className="empty-plan-card bg-[#05162a] border border-dashed border-cyan-500/30 rounded-2xl p-6 text-center space-y-3">

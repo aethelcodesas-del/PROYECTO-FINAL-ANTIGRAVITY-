@@ -372,7 +372,7 @@ export function useCampaignDiagnostics(
         ' · ' +
         new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
       setDiagnosticMessage(
-        `Diagnóstico 360° actualizado desde Supabase (${nowStr}): ${stats.pollingStations} puesto(s), ${stats.leaders} líder(es), ${stats.voters} simpatizante(s), ${stats.witnesses} testigo(s).`
+        `Diagnóstico 360° actualizado desde el servidor central (${nowStr}): ${stats.pollingStations} puesto(s), ${stats.leaders} líder(es), ${stats.voters} simpatizante(s), ${stats.witnesses} testigo(s).`
       );
     } finally {
       setIsScanning(false);

@@ -1798,7 +1798,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
           mesa: dbVoter.mesa || 'Sin mesa',
           fecha: dbVoter.created_at?.slice(0, 10) || 'Fecha registrada'
         } : localVoter;
-        setDuplicateWarning(`¡ATENCIÓN DUPLICADO EN SUPABASE! La cédula ${found.cc} (${found.nombre}) ya se encuentra registrada como VOTANTE en la campaña (Líder: ${found.lider} · Puesto: ${found.puesto} · ${found.mesa}).`);
+        setDuplicateWarning(`¡ATENCIÓN DUPLICADO EN BASE DE DATOS! La cédula ${found.cc} (${found.nombre}) ya se encuentra registrada como VOTANTE en la campaña (Líder: ${found.lider} · Puesto: ${found.puesto} · ${found.mesa}).`);
         setCedulaSearchResult(found);
       } else if (dbLeader || localLeader) {
         const foundLeader = dbLeader ? {
@@ -1827,7 +1827,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
         });
       }
     } catch (err: any) {
-      setCrmError(err?.message || 'Error al consultar la cédula en Supabase.');
+      setCrmError(err?.message || 'Error al consultar la cédula en el servidor central.');
     } finally {
       setIsValidatingCedula(false);
     }
@@ -1859,7 +1859,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
       status: 'ACTIVE'
     });
     if (error) return setCrmError(error.code === '23505' ? 'La cédula ya está registrada en el CRM.' : error.message);
-    setConsultationSavedSuccess(`¡Cédula ${cedulaSearchResult.cc} guardada y empadronada exitosamente en Supabase!`);
+    setConsultationSavedSuccess(`¡Cédula ${cedulaSearchResult.cc} guardada y empadronada exitosamente en el servidor central!`);
     setCedulaSearchResult(null);
     setCedulaSearch('');
     setDuplicateWarning(null);
@@ -1943,7 +1943,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
     setNewPuesto('');
     setNewMesa('');
     setShowAddVoterForm(false);
-    setActionSuccessMessage('Votante registrado exitosamente en Supabase.');
+    setActionSuccessMessage('Votante registrado exitosamente en el servidor central.');
     await loadRealPoliticalCrm();
   };
 
@@ -2219,7 +2219,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                   Indicadores Clave del Tablero Administrativo
                 </h2>
                 <p className="text-[11px] text-slate-400 font-medium mt-0.5">
-                  Métricas consolidadas en tiempo real conectadas directamente a la base de datos de Supabase.
+                  Métricas consolidadas en tiempo real conectadas directamente al servidor central seguro.
                 </p>
               </div>
               <div className="flex items-center gap-2 self-start sm:self-auto">
@@ -2889,7 +2889,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                     <div className="py-10 px-4 text-center rounded-xl border border-cyan-500/15 bg-[#030d1f]/40">
                       <ShieldCheck className="w-8 h-8 text-cyan-400/60 mx-auto mb-2" />
                       <p className="text-xs font-bold text-slate-200">No hay cuentas secundarias registradas en esta campaña</p>
-                      <p className="text-[11px] text-slate-400 mt-1">Utiliza el botón &quot;+ Registrar&quot; para crear y asignar roles operativos a tu equipo en Supabase.</p>
+                      <p className="text-[11px] text-slate-400 mt-1">Utiliza el botón &quot;+ Registrar&quot; para crear y asignar roles operativos a tu equipo en el servidor central.</p>
                     </div>
                   ) : usersList
                     .filter(u => u.name.toLowerCase().includes(userSearchTerm.toLowerCase()) || u.email.toLowerCase().includes(userSearchTerm.toLowerCase()))
@@ -3183,7 +3183,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                         <span>Formulario real de empadronamiento</span>
                       </div>
                       <span className="text-[10px] bg-cyan-950 text-cyan-300 border border-cyan-700/50 font-bold px-2 py-0.5 rounded">
-                        Registro conectado a Supabase
+                        Registro conectado al Servidor
                       </span>
                     </div>
 

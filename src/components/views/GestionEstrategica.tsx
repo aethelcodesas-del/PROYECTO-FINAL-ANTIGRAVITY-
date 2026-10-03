@@ -830,7 +830,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                 surveyPriorityPercent: Math.min(100, Math.max(30, Math.round((count / (count + 2)) * 88))),
                 variables: sec.variables.map(v => ({
                   ...v,
-                  pollPerception: `Sondeo Real Supabase (N=${responseCount || count * 150}): Prioridad ciudadana reportada en ${diagnosticTerritory}`
+                  pollPerception: `Sondeo Oficial en Servidor (N=${responseCount || count * 150}): Prioridad ciudadana reportada en ${diagnosticTerritory}`
                 }))
               };
             }
@@ -841,18 +841,18 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
         });
 
         setDiagnosticMessage(
-          `Sincronización exitosa: ${count} encuesta(s) y ${responseCount} respuesta(s) procesadas en Supabase para ${diagnosticCampaignName}. Percepciones territoriales actualizadas.`
+          `Sincronización exitosa: ${count} encuesta(s) y ${responseCount} respuesta(s) procesadas en el servidor seguro para ${diagnosticCampaignName}. Percepciones territoriales actualizadas.`
         );
       } else {
         setSurveySyncTimestamp(
-          `Verificado (${nowLabel}) · 0 encuestas en Supabase`
+          `Verificado (${nowLabel}) · 0 encuestas en el servidor central`
         );
         setDiagnosticMessage(
-          `Sincronización completada: No se encontraron encuestas registradas en Supabase para la campaña "${diagnosticCampaignName}".`
+          `Sincronización completada: No se encontraron encuestas registradas en el servidor central para la campaña "${diagnosticCampaignName}".`
         );
       }
     } catch (err: any) {
-      setDiagnosticMessage(err?.message || 'Error al consultar encuestas en Supabase.');
+      setDiagnosticMessage(err?.message || 'Error al consultar encuestas en el servidor central.');
     } finally {
       setIsSyncingSurveys(false);
     }
@@ -1616,7 +1616,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
     setCvMessage('');
     try {
       await saveCandidateCv();
-      setCvMessage('Expediente de hoja de vida guardado exitosamente en Supabase.');
+      setCvMessage('Expediente de hoja de vida guardado exitosamente en el servidor seguro.');
     } catch (error: any) {
       setCvMessage(error?.message || 'No fue posible guardar el expediente.');
     } finally {
@@ -1964,7 +1964,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
           console.warn('strategic_actors table upsert note:', dbErr);
         }
       }
-      setNarrativeMessage(editingActorId ? 'Actor político actualizado con éxito en Supabase.' : 'Actor político registrado con éxito en Supabase.');
+      setNarrativeMessage(editingActorId ? 'Actor político actualizado con éxito en el servidor seguro.' : 'Actor político registrado con éxito en el servidor seguro.');
     } catch (error: any) {
       setNarrativeMessage(error?.message || 'No fue posible guardar el actor político.');
     }
@@ -2155,7 +2155,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
 
       setSwotData(next);
       await saveStrategicSwot(next);
-      setSwotMessage('Matriz generada con IA a partir de los datos reales de la campaña y guardada en Supabase.');
+      setSwotMessage('Matriz generada con IA a partir de los datos reales de la campaña y guardada en el servidor seguro.');
     } catch (error: any) {
       setSwotMessage(error?.message || 'No fue posible generar la matriz DOFA.');
     } finally {
@@ -2209,7 +2209,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
     setNewCameText('');
     try {
       await saveStrategicSwot(swotData, nextCame);
-      setSwotMessage('Estrategia CAME agregada y guardada en Supabase.');
+      setSwotMessage('Estrategia CAME agregada y guardada en el servidor seguro.');
     } catch (e: any) {
       setSwotMessage(e?.message || 'Error al guardar la estrategia CAME.');
     }
@@ -2220,7 +2220,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
     setCameData(nextCame);
     try {
       await saveStrategicSwot(swotData, nextCame);
-      setSwotMessage('Estrategia CAME eliminada de Supabase.');
+      setSwotMessage('Estrategia CAME eliminada del servidor seguro.');
     } catch (e: any) {
       setSwotMessage(e?.message || 'Error al eliminar la estrategia CAME.');
     }
@@ -2431,7 +2431,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                     className="diagnostic-scan-btn w-full sm:w-auto flex items-center justify-center gap-2.5 px-5 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 hover:brightness-110 hover:-translate-y-0.5 text-slate-950 font-black text-xs shadow-lg shadow-emerald-500/20 hover:shadow-[0_0_20px_rgba(34,197,94,0.35)] active:scale-[0.96] transition-all duration-200 cursor-pointer disabled:opacity-50"
                   >
                     <RefreshCw className={`w-4 h-4 ${diag.isScanning ? 'animate-spin' : ''}`} />
-                    <span>{diag.isScanning ? 'Consultando Supabase...' : 'Ejecutar Diagnóstico AI'}</span>
+                    <span>{diag.isScanning ? 'Consultando Servidor...' : 'Ejecutar Diagnóstico AI'}</span>
                   </button>
                 </div>
               </div>
@@ -2517,7 +2517,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
 
                   <div className="space-y-1.5">
                     <div className="flex justify-between text-xs text-slate-300 font-semibold pillar-metric-label">
-                      <span>Puestos Registrados en Supabase</span>
+                      <span>Puestos Registrados en Servidor</span>
                       <span className="pillar-metric-value text-emerald-300">{currentStats.pollingStations} puestos</span>
                     </div>
                     <div className="pillar-progress-track w-full h-2 bg-slate-900 rounded-full overflow-hidden">
@@ -2575,7 +2575,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                     <strong className="text-amber-300 font-bold block">Análisis de Competencia:</strong>
                     <p className="text-[11px] leading-relaxed">
                       {currentStats.surveys > 0 || actorsList.length > 0
-                        ? `${currentStats.surveys} sondeo(s) en Supabase con ${currentStats.promedioIntencion > 0 ? currentStats.promedioIntencion + '% de intención' : 'análisis en curso'} y ${actorsList.length} actor(es) político(s) registrados en el Mapa de Actores Clave.`
+                        ? `${currentStats.surveys} sondeo(s) en el servidor central con ${currentStats.promedioIntencion > 0 ? currentStats.promedioIntencion + '% de intención' : 'análisis en curso'} y ${actorsList.length} actor(es) político(s) registrados en el Mapa de Actores Clave.`
                         : 'Sin encuestas ni actores de competencia registrados aún. Configure encuestas en Gestión Administrativa o registre actores en Narrativa & Discurso.'}
                     </p>
                   </div>
@@ -2663,7 +2663,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                     <strong className="text-emerald-300 font-bold block">Contabilidad Oficial:</strong>
                     <p className="text-[11px] leading-relaxed">
                       {currentStats.budgetItems > 0
-                        ? `${currentStats.budgetItems} movimiento(s) presupuestales registrados en Supabase para control de topes legales CNE en ${diagnosticTerritory || 'la campaña'}.`
+                        ? `${currentStats.budgetItems} movimiento(s) presupuestales registrados en el servidor central para control de topes legales CNE en ${diagnosticTerritory || 'la campaña'}.`
                         : 'Sin movimientos contables registrados en Presupuesto / CNE. Registre ingresos y gastos para activar la trazabilidad.'}
                     </p>
                   </div>
@@ -5762,7 +5762,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
               </button>
             </div>
             <p className="text-slate-300 leading-relaxed">
-              ¿Está seguro de eliminar a <strong className="text-white">{actorToDelete.name}</strong> ({actorToDelete.role}) del Mapa Político de la campaña? Esta acción sincronizará el cambio en Supabase.
+              ¿Está seguro de eliminar a <strong className="text-white">{actorToDelete.name}</strong> ({actorToDelete.role}) del Mapa Político de la campaña? Esta acción sincronizará el cambio en el servidor central.
             </p>
             <div className="flex gap-2 pt-2">
               <button
@@ -5887,7 +5887,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
             </div>
 
             <p className="text-[11px] text-slate-400 bg-[#081d38] p-3 rounded-2xl border border-cyan-500/20">
-              Cálculo sincronizado en tiempo real con los registros estratégicos de la campaña en Supabase.
+              Cálculo sincronizado en tiempo real con los registros estratégicos de la campaña en el servidor seguro.
             </p>
           </div>
         </div>
