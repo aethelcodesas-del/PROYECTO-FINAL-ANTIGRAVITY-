@@ -2965,6 +2965,196 @@ textarea {
 }
 
 /* --------------------------------------------------------------------------
+   AGENDA ESTRATÉGICA & CALENDARIO ELECTORAL (GPU 60 FPS ANIMATION SUITE)
+   -------------------------------------------------------------------------- */
+
+@keyframes agendaStaggerEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) translateZ(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) translateZ(0);
+  }
+}
+
+.animate-agenda-stagger-1 {
+  animation: agendaStaggerEnter 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-agenda-stagger-2 {
+  animation: agendaStaggerEnter 0.28s cubic-bezier(0.16, 1, 0.3, 1) 0.035s forwards;
+  opacity: 0;
+}
+
+.animate-agenda-stagger-3 {
+  animation: agendaStaggerEnter 0.28s cubic-bezier(0.16, 1, 0.3, 1) 0.07s forwards;
+  opacity: 0;
+}
+
+.animate-agenda-stagger-4 {
+  animation: agendaStaggerEnter 0.28s cubic-bezier(0.16, 1, 0.3, 1) 0.105s forwards;
+  opacity: 0;
+}
+
+/* Widget de Cuenta Regresiva Día E */
+.agenda-countdown-widget {
+  transition: border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, border-color, box-shadow;
+  transform: translateZ(0);
+}
+
+.agenda-countdown-widget:hover {
+  border-color: rgba(6, 182, 212, 0.35) !important;
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.12);
+}
+
+@keyframes secondBreath {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1) translateZ(0);
+  }
+  50% {
+    opacity: 0.88;
+    transform: scale(0.97) translateZ(0);
+  }
+}
+
+.agenda-countdown-seg-pulse {
+  animation: secondBreath 1s ease-in-out infinite;
+  will-change: transform, opacity;
+  transform: translateZ(0);
+}
+
+/* Pestaña Activa con Resplandor Ámbar */
+.agenda-tab-active {
+  background: #f59e0b !important;
+  color: #020617 !important;
+  border: 1px solid rgba(251, 191, 36, 0.6) !important;
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.25) !important;
+  font-weight: 900 !important;
+  transform: translateZ(0);
+}
+
+.agenda-tab-inactive {
+  transition: background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateZ(0);
+}
+
+.agenda-tab-inactive:hover {
+  background-color: rgba(30, 41, 59, 0.5) !important;
+  color: #ffffff !important;
+}
+
+/* Botón Primario: + Nuevo Hito / Evento (Verde Esmeralda) */
+.agenda-btn-new-event {
+  background: #10b981 !important;
+  color: #020617 !important;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.25) !important;
+  will-change: transform, filter, box-shadow;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              filter 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  transform: translateZ(0);
+}
+
+.agenda-btn-new-event:hover {
+  filter: brightness(1.1) !important;
+  transform: translateY(-2px) translateZ(0) !important;
+  box-shadow: 0 0 22px rgba(16, 185, 129, 0.45) !important;
+}
+
+.agenda-btn-new-event:active {
+  transform: scale(0.96) translateZ(0) !important;
+}
+
+/* Botón Secundario: Exportar (.ics) */
+.agenda-btn-export {
+  will-change: transform, background-color, border-color;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  transform: translateZ(0);
+}
+
+.agenda-btn-export:hover {
+  transform: translateY(-2px) translateZ(0) !important;
+  background-color: rgba(30, 41, 59, 0.6) !important;
+  border-color: rgba(6, 182, 212, 0.5) !important;
+}
+
+.agenda-btn-export:active {
+  transform: scale(0.97) translateZ(0) !important;
+}
+
+/* Botón Central: + Crear Primer Hito Electoral */
+.agenda-btn-create-first {
+  background: linear-gradient(135deg, #06b6d4 0%, #0d9488 100%) !important;
+  color: #020617 !important;
+  will-change: transform, filter, box-shadow;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              filter 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  transform: translateZ(0);
+}
+
+.agenda-btn-create-first:hover {
+  filter: brightness(1.1) !important;
+  transform: translateY(-2px) translateZ(0) !important;
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.4) !important;
+}
+
+.agenda-btn-create-first:active {
+  transform: scale(0.96) translateZ(0) !important;
+}
+
+/* Estado Vacío - Flotación GPU */
+@keyframes agendaFloat {
+  0%, 100% {
+    transform: translateY(0) translateZ(0);
+  }
+  50% {
+    transform: translateY(-4px) translateZ(0);
+  }
+}
+
+.empty-agenda-icon {
+  animation: agendaFloat 3.8s ease-in-out infinite;
+  will-change: transform, filter;
+  transform: translateZ(0);
+  transition: filter 0.25s ease;
+}
+
+.agenda-empty-state:hover .empty-agenda-icon {
+  filter: drop-shadow(0 0 10px rgba(6, 182, 212, 0.45));
+}
+
+/* Barra de Búsqueda y Dropdowns Focus */
+.agenda-search-box-focus {
+  transition: border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.agenda-search-box-focus:focus-within {
+  border-color: #06b6d4 !important;
+  box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.25) !important;
+}
+
+.agenda-filter-box-focus {
+  transition: border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.agenda-filter-box-focus:focus-within {
+  border-color: #06b6d4 !important;
+  box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.25) !important;
+}
+
+/* --------------------------------------------------------------------------
    E. ACCESSIBILITY & PREFERS-REDUCED-MOTION
    Respect user operating system reduced-motion preferences
    -------------------------------------------------------------------------- */

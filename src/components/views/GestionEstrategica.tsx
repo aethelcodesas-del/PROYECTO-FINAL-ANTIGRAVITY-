@@ -5791,7 +5791,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
 
       {/* TAB AGENDA Y CALENDARIO ELECTORAL */}
       {activeTab === 'agenda_electoral' && (
-        <AgendaCalendarioView onSelectView={onSelectView} />
+        <AgendaCalendarioView onSelectView={onSelectView} campaignId={candidateCampaignId} candidateProfile={candidateProfile} />
       )}
 
       {/* TAB 5: COMMAND CENTER AI */}

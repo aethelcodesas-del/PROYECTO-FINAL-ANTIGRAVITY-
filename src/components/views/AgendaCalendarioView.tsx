@@ -33,11 +33,76 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { CountdownWidget } from '../common/CountdownWidget';
 
 interface AgendaCalendarioViewProps {
   onSelectView?: (view: string) => void;
+  campaignId?: string;
+  candidateProfile?: any;
 }
+
+interface DiaECountdownWidgetProps {
+  targetDateStr?: string;
+  className?: string;
+}
+
+const DiaECountdownWidget: React.FC<DiaECountdownWidgetProps> = React.memo(({ targetDateStr = '', className = '' }) => {
+  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+
+  useEffect(() => {
+    const calculateTimeLeft = () => {
+      if (!targetDateStr) {
+        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+        return;
+      }
+      const target = new Date(targetDateStr).getTime();
+      const now = new Date().getTime();
+      const difference = target - now;
+
+      if (difference > 0) {
+        const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((difference / (1000 * 60 * 60)) % 24);
+        const minutes = Math.floor((difference / 1000 / 60) % 60);
+        const seconds = Math.floor((difference / 1000) % 60);
+        setTimeLeft({ days, hours, minutes, seconds });
+      } else {
+        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+      }
+    };
+
+    calculateTimeLeft();
+    const timer = setInterval(calculateTimeLeft, 1000);
+    return () => clearInterval(timer);
+  }, [targetDateStr]);
+
+  return (
+    <div className={`bg-[#06182c]/90 border border-slate-700/80 rounded-2xl p-4 sm:p-5 shadow-xl space-y-3 text-center agenda-countdown-widget ${className}`}>
+      <div className="flex items-center justify-center gap-1.5 text-amber-400 font-black text-xs uppercase tracking-wider">
+        <Flag className="w-4 h-4 text-amber-400" />
+        <span>CUENTA REGRESIVA PARA EL DÍA E</span>
+      </div>
+
+      <div className="grid grid-cols-4 gap-2 font-mono">
+        <div className="bg-[#041222] p-2 sm:p-2.5 rounded-xl border border-slate-700/80">
+          <span className="block text-2xl sm:text-3xl font-black text-amber-400 font-mono">{timeLeft.days}</span>
+          <span className="text-[9px] text-slate-400 font-sans uppercase font-extrabold tracking-wider">DÍAS</span>
+        </div>
+        <div className="bg-[#041222] p-2 sm:p-2.5 rounded-xl border border-slate-700/80">
+          <span className="block text-2xl sm:text-3xl font-black text-cyan-400 font-mono">{String(timeLeft.hours).padStart(2, '0')}</span>
+          <span className="text-[9px] text-slate-400 font-sans uppercase font-extrabold tracking-wider">HORAS</span>
+        </div>
+        <div className="bg-[#041222] p-2 sm:p-2.5 rounded-xl border border-slate-700/80">
+          <span className="block text-2xl sm:text-3xl font-black text-cyan-400 font-mono">{String(timeLeft.minutes).padStart(2, '0')}</span>
+          <span className="text-[9px] text-slate-400 font-sans uppercase font-extrabold tracking-wider">MIN</span>
+        </div>
+        <div className="bg-[#041222] p-2 sm:p-2.5 rounded-xl border border-slate-700/80">
+          <span className="block text-2xl sm:text-3xl font-black text-rose-400 font-mono agenda-countdown-seg-pulse">{String(timeLeft.seconds).padStart(2, '0')}</span>
+          <span className="text-[9px] text-slate-400 font-sans uppercase font-extrabold tracking-wider">SEG</span>
+        </div>
+      </div>
+    </div>
+  );
+});
+DiaECountdownWidget.displayName = 'DiaECountdownWidget';
 
 export interface ElectoralEvent {
   id: string;
@@ -55,7 +120,11 @@ export interface ElectoralEvent {
   isOfficialDeadline?: boolean;
 }
 
-export const AgendaCalendarioView: React.FC<AgendaCalendarioViewProps> = ({ onSelectView }) => {
+export const AgendaCalendarioView: React.FC<AgendaCalendarioViewProps> = ({
+  onSelectView,
+  campaignId: propCampaignId,
+  candidateProfile
+}) => {
   const geoCtx = useCampaignGeo();
 
   const [campaignId, setCampaignId] = useState('');
@@ -149,8 +218,18 @@ export const AgendaCalendarioView: React.FC<AgendaCalendarioViewProps> = ({ onSe
       const token = sessionData.session?.access_token;
 
       let campaign: any = null;
+      const targetCampId = propCampaignId || localStorage.getItem('active_campaign_id') || '';
 
-      if (token) {
+      if (targetCampId) {
+        const { data } = await supabase
+          .from('campaigns')
+          .select('id,client_id,fecha_eleccion,fecha_elecciones,descripcion')
+          .eq('id', targetCampId)
+          .maybeSingle();
+        if (data) campaign = data;
+      }
+
+      if (!campaign && token) {
         try {
           const resp = await authenticatedFetch('/api/supabase-admin/active-campaign', {
             headers: { Authorization: `Bearer ${token}` }
@@ -175,19 +254,10 @@ export const AgendaCalendarioView: React.FC<AgendaCalendarioViewProps> = ({ onSe
           profile = prof;
         }
 
-        const rememberedCampaignId = localStorage.getItem('active_campaign_id');
-        if (rememberedCampaignId) {
-          const { data } = await supabase
-            .from('campaigns')
-            .select('id,client_id,fecha_eleccion')
-            .eq('id', rememberedCampaignId)
-            .maybeSingle();
-          if (data) campaign = data;
-        }
         if (!campaign && profile?.campaign_id) {
           const { data } = await supabase
             .from('campaigns')
-            .select('id,client_id,fecha_eleccion')
+            .select('id,client_id,fecha_eleccion,fecha_elecciones,descripcion')
             .eq('id', profile.campaign_id)
             .maybeSingle();
           if (data) campaign = data;
@@ -195,7 +265,7 @@ export const AgendaCalendarioView: React.FC<AgendaCalendarioViewProps> = ({ onSe
         if (!campaign && profile?.client_id) {
           const { data } = await supabase
             .from('campaigns')
-            .select('id,client_id,fecha_eleccion')
+            .select('id,client_id,fecha_eleccion,fecha_elecciones,descripcion')
             .eq('client_id', profile.client_id)
             .order('updated_at', { ascending: false })
             .limit(1)
@@ -205,7 +275,7 @@ export const AgendaCalendarioView: React.FC<AgendaCalendarioViewProps> = ({ onSe
         if (!campaign) {
           const { data } = await supabase
             .from('campaigns')
-            .select('id,client_id,fecha_eleccion')
+            .select('id,client_id,fecha_eleccion,fecha_elecciones,descripcion')
             .order('updated_at', { ascending: false })
             .limit(1)
             .maybeSingle();
@@ -222,9 +292,46 @@ export const AgendaCalendarioView: React.FC<AgendaCalendarioViewProps> = ({ onSe
       const activeClientId = String(campaign.client_id || campaign.id);
       setCampaignId(activeCampId);
       setClientId(activeClientId);
-      setElectionDate(String(campaign.fecha_eleccion || ''));
       localStorage.setItem('active_campaign_id', activeCampId);
 
+      // Sincronizar Fecha Oficial de Elecciones (Día E) desde todas las fuentes reales
+      let officialElectionDate = String(campaign.fecha_eleccion || campaign.fecha_elecciones || '').trim();
+      if (!officialElectionDate && campaign.descripcion) {
+        try {
+          const desc = JSON.parse(campaign.descripcion);
+          officialElectionDate = String(desc.fecha_eleccion || desc.fecha_elecciones || '').trim();
+        } catch {}
+      }
+
+      if (!officialElectionDate && activeCampId) {
+        try {
+          const { data: configData } = await supabase
+            .from('campana_config')
+            .select('fecha_elecciones,fecha_eleccion')
+            .eq('campana_id', activeCampId)
+            .maybeSingle();
+          if (configData) {
+            officialElectionDate = String(configData.fecha_elecciones || configData.fecha_eleccion || '').trim();
+          }
+        } catch {}
+      }
+
+      if (!officialElectionDate && activeCampId) {
+        try {
+          const { data: datosData } = await supabase
+            .from('campana_datos')
+            .select('fecha_elecciones,fecha_eleccion')
+            .eq('campana_id', activeCampId)
+            .maybeSingle();
+          if (datosData) {
+            officialElectionDate = String(datosData.fecha_elecciones || datosData.fecha_eleccion || '').trim();
+          }
+        } catch {}
+      }
+
+      setElectionDate(officialElectionDate);
+
+      // Cargar actividades e hitos reales de la campaña activa
       const { data: activities, error } = await supabase
         .from('campaign_activities')
         .select('*')
@@ -244,7 +351,7 @@ export const AgendaCalendarioView: React.FC<AgendaCalendarioViewProps> = ({ onSe
 
   useEffect(() => {
     void loadRealAgenda();
-  }, []);
+  }, [propCampaignId]);
 
   const handleOpenCreateModal = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -597,33 +704,32 @@ export const AgendaCalendarioView: React.FC<AgendaCalendarioViewProps> = ({ onSe
       </AnimatePresence>
 
       {/* HEADER BANNER WITH COUNTDOWN TIMER */}
-      <div className="bg-gradient-to-r from-[#05182d] via-[#08223f] to-[#041224] border border-cyan-500/30 p-6 rounded-3xl shadow-2xl relative overflow-hidden space-y-6 agenda-header-banner">
+      <div className="bg-gradient-to-r from-[#05182d] via-[#08223f] to-[#041224] border border-cyan-500/30 p-6 rounded-3xl shadow-2xl relative overflow-hidden space-y-6 agenda-header-banner animate-agenda-stagger-1">
         <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none agenda-header-glow" />
 
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
           <div className="space-y-2 max-w-2xl">
             <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight agenda-header-title">
               Agenda Estratégica &{' '}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-emerald-300 to-cyan-400 agenda-header-highlight">
+              <span className="text-amber-400 agenda-header-highlight">
                 Calendario Electoral
               </span>
             </h1>
             <p className="text-xs text-slate-300">
               Cronograma operativo en tiempo real vinculado a{' '}
-              <strong className="text-cyan-300">{geoCtx.territory || 'la campaña activa'}</strong>.
+              <strong className="text-cyan-300">{geoCtx.territory || candidateProfile?.municipio || 'Cotorra, Córdoba'}</strong>.
             </p>
           </div>
 
           {/* COUNTDOWN BOX TO DÍA E */}
-          <CountdownWidget
+          <DiaECountdownWidget
             targetDateStr={electionDate ? `${electionDate}T08:00:00` : ''}
-            variant="card"
-            className="shrink-0 lg:w-80 agenda-countdown-widget"
+            className="shrink-0 lg:w-80"
           />
         </div>
 
         {/* TOP ACTIONS & VIEW TABS */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-cyan-500/20 relative z-10 agenda-header-actions">
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-cyan-500/20 relative z-10 agenda-header-actions animate-agenda-stagger-2">
           <div className="flex flex-wrap items-center gap-2 agenda-view-tabs">
             <button
               type="button"
@@ -632,13 +738,12 @@ export const AgendaCalendarioView: React.FC<AgendaCalendarioViewProps> = ({ onSe
                 e.stopPropagation();
                 setViewMode('timeline');
               }}
-              className={`px-4 py-2 rounded-2xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-2 agenda-view-tab-btn agenda-tab-timeline ${
+              className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-2 agenda-view-tab-btn agenda-tab-timeline ${
                 viewMode === 'timeline'
-                  ? 'active bg-gradient-to-r from-amber-500 to-emerald-600 text-slate-950 shadow-lg font-black'
-                  : 'bg-[#030e1c] text-slate-300 hover:text-white hover:bg-slate-800'
+                  ? 'agenda-tab-active'
+                  : 'agenda-tab-inactive bg-[#030e1c] text-slate-300'
               }`}
             >
-              <ListFilter className="w-4 h-4" />
               <span>1. Cronograma / Línea de Tiempo ({events.length})</span>
             </button>
 
@@ -649,10 +754,10 @@ export const AgendaCalendarioView: React.FC<AgendaCalendarioViewProps> = ({ onSe
                 e.stopPropagation();
                 setViewMode('month');
               }}
-              className={`px-4 py-2 rounded-2xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-2 agenda-view-tab-btn agenda-tab-month ${
+              className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-2 agenda-view-tab-btn agenda-tab-month ${
                 viewMode === 'month'
-                  ? 'active bg-gradient-to-r from-amber-500 to-emerald-600 text-slate-950 shadow-lg font-black'
-                  : 'bg-[#030e1c] text-slate-300 hover:text-white hover:bg-slate-800'
+                  ? 'agenda-tab-active'
+                  : 'agenda-tab-inactive bg-[#030e1c] text-slate-300'
               }`}
             >
               <CalendarDays className="w-4 h-4" />
@@ -666,13 +771,13 @@ export const AgendaCalendarioView: React.FC<AgendaCalendarioViewProps> = ({ onSe
                 e.stopPropagation();
                 setViewMode('official_cne');
               }}
-              className={`px-4 py-2 rounded-2xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-2 agenda-view-tab-btn agenda-tab-cne ${
+              className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all cursor-pointer flex items-center gap-2 agenda-view-tab-btn agenda-tab-cne ${
                 viewMode === 'official_cne'
-                  ? 'active bg-gradient-to-r from-rose-600 to-amber-600 text-white shadow-lg font-black'
-                  : 'bg-[#030e1c] text-slate-300 hover:text-white hover:bg-slate-800'
+                  ? 'agenda-tab-active'
+                  : 'agenda-tab-inactive bg-[#030e1c] text-slate-300'
               }`}
             >
-              <Scale className="w-4 h-4 text-rose-300" />
+              <Scale className="w-4 h-4" />
               <span>3. Hitos Oficiales CNE ({events.filter(e => e.isOfficialDeadline).length})</span>
             </button>
           </div>
@@ -681,35 +786,35 @@ export const AgendaCalendarioView: React.FC<AgendaCalendarioViewProps> = ({ onSe
             <button
               type="button"
               onClick={handleOpenCreateModal}
-              className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs rounded-xl shadow-lg flex items-center gap-1.5 cursor-pointer transition-all agenda-btn-new-event"
+              className="px-4 py-2 text-slate-950 font-black text-xs rounded-xl flex items-center gap-1.5 cursor-pointer agenda-btn-new-event"
             >
               <Plus className="w-4 h-4" />
-              <span>Nuevo Hito / Evento</span>
+              <span>+ Nuevo Hito / Evento</span>
             </button>
 
             <button
               type="button"
               onClick={exportCalendar}
-              className="px-3.5 py-2 bg-[#030e1c] hover:bg-slate-800 text-slate-200 border border-cyan-500/30 font-bold text-xs rounded-xl flex items-center gap-1.5 cursor-pointer transition-all agenda-btn-export"
+              className="px-3.5 py-2 bg-[#030e1c] text-slate-200 border border-cyan-500/30 font-bold text-xs rounded-xl flex items-center gap-1.5 cursor-pointer agenda-btn-export"
             >
               <Share2 className="w-4 h-4 text-cyan-400" />
-              <span className="hidden sm:inline">Exportar (.ics)</span>
+              <span>Exportar (.ics)</span>
             </button>
           </div>
         </div>
       </div>
 
       {/* FILTER & SEARCH BAR */}
-      <div className="bg-[#05162a] border border-cyan-500/30 rounded-2xl p-4 flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-4 shadow-xl agenda-filter-bar">
+      <div className="bg-[#05162a] border border-cyan-500/30 rounded-2xl p-4 flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-4 shadow-xl agenda-filter-bar animate-agenda-stagger-3">
         {/* Search */}
-        <div className="relative w-full xl:w-72 agenda-search-box">
+        <div className="relative w-full xl:w-72 agenda-search-box agenda-search-box-focus rounded-xl">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3 agenda-search-icon" />
           <input
             type="text"
             placeholder="Buscar por hito, lugar o sector..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-[#030e1c] border border-cyan-500/20 text-xs text-white rounded-xl pl-9 pr-4 py-2.5 outline-none focus:border-cyan-400 transition-all placeholder:text-slate-500 agenda-search-input"
+            className="w-full bg-[#030e1c] border border-cyan-500/20 text-xs text-white rounded-xl pl-9 pr-4 py-2.5 outline-none transition-all placeholder:text-slate-500 agenda-search-input"
           />
         </div>
 
@@ -720,57 +825,66 @@ export const AgendaCalendarioView: React.FC<AgendaCalendarioViewProps> = ({ onSe
           </span>
 
           {/* Status Filter */}
-          <select
-            value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
-            className="bg-[#030e1c] border border-cyan-500/30 text-xs text-white rounded-xl px-3 py-2 outline-none font-semibold cursor-pointer agenda-filter-select"
-          >
-            <option value="Todos">Todos los Estados</option>
-            <option value="Pendiente">Pendientes</option>
-            <option value="Completado">Completados</option>
-          </select>
+          <div className="agenda-filter-box-focus rounded-xl">
+            <select
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+              className="bg-[#030e1c] border border-cyan-500/30 text-xs text-white rounded-xl px-3 py-2 outline-none font-semibold cursor-pointer agenda-filter-select"
+            >
+              <option value="Todos">Todos los Estados</option>
+              <option value="Pendiente">Pendiente</option>
+              <option value="En Proceso">En curso</option>
+              <option value="Completado">Cumplido</option>
+            </select>
+          </div>
 
           {/* Month Filter */}
-          <select
-            value={selectedMonthFilter}
-            onChange={(e) => setSelectedMonthFilter(e.target.value)}
-            className="bg-[#030e1c] border border-cyan-500/30 text-xs text-white rounded-xl px-3 py-2 outline-none font-semibold cursor-pointer agenda-filter-select"
-          >
-            <option value="Todos">Todos los Meses</option>
-            {availableMonths.map(m => (
-              <option key={m} value={m}>
-                Mes: {m}
-              </option>
-            ))}
-          </select>
+          <div className="agenda-filter-box-focus rounded-xl">
+            <select
+              value={selectedMonthFilter}
+              onChange={(e) => setSelectedMonthFilter(e.target.value)}
+              className="bg-[#030e1c] border border-cyan-500/30 text-xs text-white rounded-xl px-3 py-2 outline-none font-semibold cursor-pointer agenda-filter-select"
+            >
+              <option value="Todos">Todos los Meses</option>
+              {availableMonths.map(m => (
+                <option key={m} value={m}>
+                  Mes: {m}
+                </option>
+              ))}
+            </select>
+          </div>
 
           {/* Category Filter */}
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="bg-[#030e1c] border border-cyan-500/30 text-xs text-white rounded-xl px-3 py-2 outline-none font-semibold cursor-pointer agenda-filter-select"
-          >
-            <option value="Todos">Todas las Categorías</option>
-            <option value="CNE_Registraduria">Oficial Registraduría / CNE</option>
-            <option value="Territorial_Campana">Campaña & Territorio</option>
-            <option value="Debates_Medios">Debates & Medios</option>
-            <option value="Testigos_DiaE">Testigos & Día E</option>
-            <option value="Finanzas_CNE">Finanzas CNE</option>
-          </select>
+          <div className="agenda-filter-box-focus rounded-xl">
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="bg-[#030e1c] border border-cyan-500/30 text-xs text-white rounded-xl px-3 py-2 outline-none font-semibold cursor-pointer agenda-filter-select"
+            >
+              <option value="Todos">Todas las Categorías</option>
+              <option value="Territorial_Campana">Territorial</option>
+              <option value="Debates_Medios">Medios</option>
+              <option value="CNE_Registraduria">Legal CNE</option>
+              <option value="Testigos_DiaE">Movilización</option>
+              <option value="Finanzas_CNE">Finanzas</option>
+            </select>
+          </div>
 
           {/* Priority Filter */}
-          <select
-            value={selectedPriority}
-            onChange={(e) => setSelectedPriority(e.target.value)}
-            className="bg-[#030e1c] border border-cyan-500/30 text-xs text-white rounded-xl px-3 py-2 outline-none font-semibold cursor-pointer agenda-filter-select"
-          >
-            <option value="Todos">Todas las Prioridades</option>
-            <option value="Critica">Prioridad Crítica</option>
-            <option value="Alta">Prioridad Alta</option>
-            <option value="Media">Prioridad Media</option>
-          </select>
+          <div className="agenda-filter-box-focus rounded-xl">
+            <select
+              value={selectedPriority}
+              onChange={(e) => setSelectedPriority(e.target.value)}
+              className="bg-[#030e1c] border border-cyan-500/30 text-xs text-white rounded-xl px-3 py-2 outline-none font-semibold cursor-pointer agenda-filter-select"
+            >
+              <option value="Todos">Todas las Prioridades</option>
+              <option value="Alta">Alta</option>
+              <option value="Media">Media</option>
+              <option value="Critica">Baja</option>
+            </select>
+          </div>
 
-          <span className="text-xs font-mono font-bold text-cyan-300 bg-cyan-950 px-3 py-1.5 rounded-full border border-cyan-500/30 agenda-count-badge">
+          <span className="text-xs font-mono font-bold text-cyan-300 bg-cyan-950/80 px-3 py-1.5 rounded-full border border-cyan-500/30 agenda-count-badge">
             {filteredEvents.length} Hitos
           </span>
         </div>
@@ -778,14 +892,14 @@ export const AgendaCalendarioView: React.FC<AgendaCalendarioViewProps> = ({ onSe
 
       {/* VIEW 1: TIMELINE / CRONOGRAMA LIST */}
       {viewMode === 'timeline' && (
-        <div className="space-y-4 agenda-timeline-section">
+        <div className="space-y-4 agenda-timeline-section animate-agenda-stagger-4">
           <div className="flex items-center justify-between agenda-timeline-header">
             <h3 className="font-extrabold text-white text-base flex items-center gap-2 agenda-timeline-title">
               <ListFilter className="w-5 h-5 text-amber-400" />
-              Línea de Tiempo Cronológica de la Campaña
+              <span>Línea de Tiempo Cronológica de la Campaña</span>
             </h3>
-            <span className="text-xs text-slate-400 agenda-timeline-subtitle">
-              {events.filter(e => e.status === 'Completado').length} completados ·{' '}
+            <span className="text-xs text-slate-400 agenda-timeline-subtitle font-medium">
+              {events.filter(e => e.status === 'Completado').length} completados •{' '}
               {events.filter(e => e.status !== 'Completado').length} pendientes
             </span>
           </div>
@@ -796,8 +910,8 @@ export const AgendaCalendarioView: React.FC<AgendaCalendarioViewProps> = ({ onSe
               <p className="text-xs font-bold text-slate-300">Cargando cronograma real desde Supabase...</p>
             </div>
           ) : filteredEvents.length === 0 ? (
-            <div className="bg-[#05162a] border border-dashed border-cyan-500/30 rounded-3xl p-10 text-center space-y-4">
-              <div className="w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center mx-auto text-cyan-400">
+            <div className="bg-[#05162a] border border-dashed border-cyan-500/30 rounded-3xl p-10 text-center space-y-4 agenda-empty-state">
+              <div className="w-14 h-14 rounded-2xl bg-cyan-950/60 border border-cyan-500/30 flex items-center justify-center mx-auto text-cyan-400 empty-agenda-icon">
                 <Calendar className="w-7 h-7" />
               </div>
               <div className="space-y-1 max-w-md mx-auto">
@@ -816,10 +930,10 @@ export const AgendaCalendarioView: React.FC<AgendaCalendarioViewProps> = ({ onSe
                 <button
                   type="button"
                   onClick={handleOpenCreateModal}
-                  className="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs rounded-xl shadow-lg inline-flex items-center gap-2 cursor-pointer transition-all"
+                  className="px-5 py-2.5 text-slate-950 font-black text-xs rounded-xl shadow-lg inline-flex items-center gap-2 cursor-pointer transition-all agenda-btn-create-first"
                 >
                   <Plus className="w-4 h-4" />
-                  <span>Crear Primer Hito Electoral</span>
+                  <span>+ Crear Primer Hito Electoral</span>
                 </button>
               )}
             </div>
@@ -965,7 +1079,7 @@ export const AgendaCalendarioView: React.FC<AgendaCalendarioViewProps> = ({ onSe
         const daysInPrevMonth = new Date(year, month, 0).getDate();
 
         return (
-          <div className="bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 space-y-4 shadow-xl agenda-month-card">
+          <div className="bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 space-y-4 shadow-xl agenda-month-card animate-agenda-stagger-4">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-cyan-500/20 pb-3 agenda-month-header">
               <div className="flex items-center gap-3">
                 <button
@@ -1121,7 +1235,7 @@ export const AgendaCalendarioView: React.FC<AgendaCalendarioViewProps> = ({ onSe
 
       {/* VIEW 3: FECHAS LÍMITE OFICIALES CNE & REGISTRADURÍA */}
       {viewMode === 'official_cne' && (
-        <div className="space-y-4 agenda-cne-section">
+        <div className="space-y-4 agenda-cne-section animate-agenda-stagger-4">
           <div className="bg-gradient-to-r from-rose-950/80 via-[#05162a] to-amber-950/80 border border-rose-500/40 rounded-3xl p-6 shadow-2xl space-y-4 agenda-cne-card">
             <div className="flex items-center justify-between border-b border-rose-500/20 pb-3 agenda-cne-header">
               <div className="flex items-center gap-3">
