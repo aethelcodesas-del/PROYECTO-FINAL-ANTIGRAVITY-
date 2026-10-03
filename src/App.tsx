@@ -545,7 +545,23 @@ export default function App() {
     setIsLoginModalOpen(false);
 
     if (isGlobalAdminRole(user.role)) {
-      // Superadmin detectado: Mostrar Selector de Modo de Acceso
+      if (redirectRoute === 'global_admin') {
+        setSuperadminMode('governance');
+        setAdminTab('inicio');
+        setStrategicTab('diagnostico');
+        setTerritorialSubTab('registro');
+        setCurrentView('global_admin');
+        return;
+      }
+      if (redirectRoute && redirectRoute !== 'landing') {
+        setSuperadminMode('modules');
+        setAdminTab('inicio');
+        setStrategicTab('diagnostico');
+        setTerritorialSubTab('registro');
+        setCurrentView(redirectRoute);
+        return;
+      }
+      // Si no se especificó módulo previo, mostrar el selector modal
       setSuperadminModalOpen(true);
       return;
     }
