@@ -2301,6 +2301,186 @@ textarea {
   box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.25) !important;
 }
 
+/* --------------------------------------------------------------------------
+   F. CARGA & ANÁLISIS DE HOJA DE VIDA (CV) - 60 FPS GPU ANIMATIONS
+   -------------------------------------------------------------------------- */
+
+@keyframes cvStaggerEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) translateZ(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) translateZ(0);
+  }
+}
+
+.animate-cv-stagger-1 {
+  animation: cvStaggerEnter 0.28s cubic-bezier(0.16, 1, 0.3, 1) 0.00s both;
+  will-change: transform, opacity;
+  transform: translateZ(0);
+}
+
+.animate-cv-stagger-2 {
+  animation: cvStaggerEnter 0.28s cubic-bezier(0.16, 1, 0.3, 1) 0.035s both;
+  will-change: transform, opacity;
+  transform: translateZ(0);
+}
+
+.animate-cv-stagger-3 {
+  animation: cvStaggerEnter 0.28s cubic-bezier(0.16, 1, 0.3, 1) 0.070s both;
+  will-change: transform, opacity;
+  transform: translateZ(0);
+}
+
+.animate-cv-stagger-4 {
+  animation: cvStaggerEnter 0.28s cubic-bezier(0.16, 1, 0.3, 1) 0.105s both;
+  will-change: transform, opacity;
+  transform: translateZ(0);
+}
+
+.animate-cv-stagger-5 {
+  animation: cvStaggerEnter 0.28s cubic-bezier(0.16, 1, 0.3, 1) 0.140s both;
+  will-change: transform, opacity;
+  transform: translateZ(0);
+}
+
+.animate-cv-stagger-6 {
+  animation: cvStaggerEnter 0.28s cubic-bezier(0.16, 1, 0.3, 1) 0.175s both;
+  will-change: transform, opacity;
+  transform: translateZ(0);
+}
+
+/* Dropzone Hover and Dragging */
+.cv-dropzone-interactive {
+  transition: border-color 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              background 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: border-color, box-shadow;
+  transform: translateZ(0);
+}
+
+.cv-dropzone-interactive:hover,
+.cv-dropzone-interactive.dragover {
+  border-color: rgba(6, 182, 212, 0.6) !important;
+  box-shadow: inset 0 0 25px rgba(6, 182, 212, 0.1) !important;
+}
+
+.cv-dropzone-icon-box {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              background-color 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+.cv-dropzone-interactive:hover .cv-dropzone-icon-box,
+.cv-dropzone-interactive.dragover .cv-dropzone-icon-box {
+  transform: translateY(-3px) scale(1.05) translateZ(0);
+}
+
+/* Button "Seleccionar Archivo PDF / DOCX" */
+.cv-select-btn-interactive {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              filter 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, box-shadow, filter;
+  transform: translateZ(0);
+}
+
+.cv-select-btn-interactive:hover {
+  filter: brightness(1.1);
+  transform: translateY(-2px) translateZ(0);
+  box-shadow: 0 0 15px rgba(6, 182, 212, 0.3);
+}
+
+.cv-select-btn-interactive:active {
+  transform: scale(0.96) translateZ(0);
+}
+
+/* Background check cards (Semáforo de Antecedentes) */
+.cv-check-card-interactive {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, border-color, box-shadow;
+  transform: translateZ(0);
+}
+
+.cv-check-card-interactive:hover {
+  transform: translateY(-3px) translateZ(0);
+  border-color: rgba(245, 158, 11, 0.4) !important;
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.1) !important;
+}
+
+/* Empty State Subtle Float Animation */
+@keyframes cvSubtleFloat {
+  0%, 100% {
+    transform: translateY(0) translateZ(0);
+  }
+  50% {
+    transform: translateY(-3px) translateZ(0);
+  }
+}
+
+.empty-cv-icon {
+  animation: cvSubtleFloat 3.8s ease-in-out infinite;
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+/* Buttons "+ Agregar Título / Experiencia" */
+.cv-btn-add-item {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, border-color, box-shadow;
+  transform: translateZ(0);
+}
+
+.cv-btn-add-item:hover {
+  transform: translateY(-2px) translateZ(0);
+  border-color: rgba(16, 185, 129, 0.6) !important;
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.25) !important;
+}
+
+.cv-btn-add-item:active {
+  transform: scale(0.96) translateZ(0);
+}
+
+/* Financial Metric Cards */
+.cv-financial-card-interactive {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, box-shadow;
+  transform: translateZ(0);
+}
+
+.cv-financial-card-interactive:hover {
+  transform: translateY(-2px) translateZ(0);
+}
+
+/* Save Expediente Primary Button */
+.cv-save-primary-btn {
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.25);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              filter 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, box-shadow, filter;
+  transform: translateZ(0);
+}
+
+.cv-save-primary-btn:hover {
+  filter: brightness(1.1);
+  transform: translateY(-2px) translateZ(0);
+  box-shadow: 0 0 25px rgba(16, 185, 129, 0.45);
+}
+
+.cv-save-primary-btn:active {
+  transform: scale(0.96) translateZ(0);
+}
+
 
 
 
