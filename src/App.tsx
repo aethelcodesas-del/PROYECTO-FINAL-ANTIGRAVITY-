@@ -22,6 +22,7 @@ import { showToast } from './components/common/ConfirmModal';
 import { LoginModal } from './components/LoginModal';
 import { RedSunBeeCampaignLanding } from './components/RedSunBeeCampaignLanding';
 import { ModuleSelectPage } from './components/ModuleSelectPage';
+import { GlobalAdminAccessModeModal } from './components/global-admin/GlobalAdminAccessModeModal';
 
 const Sidebar = lazy(() => import('./components/Sidebar').then(module => ({ default: module.Sidebar })));
 const BottomNavBar = lazy(() => import('./components/BottomNavBar').then(module => ({ default: module.BottomNavBar || module.default })));
@@ -105,7 +106,7 @@ const destinationForUser = (user: AuthUser) =>
 
 const canAccessViewWithAssignedFunctions = (user: AuthUser, view: ViewMode) => {
   if (isGlobalAdminRole(user.role)) {
-    return view === 'global_admin' || view === 'landing';
+    return view !== 'saas_admin';
   }
   if (hasFullCampaignAccess(user)) return view !== 'global_admin' && view !== 'saas_admin';
   if (view === 'primera_interfaz') return true;
@@ -120,7 +121,7 @@ const isAssignedLocation = (
   territorialSubTab: 'registro' | 'mapa'
 ) => {
   if (isGlobalAdminRole(user.role)) {
-    return view === 'global_admin' || view === 'landing';
+    return true;
   }
   if (hasFullCampaignAccess(user) || view === 'primera_interfaz') return true;
   return (user.permissions || []).some(code => {
@@ -182,7 +183,14 @@ export default function App() {
       try {
         const parsed = JSON.parse(savedUser);
         if (isGlobalAdminRole(parsed.role)) {
-          return initialRoute?.view === 'landing' ? 'landing' : 'global_admin';
+          const mode = localStorage.getItem('bee_superadmin_mode');
+          if (mode === 'modules' && initialRoute?.view && initialRoute.view !== 'landing') {
+            return initialRoute.view;
+          }
+          if (mode === 'governance' && initialRoute?.view === 'global_admin') {
+            return 'global_admin';
+          }
+          return 'landing';
         }
       } catch {}
     }
@@ -201,9 +209,32 @@ export default function App() {
   const [territorialSubTab, setTerritorialSubTab] = useState<'registro' | 'mapa'>(() => initialRoute?.territorialSubTab || 'registro');
 
   // Modals & UI Controls
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState<boolean>(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const clean = (window.location.hash || '').replace(/^#\/?/, '').trim().toLowerCase();
+      return clean === 'login' || clean === 'iniciar-sesion' || clean === 'ingreso';
+    }
+    return false;
+  });
   const [loginTargetModule, setLoginTargetModule] = useState<string | undefined>(undefined);
   const [loginTargetView, setLoginTargetView] = useState<ViewMode | undefined>(undefined);
+  const [superadminModalOpen, setSuperadminModalOpen] = useState<boolean>(false);
+  const [superadminMode, setSuperadminMode] = useState<'governance' | 'modules' | null>(() => {
+    try {
+      return (localStorage.getItem('bee_superadmin_mode') as 'governance' | 'modules') || null;
+    } catch {
+      return null;
+    }
+  });
+
+  useEffect(() => {
+    if (superadminMode) {
+      localStorage.setItem('bee_superadmin_mode', superadminMode);
+    } else {
+      localStorage.removeItem('bee_superadmin_mode');
+    }
+  }, [superadminMode]);
+
   const [activeModal, setActiveModal] = useState<string | null>(null);
   const [selectedE14, setSelectedE14] = useState<E14Record | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
@@ -227,17 +258,80 @@ export default function App() {
       // ignore network signOut error and clean local state anyway
     }
     setAuthUser(null);
+    setSuperadminMode(null);
+    setSuperadminModalOpen(false);
     try {
       localStorage.removeItem('bee_auth_user');
       localStorage.removeItem('bee_current_view');
       localStorage.removeItem('bee_last_activity_timestamp');
+      localStorage.removeItem('bee_superadmin_mode');
+      localStorage.removeItem('active_campaign_id');
+      localStorage.removeItem('target_route');
+      localStorage.removeItem('user_role');
+      localStorage.removeItem('last_login_role');
+      localStorage.removeItem('auth_redirect');
+      localStorage.removeItem('ga_sec_token_v1');
       localStorage.removeItem('admin_dashboard_stats_cache');
       localStorage.removeItem('presupuesto_items_master_v2');
       localStorage.removeItem('elecciones_testigos_lista_v2');
+      localStorage.removeItem('active_demo_expires_at');
+      localStorage.removeItem('candidate_name');
+      localStorage.removeItem('candidate_photo');
+      localStorage.removeItem('elecciones_campana_principal_dossier_v2');
+      localStorage.removeItem('diagnostic_campaign_cache');
+      
+      // Clear any Supabase token keys
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith('sb-') || key.includes('supabase.auth.token') || key.includes('auth-token'))) {
+          localStorage.removeItem(key);
+        }
+      }
+
+      sessionStorage.clear();
     } catch {
       // ignore
     }
+    if (typeof window !== 'undefined') {
+      window.location.hash = '';
+      window.history.replaceState(null, '', '/');
+    }
     setCurrentView('landing');
+  };
+
+  // Superadmin Access Mode Handlers
+  const handleSelectGovernance = () => {
+    setSuperadminMode('governance');
+    setSuperadminModalOpen(false);
+    setAdminTab('inicio');
+    setStrategicTab('diagnostico');
+    setTerritorialSubTab('registro');
+    setCurrentView('global_admin');
+  };
+
+  const handleSelectModulesExploration = () => {
+    setSuperadminMode('modules');
+    setSuperadminModalOpen(false);
+    setAdminTab('inicio');
+    setStrategicTab('diagnostico');
+    setTerritorialSubTab('registro');
+    try {
+      localStorage.removeItem('active_campaign_id');
+      localStorage.removeItem('candidate_name');
+      localStorage.removeItem('candidate_photo');
+      localStorage.removeItem('elecciones_campana_principal_dossier_v2');
+      localStorage.removeItem('diagnostic_campaign_cache');
+    } catch {}
+    if (authUser) {
+      setAuthUser({
+        ...authUser,
+        campaignId: undefined,
+        clientId: undefined,
+        clientName: 'Modo Exploración (Cero-Acceso)',
+      });
+    }
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    setCurrentView(isMobile ? 'gestion_estrategica' : 'gestion_estrategica');
   };
 
   // Security: Auto-logout after 15 minutes of user inactivity
@@ -281,11 +375,16 @@ export default function App() {
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash || `#${window.location.pathname}`;
+      const clean = hash.replace(/^#\/?/, '').trim().toLowerCase();
+      if (clean === 'login' || clean === 'iniciar-sesion' || clean === 'ingreso') {
+        setIsLoginModalOpen(true);
+        return;
+      }
       const parsed = parseRouteFromHash(hash);
       if (parsed) {
         if (parsed.view && (authUser || ['landing', 'module_select', 'global_admin'].includes(parsed.view))) {
-          if (authUser && isGlobalAdminRole(authUser.role) && parsed.view !== 'global_admin' && parsed.view !== 'landing') {
-            showToast('Política de Privacidad y Confidencialidad Activa: La información de campaña es 100% privada del candidato. El Administrador Central no posee facultades de lectura ni acceso sobre datos de clientes.', 'error');
+          if (authUser && isGlobalAdminRole(authUser.role) && superadminMode === 'governance' && parsed.view !== 'global_admin' && parsed.view !== 'landing') {
+            showToast('Política de Privacidad y Confidencialidad Activa: Para explorar módulos, use el Modo Exploración Cero-Acceso.', 'warning');
             setCurrentView('global_admin');
             return;
           }
@@ -305,7 +404,7 @@ export default function App() {
       window.removeEventListener('hashchange', handleHashChange);
       window.removeEventListener('popstate', handleHashChange);
     };
-  }, [authUser]);
+  }, [authUser, superadminMode]);
 
   // Auto-scroll main view to top whenever view or tabs change
   useEffect(() => {
@@ -428,13 +527,17 @@ export default function App() {
     return () => window.removeEventListener('resize', handleMobileViewSync);
   }, [currentView]);
 
-  // Zero-Knowledge Multi-Tenancy: El Administrador Global tiene Cero Acceso a vistas internas de campaña
+  // Zero-Knowledge Multi-Tenancy:
+  // Si el Administrador Global está en modo Gobernanza, se restringe a global_admin.
+  // En modo Exploración Cero-Acceso, puede navegar libremente entre módulos con aislamiento estricto y campana_id = null.
   useEffect(() => {
-    if (authUser && isGlobalAdminRole(authUser.role) && currentView !== 'global_admin' && currentView !== 'landing') {
-      showToast('Política de Privacidad y Confidencialidad Activa: La información de campaña es 100% privada del candidato. El Administrador Central no posee facultades de lectura ni acceso sobre datos de clientes.', 'error');
-      setCurrentView('global_admin');
+    if (authUser && isGlobalAdminRole(authUser.role)) {
+      if (superadminMode === 'governance' && currentView !== 'global_admin' && currentView !== 'landing') {
+        showToast('Política de Privacidad y Confidencialidad Activa: Para explorar módulos, use el Modo Exploración Cero-Acceso.', 'warning');
+        setCurrentView('global_admin');
+      }
     }
-  }, [authUser, currentView]);
+  }, [authUser, currentView, superadminMode]);
 
   // Login handler
   const handleLoginSuccess = (user: AuthUser, redirectRoute?: ViewMode) => {
@@ -442,10 +545,8 @@ export default function App() {
     setIsLoginModalOpen(false);
 
     if (isGlobalAdminRole(user.role)) {
-      setAdminTab('inicio');
-      setStrategicTab('diagnostico');
-      setTerritorialSubTab('registro');
-      setCurrentView('global_admin');
+      // Superadmin detectado: Mostrar Selector de Modo de Acceso
+      setSuperadminModalOpen(true);
       return;
     }
 
@@ -503,12 +604,17 @@ export default function App() {
     }
 
     if (isGlobalAdminRole(authUser.role)) {
-      if (view !== 'global_admin' && view !== 'landing') {
-        showToast('Política de Privacidad y Confidencialidad Activa: La información de campaña es 100% privada del candidato. El Administrador Central no posee facultades de lectura ni acceso sobre datos de clientes.', 'error');
+      if (view === 'global_admin') {
+        setSuperadminMode('governance');
         setCurrentView('global_admin');
         setSidebarOpen(false);
         return;
       }
+      // Superadmin en Modo Exploración Cero-Acceso navega libremente
+      setSuperadminMode('modules');
+      setCurrentView(view);
+      setSidebarOpen(false);
+      return;
     }
 
     if (view === 'primera_interfaz') {
@@ -548,7 +654,11 @@ export default function App() {
     return (
       <div className="min-h-screen bg-[#080808] text-white relative">
         <RedSunBeeCampaignLanding 
-          onLogin={() => setCurrentView('module_select')}
+          onLogin={() => {
+            setLoginTargetModule(undefined);
+            setLoginTargetView(undefined);
+            setIsLoginModalOpen(true);
+          }}
         />
 
         {/* Global Login Modal */}
@@ -558,6 +668,15 @@ export default function App() {
           onLoginSuccess={handleLoginSuccess}
           targetModule={loginTargetModule}
           targetView={loginTargetView}
+        />
+
+        {/* Superadmin Destination Selector Modal */}
+        <GlobalAdminAccessModeModal
+          isOpen={superadminModalOpen}
+          user={authUser}
+          onSelectGovernance={handleSelectGovernance}
+          onSelectModulesExploration={handleSelectModulesExploration}
+          onCancelLogout={handleLogout}
         />
       </div>
     );
@@ -586,6 +705,14 @@ export default function App() {
           onLoginSuccess={handleLoginSuccess}
           targetModule={loginTargetModule}
           targetView={loginTargetView}
+        />
+
+        <GlobalAdminAccessModeModal
+          isOpen={superadminModalOpen}
+          user={authUser}
+          onSelectGovernance={handleSelectGovernance}
+          onSelectModulesExploration={handleSelectModulesExploration}
+          onCancelLogout={handleLogout}
         />
       </div>
     );
@@ -621,6 +748,7 @@ export default function App() {
           onBackToApp={() => {
             handleSelectView('landing');
           }}
+          onLogout={handleLogout}
         />
         </Suspense>
       </div>
@@ -658,6 +786,38 @@ export default function App() {
       data-module={activeModuleId}
       data-color-mode={isActiveModuleWhite ? 'white' : 'established'}
     >
+      {/* Superadmin Zero-Access Exploration Top Bar */}
+      {authUser && isGlobalAdminRole(authUser.role) && superadminMode === 'modules' && currentView !== 'global_admin' && currentView !== 'landing' && (
+        <div className="bg-gradient-to-r from-violet-950/95 via-slate-900/95 to-cyan-950/95 border-b border-violet-500/40 px-4 py-2 text-xs flex flex-wrap items-center justify-between gap-2 shadow-lg z-30 shrink-0">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-violet-400 animate-pulse shrink-0" />
+            <span className="font-extrabold text-violet-300 uppercase tracking-wider font-display">
+              Modo Exploración Cero-Acceso (Superadministrador)
+            </span>
+            <span className="text-slate-400 hidden md:inline">
+              • Visualización estructural de interfaces con aislamiento total de datos (<code className="text-cyan-300 font-mono">campana_id = null</code>)
+            </span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => {
+                setSuperadminMode('governance');
+                setCurrentView('global_admin');
+              }}
+              className="px-2.5 py-1 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 text-[11px] font-semibold transition-all cursor-pointer"
+            >
+              Ir al Panel de Gobernanza Global →
+            </button>
+            <button
+              onClick={() => setSuperadminModalOpen(true)}
+              className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-[11px] font-medium transition-all cursor-pointer"
+            >
+              Cambiar Modo
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Main Workspace: Sidebar + Dynamic View Content */}
       <div className="flex-1 flex h-full overflow-hidden relative">
         {/* Left Navigation Sidebar */}
@@ -839,6 +999,17 @@ export default function App() {
             onLoginSuccess={handleLoginSuccess}
           />
         </Suspense>
+      )}
+
+      {/* Superadmin Destination Selector Modal */}
+      {superadminModalOpen && (
+        <GlobalAdminAccessModeModal
+          isOpen={superadminModalOpen}
+          user={authUser}
+          onSelectGovernance={handleSelectGovernance}
+          onSelectModulesExploration={handleSelectModulesExploration}
+          onCancelLogout={handleLogout}
+        />
       )}
 
       {/* Mobile Bottom Navigation Bar (Visible only on < 768px) */}

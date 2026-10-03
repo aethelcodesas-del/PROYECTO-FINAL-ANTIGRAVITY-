@@ -88,8 +88,8 @@ export function parseRouteFromHash(hash: string): RouteState | null {
   const clean = hash.replace(/^#\/?/, '').trim().toLowerCase();
   if (!clean || clean === '/') return null;
 
-  // 1. Landing Sections
-  if (LANDING_SECTION_HASHES.includes(clean)) {
+  // 1. Landing Sections & Login Routes
+  if (LANDING_SECTION_HASHES.includes(clean) || clean === 'login' || clean === 'iniciar-sesion' || clean === 'ingreso') {
     return { view: 'landing' };
   }
 

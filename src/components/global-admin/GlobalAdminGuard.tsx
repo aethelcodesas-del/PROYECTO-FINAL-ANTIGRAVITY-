@@ -18,9 +18,10 @@ import {
 
 interface GlobalAdminGuardProps {
   onBackToApp?: () => void;
+  onLogout?: () => void;
 }
 
-export const GlobalAdminGuard: React.FC<GlobalAdminGuardProps> = ({ onBackToApp }) => {
+export const GlobalAdminGuard: React.FC<GlobalAdminGuardProps> = ({ onBackToApp, onLogout }) => {
   const [session, setSession] = useState<GlobalAdminSession | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [email, setEmail] = useState<string>('');
@@ -77,7 +78,11 @@ export const GlobalAdminGuard: React.FC<GlobalAdminGuardProps> = ({ onBackToApp 
     await GlobalAdminService.logout();
     setSession(null);
     setPassword('');
-    onBackToApp?.();
+    if (onLogout) {
+      onLogout();
+    } else {
+      onBackToApp?.();
+    }
   };
 
   const handlePasswordRecovery = async () => {
