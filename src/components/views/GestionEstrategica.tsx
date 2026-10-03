@@ -402,18 +402,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
     ? `campaign:${effectiveCampId}:territorial-needs`
     : '';
 
-  const [auditAnswers, setAuditAnswers] = useState<Record<number, 'si' | 'parcial' | 'no'>>({
-    1: 'no',
-    2: 'no',
-    3: 'no',
-    4: 'no',
-    5: 'no',
-    6: 'no',
-    7: 'no',
-    8: 'no',
-    9: 'no',
-    10: 'no'
-  });
+  const [auditAnswers, setAuditAnswers] = useState<Partial<Record<number, 'si' | 'parcial' | 'no'>>>({});
 
   useEffect(() => {
     const campId = effectiveCampaign?.id || diagnosticCampaign?.id;
@@ -2373,10 +2362,14 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
       )}
 
       {activeTab === 'diagnostico' && (diagnosticCampaign || campaignCtx?.campaign) && (() => {
-        const auditScore = Object.values(auditAnswers).reduce(
-          (acc: number, curr) => (curr === 'si' ? acc + 10 : curr === 'parcial' ? acc + 5 : acc),
-          0
-        );
+        const answeredQuestionsCount = Object.keys(auditAnswers).length;
+        const auditScore = answeredQuestionsCount === 0
+          ? 0
+          : Object.values(auditAnswers).reduce(
+              (acc: number, curr) => (curr === 'si' ? acc + 10 : curr === 'parcial' ? acc + 5 : acc),
+              0
+            );
+        const auditProgressPercent = Math.round((answeredQuestionsCount / 10) * 100);
         const currentOverallScore = diag.overallScore;
         const currentAnimatedScore = diag.animatedScore;
         const currentCoberturaScore = diag.coberturaScore;
@@ -2531,9 +2524,9 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                   <div className="pillar-analysis-box p-3 bg-[#081d38] rounded-2xl border border-cyan-500/20 text-xs space-y-1 text-slate-300">
                     <strong className="text-emerald-300 font-bold block">Diagnóstico Territorial ({diagnosticTerritory || 'Campaña'}):</strong>
                     <p className="text-[11px] leading-relaxed">
-                      {currentStats.pollingStations > 0 || currentStats.leaders > 0
+                      {currentStats.leaders > 0 || currentStats.voters > 0
                         ? `Se registran ${currentStats.pollingStations} puesto(s) de votación, ${currentStats.leaders} líder(es) y ${currentStats.voters} simpatizante(s) verificados en la base de datos.`
-                        : `Sin puestos ni estructura territorial cargada aún para ${diagnosticTerritory || 'la campaña'}. Registre líderes y votantes en el módulo Administrativo.`}
+                        : 'Sin despliegue territorial registrado. Vincule líderes y simpatizantes en Gestión Territorial para activar la cobertura.'}
                     </p>
                   </div>
                 </div>
@@ -2574,9 +2567,9 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                   <div className="pillar-analysis-box p-3 bg-[#081d38] rounded-2xl border border-cyan-500/20 text-xs space-y-1 text-slate-300">
                     <strong className="text-amber-300 font-bold block">Análisis de Competencia:</strong>
                     <p className="text-[11px] leading-relaxed">
-                      {currentStats.surveys > 0 || actorsList.length > 0
+                      {currentStats.surveys > 0
                         ? `${currentStats.surveys} sondeo(s) en el servidor central con ${currentStats.promedioIntencion > 0 ? currentStats.promedioIntencion + '% de intención' : 'análisis en curso'} y ${actorsList.length} actor(es) político(s) registrados en el Mapa de Actores Clave.`
-                        : 'Sin encuestas ni actores de competencia registrados aún. Configure encuestas en Gestión Administrativa o registre actores en Narrativa & Discurso.'}
+                        : 'Sin encuestas ni actores de competencia registrados. Registre sondeos en el Módulo de Encuestas para calcular la intención de voto.'}
                     </p>
                   </div>
                 </div>
@@ -2750,7 +2743,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                   <div className="pillar-analysis-box p-3 bg-[#081d38] rounded-2xl border border-cyan-500/20 text-xs space-y-1 text-slate-300">
                     <strong className="text-emerald-300 font-bold block">Regla de Negocio Activa:</strong>
                     <p className="text-[11px] leading-relaxed">
-                      Restricción única de cédula por campaña activa en PostgreSQL (`voters` y `leaders`). Total actual: {currentStats.voters} votante(s) y {currentStats.leaders} líder(es).
+                      Base de datos electoral unificada. Restricción única de cédula activa por campaña. Total actual: {currentStats.voters} votante(s) y {currentStats.leaders} líder(es).
                     </p>
                   </div>
                 </div>
@@ -2764,6 +2757,17 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                     <h4 className="audit-title text-lg font-black text-white flex items-center gap-2">
                       <CheckSquare className="w-5 h-5 text-emerald-400" /> Cuestionario de Diagnóstico Operativo Express
                     </h4>
+                    <div className="flex items-center gap-3 mt-2">
+                      <span className="text-xs text-slate-400 font-mono">
+                        Respuestas: {answeredQuestionsCount} / 10 contestadas ({auditProgressPercent}%)
+                      </span>
+                      <div className="w-32 h-1.5 bg-slate-900 rounded-full overflow-hidden border border-cyan-500/20">
+                        <div
+                          className="h-full bg-emerald-400 transition-all duration-300"
+                          style={{ width: `${auditProgressPercent}%` }}
+                        />
+                      </div>
+                    </div>
                   </div>
 
                   <div className="audit-score-widget bg-[#081d38] border border-cyan-500/30 px-4 py-2 rounded-2xl text-center shrink-0">
@@ -2850,75 +2854,95 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
             )}
 
             {/* SUB-TAB 3: INFORME EJECUTIVO & PLAN DE ACCIÓN IA */}
-            {diagnosticSubTab === 'report' && (
-              <div className="diagnostic-report-card bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 shadow-xl space-y-6">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-cyan-500/20 pb-4 report-header">
-                  <div>
-                    <h4 className="report-title text-lg font-black text-white flex items-center gap-2">
-                      <Sparkles className="w-5 h-5 text-emerald-400" /> Informe Ejecutivo de Diagnóstico & Recomendaciones IA ({diagnosticCampaignName})
-                    </h4>
+            {diagnosticSubTab === 'report' && (() => {
+              const hasSufficientData =
+                (currentStats.leaders > 0 || currentStats.voters > 0) &&
+                (currentStats.proposals > 0 || currentStats.activities > 0 || currentStats.surveys > 0);
+
+              if (!hasSufficientData) {
+                return (
+                  <div className="diagnostic-report-card bg-[#05162a] border border-amber-500/30 rounded-3xl p-8 shadow-xl text-center space-y-3">
+                    <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mx-auto text-amber-400">
+                      <AlertTriangle className="w-6 h-6" />
+                    </div>
+                    <h5 className="font-extrabold text-white text-base">Expediente insuficiente para generar informe ejecutivo</h5>
+                    <p className="text-xs text-slate-300 max-w-lg mx-auto leading-relaxed">
+                      Complete los datos base del candidato, territorio y programa de gobierno.
+                    </p>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="diagnostic-report-card bg-[#05162a] border border-cyan-500/30 rounded-3xl p-6 shadow-xl space-y-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-cyan-500/20 pb-4 report-header">
+                    <div>
+                      <h4 className="report-title text-lg font-black text-white flex items-center gap-2">
+                        <Sparkles className="w-5 h-5 text-emerald-400" /> Informe Ejecutivo de Diagnóstico & Recomendaciones IA ({diagnosticCampaignName})
+                      </h4>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => window.print()}
+                      className="report-export-btn px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/30 font-bold text-xs flex items-center gap-2 cursor-pointer transition-all"
+                    >
+                      <FileText className="w-4 h-4" />
+                      <span>Imprimir / Exportar Informe PDF</span>
+                    </button>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => window.print()}
-                    className="report-export-btn px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/30 font-bold text-xs flex items-center gap-2 cursor-pointer transition-all"
-                  >
-                    <FileText className="w-4 h-4" />
-                    <span>Imprimir / Exportar Informe PDF</span>
-                  </button>
-                </div>
-
-                <div className="functional-grid grid grid-cols-1 lg:grid-cols-2 gap-6 text-xs report-sections-grid">
-                  {/* Fortalezas Destacadas */}
-                  <div className="functional-card report-section-card report-strengths p-4 bg-[#081d38] border border-emerald-500/30 rounded-2xl space-y-3">
-                    <h5 className="font-extrabold text-emerald-300 text-sm flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Indicadores Consolidados en Base de Datos
-                    </h5>
-                    <ul className="space-y-2 text-slate-200 list-disc list-inside">
-                      <li>
-                        Infraestructura Territorial ({diagnosticTerritory || 'Circunscripción'}): {realCampaignStats.pollingStations} puesto(s) de votación oficiales vinculados.
-                      </li>
-                      <li>
-                        Estructura Electoral: {realCampaignStats.leaders} líder(es) y {realCampaignStats.voters} votante(s) con validación de cédula única.
-                      </li>
-                      <li>
-                        Planeación Estratégica: {realCampaignStats.proposals} propuesta(s) programática(s) y {realCampaignStats.activities} actividad(es) en agenda.
-                      </li>
-                    </ul>
-                  </div>
-
-                  {/* Acciones Prioritarias de Contingencia */}
-                  <div className="functional-card report-section-card report-actions p-4 bg-[#081d38] border border-rose-500/30 rounded-2xl space-y-3">
-                    <h5 className="font-extrabold text-rose-300 text-sm flex items-center gap-2">
-                      <AlertTriangle className="w-4 h-4 text-rose-400" /> Prioridades Operativas Detectadas
-                    </h5>
-                    <ul className="space-y-2 text-slate-200 list-disc list-inside">
-                      {realCampaignStats.witnesses < realCampaignStats.pollingStations && (
+                  <div className="functional-grid grid grid-cols-1 lg:grid-cols-2 gap-6 text-xs report-sections-grid">
+                    {/* Fortalezas Destacadas */}
+                    <div className="functional-card report-section-card report-strengths p-4 bg-[#081d38] border border-emerald-500/30 rounded-2xl space-y-3">
+                      <h5 className="font-extrabold text-emerald-300 text-sm flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Indicadores Consolidados en Base de Datos
+                      </h5>
+                      <ul className="space-y-2 text-slate-200 list-disc list-inside">
                         <li>
-                          Acreditar testigos electorales para cubrir la totalidad de puestos en {diagnosticTerritory || 'el municipio'} ({realCampaignStats.witnesses} registrados).
+                          Infraestructura Territorial ({diagnosticTerritory || 'Circunscripción'}): {realCampaignStats.pollingStations} puesto(s) de votación oficiales vinculados.
                         </li>
-                      )}
-                      {realCampaignStats.proposals === 0 && (
-                        <li>Registrar ejes y propuestas reales en la pestaña de Programa de Gobierno.</li>
-                      )}
-                      {swotData.strengths.length === 0 && (
-                        <li>Completar la Matriz DOFA / SWOT AI para habilitar los cruces estratégicos CAME.</li>
-                      )}
-                      {realCampaignStats.activities === 0 && (
-                        <li>Programar los hitos críticos de campaña en el Calendario Electoral.</li>
-                      )}
-                      {realCampaignStats.witnesses >= realCampaignStats.pollingStations &&
-                        realCampaignStats.proposals > 0 &&
-                        swotData.strengths.length > 0 &&
-                        realCampaignStats.activities > 0 && (
-                          <li>Mantener el seguimiento semanal de metas de líderes y actualización de encuestas territoriales.</li>
+                        <li>
+                          Estructura Electoral: {realCampaignStats.leaders} líder(es) y {realCampaignStats.voters} votante(s) con validación de cédula única.
+                        </li>
+                        <li>
+                          Planeación Estratégica: {realCampaignStats.proposals} propuesta(s) programática(s) y {realCampaignStats.activities} actividad(es) en agenda.
+                        </li>
+                      </ul>
+                    </div>
+
+                    {/* Acciones Prioritarias de Contingencia */}
+                    <div className="functional-card report-section-card report-actions p-4 bg-[#081d38] border border-rose-500/30 rounded-2xl space-y-3">
+                      <h5 className="font-extrabold text-rose-300 text-sm flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4 text-rose-400" /> Prioridades Operativas Detectadas
+                      </h5>
+                      <ul className="space-y-2 text-slate-200 list-disc list-inside">
+                        {realCampaignStats.witnesses < realCampaignStats.pollingStations && (
+                          <li>
+                            Acreditar testigos electorales para cubrir la totalidad de puestos en {diagnosticTerritory || 'el municipio'} ({realCampaignStats.witnesses} registrados).
+                          </li>
                         )}
-                    </ul>
+                        {realCampaignStats.proposals === 0 && (
+                          <li>Registrar ejes y propuestas reales en la pestaña de Programa de Gobierno.</li>
+                        )}
+                        {swotData.strengths.length === 0 && (
+                          <li>Completar la Matriz DOFA / SWOT AI para habilitar los cruces estratégicos CAME.</li>
+                        )}
+                        {realCampaignStats.activities === 0 && (
+                          <li>Programar los hitos críticos de campaña en el Calendario Electoral.</li>
+                        )}
+                        {realCampaignStats.witnesses >= realCampaignStats.pollingStations &&
+                          realCampaignStats.proposals > 0 &&
+                          swotData.strengths.length > 0 &&
+                          realCampaignStats.activities > 0 && (
+                            <li>Mantener el seguimiento semanal de metas de líderes y actualización de encuestas territoriales.</li>
+                          )}
+                      </ul>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
         );
       })()}

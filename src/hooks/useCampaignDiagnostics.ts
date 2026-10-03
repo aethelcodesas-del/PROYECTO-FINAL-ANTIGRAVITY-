@@ -49,8 +49,8 @@ export function useCampaignDiagnostics(
   const [animatedScore, setAnimatedScore] = useState<number>(0);
 
   const [stats, setStats] = useState<CampaignStats>({
-    pollingStations: 71,
-    totalMesas: 71,
+    pollingStations: 0,
+    totalMesas: 0,
     mesasCubiertas: 0,
     leaders: 0,
     voters: 0,
@@ -278,47 +278,50 @@ export function useCampaignDiagnostics(
   }, [fetchDiagnosticsData]);
 
   // Pillar 1: Cobertura Territorial (Máximo 100)
-  // Base 40 si tiene puestos oficiales cargados en Supabase, + proporción de mesas y estructura
-  const coberturaScore = Math.min(
-    100,
-    (stats.pollingStations > 0 ? 40 : 0) +
-      Math.min(
-        60,
-        (stats.totalMesas > 0 ? Math.round((stats.mesasCubiertas / stats.totalMesas) * 30) : 0) +
-          stats.leaders * 10 +
-          Math.min(20, stats.voters)
-      )
-  );
+  // Estrictamente 0 si no hay líderes ni votantes vinculados por la campaña
+  const coberturaScore = (stats.leaders === 0 && stats.voters === 0)
+    ? 0
+    : Math.min(
+        100,
+        (stats.totalMesas > 0 ? Math.round((stats.mesasCubiertas / stats.totalMesas) * 40) : 0) +
+          Math.min(30, stats.leaders * 5) +
+          Math.min(30, Math.round((stats.voters / (stats.totalMesas * 10 || 100)) * 30))
+      );
 
-  // Pillar 2: Intención de Voto & Sondeos (0 si no hay encuestas)
-  const encuestasScore = stats.surveys > 0 
-    ? Math.min(100, stats.promedioIntencion > 0 ? stats.promedioIntencion : 50 + stats.surveys * 10) 
+  // Pillar 2: Intención de Voto & Sondeos (0 si no hay encuestas con respuestas reales)
+  const encuestasScore = stats.surveys === 0
+    ? 0
+    : stats.promedioIntencion > 0
+    ? stats.promedioIntencion
     : 0;
 
-  // Pillar 3: Testigos & Día E (proporción sobre total de mesas)
-  const testigosScore = stats.totalMesas > 0
+  // Pillar 3: Testigos & Día E (0 si no hay testigos registrados)
+  const testigosScore = stats.witnesses === 0
+    ? 0
+    : stats.totalMesas > 0
     ? Math.min(100, Math.round((stats.witnesses / stats.totalMesas) * 100))
-    : stats.witnesses > 0 ? 100 : 0;
+    : 100;
 
   // Pillar 4: Rendición Finanzas CNE (0 si no hay movimientos contables)
-  const finanzasScore = stats.budgetItems > 0 
-    ? Math.min(100, 70 + stats.budgetItems * 5) 
-    : 0;
+  const finanzasScore = stats.budgetItems === 0
+    ? 0
+    : Math.min(100, 50 + stats.budgetItems * 5);
 
-  // Pillar 5: Despliegue Estratégico (propuestas programáticas + hitos en agenda)
-  const estrategiaScore = Math.min(
-    100,
-    (stats.proposals > 0 ? 50 : 0) + (stats.activities > 0 ? 50 : 0)
-  );
+  // Pillar 5: Despliegue Estratégico (0 si no hay propuestas ni actividades en agenda)
+  const estrategiaScore = (stats.proposals === 0 && stats.activities === 0)
+    ? 0
+    : Math.min(
+        100,
+        (stats.proposals > 0 ? 50 : 0) + (stats.activities > 0 ? 50 : 0)
+      );
 
-  // Pillar 6: Filtro Unificado Censo (votantes y simpatizantes verificados)
-  const censoScore = stats.voters > 0 || stats.leaders > 0 
-    ? Math.min(100, 60 + Math.min(40, stats.voters * 2 + stats.leaders * 5)) 
-    : 0;
+  // Pillar 6: Filtro Unificado Censo (0 si no hay votantes ni líderes registrados)
+  const censoScore = (stats.voters === 0 && stats.leaders === 0)
+    ? 0
+    : Math.min(100, 50 + Math.min(50, stats.voters * 2 + stats.leaders * 5));
 
-  // Índice de Salud Global: Promedio ponderado de los 6 pilares
-  // Si solo Cobertura Territorial está activa con 40 puntos y las demás en 0:
-  // 40 / 6 = 6.67 ≈ 6 (o ponderado con balance exacto)
+  // Índice de Salud Global: Promedio exacto de los 6 pilares
+  // Si no hay datos registrados por el usuario, todos los 6 pilares valen 0, y overallScore es 0.
   const overallScore = Math.round(
     (coberturaScore + encuestasScore + testigosScore + finanzasScore + estrategiaScore + censoScore) / 6
   );
@@ -350,15 +353,18 @@ export function useCampaignDiagnostics(
     };
   }, [overallScore]);
 
-  // Nivel y Badge
-  let levelBadge = 'Nivel: Configuración Inicial';
-  let levelBadgeColor = 'bg-emerald-950 text-emerald-300 border-emerald-500/30';
+  // Nivel y Badge: Refleja 'Pendiente de Registro Inicial' cuando el puntaje es 0
+  let levelBadge = 'Pendiente de Registro Inicial';
+  let levelBadgeColor = 'bg-slate-900 text-slate-400 border-slate-700';
   if (overallScore >= 75) {
     levelBadge = 'Nivel: Operativa';
     levelBadgeColor = 'bg-emerald-900/80 text-emerald-300 border-emerald-400/50';
   } else if (overallScore >= 40) {
     levelBadge = 'Nivel: En Crecimiento';
     levelBadgeColor = 'bg-cyan-950 text-cyan-300 border-cyan-500/30';
+  } else if (overallScore > 0) {
+    levelBadge = 'Nivel: Configuración Inicial';
+    levelBadgeColor = 'bg-emerald-950 text-emerald-300 border-emerald-500/30';
   }
 
   // Ejecutar Diagnóstico AI
