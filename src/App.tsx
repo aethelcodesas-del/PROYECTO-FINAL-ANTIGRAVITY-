@@ -168,6 +168,9 @@ export default function App() {
     // If an explicit deep link route was requested via hash (other than landing), allow it only if user is already authenticated
     const savedUser = localStorage.getItem('bee_auth_user');
     if (initialRoute?.view && initialRoute.view !== 'landing' && savedUser) {
+      if (typeof window !== 'undefined' && window.innerWidth < 768 && initialRoute.view === 'primera_interfaz') {
+        return 'gestion_estrategica';
+      }
       return initialRoute.view;
     }
     return 'landing';
@@ -262,7 +265,9 @@ export default function App() {
       const parsed = parseRouteFromHash(hash);
       if (parsed) {
         if (parsed.view && (authUser || ['landing', 'module_select', 'global_admin'].includes(parsed.view))) {
-          setCurrentView(parsed.view);
+          const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+          const targetView = (isMobile && parsed.view === 'primera_interfaz') ? 'gestion_estrategica' : parsed.view;
+          setCurrentView(targetView);
         }
         if (parsed.adminTab) setAdminTab(parsed.adminTab);
         if (parsed.strategicTab) setStrategicTab(parsed.strategicTab);
@@ -384,24 +389,44 @@ export default function App() {
     localStorage.setItem('bee_current_view', currentView);
   }, [currentView]);
 
+  // Mobile UI/UX: En dispositivos móviles (< 768px), la pestaña y vista "Control" (primera_interfaz)
+  // quedan completamente desacopladas. La app aterriza y opera directamente en 'gestion_estrategica'.
+  useEffect(() => {
+    const handleMobileViewSync = () => {
+      if (typeof window !== 'undefined' && window.innerWidth < 768) {
+        if (currentView === 'primera_interfaz') {
+          setCurrentView('gestion_estrategica');
+        }
+      }
+    };
+    handleMobileViewSync();
+    window.addEventListener('resize', handleMobileViewSync);
+    return () => window.removeEventListener('resize', handleMobileViewSync);
+  }, [currentView]);
+
   // Login handler
   const handleLoginSuccess = (user: AuthUser, redirectRoute?: ViewMode) => {
     setAuthUser(user);
     setIsLoginModalOpen(false);
 
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    const effectiveRedirectRoute = (isMobile && redirectRoute === 'primera_interfaz')
+      ? 'gestion_estrategica'
+      : redirectRoute;
+
     const assignedDestination = destinationForUser(user);
-    const canUseRequestedRoute = redirectRoute && redirectRoute !== 'landing'
-      && canAccessViewWithAssignedFunctions(user, redirectRoute);
+    const canUseRequestedRoute = effectiveRedirectRoute && effectiveRedirectRoute !== 'landing'
+      && canAccessViewWithAssignedFunctions(user, effectiveRedirectRoute);
     if (!hasFullCampaignAccess(user) && assignedDestination) {
       setAdminTab(assignedDestination.adminTab || 'inicio');
       setStrategicTab(assignedDestination.strategicTab || 'diagnostico');
       setTerritorialSubTab(assignedDestination.territorialSubTab || 'registro');
-      setCurrentView(canUseRequestedRoute ? redirectRoute : assignedDestination.view);
+      setCurrentView(canUseRequestedRoute ? effectiveRedirectRoute : assignedDestination.view);
     } else if (canUseRequestedRoute) {
       setAdminTab('inicio');
       setStrategicTab('diagnostico');
       setTerritorialSubTab('registro');
-      setCurrentView(redirectRoute);
+      setCurrentView(effectiveRedirectRoute);
     } else if (user.role === 'territorial') {
       setCurrentView('gestion_territorial');
     } else if (user.role === 'estrategico') {
@@ -409,7 +434,7 @@ export default function App() {
     } else if (user.role === 'administrador' || user.role === 'superadmin') {
       setCurrentView('modulo_admin');
     } else {
-      setCurrentView('primera_interfaz');
+      setCurrentView(isMobile ? 'gestion_estrategica' : 'primera_interfaz');
     }
   };
 
@@ -438,7 +463,8 @@ export default function App() {
     }
 
     if (view === 'primera_interfaz') {
-      setCurrentView(view);
+      const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+      setCurrentView(isMobile ? 'gestion_estrategica' : view);
       setSidebarOpen(false);
       return;
     }
@@ -633,11 +659,13 @@ export default function App() {
                 key={`${currentView}-${liveDataRevision}`}
                 className="w-full h-full view-transition-enter"
               >
-                {/* Executive Command Center / Sala de Control */}
+                {/* Executive Command Center / Sala de Control (Exclusivo Desktop; desacoplado en móvil) */}
                 {currentView === 'primera_interfaz' && (
-                  <PrimeraInterfaz 
-                    onLoginSuccess={handleLoginSuccess}
-                  />
+                  <div className="hidden md:block w-full h-full">
+                    <PrimeraInterfaz 
+                      onLoginSuccess={handleLoginSuccess}
+                    />
+                  </div>
                 )}
 
                 {/* Modulo 1: Gestion Administrativa & Financiera */}

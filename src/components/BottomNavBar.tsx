@@ -1,12 +1,10 @@
 import React from 'react';
 import { ViewMode } from '../types';
 import { 
-  LayoutDashboard, 
   Sparkles, 
   MapPin, 
   Building2, 
-  Menu,
-  ShieldCheck
+  Menu
 } from 'lucide-react';
 
 interface BottomNavBarProps {
@@ -25,13 +23,6 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
   const isGlobalAdmin = userRole === 'GLOBAL_ADMIN' || userRole === 'superadmin';
 
   const navItems = [
-    {
-      id: 'primera_interfaz' as ViewMode,
-      label: 'Control',
-      icon: LayoutDashboard,
-      activeColor: 'text-cyan-400',
-      activeBg: 'bg-cyan-500/15'
-    },
     {
       id: 'gestion_estrategica' as ViewMode,
       label: 'Estrategia',
@@ -61,7 +52,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
       className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#051329]/95 border-t border-cyan-500/25 backdrop-blur-xl shadow-2xl transition-all duration-200"
       style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}
     >
-      <div className="grid grid-cols-5 items-center justify-around h-14 px-1 max-w-lg mx-auto">
+      <div className="grid grid-cols-4 items-center justify-around h-14 px-1 max-w-lg mx-auto">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentView === item.id;
