@@ -1,18 +1,18 @@
-import React, { lazy, Suspense, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { GlobalAdminSession, GlobalAdminTab } from '../../types/globalAdmin';
 import { GlobalAdminService } from '../../services/globalAdminService';
 import { GlobalAdminDashboard } from './views/GlobalAdminDashboard';
-const GlobalAdminUsers = lazy(() => import('./views/GlobalAdminUsers').then(m => ({ default: m.GlobalAdminUsers })));
-const GlobalAdminRoles = lazy(() => import('./views/GlobalAdminRoles').then(m => ({ default: m.GlobalAdminRoles })));
-const GlobalAdminCampaigns = lazy(() => import('./views/GlobalAdminCampaigns').then(m => ({ default: m.GlobalAdminCampaigns })));
-const GlobalAdminModules = lazy(() => import('./views/GlobalAdminModules').then(m => ({ default: m.GlobalAdminModules })));
-const GlobalAdminApis = lazy(() => import('./views/GlobalAdminApis').then(m => ({ default: m.GlobalAdminApis })));
-const GlobalAdminAudit = lazy(() => import('./views/GlobalAdminAudit').then(m => ({ default: m.GlobalAdminAudit })));
-const GlobalAdminSecurity = lazy(() => import('./views/GlobalAdminSecurity').then(m => ({ default: m.GlobalAdminSecurity })));
-const GlobalAdminConfig = lazy(() => import('./views/GlobalAdminConfig').then(m => ({ default: m.GlobalAdminConfig })));
-const GlobalAdminSystem = lazy(() => import('./views/GlobalAdminSystem').then(m => ({ default: m.GlobalAdminSystem })));
-const GlobalAdminCommercial = lazy(() => import('./views/GlobalAdminCommercial').then(m => ({ default: m.GlobalAdminCommercial })));
-const GlobalAdminRegistraduria = lazy(() => import('./views/GlobalAdminRegistraduria').then(m => ({ default: m.GlobalAdminRegistraduria })));
+import { GlobalAdminUsers } from './views/GlobalAdminUsers';
+import { GlobalAdminRoles } from './views/GlobalAdminRoles';
+import { GlobalAdminCampaigns } from './views/GlobalAdminCampaigns';
+import { GlobalAdminModules } from './views/GlobalAdminModules';
+import { GlobalAdminApis } from './views/GlobalAdminApis';
+import { GlobalAdminAudit } from './views/GlobalAdminAudit';
+import { GlobalAdminSecurity } from './views/GlobalAdminSecurity';
+import { GlobalAdminConfig } from './views/GlobalAdminConfig';
+import { GlobalAdminSystem } from './views/GlobalAdminSystem';
+import { GlobalAdminCommercial } from './views/GlobalAdminCommercial';
+import { GlobalAdminRegistraduria } from './views/GlobalAdminRegistraduria';
 import { ColorModeToggle } from '../common/ColorModeToggle';
 import { useModuleColorMode } from '../../utils/themeColorMode';
 import {
@@ -144,7 +144,7 @@ export const GlobalAdminLayout: React.FC<GlobalAdminLayoutProps> = ({
 
   return (
     <div 
-      className="module-theme-root global-admin-shell min-h-[100dvh] w-full min-w-0 bg-[#020617] text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-black transition-colors duration-200"
+      className="module-theme-root global-admin-shell min-h-[100dvh] w-full min-w-0 bg-[#020617] text-slate-100 flex flex-col font-sans antialiased tracking-tight selection:bg-cyan-500 selection:text-black transition-colors duration-200"
       data-module="global_admin"
       data-color-mode={isWhiteMode ? 'white' : 'established'}
     >
@@ -238,9 +238,14 @@ export const GlobalAdminLayout: React.FC<GlobalAdminLayoutProps> = ({
               const isActive = activeTab === item.id;
               return (
                 <button
+                  type="button"
                   key={item.id}
-                  onClick={() => setActiveTab(item.id)}
-                  className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-left font-semibold transition-all cursor-pointer ${
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setActiveTab(item.id);
+                  }}
+                  className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-left font-semibold transition-all cursor-pointer select-none ${
                     isActive
                       ? 'bg-gradient-to-r from-cyan-950/80 to-blue-950/80 text-cyan-300 border border-cyan-500/40 shadow-lg shadow-cyan-950/30 translate-x-0.5'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
@@ -292,14 +297,17 @@ export const GlobalAdminLayout: React.FC<GlobalAdminLayoutProps> = ({
                   const isActive = activeTab === item.id;
                   return (
                     <button
+                      type="button"
                       key={item.id}
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
                         setActiveTab(item.id);
                         setMobileMenuOpen(false);
                       }}
-                      className={`w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-xl text-left font-semibold transition-all ${
+                      className={`w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-xl text-left font-semibold transition-all cursor-pointer select-none ${
                         isActive
-                          ? 'bg-cyan-950 text-cyan-300 border border-cyan-500/40'
+                          ? 'bg-cyan-950 text-cyan-300 border border-cyan-500/40 shadow-lg shadow-cyan-950/30'
                           : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
                       }`}
                     >

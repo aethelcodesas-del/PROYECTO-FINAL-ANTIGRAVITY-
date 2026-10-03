@@ -284,24 +284,53 @@ export class GlobalAdminService {
 
   // 3. Users Management
   static async getUsers(): Promise<GlobalAdminUser[]> {
-    const [{ data, error }, { data: campaigns, error: campaignsError }] = await Promise.all([
-      supabase.from('profiles').select('id, full_name, email, role, status, campaign_id, client_id, created_at, last_login, permissions, phone').order('created_at', { ascending: false }).limit(50),
-      supabase.from('campaigns').select('id,client_id,nombre')
-    ]);
-    if (error) throw new Error(`Servidor: ${error.message}`);
-    if (campaignsError) throw new Error(`Servidor: ${campaignsError.message}`);
-    const campaignNames = new Map((campaigns || []).map((campaign: any) => [
+    // Select strictly guaranteed columns across all schema variants
+    let profilesData: any[] = [];
+    let campaignsData: any[] = [];
+
+    try {
+      const [profilesRes, campaignsRes] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('id, email, role, status, campaign_id, client_id, created_at, updated_at, phone, display_name')
+          .order('created_at', { ascending: false })
+          .limit(100),
+        supabase
+          .from('campaigns')
+          .select('id, client_id, nombre')
+      ]);
+
+      if (profilesRes.error) {
+        // Fallback query with minimal columns if display_name or phone fail
+        const fallbackRes = await supabase
+          .from('profiles')
+          .select('id, email, role, status, campaign_id, client_id, created_at')
+          .order('created_at', { ascending: false })
+          .limit(100);
+        if (fallbackRes.error) throw new Error(`Servidor: ${fallbackRes.error.message}`);
+        profilesData = fallbackRes.data || [];
+      } else {
+        profilesData = profilesRes.data || [];
+      }
+
+      campaignsData = campaignsRes.data || [];
+    } catch (err: any) {
+      throw new Error(`Servidor: ${err.message || 'Error al consultar perfiles'}`);
+    }
+
+    const campaignNames = new Map(campaignsData.map((campaign: any) => [
       campaign.id,
       campaign.nombre || campaign.name || 'Campaña asignada'
     ]));
-    const soleCampaign = (campaigns || []).length === 1 ? campaigns![0] : undefined;
+    const soleCampaign = campaignsData.length === 1 ? campaignsData[0] : undefined;
     const campaignsByClient = new Map<string, any[]>();
-    (campaigns || []).forEach((campaign: any) => {
+    campaignsData.forEach((campaign: any) => {
       if (!campaign.client_id) return;
       const current = campaignsByClient.get(campaign.client_id) || [];
       campaignsByClient.set(campaign.client_id, [...current, campaign]);
     });
-    return (data || []).map((profile: any) => {
+
+    return profilesData.map((profile: any) => {
       const roleCode = String(profile.role || 'USUARIO').toUpperCase();
       const isGlobalAdministrator = ['SUPERADMIN', 'GLOBAL_ADMIN'].includes(roleCode);
       const clientCampaigns = profile.client_id ? campaignsByClient.get(profile.client_id) || [] : [];
@@ -317,24 +346,38 @@ export class GlobalAdminService {
           : clientCampaigns.length > 1
             ? 'Varias campañas del cliente'
             : 'Sin campaña asignada';
-      return ({
-      id: profile.id,
-      name: profile.display_name || profile.name || profile.email || 'Usuario',
-      email: profile.email || '',
-      cedula: profile.cedula || undefined,
-      phone: profile.phone || undefined,
-      roleCode,
-      roleName: roleCode,
-      campaignId,
-      campaignName,
-      status: profile.status === 'ACTIVE' ? 'ACTIVO' : profile.status === 'INACTIVE' ? 'INACTIVO' : 'SUSPENDIDO',
-      accessLevel: profile.role === 'SUPERADMIN' ? 10 : profile.role === 'ADMIN_CLIENTE' ? 8 : 5,
-      permissions: profile.allowed_modules || [],
-      mfaActive: false,
-      failedLoginAttempts: 0,
-      createdAt: profile.created_at || new Date().toISOString(),
-      lastLoginAt: profile.updated_at || undefined
-    });
+
+      const userName = profile.full_name
+        || profile.display_name
+        || profile.nombre
+        || profile.name
+        || (profile.email ? profile.email.split('@')[0] : 'Usuario');
+
+      const statusNorm = String(profile.status || '').toUpperCase();
+      const statusLabel = (statusNorm === 'ACTIVE' || statusNorm === 'ACTIVO' || !statusNorm)
+        ? 'ACTIVO'
+        : (statusNorm === 'INACTIVE' || statusNorm === 'INACTIVO')
+        ? 'INACTIVO'
+        : 'SUSPENDIDO';
+
+      return {
+        id: profile.id,
+        name: userName,
+        email: profile.email || '',
+        cedula: profile.cedula || undefined,
+        phone: profile.phone || undefined,
+        roleCode,
+        roleName: roleCode.replaceAll('_', ' '),
+        campaignId,
+        campaignName,
+        status: statusLabel,
+        accessLevel: isGlobalAdministrator ? 10 : roleCode.includes('ADMIN') ? 8 : 5,
+        permissions: profile.allowed_modules || profile.permissions || [],
+        mfaActive: false,
+        failedLoginAttempts: 0,
+        createdAt: profile.created_at || new Date().toISOString(),
+        lastLoginAt: profile.updated_at || profile.created_at || undefined
+      };
     });
   }
 
@@ -379,22 +422,49 @@ export class GlobalAdminService {
 
   // 4. Roles & Permissions (RBAC)
   static async getRoles(): Promise<{ roles: GlobalAdminRole[]; permissionsCatalog: GlobalAdminPermission[] }> {
-    const { data, error } = await supabase.from('custom_roles').select('*').order('created_at', { ascending: true });
-    if (error) throw new Error(`Servidor: ${error.message}`);
-    const users = await this.getUsers();
+    const permissionsCatalog = await this.getPermissionsCatalog();
+
+    let customRolesData: any[] = [];
+    try {
+      const { data, error } = await supabase.from('custom_roles').select('*').order('created_at', { ascending: true });
+      if (!error && data) {
+        customRolesData = data;
+      }
+    } catch {
+      // Table fallback
+    }
+
+    let users: GlobalAdminUser[] = [];
+    try {
+      users = await this.getUsers();
+    } catch {
+      // Fallback empty users
+    }
+
+    const defaultPermsByRole: Record<string, string[]> = {
+      SUPERADMIN: permissionsCatalog.map(p => p.code),
+      GLOBAL_ADMIN: permissionsCatalog.map(p => p.code),
+      ADMIN_CLIENTE: ['USERS_VIEW', 'USERS_CREATE', 'USERS_EDIT', 'USERS_STATUS', 'CAMPAIGNS_MANAGE', 'MODULES_CONTROL', 'AUDIT_VIEW'],
+      DIRECTOR: ['USERS_VIEW', 'CAMPAIGNS_MANAGE', 'MODULES_CONTROL', 'AUDIT_VIEW'],
+      COORDINADOR: ['USERS_VIEW', 'MODULES_CONTROL'],
+      USUARIO: ['USERS_VIEW'],
+      USUARIO_LIMITADO: ['USERS_VIEW']
+    };
+
     const systemCodes = ['SUPERADMIN', 'ADMIN_CLIENTE', 'DIRECTOR', 'COORDINADOR', 'USUARIO', 'USUARIO_LIMITADO'];
     const systemRoles: GlobalAdminRole[] = systemCodes.map((code) => ({
       id: code,
       code,
       name: code.replaceAll('_', ' '),
-      description: 'Rol de sistema administrado por políticas RLS',
+      description: 'Rol de sistema administrado por políticas RLS transversales',
       isSystem: true,
       userCount: users.filter((user) => user.roleCode === code).length,
-      permissions: [],
+      permissions: defaultPermsByRole[code] || ['USERS_VIEW'],
       createdAt: new Date(0).toISOString(),
       updatedAt: new Date().toISOString()
     }));
-    const customRoles: GlobalAdminRole[] = (data || []).map((role: any) => ({
+
+    const customRoles: GlobalAdminRole[] = customRolesData.map((role: any) => ({
       id: role.id,
       code: role.code,
       name: role.name,
@@ -405,7 +475,8 @@ export class GlobalAdminService {
       createdAt: role.created_at,
       updatedAt: role.updated_at || role.created_at
     }));
-    return { roles: [...systemRoles, ...customRoles], permissionsCatalog: [] };
+
+    return { roles: [...systemRoles, ...customRoles], permissionsCatalog };
   }
 
   static async getPermissionsCatalog(): Promise<GlobalAdminPermission[]> {

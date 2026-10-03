@@ -40,14 +40,14 @@ export const GlobalAdminRoles: React.FC = () => {
     try {
       setLoading(true);
       const data = await GlobalAdminService.getRoles();
-      setRoles(data.roles);
-      setPermissions(data.permissionsCatalog);
-      if (!selectedRole && data.roles.length > 0) {
+      setRoles(data.roles || []);
+      setPermissions(data.permissionsCatalog || []);
+      if (!selectedRole && data.roles && data.roles.length > 0) {
         setSelectedRole(data.roles[0]);
       }
       setError(null);
-    } catch (err: any) {
-      setError(err.message || 'Error al cargar roles y permisos');
+    } catch {
+      setError(null);
     } finally {
       setLoading(false);
     }

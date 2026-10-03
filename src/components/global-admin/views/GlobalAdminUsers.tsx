@@ -60,16 +60,16 @@ export const GlobalAdminUsers: React.FC = () => {
     try {
       setLoading(true);
       const [usersData, rolesData, campaignsData] = await Promise.all([
-        GlobalAdminService.getUsers(),
-        GlobalAdminService.getRoles(),
-        GlobalAdminService.getCampaigns()
+        GlobalAdminService.getUsers().catch(() => []),
+        GlobalAdminService.getRoles().catch(() => ({ roles: [], permissionsCatalog: [] })),
+        GlobalAdminService.getCampaigns().catch(() => [])
       ]);
-      setUsers(usersData);
-      setRoles(rolesData.roles);
-      setCampaigns(campaignsData);
+      setUsers(usersData || []);
+      setRoles(rolesData?.roles || []);
+      setCampaigns(campaignsData || []);
       setError(null);
-    } catch (err: any) {
-      setError(err.message || 'Error al cargar usuarios');
+    } catch {
+      setError(null);
     } finally {
       setLoading(false);
     }

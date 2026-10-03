@@ -180,13 +180,13 @@ export const GlobalAdminDashboard: React.FC<GlobalAdminDashboardProps> = ({ onNa
           className="bg-slate-900/80 hover:bg-slate-900 border border-slate-800 hover:border-cyan-500/50 rounded-2xl p-4 sm:p-5 transition-all cursor-pointer group shadow-lg"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold font-display text-slate-400 tracking-wider">USUARIOS TOTALES</span>
+            <span className="text-xs font-extrabold uppercase tracking-wider text-slate-100 font-display">USUARIOS TOTALES</span>
             <div className="w-8 h-8 rounded-lg bg-cyan-950/80 border border-cyan-500/30 flex items-center justify-center text-cyan-400 group-hover:scale-110 transition-transform">
               <Users className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-2xl sm:text-3xl font-extrabold font-mono text-white">
+            <span className="text-2xl sm:text-3xl font-semibold font-mono tracking-normal text-white">
               {metrics?.totalUsers || 0}
             </span>
             <span className="text-xs font-mono font-semibold text-emerald-400 flex items-center gap-1 bg-emerald-950/50 px-2 py-0.5 rounded-full border border-emerald-500/20">
@@ -205,16 +205,16 @@ export const GlobalAdminDashboard: React.FC<GlobalAdminDashboardProps> = ({ onNa
           className="bg-slate-900/80 hover:bg-slate-900 border border-slate-800 hover:border-blue-500/50 rounded-2xl p-4 sm:p-5 transition-all cursor-pointer group shadow-lg"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold font-display text-slate-400 tracking-wider">CAMPAÑAS ACTIVAS</span>
+            <span className="text-xs font-extrabold uppercase tracking-wider text-slate-100 font-display">CAMPAÑAS ACTIVAS</span>
             <div className="w-8 h-8 rounded-lg bg-blue-950/80 border border-blue-500/30 flex items-center justify-center text-blue-400 group-hover:scale-110 transition-transform">
               <Flag className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-2xl sm:text-3xl font-extrabold font-mono text-white">
+            <span className="text-2xl sm:text-3xl font-semibold font-mono tracking-normal text-white">
               {metrics?.activeCampaigns || 0}
             </span>
-            <span className="text-xs font-mono text-blue-400 bg-blue-950/50 px-2 py-0.5 rounded-full border border-blue-500/20">
+            <span className="text-xs font-mono font-semibold text-blue-400 bg-blue-950/50 px-2 py-0.5 rounded-full border border-blue-500/20">
               de {metrics?.totalCampaigns || 0} Registradas
             </span>
           </div>
@@ -229,16 +229,16 @@ export const GlobalAdminDashboard: React.FC<GlobalAdminDashboardProps> = ({ onNa
           className="bg-slate-900/80 hover:bg-slate-900 border border-slate-800 hover:border-emerald-500/50 rounded-2xl p-4 sm:p-5 transition-all cursor-pointer group shadow-lg"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold font-display text-slate-400 tracking-wider">PETICIONES APIs (24H)</span>
+            <span className="text-xs font-extrabold uppercase tracking-wider text-slate-100 font-display">PETICIONES APIs (24H)</span>
             <div className="w-8 h-8 rounded-lg bg-emerald-950/80 border border-emerald-500/30 flex items-center justify-center text-emerald-400 group-hover:scale-110 transition-transform">
               <Zap className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-2xl sm:text-3xl font-extrabold font-mono text-white">
+            <span className="text-2xl sm:text-3xl font-semibold font-mono tracking-normal text-white">
               {metrics?.apiRequestsToday ? (metrics.apiRequestsToday / 1000).toFixed(1) + 'k' : '0'}
             </span>
-            <span className="text-xs font-mono text-emerald-400 bg-emerald-950/50 px-2 py-0.5 rounded-full border border-emerald-500/20">
+            <span className="text-xs font-mono font-semibold text-emerald-400 bg-emerald-950/50 px-2 py-0.5 rounded-full border border-emerald-500/20">
               {metrics?.systemHealth?.dbLatencyMs || 38}ms Latencia
             </span>
           </div>
@@ -254,20 +254,20 @@ export const GlobalAdminDashboard: React.FC<GlobalAdminDashboardProps> = ({ onNa
           className="bg-slate-900/70 hover:bg-slate-900 border border-slate-800 hover:border-amber-500/50 rounded-2xl p-4 sm:p-5 transition-all cursor-pointer group shadow-lg"
         >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-mono text-slate-400">ALERTAS DE SEGURIDAD</span>
+            <span className="text-xs font-extrabold uppercase tracking-wider text-slate-100 font-display">ALERTAS DE SEGURIDAD</span>
             <div className="w-8 h-8 rounded-lg bg-amber-950/80 border border-amber-500/30 flex items-center justify-center text-amber-400 group-hover:scale-110 transition-transform">
               <AlertTriangle className="w-4 h-4" />
             </div>
           </div>
           <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-2xl sm:text-3xl font-bold font-mono text-white">
+            <span className="text-2xl sm:text-3xl font-semibold font-mono tracking-normal text-white">
               {metrics?.securityAlertsCount || 0}
             </span>
-            <span className="text-xs font-mono text-slate-400">
+            <span className="text-xs font-mono font-semibold text-slate-400">
               0 Críticas
             </span>
           </div>
-          <div className="mt-2 text-[11px] font-mono text-slate-500">
+          <div className="mt-2 text-[11px] font-sans text-slate-400">
             Escudo Anti-Fuerza Bruta Activo
           </div>
         </div>
