@@ -60,6 +60,10 @@ interface ProgramaGobiernoViewProps {
   territory?: string;
   slogan?: string;
   office?: string;
+  candidateProfile?: any;
+  sectorDiagnostics?: any[];
+  territorialNeeds?: any[];
+  onUpdateCandidateProfile?: (updated: any) => void;
 }
 
 const DEFAULT_CHECKLIST = [
@@ -75,7 +79,11 @@ export const ProgramaGobiernoView: React.FC<ProgramaGobiernoViewProps> = ({
   candidateName: propCandidateName,
   territory: propTerritory,
   slogan: propSlogan,
-  office: propOffice
+  office: propOffice,
+  sectorDiagnostics,
+  territorialNeeds,
+  candidateProfile,
+  onUpdateCandidateProfile
 }) => {
   const campaignCtx = useCampaignData();
   const geoCtx = useCampaignGeo();
@@ -616,14 +624,19 @@ export const ProgramaGobiernoView: React.FC<ProgramaGobiernoViewProps> = ({
         desc = {};
       }
 
-      const sectors: any[] = Array.isArray(desc?.territorialDiagnosis?.sectorDiagnostics)
-        ? desc.territorialDiagnosis.sectorDiagnostics
-        : [];
-      const needs: any[] = Array.isArray(desc?.territorialDiagnosis?.territorialNeeds)
-        ? desc.territorialDiagnosis.territorialNeeds
-        : [];
+      const rawSectors = (sectorDiagnostics && sectorDiagnostics.length > 0)
+        ? sectorDiagnostics
+        : (Array.isArray(desc?.territorialDiagnosis?.sectors) && desc.territorialDiagnosis.sectors.length > 0)
+          ? desc.territorialDiagnosis.sectors
+          : (Array.isArray(desc?.territorialDiagnosis?.sectorDiagnostics) ? desc.territorialDiagnosis.sectorDiagnostics : []);
 
-      if (sectors.length === 0 && needs.length === 0) {
+      const rawNeeds = (territorialNeeds && territorialNeeds.length > 0)
+        ? territorialNeeds
+        : (Array.isArray(desc?.territorialDiagnosis?.needs) && desc.territorialDiagnosis.needs.length > 0)
+          ? desc.territorialDiagnosis.needs
+          : (Array.isArray(desc?.territorialDiagnosis?.territorialNeeds) ? desc.territorialDiagnosis.territorialNeeds : []);
+
+      if (rawSectors.length === 0 && rawNeeds.length === 0) {
         showToast(
           'Primero registre sectores o fichas en la pestaña "Diagnóstico Territorial" para sincronizarlos como Ejes y Propuestas.'
         );
@@ -632,29 +645,31 @@ export const ProgramaGobiernoView: React.FC<ProgramaGobiernoViewProps> = ({
 
       const nextEjes: EjeEstrategico[] = [...ejes];
 
-      for (const sec of sectors) {
+      for (const sec of rawSectors) {
+        const categoryName = String(sec.category || sec.name || sec.title || 'Desarrollo Territorial').trim();
         let targetEje = nextEjes.find(
-          ej => ej.titulo.toLowerCase() === String(sec.category || '').toLowerCase()
+          ej => ej.titulo.toLowerCase() === categoryName.toLowerCase()
         );
         if (!targetEje) {
           targetEje = {
             id: `eje-${sec.id || Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-            titulo: String(sec.category || 'Desarrollo Territorial'),
-            icono: String(sec.iconEmoji || '📌'),
+            titulo: categoryName,
+            icono: String(sec.iconEmoji || sec.icon || '📌'),
             color: 'cyan',
-            descripcion: String(sec.problemSummary || ''),
-            presupuestoPorcentaje: Math.max(15, Number(sec.surveyPriorityPercent || 20)),
+            descripcion: String(sec.problemSummary || sec.problem || sec.diagnostico || 'Diagnóstico territorial sectorial evaluado.'),
+            presupuestoPorcentaje: Math.max(15, Number(sec.surveyPriorityPercent || sec.priorityPercent || 20)),
             propuestas: []
           };
           nextEjes.push(targetEje);
         }
 
-        if (sec.programmaticSolution && targetEje.propuestas.length === 0) {
+        const solutionText = String(sec.programmaticSolution || sec.solution || sec.solucion || '').trim();
+        if (solutionText && targetEje.propuestas.length === 0) {
           targetEje.propuestas.push({
             id: crypto.randomUUID(),
-            titulo: `Plan Sectorial de ${sec.category}`,
-            problemaDiagnostico: String(sec.problemSummary || 'Diagnóstico sectorial registrado.'),
-            solucionProgramatica: String(sec.programmaticSolution),
+            titulo: `Plan Sectorial de ${categoryName}`,
+            problemaDiagnostico: String(sec.problemSummary || sec.problem || sec.diagnostico || 'Diagnóstico sectorial registrado.'),
+            solucionProgramatica: solutionText,
             metaCuantificable:
               Array.isArray(sec.variables) && sec.variables[0]?.meta
                 ? `${sec.variables[0].indicador || sec.variables[0].name}: Meta ${sec.variables[0].meta}`
@@ -669,39 +684,42 @@ export const ProgramaGobiernoView: React.FC<ProgramaGobiernoViewProps> = ({
         }
       }
 
-      for (const need of needs) {
-        if (!need?.programmaticProposal) continue;
+      for (const need of rawNeeds) {
+        const proposalText = String(need.programmaticProposal || need.proposal || need.solucion || need.solucionProgramatica || '').trim();
+        if (!proposalText) continue;
+
+        const needCategory = String(need.category || need.sector || 'Gestión Comunitaria').trim();
         let targetEje = nextEjes.find(
-          ej => ej.titulo.toLowerCase().includes(String(need.category || '').toLowerCase())
+          ej => ej.titulo.toLowerCase().includes(needCategory.toLowerCase()) || needCategory.toLowerCase().includes(ej.titulo.toLowerCase())
         );
         if (!targetEje) {
           targetEje = {
             id: `eje-need-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-            titulo: String(need.category || 'Gestión Comunitaria'),
+            titulo: needCategory,
             icono: '📍',
             color: 'emerald',
-            descripcion: `Atención prioritaria para ${need.comunaSector || territory}`,
+            descripcion: `Atención prioritaria para ${need.comunaSector || need.comuna || territory}`,
             presupuestoPorcentaje: 20,
             propuestas: []
           };
           nextEjes.push(targetEje);
         }
         const alreadyExists = targetEje.propuestas.some(
-          p => p.solucionProgramatica === need.programmaticProposal
+          p => p.solucionProgramatica === proposalText
         );
         if (!alreadyExists) {
           targetEje.propuestas.push({
             id: crypto.randomUUID(),
-            titulo: `Intervención en ${need.comunaSector || 'Sector Priorizado'} (${need.category})`,
-            problemaDiagnostico: String(need.problemDescription || ''),
-            solucionProgramatica: String(need.programmaticProposal || ''),
+            titulo: `Intervención en ${need.comunaSector || need.comuna || 'Sector Priorizado'} (${needCategory})`,
+            problemaDiagnostico: String(need.problemDescription || need.problem || need.necesidad || 'Necesidad comunal diagnosticada.'),
+            solucionProgramatica: proposalText,
             metaCuantificable: 'Cobertura del 100% de la comunidad priorizada',
             indicadorODS: 'ODS 10: Reducción de las Desigualdades',
             presupuestoEstimado: 'Cofinanciación Municipal y Departamental',
-            plazoEjecucion: need.impactLevel === 'Crítico' ? 'Corto Plazo (100 Días)' : 'Mediano Plazo (Año 1-2)',
-            comunaFocalizada: String(need.comunaSector || 'Todo el Territorio'),
+            plazoEjecucion: (need.impactLevel === 'Crítico' || need.prioridad === 'Crítico') ? 'Corto Plazo (100 Días)' : 'Mediano Plazo (Año 1-2)',
+            comunaFocalizada: String(need.comunaSector || need.comuna || 'Todo el Territorio'),
             fuenteFinanciacion: 'Presupuesto Municipal',
-            prioridad: need.impactLevel === 'Crítico' ? 'Crítica' : 'Alta'
+            prioridad: (need.impactLevel === 'Crítico' || need.prioridad === 'Crítico') ? 'Crítica' : 'Alta'
           });
         }
       }
@@ -752,7 +770,7 @@ export const ProgramaGobiernoView: React.FC<ProgramaGobiernoViewProps> = ({
       )}
 
       {/* HEADER BANNER: PROGRAMA DE GOBIERNO (LEY 131 DE 1994) */}
-      <div className="bg-gradient-to-r from-[#061a30] via-[#0a2546] to-[#051527] border border-cyan-500/30 rounded-3xl p-6 shadow-2xl relative overflow-hidden prog-header-banner">
+      <div className="bg-gradient-to-r from-[#061a30] via-[#0a2546] to-[#051527] border border-cyan-500/30 rounded-3xl p-6 shadow-2xl relative overflow-hidden prog-header-banner animate-prog-stagger-1">
         <div className="absolute -right-12 -top-12 w-72 h-72 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
@@ -786,9 +804,9 @@ export const ProgramaGobiernoView: React.FC<ProgramaGobiernoViewProps> = ({
                 type="button"
                 onClick={handleGenerateAIProposals}
                 disabled={isGeneratingAI}
-                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 cursor-pointer transition-all disabled:opacity-50 prog-ai-btn"
+                className="btn-import-territorial group px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs flex items-center justify-center gap-2 cursor-pointer transition-all disabled:opacity-50 prog-ai-btn"
               >
-                <Sparkles className={`w-4 h-4 ${isGeneratingAI ? 'animate-spin' : ''}`} />
+                <Sparkles className={`w-4 h-4 transition-transform duration-200 group-hover:rotate-12 ${isGeneratingAI ? 'animate-spin' : ''}`} />
                 <span>
                   {isGeneratingAI
                     ? 'Sincronizando Diagnóstico...'
@@ -799,7 +817,7 @@ export const ProgramaGobiernoView: React.FC<ProgramaGobiernoViewProps> = ({
               <button
                 type="button"
                 onClick={handleExportDocument}
-                className="px-4 py-2 rounded-xl bg-[#081d38] hover:bg-cyan-950 text-cyan-300 border border-cyan-500/30 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all prog-export-btn"
+                className="btn-export-pdf px-4 py-2 rounded-xl bg-[#081d38] hover:bg-cyan-950 text-cyan-300 border border-cyan-500/30 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-all prog-export-btn"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>Exportar PDF (Registraduría)</span>
@@ -809,7 +827,7 @@ export const ProgramaGobiernoView: React.FC<ProgramaGobiernoViewProps> = ({
         </div>
 
         {/* Sub-Tabs Navigation */}
-        <div className="flex flex-wrap items-center gap-2 mt-6 pt-4 border-t border-cyan-500/20 text-xs font-bold prog-subtabs-nav">
+        <div className="flex flex-wrap items-center gap-2 mt-6 pt-4 border-t border-cyan-500/20 text-xs font-bold prog-subtabs-nav animate-prog-stagger-2">
           <button
             type="button"
             onClick={(e) => {
@@ -818,8 +836,8 @@ export const ProgramaGobiernoView: React.FC<ProgramaGobiernoViewProps> = ({
             }}
             className={`px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-2 prog-subtab-btn ${
               activeSubTab === 'ejes'
-                ? 'active bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 font-extrabold shadow'
-                : 'text-slate-400 hover:text-white'
+                ? 'active prog-subtab-active bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 font-extrabold shadow'
+                : 'prog-subtab-inactive text-slate-400 hover:text-white'
             }`}
           >
             <Layers className="w-4 h-4" />
@@ -834,8 +852,8 @@ export const ProgramaGobiernoView: React.FC<ProgramaGobiernoViewProps> = ({
             }}
             className={`px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-2 prog-subtab-btn ${
               activeSubTab === 'presupuesto'
-                ? 'active bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 font-extrabold shadow'
-                : 'text-slate-400 hover:text-white'
+                ? 'active prog-subtab-active bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 font-extrabold shadow'
+                : 'prog-subtab-inactive text-slate-400 hover:text-white'
             }`}
           >
             <DollarSign className="w-4 h-4" />
@@ -850,8 +868,8 @@ export const ProgramaGobiernoView: React.FC<ProgramaGobiernoViewProps> = ({
             }}
             className={`px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-2 prog-subtab-btn ${
               activeSubTab === 'cumplimiento'
-                ? 'active bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 font-extrabold shadow'
-                : 'text-slate-400 hover:text-white'
+                ? 'active prog-subtab-active bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 font-extrabold shadow'
+                : 'prog-subtab-inactive text-slate-400 hover:text-white'
             }`}
           >
             <ShieldCheck className="w-4 h-4" />
@@ -868,8 +886,8 @@ export const ProgramaGobiernoView: React.FC<ProgramaGobiernoViewProps> = ({
             }}
             className={`px-4 py-2 rounded-xl transition-all cursor-pointer flex items-center gap-2 prog-subtab-btn ${
               activeSubTab === 'vista_previa'
-                ? 'active bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 font-extrabold shadow'
-                : 'text-slate-400 hover:text-white'
+                ? 'active prog-subtab-active bg-emerald-500/20 text-emerald-300 border border-emerald-400/40 font-extrabold shadow'
+                : 'prog-subtab-inactive text-slate-400 hover:text-white'
             }`}
           >
             <FileText className="w-4 h-4" />
@@ -882,7 +900,7 @@ export const ProgramaGobiernoView: React.FC<ProgramaGobiernoViewProps> = ({
       {activeSubTab === 'ejes' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 prog-tab-ejes">
           {/* Left Column: Strategic Axes Selector */}
-          <div className="lg:col-span-4 space-y-3 prog-ejes-sidebar">
+          <div className="lg:col-span-4 space-y-3 prog-ejes-sidebar animate-prog-stagger-3">
             <div className="flex items-center justify-between px-1">
               <span className="text-xs font-black uppercase text-cyan-400 tracking-wider">
                 Pilares / Ejes del Programa ({ejes.length})
@@ -895,7 +913,7 @@ export const ProgramaGobiernoView: React.FC<ProgramaGobiernoViewProps> = ({
                   setNewEje({ titulo: '', icono: '📌', descripcion: '', presupuestoPorcentaje: 25 });
                   setShowAddEjeModal(true);
                 }}
-                className="px-2.5 py-1 rounded-xl bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 border border-teal-500/40 text-[11px] font-extrabold flex items-center gap-1 cursor-pointer transition-all"
+                className="btn-cta-eje px-2.5 py-1 rounded-xl bg-teal-500/20 hover:bg-teal-500/30 text-teal-300 border border-teal-500/40 text-[11px] font-extrabold flex items-center gap-1 cursor-pointer transition-all"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Nuevo Eje</span>
@@ -908,8 +926,8 @@ export const ProgramaGobiernoView: React.FC<ProgramaGobiernoViewProps> = ({
                 <p className="text-xs text-slate-400">Cargando pilares desde Supabase...</p>
               </div>
             ) : ejes.length === 0 ? (
-              <div className="bg-[#05162a] border border-dashed border-cyan-500/30 rounded-2xl p-6 text-center space-y-3">
-                <Layers className="w-8 h-8 text-cyan-400 mx-auto opacity-80" />
+              <div className="empty-plan-card bg-[#05162a] border border-dashed border-cyan-500/30 rounded-2xl p-6 text-center space-y-3">
+                <Layers className="empty-plan-icon w-8 h-8 text-cyan-400 mx-auto opacity-80" />
                 <div className="space-y-1">
                   <p className="text-xs font-extrabold text-white">Sin ejes estratégicos creados</p>
                   <p className="text-[11px] text-slate-400 leading-relaxed">
@@ -924,7 +942,7 @@ export const ProgramaGobiernoView: React.FC<ProgramaGobiernoViewProps> = ({
                     setNewEje({ titulo: '', icono: '📌', descripcion: '', presupuestoPorcentaje: 25 });
                     setShowAddEjeModal(true);
                   }}
-                  className="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs rounded-xl inline-flex items-center gap-1.5 cursor-pointer"
+                  className="btn-cta-eje px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs rounded-xl inline-flex items-center gap-1.5 cursor-pointer shadow-md"
                 >
                   <Plus className="w-3.5 h-3.5" /> Crear Primer Eje
                 </button>
@@ -936,7 +954,7 @@ export const ProgramaGobiernoView: React.FC<ProgramaGobiernoViewProps> = ({
                   <div
                     key={eje.id}
                     onClick={() => setSelectedEjeId(eje.id)}
-                    className={`w-full text-left p-4 rounded-2xl border transition-all cursor-pointer flex flex-col gap-2 relative group prog-eje-card ${
+                    className={`w-full text-left p-4 rounded-2xl border transition-all duration-200 cursor-pointer flex flex-col gap-2 relative group prog-eje-card hover:-translate-y-0.5 hover:shadow-lg ${
                       isSelected
                         ? 'active bg-gradient-to-r from-[#0a2748] to-[#071c36] border-cyan-400 shadow-lg shadow-cyan-950/50'
                         : 'bg-[#05162a] border-cyan-500/20 hover:border-cyan-500/40'
@@ -1011,10 +1029,10 @@ export const ProgramaGobiernoView: React.FC<ProgramaGobiernoViewProps> = ({
           </div>
 
           {/* Right Column: Proposals inside Selected Axis */}
-          <div className="lg:col-span-8 space-y-4 prog-propuestas-panel">
+          <div className="lg:col-span-8 space-y-4 prog-propuestas-panel animate-prog-stagger-4">
             {!activeEje ? (
-              <div className="bg-[#05162a] border border-dashed border-cyan-500/30 rounded-3xl p-12 text-center space-y-4">
-                <BookOpen className="w-12 h-12 text-cyan-400 mx-auto opacity-80" />
+              <div className="empty-plan-card bg-[#05162a] border border-dashed border-cyan-500/30 rounded-3xl p-12 text-center space-y-4">
+                <BookOpen className="empty-plan-icon w-12 h-12 text-cyan-400 mx-auto opacity-80" />
                 <div className="space-y-1 max-w-md mx-auto">
                   <h4 className="text-base font-black text-white">
                     Estructure su Programa de Gobierno Oficial
@@ -1030,7 +1048,7 @@ export const ProgramaGobiernoView: React.FC<ProgramaGobiernoViewProps> = ({
                       e.preventDefault();
                       setShowAddEjeModal(true);
                     }}
-                    className="px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-teal-500 text-slate-950 font-black text-xs rounded-xl shadow-lg inline-flex items-center gap-2 cursor-pointer"
+                    className="btn-cta-eje px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-teal-500 text-slate-950 font-black text-xs rounded-xl shadow-lg inline-flex items-center gap-2 cursor-pointer"
                   >
                     <Plus className="w-4 h-4" /> Crear Primer Eje Estratégico
                   </button>
@@ -1060,7 +1078,7 @@ export const ProgramaGobiernoView: React.FC<ProgramaGobiernoViewProps> = ({
                   <button
                     type="button"
                     onClick={handleOpenAddPropuesta}
-                    className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-slate-950 font-black text-xs flex items-center gap-1.5 shrink-0 cursor-pointer shadow-md prog-add-propuesta-btn"
+                    className="btn-cta-eje px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-400 hover:to-teal-400 text-slate-950 font-black text-xs flex items-center gap-1.5 shrink-0 cursor-pointer shadow-md prog-add-propuesta-btn"
                   >
                     <Plus className="w-4 h-4" />
                     <span>Nueva Propuesta</span>
@@ -1070,7 +1088,7 @@ export const ProgramaGobiernoView: React.FC<ProgramaGobiernoViewProps> = ({
                 {/* Proposals List */}
                 <div className="space-y-4 prog-propuestas-list">
                   {activeEje.propuestas.length === 0 ? (
-                    <div className="p-8 text-center bg-[#081d38]/50 rounded-2xl border border-dashed border-cyan-500/30 text-xs text-slate-400 space-y-3">
+                    <div className="empty-plan-card p-8 text-center bg-[#081d38]/50 rounded-2xl border border-dashed border-cyan-500/30 text-xs text-slate-400 space-y-3">
                       <p className="font-bold text-white text-sm">
                         Sin propuestas registradas en "{activeEje.titulo}"
                       </p>
@@ -1080,7 +1098,7 @@ export const ProgramaGobiernoView: React.FC<ProgramaGobiernoViewProps> = ({
                       <button
                         type="button"
                         onClick={handleOpenAddPropuesta}
-                        className="px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs rounded-xl inline-flex items-center gap-1.5 cursor-pointer"
+                        className="btn-cta-eje px-4 py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs rounded-xl inline-flex items-center gap-1.5 cursor-pointer shadow-md"
                       >
                         <Plus className="w-3.5 h-3.5" /> Agregar Primera Propuesta
                       </button>
@@ -1089,7 +1107,7 @@ export const ProgramaGobiernoView: React.FC<ProgramaGobiernoViewProps> = ({
                     activeEje.propuestas.map((prop, index) => (
                       <div
                         key={prop.id}
-                        className="bg-[#081d38] border border-cyan-500/25 rounded-2xl p-5 space-y-4 hover:border-cyan-400/50 transition-all shadow-md prog-propuesta-item"
+                        className="bg-[#081d38] border border-cyan-500/25 rounded-2xl p-5 space-y-4 hover:border-cyan-400/50 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg shadow-md prog-propuesta-item"
                       >
                         <div className="flex flex-wrap items-start justify-between gap-2">
                           <div className="flex items-center gap-2 flex-wrap">
@@ -1394,8 +1412,8 @@ export const ProgramaGobiernoView: React.FC<ProgramaGobiernoViewProps> = ({
 
       {/* MODAL: DETALLE DE PROPUESTA */}
       {viewingPropuesta && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#05162a] border border-cyan-500/40 rounded-3xl p-6 max-w-lg w-full space-y-4 text-xs shadow-2xl">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 modal-backdrop-animate">
+          <div className="bg-[#05162a] border border-cyan-500/40 rounded-3xl p-6 max-w-lg w-full space-y-4 text-xs shadow-2xl modal-container-animate">
             <div className="flex justify-between items-center border-b border-cyan-500/20 pb-3">
               <h4 className="font-extrabold text-white text-sm flex items-center gap-2">
                 <FileText className="w-4 h-4 text-cyan-400" />
@@ -1463,8 +1481,8 @@ export const ProgramaGobiernoView: React.FC<ProgramaGobiernoViewProps> = ({
 
       {/* MODAL: AGREGAR / EDITAR PROPUESTA AL EJE ACTIVO */}
       {showAddPropuestaModal && activeEje && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 prog-modal-overlay">
-          <div className="bg-[#05162a] border border-cyan-500/40 rounded-3xl p-6 max-w-lg w-full space-y-4 text-xs shadow-2xl prog-modal-card max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 prog-modal-overlay modal-backdrop-animate">
+          <div className="bg-[#05162a] border border-cyan-500/40 rounded-3xl p-6 max-w-lg w-full space-y-4 text-xs shadow-2xl prog-modal-card max-h-[90vh] overflow-y-auto modal-container-animate">
             <div className="flex justify-between items-center border-b border-cyan-500/20 pb-3">
               <h4 className="font-extrabold text-white text-sm flex items-center gap-2">
                 {editingPropuestaId ? (
@@ -1625,8 +1643,8 @@ export const ProgramaGobiernoView: React.FC<ProgramaGobiernoViewProps> = ({
 
       {/* MODAL: CREAR / EDITAR EJE ESTRATÉGICO */}
       {showAddEjeModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 prog-modal-overlay">
-          <div className="bg-[#05162a] border border-cyan-500/40 rounded-3xl p-6 max-w-md w-full space-y-4 text-xs shadow-2xl prog-modal-card">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 prog-modal-overlay modal-backdrop-animate">
+          <div className="bg-[#05162a] border border-cyan-500/40 rounded-3xl p-6 max-w-md w-full space-y-4 text-xs shadow-2xl prog-modal-card modal-container-animate">
             <div className="flex justify-between items-center border-b border-cyan-500/20 pb-3">
               <h4 className="font-extrabold text-white text-sm flex items-center gap-2">
                 <Layers className="w-4 h-4 text-teal-400" />
@@ -1732,8 +1750,8 @@ export const ProgramaGobiernoView: React.FC<ProgramaGobiernoViewProps> = ({
 
       {/* MODAL: CONFIRMAR ELIMINACIÓN DE PROPUESTA */}
       {propuestaToDelete && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#05162a] border border-rose-500/40 rounded-3xl p-6 max-w-md w-full space-y-4 text-xs shadow-2xl">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 modal-backdrop-animate">
+          <div className="bg-[#05162a] border border-rose-500/40 rounded-3xl p-6 max-w-md w-full space-y-4 text-xs shadow-2xl modal-container-animate">
             <h4 className="font-extrabold text-white text-sm flex items-center gap-2">
               <Trash2 className="w-4 h-4 text-rose-400" /> Eliminar Propuesta Programática
             </h4>
@@ -1763,8 +1781,8 @@ export const ProgramaGobiernoView: React.FC<ProgramaGobiernoViewProps> = ({
 
       {/* MODAL: CONFIRMAR ELIMINACIÓN DE EJE */}
       {ejeToDelete && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#05162a] border border-rose-500/40 rounded-3xl p-6 max-w-md w-full space-y-4 text-xs shadow-2xl">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 modal-backdrop-animate">
+          <div className="bg-[#05162a] border border-rose-500/40 rounded-3xl p-6 max-w-md w-full space-y-4 text-xs shadow-2xl modal-container-animate">
             <h4 className="font-extrabold text-white text-sm flex items-center gap-2">
               <Trash2 className="w-4 h-4 text-rose-400" /> Eliminar Eje Estratégico
             </h4>
