@@ -1883,6 +1883,80 @@ textarea {
   transform: translateY(-3px) translateZ(0);
 }
 
+/* Sesión de Diagnóstico de Campaña - Microinteracciones & Stagger 60 FPS */
+@keyframes diagnosticoStaggerEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px) translateZ(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) translateZ(0);
+  }
+}
+
+.animate-diagnostico-stagger {
+  animation: diagnosticoStaggerEnter 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
+  transform: translateZ(0);
+}
+
+.diagnostic-pillar-card {
+  will-change: transform, border-color, box-shadow;
+  transform: translateZ(0);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.diagnostic-pillar-card:hover {
+  transform: translateY(-3px) translateZ(0);
+}
+
+.diagnostic-pillar-card:hover .pillar-icon-box svg {
+  transform: scale(1.06);
+  filter: drop-shadow(0 0 6px currentColor);
+}
+
+.diagnostic-pillar-card .pillar-icon-box svg {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), filter 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Specific Accent Glows for Pillars */
+.diagnostic-pillar-card.pilar-cobertura:hover {
+  border-color: rgba(16, 185, 129, 0.4) !important;
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.15) !important;
+}
+
+.diagnostic-pillar-card.pilar-intencion:hover {
+  border-color: rgba(245, 158, 11, 0.4) !important;
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.15) !important;
+}
+
+.diagnostic-pillar-card.pilar-testigos:hover {
+  border-color: rgba(244, 63, 94, 0.4) !important;
+  box-shadow: 0 0 20px rgba(244, 63, 94, 0.15) !important;
+}
+
+.diagnostic-pillar-card.pilar-finanzas:hover {
+  border-color: rgba(34, 197, 94, 0.4) !important;
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.15) !important;
+}
+
+.diagnostic-pillar-card.pilar-estrategia:hover {
+  border-color: rgba(6, 182, 212, 0.4) !important;
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.15) !important;
+}
+
+.diagnostic-pillar-card.pilar-censo:hover {
+  border-color: rgba(6, 182, 212, 0.4) !important;
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.15) !important;
+}
+
+/* Pillar Score Pills Interior Glow */
+.pillar-badge {
+  box-shadow: inset 0 0 8px rgba(255, 255, 255, 0.05);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 /* --------------------------------------------------------------------------
    E. ACCESSIBILITY & PREFERS-REDUCED-MOTION
    Respect user operating system reduced-motion preferences

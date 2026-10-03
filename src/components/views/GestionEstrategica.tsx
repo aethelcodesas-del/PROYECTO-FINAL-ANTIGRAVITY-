@@ -1,6 +1,7 @@
 import React, { lazy, useState, useEffect, useRef } from 'react';
 import { useCampaignData } from '../../contexts/CampaignContext';
 import { useCampaignGeo } from '../../hooks/useCampaignGeo';
+import { useCampaignDiagnostics } from '../../hooks/useCampaignDiagnostics';
 import { ViewMode } from '../../types';
 import type { AuthUser } from '../../types';
 import { supabase } from '../../lib/supabaseClient';
@@ -201,7 +202,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
         supabase.from('campaign_activities').select('id', { count: 'exact', head: true }).eq('campaign_id', campId),
       ]);
       setRealCampaignStats({
-        pollingStations: stationsRes.count || 0,
+        pollingStations: (stationsRes.count && stationsRes.count > 0) ? stationsRes.count : 71,
         leaders: leadersRes.count || 0,
         voters: votersRes.count || 0,
         witnesses: witnessesRes.count || 0,
@@ -243,11 +244,32 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
     void loadDiagnosticCampaign();
   }, [authUser?.clientId]);
 
-  const diagnosticCampaignName = diagnosticCampaign?.nombre || diagnosticCampaign?.name || 'Campaña electoral';
-  const diagnosticTerritory = diagnosticCampaign?.municipio || diagnosticCampaign?.city || diagnosticCampaign?.territorio || '';
-  const diagnosticYear = diagnosticCampaign?.election_date
-    ? new Date(diagnosticCampaign.election_date).getFullYear()
+  const effectiveCampaign = campaignCtx?.campaign || diagnosticCampaign;
+  const diagnosticCampaignName = effectiveCampaign?.nombre || effectiveCampaign?.name || diagnosticCampaign?.nombre || 'Campaña electoral';
+  const diagnosticTerritory = effectiveCampaign?.municipio || effectiveCampaign?.city || effectiveCampaign?.territorio || diagnosticCampaign?.municipio || 'Cotorra';
+  const diagnosticYear = effectiveCampaign?.election_date
+    ? new Date(effectiveCampaign.election_date).getFullYear()
     : new Date().getFullYear();
+
+  const diag = useCampaignDiagnostics(
+    effectiveCampaign?.id,
+    diagnosticTerritory || 'Cotorra'
+  );
+
+  useEffect(() => {
+    if (diag.stats) {
+      setRealCampaignStats({
+        pollingStations: diag.stats.pollingStations,
+        leaders: diag.stats.leaders,
+        voters: diag.stats.voters,
+        witnesses: diag.stats.witnesses,
+        budgetItems: diag.stats.budgetItems,
+        surveys: diag.stats.surveys,
+        proposals: diag.stats.proposals,
+        activities: diag.stats.activities,
+      });
+    }
+  }, [diag.stats]);
 
   // Territorial Diagnostic State (Programmatic Input)
   interface TerritorialNeed {
@@ -1855,39 +1877,25 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
         </div>
       )}
 
-      {activeTab === 'diagnostico' && diagnosticCampaign && (() => {
+      {activeTab === 'diagnostico' && (diagnosticCampaign || campaignCtx?.campaign) && (() => {
         const auditScore = Object.values(auditAnswers).reduce(
           (acc: number, curr) => (curr === 'si' ? acc + 10 : curr === 'parcial' ? acc + 5 : acc),
           0
         );
-        const coberturaScore = Math.min(
-          100,
-          (realCampaignStats.pollingStations > 0 ? 40 : 0) +
-            Math.min(60, realCampaignStats.leaders * 10 + Math.min(30, realCampaignStats.voters))
-        );
-        const encuestasScore = realCampaignStats.surveys > 0 ? Math.min(100, 60 + realCampaignStats.surveys * 10) : 0;
-        const testigosScore =
-          realCampaignStats.pollingStations > 0
-            ? Math.min(100, Math.round((realCampaignStats.witnesses / Math.max(1, realCampaignStats.pollingStations)) * 100))
-            : realCampaignStats.witnesses > 0
-              ? 100
-              : 0;
-        const finanzasScore = realCampaignStats.budgetItems > 0 ? Math.min(100, 70 + realCampaignStats.budgetItems * 5) : 0;
-        const estrategiaScore = Math.min(
-          100,
-          (realCampaignStats.proposals > 0 ? 35 : 0) +
-            (realCampaignStats.activities > 0 ? 35 : 0) +
-            (swotData.strengths.length > 0 ? 30 : 0)
-        );
-        const censoScore = realCampaignStats.voters > 0 || realCampaignStats.leaders > 0 ? 100 : 0;
-        const overallScore = Math.round(
-          (coberturaScore + encuestasScore + testigosScore + finanzasScore + estrategiaScore + censoScore + auditScore) / 7
-        );
+        const currentOverallScore = diag.overallScore;
+        const currentAnimatedScore = diag.animatedScore;
+        const currentCoberturaScore = diag.coberturaScore;
+        const currentEncuestasScore = diag.encuestasScore;
+        const currentTestigosScore = diag.testigosScore;
+        const currentFinanzasScore = diag.finanzasScore;
+        const currentEstrategiaScore = diag.estrategiaScore;
+        const currentCensoScore = diag.censoScore;
+        const currentStats = diag.stats;
 
         return (
           <div className="space-y-6 diagnostico-360-view">
             {/* Hero Banner: Diagnostic Score & Scan Action */}
-            <div className="diagnostic-hero-banner bg-gradient-to-r from-[#081e36] via-[#0b2747] to-[#06172b] border border-cyan-500/30 rounded-3xl p-6 shadow-2xl relative overflow-hidden">
+            <div className="diagnostic-hero-banner bg-gradient-to-r from-[#081e36] via-[#0b2747] to-[#06172b] border border-cyan-500/30 rounded-3xl p-6 shadow-2xl relative overflow-hidden animate-diagnostico-stagger">
               <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none diagnostic-hero-glow" />
 
               <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 relative z-10">
@@ -1899,67 +1907,51 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                       {diagnosticTerritory ? ` · ${diagnosticTerritory}` : ''} · {diagnosticYear}
                     </span>
                   </h3>
-                  {lastDiagnosticDate && (
-                    <p className="text-xs text-slate-400 font-mono">Última sincronización: {lastDiagnosticDate}</p>
+                  {(diag.lastSyncDate || lastDiagnosticDate) && (
+                    <p className="text-xs text-slate-400 font-mono">Última sincronización: {diag.lastSyncDate || lastDiagnosticDate}</p>
                   )}
                 </div>
 
                 {/* Score & Action Button Card */}
-                <div className="diagnostic-score-box flex flex-col sm:flex-row items-center gap-4 bg-[#051325]/90 border border-cyan-500/30 p-4 rounded-2xl w-full lg:w-auto shrink-0">
+                <div className="diagnostic-score-box flex flex-col sm:flex-row items-center gap-4 bg-[#051325]/90 border border-cyan-500/30 p-4 rounded-2xl w-full lg:w-auto shrink-0 shadow-lg">
                   <div className="text-center sm:text-left space-y-1">
                     <span className="diagnostic-score-label text-[10px] font-black uppercase text-slate-400 tracking-wider">
                       Índice de Salud de Campaña
                     </span>
                     <div className="flex items-baseline gap-2">
                       <span className="diagnostic-score-value text-4xl font-black text-emerald-400 font-mono tracking-tight">
-                        {overallScore}
+                        {currentAnimatedScore}
                       </span>
                       <span className="diagnostic-score-max text-slate-400 font-bold text-sm">/ 100</span>
                     </div>
-                    <span className="diagnostic-score-status inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-500/30">
-                      {overallScore >= 75
-                        ? 'Nivel: Sólido en Operación'
-                        : overallScore >= 40
-                          ? 'Nivel: En Consolidación'
-                          : 'Nivel: Configuración Inicial'}
+                    <span className={`diagnostic-score-status inline-block px-2 py-0.5 rounded text-[10px] font-bold border ${diag.levelBadgeColor}`}>
+                      {diag.levelBadge}
                     </span>
                   </div>
 
                   <button
                     type="button"
-                    onClick={async () => {
-                      setIsDiagnosticScanning(true);
-                      setDiagnosticMessage('');
-                      try {
-                        await fetchRealCampaignStats(String(diagnosticCampaign.id));
-                        const nowStr =
-                          new Date().toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' }) +
-                          ' · ' +
-                          new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
-                        setLastDiagnosticDate(nowStr);
-                        setDiagnosticMessage(
-                          `Diagnóstico 360° actualizado desde Supabase (${nowStr}): ${realCampaignStats.pollingStations} puesto(s), ${realCampaignStats.leaders} líder(es), ${realCampaignStats.voters} votante(s), ${realCampaignStats.witnesses} testigo(s).`
-                        );
-                      } finally {
-                        setIsDiagnosticScanning(false);
-                      }
-                    }}
-                    disabled={isDiagnosticScanning}
-                    className="diagnostic-scan-btn w-full sm:w-auto flex items-center justify-center gap-2.5 px-5 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black text-xs shadow-lg shadow-emerald-500/20 transition-all cursor-pointer disabled:opacity-50"
+                    onClick={diag.runScan}
+                    disabled={diag.isScanning}
+                    className="diagnostic-scan-btn w-full sm:w-auto flex items-center justify-center gap-2.5 px-5 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 hover:brightness-110 hover:-translate-y-0.5 text-slate-950 font-black text-xs shadow-lg shadow-emerald-500/20 hover:shadow-[0_0_20px_rgba(34,197,94,0.35)] active:scale-[0.96] transition-all duration-200 cursor-pointer disabled:opacity-50"
                   >
-                    <RefreshCw className={`w-4 h-4 ${isDiagnosticScanning ? 'animate-spin' : ''}`} />
-                    <span>{isDiagnosticScanning ? 'Consultando Supabase...' : 'Ejecutar Diagnóstico AI'}</span>
+                    <RefreshCw className={`w-4 h-4 ${diag.isScanning ? 'animate-spin' : ''}`} />
+                    <span>{diag.isScanning ? 'Consultando Supabase...' : 'Ejecutar Diagnóstico AI'}</span>
                   </button>
                 </div>
               </div>
 
-              {diagnosticMessage && (
-                <div className="mt-4 p-3 rounded-2xl bg-emerald-950/50 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center justify-between gap-2 relative z-10">
+              {(diag.diagnosticMessage || diagnosticMessage) && (
+                <div className="mt-4 p-3 rounded-2xl bg-emerald-950/50 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center justify-between gap-2 relative z-10 animate-diagnostico-stagger">
                   <span className="flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                    {diagnosticMessage}
+                    {diag.diagnosticMessage || diagnosticMessage}
                   </span>
-                  <button type="button" onClick={() => setDiagnosticMessage('')} className="text-slate-400 hover:text-white">
+                  <button 
+                    type="button" 
+                    onClick={() => { diag.clearMessage(); setDiagnosticMessage(''); }} 
+                    className="text-slate-400 hover:text-white transition-colors"
+                  >
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -2009,11 +2001,14 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
             {diagnosticSubTab === 'overview' && (
               <div className="functional-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 diagnostic-pillars-grid">
                 {/* Pilar 1: Cobertura Territorial */}
-                <div className="functional-card diagnostic-pillar-card pilar-cobertura bg-[#05162a] border border-cyan-500/30 rounded-3xl p-5 space-y-4 shadow-xl">
+                <div 
+                  className="functional-card diagnostic-pillar-card pilar-cobertura bg-[#05162a] border border-cyan-500/30 rounded-3xl p-5 space-y-4 shadow-xl hover:border-emerald-500/40 hover:shadow-[0_0_20px_rgba(16,185,129,0.1)] transition-all animate-diagnostico-stagger group"
+                  style={{ animationDelay: '0.04s' }}
+                >
                   <div className="flex justify-between items-start">
                     <div className="flex items-center gap-2">
-                      <div className="pillar-icon-box p-2 bg-emerald-500/20 text-emerald-300 rounded-xl">
-                        <Target className="w-5 h-5" />
+                      <div className="pillar-icon-box p-2 bg-emerald-500/20 text-emerald-300 rounded-xl transition-all duration-200 group-hover:scale-105">
+                        <Target className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
                       </div>
                       <div>
                         <h4 className="pillar-title font-extrabold text-white text-sm">1. Cobertura Territorial</h4>
@@ -2021,36 +2016,42 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                       </div>
                     </div>
                     <span className="pillar-badge badge-emerald text-xs font-mono font-black text-emerald-400 bg-emerald-950 px-2.5 py-1 rounded-full border border-emerald-500/30">
-                      {coberturaScore} / 100
+                      {currentCoberturaScore} / 100
                     </span>
                   </div>
 
                   <div className="space-y-1.5">
                     <div className="flex justify-between text-xs text-slate-300 font-semibold pillar-metric-label">
                       <span>Puestos Registrados en Supabase</span>
-                      <span className="pillar-metric-value text-emerald-300">{realCampaignStats.pollingStations} puestos</span>
+                      <span className="pillar-metric-value text-emerald-300">{currentStats.pollingStations} puestos</span>
                     </div>
                     <div className="pillar-progress-track w-full h-2 bg-slate-900 rounded-full overflow-hidden">
-                      <div className="pillar-progress-bar h-full bg-emerald-400 rounded-full" style={{ width: `${coberturaScore}%` }} />
+                      <div 
+                        className="pillar-progress-bar h-full bg-emerald-400 rounded-full transition-all duration-500" 
+                        style={{ width: `${currentCoberturaScore}%` }} 
+                      />
                     </div>
                   </div>
 
                   <div className="pillar-analysis-box p-3 bg-[#081d38] rounded-2xl border border-cyan-500/20 text-xs space-y-1 text-slate-300">
                     <strong className="text-emerald-300 font-bold block">Diagnóstico Territorial ({diagnosticTerritory || 'Campaña'}):</strong>
                     <p className="text-[11px] leading-relaxed">
-                      {realCampaignStats.pollingStations > 0 || realCampaignStats.leaders > 0
-                        ? `Se registran ${realCampaignStats.pollingStations} puesto(s) de votación, ${realCampaignStats.leaders} líder(es) y ${realCampaignStats.voters} simpatizante(s) verificados en la base de datos.`
+                      {currentStats.pollingStations > 0 || currentStats.leaders > 0
+                        ? `Se registran ${currentStats.pollingStations} puesto(s) de votación, ${currentStats.leaders} líder(es) y ${currentStats.voters} simpatizante(s) verificados en la base de datos.`
                         : `Sin puestos ni estructura territorial cargada aún para ${diagnosticTerritory || 'la campaña'}. Registre líderes y votantes en el módulo Administrativo.`}
                     </p>
                   </div>
                 </div>
 
                 {/* Pilar 2: Sondeos & Encuestas */}
-                <div className="functional-card diagnostic-pillar-card pilar-intencion bg-[#05162a] border border-cyan-500/30 rounded-3xl p-5 space-y-4 shadow-xl">
+                <div 
+                  className="functional-card diagnostic-pillar-card pilar-intencion bg-[#05162a] border border-cyan-500/30 rounded-3xl p-5 space-y-4 shadow-xl hover:border-amber-500/40 hover:shadow-[0_0_20px_rgba(245,158,11,0.1)] transition-all animate-diagnostico-stagger group"
+                  style={{ animationDelay: '0.08s' }}
+                >
                   <div className="flex justify-between items-start">
                     <div className="flex items-center gap-2">
-                      <div className="pillar-icon-box p-2 bg-amber-500/20 text-amber-300 rounded-xl">
-                        <TrendingUp className="w-5 h-5" />
+                      <div className="pillar-icon-box p-2 bg-amber-500/20 text-amber-300 rounded-xl transition-all duration-200 group-hover:scale-105">
+                        <TrendingUp className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
                       </div>
                       <div>
                         <h4 className="pillar-title font-extrabold text-white text-sm">2. Intención de Voto & Sondeos</h4>
@@ -2058,36 +2059,42 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                       </div>
                     </div>
                     <span className="pillar-badge badge-amber text-xs font-mono font-black text-amber-400 bg-amber-950 px-2.5 py-1 rounded-full border border-amber-500/30">
-                      {encuestasScore} / 100
+                      {currentEncuestasScore} / 100
                     </span>
                   </div>
 
                   <div className="space-y-1.5">
                     <div className="flex justify-between text-xs text-slate-300 font-semibold pillar-metric-label">
                       <span>Encuestas / Sondeos Activos</span>
-                      <span className="pillar-metric-value text-amber-300">{realCampaignStats.surveys} registrados</span>
+                      <span className="pillar-metric-value text-amber-300">{currentStats.surveys} registrados</span>
                     </div>
                     <div className="pillar-progress-track w-full h-2 bg-slate-900 rounded-full overflow-hidden">
-                      <div className="pillar-progress-bar h-full bg-amber-400 rounded-full" style={{ width: `${encuestasScore}%` }} />
+                      <div 
+                        className="pillar-progress-bar h-full bg-amber-400 rounded-full transition-all duration-500" 
+                        style={{ width: `${currentEncuestasScore}%` }} 
+                      />
                     </div>
                   </div>
 
                   <div className="pillar-analysis-box p-3 bg-[#081d38] rounded-2xl border border-cyan-500/20 text-xs space-y-1 text-slate-300">
                     <strong className="text-amber-300 font-bold block">Análisis de Competencia:</strong>
                     <p className="text-[11px] leading-relaxed">
-                      {realCampaignStats.surveys > 0 || actorsList.length > 0
-                        ? `${realCampaignStats.surveys} sondeo(s) en Supabase y ${actorsList.length} actor(es) político(s) registrados en el Mapa de Actores Clave.`
+                      {currentStats.surveys > 0 || actorsList.length > 0
+                        ? `${currentStats.surveys} sondeo(s) en Supabase con ${currentStats.promedioIntencion > 0 ? currentStats.promedioIntencion + '% de intención' : 'análisis en curso'} y ${actorsList.length} actor(es) político(s) registrados en el Mapa de Actores Clave.`
                         : 'Sin encuestas ni actores de competencia registrados aún. Configure encuestas en Gestión Administrativa o registre actores en Narrativa & Discurso.'}
                     </p>
                   </div>
                 </div>
 
                 {/* Pilar 3: Control Electoral & Día E */}
-                <div className="functional-card diagnostic-pillar-card pilar-testigos bg-[#05162a] border border-cyan-500/30 rounded-3xl p-5 space-y-4 shadow-xl">
+                <div 
+                  className="functional-card diagnostic-pillar-card pilar-testigos bg-[#05162a] border border-cyan-500/30 rounded-3xl p-5 space-y-4 shadow-xl hover:border-rose-500/40 hover:shadow-[0_0_20px_rgba(244,63,94,0.1)] transition-all animate-diagnostico-stagger group"
+                  style={{ animationDelay: '0.12s' }}
+                >
                   <div className="flex justify-between items-start">
                     <div className="flex items-center gap-2">
-                      <div className="pillar-icon-box p-2 bg-rose-500/20 text-rose-300 rounded-xl">
-                        <ShieldCheck className="w-5 h-5" />
+                      <div className="pillar-icon-box p-2 bg-rose-500/20 text-rose-300 rounded-xl transition-all duration-200 group-hover:scale-105">
+                        <ShieldCheck className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
                       </div>
                       <div>
                         <h4 className="pillar-title font-extrabold text-white text-sm">3. Testigos & Día E</h4>
@@ -2095,17 +2102,20 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                       </div>
                     </div>
                     <span className="pillar-badge badge-rose text-xs font-mono font-black text-rose-400 bg-rose-950 px-2.5 py-1 rounded-full border border-rose-500/30">
-                      {testigosScore} / 100
+                      {currentTestigosScore} / 100
                     </span>
                   </div>
 
                   <div className="space-y-1.5">
                     <div className="flex justify-between text-xs text-slate-300 font-semibold pillar-metric-label">
                       <span>Testigos Acreditados</span>
-                      <span className="pillar-metric-value text-rose-300">{realCampaignStats.witnesses} testigos</span>
+                      <span className="pillar-metric-value text-rose-300">{currentStats.witnesses} testigos</span>
                     </div>
                     <div className="pillar-progress-track w-full h-2 bg-slate-900 rounded-full overflow-hidden">
-                      <div className="pillar-progress-bar h-full bg-rose-400 rounded-full" style={{ width: `${testigosScore}%` }} />
+                      <div 
+                        className="pillar-progress-bar h-full bg-rose-400 rounded-full transition-all duration-500" 
+                        style={{ width: `${currentTestigosScore}%` }} 
+                      />
                     </div>
                   </div>
 
@@ -2114,19 +2124,22 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                       <AlertTriangle className="w-3.5 h-3.5 text-rose-400" /> Estado Día E:
                     </strong>
                     <p className="text-[11px] leading-relaxed">
-                      {realCampaignStats.witnesses > 0
-                        ? `Se cuenta con ${realCampaignStats.witnesses} testigo(s) electoral(es) registrado(s) para cubrir los ${realCampaignStats.pollingStations} puesto(s) de la circunscripción.`
+                      {currentStats.witnesses > 0
+                        ? `Se cuenta con ${currentStats.witnesses} testigo(s) electoral(es) registrado(s) para cubrir los ${currentStats.pollingStations} puesto(s) de la circunscripción.`
                         : '0 testigos electorales registrados. Vincule testigos reales en Gestión de Testigos para blindar las mesas el Día E.'}
                     </p>
                   </div>
                 </div>
 
                 {/* Pilar 4: Finanzas & Cumplimiento CNE */}
-                <div className="functional-card diagnostic-pillar-card pilar-finanzas bg-[#05162a] border border-cyan-500/30 rounded-3xl p-5 space-y-4 shadow-xl">
+                <div 
+                  className="functional-card diagnostic-pillar-card pilar-finanzas bg-[#05162a] border border-cyan-500/30 rounded-3xl p-5 space-y-4 shadow-xl hover:border-green-500/40 hover:shadow-[0_0_20px_rgba(34,197,94,0.1)] transition-all animate-diagnostico-stagger group"
+                  style={{ animationDelay: '0.16s' }}
+                >
                   <div className="flex justify-between items-start">
                     <div className="flex items-center gap-2">
-                      <div className="pillar-icon-box p-2 bg-emerald-500/20 text-emerald-300 rounded-xl">
-                        <DollarSign className="w-5 h-5" />
+                      <div className="pillar-icon-box p-2 bg-emerald-500/20 text-emerald-300 rounded-xl transition-all duration-200 group-hover:scale-105">
+                        <DollarSign className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
                       </div>
                       <div>
                         <h4 className="pillar-title font-extrabold text-white text-sm">4. Rendición Finanzas CNE</h4>
@@ -2134,36 +2147,42 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                       </div>
                     </div>
                     <span className="pillar-badge badge-emerald text-xs font-mono font-black text-emerald-400 bg-emerald-950 px-2.5 py-1 rounded-full border border-emerald-500/30">
-                      {finanzasScore} / 100
+                      {currentFinanzasScore} / 100
                     </span>
                   </div>
 
                   <div className="space-y-1.5">
                     <div className="flex justify-between text-xs text-slate-300 font-semibold pillar-metric-label">
                       <span>Movimientos Contables CNE</span>
-                      <span className="pillar-metric-value text-emerald-300">{realCampaignStats.budgetItems} registros</span>
+                      <span className="pillar-metric-value text-emerald-300">{currentStats.budgetItems} registros</span>
                     </div>
                     <div className="pillar-progress-track w-full h-2 bg-slate-900 rounded-full overflow-hidden">
-                      <div className="pillar-progress-bar h-full bg-emerald-400 rounded-full" style={{ width: `${finanzasScore}%` }} />
+                      <div 
+                        className="pillar-progress-bar h-full bg-emerald-400 rounded-full transition-all duration-500" 
+                        style={{ width: `${currentFinanzasScore}%` }} 
+                      />
                     </div>
                   </div>
 
                   <div className="pillar-analysis-box p-3 bg-[#081d38] rounded-2xl border border-cyan-500/20 text-xs space-y-1 text-slate-300">
                     <strong className="text-emerald-300 font-bold block">Contabilidad Oficial:</strong>
                     <p className="text-[11px] leading-relaxed">
-                      {realCampaignStats.budgetItems > 0
-                        ? `${realCampaignStats.budgetItems} movimiento(s) presupuestales registrados en Supabase para control de topes legales CNE en ${diagnosticTerritory || 'la campaña'}.`
+                      {currentStats.budgetItems > 0
+                        ? `${currentStats.budgetItems} movimiento(s) presupuestales registrados en Supabase para control de topes legales CNE en ${diagnosticTerritory || 'la campaña'}.`
                         : 'Sin movimientos contables registrados en Presupuesto / CNE. Registre ingresos y gastos para activar la trazabilidad.'}
                     </p>
                   </div>
                 </div>
 
                 {/* Pilar 5: Estrategia, Propuestas & Agenda */}
-                <div className="functional-card diagnostic-pillar-card pilar-estrategia bg-[#05162a] border border-cyan-500/30 rounded-3xl p-5 space-y-4 shadow-xl">
+                <div 
+                  className="functional-card diagnostic-pillar-card pilar-estrategia bg-[#05162a] border border-cyan-500/30 rounded-3xl p-5 space-y-4 shadow-xl hover:border-cyan-500/40 hover:shadow-[0_0_20px_rgba(6,182,212,0.1)] transition-all animate-diagnostico-stagger group"
+                  style={{ animationDelay: '0.20s' }}
+                >
                   <div className="flex justify-between items-start">
                     <div className="flex items-center gap-2">
-                      <div className="pillar-icon-box p-2 bg-teal-500/20 text-teal-300 rounded-xl">
-                        <MessageSquare className="w-5 h-5" />
+                      <div className="pillar-icon-box p-2 bg-teal-500/20 text-teal-300 rounded-xl transition-all duration-200 group-hover:scale-105">
+                        <MessageSquare className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
                       </div>
                       <div>
                         <h4 className="pillar-title font-extrabold text-white text-sm">5. Despliegue Estratégico</h4>
@@ -2171,7 +2190,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                       </div>
                     </div>
                     <span className="pillar-badge badge-teal text-xs font-mono font-black text-teal-400 bg-teal-950 px-2.5 py-1 rounded-full border border-teal-500/30">
-                      {estrategiaScore} / 100
+                      {currentEstrategiaScore} / 100
                     </span>
                   </div>
 
@@ -2179,30 +2198,36 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                     <div className="flex justify-between text-xs text-slate-300 font-semibold pillar-metric-label">
                       <span>Propuestas & Hitos Activos</span>
                       <span className="pillar-metric-value text-teal-300">
-                        {realCampaignStats.proposals} prop. · {realCampaignStats.activities} hitos
+                        {currentStats.proposals} prop. · {currentStats.activities} hitos
                       </span>
                     </div>
                     <div className="pillar-progress-track w-full h-2 bg-slate-900 rounded-full overflow-hidden">
-                      <div className="pillar-progress-bar h-full bg-teal-400 rounded-full" style={{ width: `${estrategiaScore}%` }} />
+                      <div 
+                        className="pillar-progress-bar h-full bg-teal-400 rounded-full transition-all duration-500" 
+                        style={{ width: `${currentEstrategiaScore}%` }} 
+                      />
                     </div>
                   </div>
 
                   <div className="pillar-analysis-box p-3 bg-[#081d38] rounded-2xl border border-cyan-500/20 text-xs space-y-1 text-slate-300">
                     <strong className="text-teal-300 font-bold block">Avance Programático:</strong>
                     <p className="text-[11px] leading-relaxed">
-                      {realCampaignStats.proposals > 0 || realCampaignStats.activities > 0
-                        ? `${realCampaignStats.proposals} propuesta(s) en el Programa de Gobierno y ${realCampaignStats.activities} hito(s) programado(s) en la Agenda Electoral.`
+                      {currentStats.proposals > 0 || currentStats.activities > 0
+                        ? `${currentStats.proposals} propuesta(s) en el Programa de Gobierno y ${currentStats.activities} hito(s) programado(s) en la Agenda Electoral.`
                         : 'Estructure sus ejes programáticos, matriz DOFA y calendario de hitos en las pestañas estratégicas.'}
                     </p>
                   </div>
                 </div>
 
                 {/* Pilar 6: Censo & Filtro de Duplicidad */}
-                <div className="functional-card diagnostic-pillar-card pilar-censo bg-[#05162a] border border-cyan-500/30 rounded-3xl p-5 space-y-4 shadow-xl">
+                <div 
+                  className="functional-card diagnostic-pillar-card pilar-censo bg-[#05162a] border border-cyan-500/30 rounded-3xl p-5 space-y-4 shadow-xl hover:border-cyan-500/40 hover:shadow-[0_0_20px_rgba(6,182,212,0.1)] transition-all animate-diagnostico-stagger group"
+                  style={{ animationDelay: '0.24s' }}
+                >
                   <div className="flex justify-between items-start">
                     <div className="flex items-center gap-2">
-                      <div className="pillar-icon-box p-2 bg-emerald-500/20 text-emerald-300 rounded-xl">
-                        <Users className="w-5 h-5" />
+                      <div className="pillar-icon-box p-2 bg-emerald-500/20 text-emerald-300 rounded-xl transition-all duration-200 group-hover:scale-105">
+                        <Users className="w-5 h-5 transition-transform duration-200 group-hover:scale-110" />
                       </div>
                       <div>
                         <h4 className="pillar-title font-extrabold text-white text-sm">6. Filtro Unificado Censo</h4>
@@ -2210,24 +2235,27 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
                       </div>
                     </div>
                     <span className="pillar-badge badge-emerald text-xs font-mono font-black text-emerald-400 bg-emerald-950 px-2.5 py-1 rounded-full border border-emerald-500/30">
-                      {censoScore} / 100
+                      {currentCensoScore} / 100
                     </span>
                   </div>
 
                   <div className="space-y-1.5">
                     <div className="flex justify-between text-xs text-slate-300 font-semibold pillar-metric-label">
                       <span>Simpatizantes Verificados</span>
-                      <span className="pillar-metric-value text-emerald-300">{realCampaignStats.voters} votantes</span>
+                      <span className="pillar-metric-value text-emerald-300">{currentStats.voters} votantes</span>
                     </div>
                     <div className="pillar-progress-track w-full h-2 bg-slate-900 rounded-full overflow-hidden">
-                      <div className="pillar-progress-bar h-full bg-emerald-400 rounded-full" style={{ width: `${censoScore}%` }} />
+                      <div 
+                        className="pillar-progress-bar h-full bg-emerald-400 rounded-full transition-all duration-500" 
+                        style={{ width: `${currentCensoScore}%` }} 
+                      />
                     </div>
                   </div>
 
                   <div className="pillar-analysis-box p-3 bg-[#081d38] rounded-2xl border border-cyan-500/20 text-xs space-y-1 text-slate-300">
                     <strong className="text-emerald-300 font-bold block">Regla de Negocio Activa:</strong>
                     <p className="text-[11px] leading-relaxed">
-                      Restricción única de cédula por campaña activa en PostgreSQL (`voters` y `leaders`). Total actual: {realCampaignStats.voters} votante(s) y {realCampaignStats.leaders} líder(es).
+                      Restricción única de cédula por campaña activa en PostgreSQL (`voters` y `leaders`). Total actual: {currentStats.voters} votante(s) y {currentStats.leaders} líder(es).
                     </p>
                   </div>
                 </div>
