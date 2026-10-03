@@ -109,7 +109,7 @@ const canAccessViewWithAssignedFunctions = (user: AuthUser, view: ViewMode) => {
     return view !== 'saas_admin';
   }
   if (hasFullCampaignAccess(user)) return view !== 'global_admin' && view !== 'saas_admin';
-  if (view === 'primera_interfaz') return true;
+  if (view === 'primera_interfaz' || view === 'landing') return true;
   return (user.permissions || []).some(code => FUNCTION_DESTINATIONS[code]?.view === view);
 };
 
@@ -123,7 +123,7 @@ const isAssignedLocation = (
   if (isGlobalAdminRole(user.role)) {
     return true;
   }
-  if (hasFullCampaignAccess(user) || view === 'primera_interfaz') return true;
+  if (hasFullCampaignAccess(user) || view === 'primera_interfaz' || view === 'landing') return true;
   return (user.permissions || []).some(code => {
     const destination = FUNCTION_DESTINATIONS[code];
     if (!destination || destination.view !== view) return false;
@@ -171,34 +171,11 @@ export default function App() {
     return <Suspense fallback={<ModuleFallback />}><PasswordRecoveryPage /></Suspense>;
   }
 
-  // Current Active Route / View - Always defaults to 'landing' when opening the site
+  // Current Active Route / View - Always defaults to 'landing' whenever the application is opened or reloaded
   const [currentView, setCurrentView] = useState<ViewMode>(() => {
-    // If private global admin deep link was requested via hash, route to it directly as it possesses its own secure guard
+    // Only if the explicit private governance terminal was requested directly via hash or path
     if (initialRoute?.view === 'global_admin') {
       return 'global_admin';
-    }
-    // If an explicit deep link route was requested via hash (other than landing), allow it only if user is already authenticated
-    const savedUser = localStorage.getItem('bee_auth_user');
-    if (savedUser) {
-      try {
-        const parsed = JSON.parse(savedUser);
-        if (isGlobalAdminRole(parsed.role)) {
-          const mode = localStorage.getItem('bee_superadmin_mode');
-          if (mode === 'modules' && initialRoute?.view && initialRoute.view !== 'landing') {
-            return initialRoute.view;
-          }
-          if (mode === 'governance' && initialRoute?.view === 'global_admin') {
-            return 'global_admin';
-          }
-          return 'landing';
-        }
-      } catch {}
-    }
-    if (initialRoute?.view && initialRoute.view !== 'landing' && savedUser) {
-      if (typeof window !== 'undefined' && window.innerWidth < 768 && initialRoute.view === 'primera_interfaz') {
-        return 'gestion_estrategica';
-      }
-      return initialRoute.view;
     }
     return 'landing';
   });
@@ -350,7 +327,7 @@ export default function App() {
     // Leaving a private or internal area must restore the canonical public URL.
     // Landing section anchors are preserved when the visitor intentionally uses them.
     if (currentView === 'landing') {
-      if (['pilares', 'producto', 'demo', 'roi', 'precios', 'faq'].includes(cleanCurrent) && window.location.pathname === '/') {
+      if (['pilares', 'producto', 'demo', 'roi', 'precios', 'faq', 'inicio'].includes(cleanCurrent) && window.location.pathname === '/') {
         return;
       }
       if (window.location.pathname !== '/' || currentHash) {
@@ -498,6 +475,7 @@ export default function App() {
   }, [authUser?.id, authUser?.role, authUser?.permissions]);
 
   useEffect(() => {
+    if (currentView === 'landing') return;
     if (!authUser || hasFullCampaignAccess(authUser) || !Array.isArray(authUser.permissions)) return;
     if (isAssignedLocation(authUser, currentView, adminTab, strategicTab, territorialSubTab)) return;
     const destination = destinationForUser(authUser);
