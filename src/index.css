@@ -3213,6 +3213,49 @@ textarea {
   box-shadow: 0 0 15px rgba(6, 182, 212, 0.1) !important;
 }
 
+/* ==========================================================================
+   TESTIGOS EN CAMPO - GPU MICRO-INTERACTIONS 60 FPS
+   ========================================================================== */
+.testigo-input-focus:focus-within {
+  border-color: #06b6d4 !important;
+  box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.25) !important;
+}
+
+.testigo-tab-active-glow {
+  box-shadow: 0 4px 15px -2px rgba(16, 185, 129, 0.35) !important;
+}
+
+.testigo-apertura-btn {
+  box-shadow: 0 0 14px rgba(16, 185, 129, 0.25);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), filter 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, box-shadow, filter;
+}
+
+.testigo-apertura-btn:hover {
+  filter: brightness(1.1);
+  transform: translateY(-2px);
+  box-shadow: 0 0 24px rgba(16, 185, 129, 0.45);
+}
+
+.testigo-apertura-btn:active {
+  transform: scale(0.97);
+}
+
+.testigo-gps-btn {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), filter 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, box-shadow, filter;
+}
+
+.testigo-gps-btn:hover {
+  filter: brightness(1.1);
+  transform: translateY(-2px);
+  box-shadow: 0 0 18px rgba(6, 182, 212, 0.35);
+}
+
+.testigo-gps-btn:active {
+  transform: scale(0.96);
+}
+
 /* --------------------------------------------------------------------------
    E. ACCESSIBILITY & PREFERS-REDUCED-MOTION
    Respect user operating system reduced-motion preferences
