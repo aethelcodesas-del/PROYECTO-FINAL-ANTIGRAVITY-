@@ -358,7 +358,12 @@ export const GestionTerritorial: React.FC<GestionTerritorialProps> = ({
             <div className="h-[2px] w-full bg-gradient-to-r from-teal-500 via-emerald-400 to-cyan-500 animate-pulse" />
           </div>
         }>
-        <RegistroVotantesView onSelectView={onSelectView} authUser={authUser} />
+        <RegistroVotantesView 
+          onSelectView={onSelectView} 
+          authUser={authUser} 
+          onSwitchToMap={() => handleSubTabSelect('mapa')}
+          onSelectSubTab={handleSubTabSelect}
+        />
         </Suspense>
       ) : (
         <>
