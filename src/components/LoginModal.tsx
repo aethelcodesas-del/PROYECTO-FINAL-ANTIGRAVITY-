@@ -256,10 +256,7 @@ export interface ModuleLoginTheme {
   id: 'estrategia' | 'territorio' | 'dia_e';
   leftBg: string;
   glowColor: string;
-  polygonFill1: string;
-  polygonFill2: string;
-  polygonFill3: string;
-  polygonFill4: string;
+  glowColorHex: string;
   shieldGradient: string;
   shieldInnerBg: string;
   shieldGlow: string;
@@ -276,12 +273,9 @@ export interface ModuleLoginTheme {
 export const MODULE_LOGIN_THEMES: Record<'estrategia' | 'territorio' | 'dia_e', ModuleLoginTheme> = {
   estrategia: {
     id: 'estrategia',
-    leftBg: 'bg-[#090616]',
+    leftBg: 'bg-gradient-to-b from-[#0e1628] via-[#090e1a] to-[#060913]',
     glowColor: 'rgba(147, 51, 234, 0.25)',
-    polygonFill1: '#581c87',
-    polygonFill2: '#3b0764',
-    polygonFill3: '#6b21a8',
-    polygonFill4: '#4c1d95',
+    glowColorHex: '#9333ea',
     shieldGradient: 'from-purple-500 via-indigo-500 to-violet-400',
     shieldInnerBg: 'bg-[#160b2e]',
     shieldGlow: 'shadow-[0_0_30px_rgba(168,85,247,0.45)]',
@@ -296,12 +290,9 @@ export const MODULE_LOGIN_THEMES: Record<'estrategia' | 'territorio' | 'dia_e', 
   },
   territorio: {
     id: 'territorio',
-    leftBg: 'bg-[#041211]',
+    leftBg: 'bg-gradient-to-b from-[#0e1628] via-[#090e1a] to-[#060913]',
     glowColor: 'rgba(16, 185, 129, 0.25)',
-    polygonFill1: '#064e3b',
-    polygonFill2: '#022c22',
-    polygonFill3: '#047857',
-    polygonFill4: '#0f766e',
+    glowColorHex: '#10b981',
     shieldGradient: 'from-emerald-500 via-teal-500 to-cyan-400',
     shieldInnerBg: 'bg-[#06241e]',
     shieldGlow: 'shadow-[0_0_30px_rgba(16,185,129,0.45)]',
@@ -316,12 +307,9 @@ export const MODULE_LOGIN_THEMES: Record<'estrategia' | 'territorio' | 'dia_e', 
   },
   dia_e: {
     id: 'dia_e',
-    leftBg: 'bg-[#150d06]',
+    leftBg: 'bg-gradient-to-b from-[#0e1628] via-[#090e1a] to-[#060913]',
     glowColor: 'rgba(245, 158, 11, 0.25)',
-    polygonFill1: '#78350f',
-    polygonFill2: '#451a03',
-    polygonFill3: '#b45309',
-    polygonFill4: '#c2410c',
+    glowColorHex: '#f59e0b',
     shieldGradient: 'from-amber-500 via-orange-500 to-yellow-400',
     shieldInnerBg: 'bg-[#291705]',
     shieldGlow: 'shadow-[0_0_30px_rgba(245,158,11,0.45)]',
@@ -759,26 +747,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               {/* ---------------------------------------------------- */}
               {/* COLUMNA IZQUIERDA: BRANDING & CONTEXTO DEL MÓDULO    */}
               {/* ---------------------------------------------------- */}
-              <div className={`relative p-6 sm:p-8 md:p-10 flex flex-col justify-between items-center text-center overflow-hidden border-b md:border-b-0 md:border-r border-slate-800/80 transition-colors duration-300 ease-out ${currentTheme.leftBg}`}>
-                {/* Textura geométrica facetada / poligonal adaptativa */}
-                <svg
-                  className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none transition-all duration-300"
-                  viewBox="0 0 400 400"
-                  preserveAspectRatio="none"
-                >
-                  <polygon points="0,0 220,70 140,200 0,150" fill={currentTheme.polygonFill1} opacity="0.45" />
-                  <polygon points="220,70 400,0 330,170 140,200" fill={currentTheme.polygonFill2} opacity="0.35" />
-                  <polygon points="0,150 140,200 90,320 0,340" fill={currentTheme.polygonFill3} opacity="0.6" />
-                  <polygon points="140,200 330,170 270,300 90,320" fill={currentTheme.polygonFill4} opacity="0.4" />
-                  <polygon points="330,170 400,0 400,240 270,300" fill={currentTheme.polygonFill1} opacity="0.45" />
-                  <polygon points="90,320 270,300 210,400 0,400" fill={currentTheme.polygonFill2} opacity="0.75" />
-                  <polygon points="270,300 400,240 400,400 210,400" fill={currentTheme.polygonFill3} opacity="0.5" />
-                </svg>
-
-                {/* Resplandor radial suave detrás del imagotipo con color temático */}
+              <div className="relative p-6 sm:p-8 md:p-10 flex flex-col justify-between items-center text-center overflow-hidden border-b md:border-b-0 md:border-r border-slate-800/80 bg-gradient-to-b from-[#0e1628] via-[#090e1a] to-[#060913]">
+                {/* Resplandor radial suave y difuso centrado detrás del imagotipo (sin líneas) */}
                 <div
-                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full blur-3xl pointer-events-none transition-all duration-300 ease-out"
-                  style={{ backgroundColor: currentTheme.glowColor }}
+                  className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 rounded-full blur-[85px] opacity-25 pointer-events-none transition-all duration-300"
+                  style={{ backgroundColor: currentTheme.glowColorHex }}
                 />
 
                 {/* Spacer top */}
@@ -809,7 +782,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                     <div className="absolute inset-0 flex items-center">
                       <div className="w-full border-t border-slate-800/90" />
                     </div>
-                    <span className="relative px-3.5 bg-[#070c18] text-[9.5px] uppercase font-mono font-semibold tracking-[0.22em] text-slate-500">
+                    <span className="relative px-3.5 bg-[#090e1a] text-[9.5px] uppercase font-mono font-semibold tracking-[0.22em] text-slate-500">
                       ACCESO AL SISTEMA
                     </span>
                   </div>
