@@ -272,7 +272,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       type: 'subtab' as const, 
       subtab: 'registro' as const, 
       icon: <UserCheck className="w-4 h-4 text-emerald-400" />,
-      hoverGlowClass: 'group-hover:drop-shadow-[0_0_6px_rgba(16,185,129,0.5)]'
+      hoverGlowClass: 'group-hover:drop-shadow-[0_0_6px_rgba(16,185,129,0.5)]',
+      badge: 'Próximamente'
     },
     { 
       id: 'terr_territorial_mgmt', 
@@ -614,6 +615,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           >
                             {item.label}
                           </span>
+                          {'badge' in item && Boolean((item as any).badge) && !isDesktopCollapsed && (
+                            <span className="ml-auto text-[8.5px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 shrink-0 shadow-sm">
+                              {(item as any).badge}
+                            </span>
+                          )}
                         </div>
                       </motion.button>
                     );

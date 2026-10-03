@@ -41,7 +41,11 @@ import {
   Share2, 
   Copy, 
   Clock, 
-  Map
+  Map,
+  Eye,
+  Layers,
+  FileText,
+  X
 } from 'lucide-react';
 
 export interface VotanteRegistrado {
@@ -183,6 +187,7 @@ export const RegistroVotantesView: React.FC<RegistroVotantesViewProps> = ({
   // Sub-tab state
   const [activeTab, setActiveTab] = useState<'activos' | 'archivados'>('activos');
   const [activeSubTab, setActiveSubTab] = useState<'registro' | 'mapa'>('registro');
+  const [isExploringPreview, setIsExploringPreview] = useState<boolean>(false);
 
   // Active platform operating user (strictly bound to logged-in user for territorial roles)
   const [activeOperator, setActiveOperator] = useState<string>(() => {
@@ -1510,13 +1515,230 @@ export const RegistroVotantesView: React.FC<RegistroVotantesViewProps> = ({
         )}
       </AnimatePresence>
 
-      {/* HEADER BANNER */}
-      <motion.div 
-        variants={staggerItemVariants}
-        initial="hidden"
-        animate="show"
-        className="registro-header-banner bg-gradient-to-r from-[#071d38] via-[#0b294d] to-[#05162a] border border-teal-500/30 p-6 rounded-3xl shadow-2xl relative overflow-hidden text-white space-y-4"
-      >
+      {/* ── MODO PRÓXIMAMENTE A DESARROLLAR (VISTA POR DEFECTO) ──────────────── */}
+      {!isExploringPreview ? (
+        <motion.div
+          variants={staggerContainerVariants}
+          initial="hidden"
+          animate="show"
+          className="space-y-6"
+        >
+          {/* HEADER PRINCIPAL CON DISTINTIVO OFICIAL */}
+          <motion.div 
+            variants={staggerItemVariants}
+            className="registro-header-banner bg-gradient-to-r from-[#071d38] via-[#0b294d] to-[#05162a] border border-amber-500/40 p-6 sm:p-8 rounded-3xl shadow-2xl relative overflow-hidden text-white space-y-4"
+          >
+            <div className="absolute top-0 right-0 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-80 h-80 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
+
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
+              <div className="space-y-3 max-w-2xl">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <span className="px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-black uppercase tracking-wider flex items-center gap-2 shadow-sm">
+                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping inline-block" />
+                    🚀 Próximamente a Desarrollar
+                  </span>
+                  <span className="px-3 py-1 rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/40 text-xs font-mono font-bold">
+                    Circunscripción: {territoryLabel} ({department})
+                  </span>
+                </div>
+
+                <h1 className="registro-header-title text-2xl sm:text-4xl font-black tracking-tight">
+                  Módulo de <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-teal-300 to-emerald-300">Registro de Votantes</span>
+                </h1>
+
+                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-medium">
+                  Funcionalidad estratégica para el levantamiento de censo territorial, georreferenciación de votantes y asignación jerárquica blindada por líder de campaña.
+                </p>
+              </div>
+
+              {/* ACTION BUTTONS HEADER */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setIsExploringPreview(true)}
+                  className="px-5 py-3 rounded-2xl bg-gradient-to-r from-teal-600 via-emerald-600 to-teal-700 hover:from-teal-500 hover:to-emerald-500 text-white font-black text-xs shadow-xl flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-95 border border-teal-400/40 hover:border-emerald-300"
+                >
+                  <Eye className="w-4 h-4 text-emerald-200" />
+                  <span>Ver Previsualización de Interfaz</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onSelectSubTab) onSelectSubTab('mapa');
+                    else if (onSelectView) onSelectView('gestion_territorial');
+                  }}
+                  className="px-4 py-3 rounded-2xl bg-slate-900/90 hover:bg-slate-800 text-slate-300 hover:text-white font-bold text-xs border border-slate-700 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                >
+                  <MapPin className="w-4 h-4 text-amber-400" />
+                  <span>Ir a Mapa & Cobertura</span>
+                </button>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* ROADMAP & PILARES TÉCNICOS */}
+          <motion.div 
+            variants={staggerItemVariants}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"
+          >
+            {/* CARD 1 */}
+            <div className="bg-[#030d1d] border border-cyan-500/25 rounded-3xl p-5 shadow-xl relative overflow-hidden flex flex-col justify-between space-y-4 hover:border-cyan-400/40 transition-colors">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="w-10 h-10 rounded-2xl bg-cyan-950/80 border border-cyan-500/40 text-cyan-400 flex items-center justify-center shadow">
+                    <SearchCheck className="w-5 h-5" />
+                  </div>
+                  <span className="text-[10px] font-mono font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                    En Homologación
+                  </span>
+                </div>
+                <h3 className="text-sm font-black text-slate-100">
+                  1. Consulta Oficial de Censo
+                </h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Conexión directa para auditar la cédula en tiempo real, validando la inscripción en {territoryLabel}, puesto de votación y número de mesa.
+                </p>
+              </div>
+              <div className="text-[11px] font-bold text-cyan-400 flex items-center gap-1 pt-2 border-t border-slate-800/80">
+                <CheckCircle2 className="w-3.5 h-3.5" /> Verificación de Circunscripción
+              </div>
+            </div>
+
+            {/* CARD 2 */}
+            <div className="bg-[#030d1d] border border-teal-500/25 rounded-3xl p-5 shadow-xl relative overflow-hidden flex flex-col justify-between space-y-4 hover:border-teal-400/40 transition-colors">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="w-10 h-10 rounded-2xl bg-teal-950/80 border border-teal-500/40 text-teal-400 flex items-center justify-center shadow">
+                    <UserCheck className="w-5 h-5" />
+                  </div>
+                  <span className="text-[10px] font-mono font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                    Diseño Finalizado
+                  </span>
+                </div>
+                <h3 className="text-sm font-black text-slate-100">
+                  2. Privacidad por Líder
+                </h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Blindaje estricto de padrón donde cada líder o usuario solo tiene visibilidad de sus propios votantes referidos, evitando fuga de datos.
+                </p>
+              </div>
+              <div className="text-[11px] font-bold text-teal-400 flex items-center gap-1 pt-2 border-t border-slate-800/80">
+                <CheckCircle2 className="w-3.5 h-3.5" /> Seguridad de Base Central
+              </div>
+            </div>
+
+            {/* CARD 3 */}
+            <div className="bg-[#030d1d] border border-amber-500/25 rounded-3xl p-5 shadow-xl relative overflow-hidden flex flex-col justify-between space-y-4 hover:border-amber-400/40 transition-colors">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="w-10 h-10 rounded-2xl bg-amber-950/80 border border-amber-500/40 text-amber-400 flex items-center justify-center shadow">
+                    <FolderArchive className="w-5 h-5" />
+                  </div>
+                  <span className="text-[10px] font-mono font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                    En Desarrollo
+                  </span>
+                </div>
+                <h3 className="text-sm font-black text-slate-100">
+                  3. Monitoreo de Traslados
+                </h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Carpeta de archivados para ciudadanos foráneos con sincronización periódica ante el CNE para notificar la aprobación del traslado a {territoryLabel}.
+                </p>
+              </div>
+              <div className="text-[11px] font-bold text-amber-400 flex items-center gap-1 pt-2 border-t border-slate-800/80">
+                <Clock className="w-3.5 h-3.5" /> Sincronización Automática CNE
+              </div>
+            </div>
+
+            {/* CARD 4 */}
+            <div className="bg-[#030d1d] border border-rose-500/25 rounded-3xl p-5 shadow-xl relative overflow-hidden flex flex-col justify-between space-y-4 hover:border-rose-400/40 transition-colors">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="w-10 h-10 rounded-2xl bg-rose-950/80 border border-rose-500/40 text-rose-400 flex items-center justify-center shadow">
+                    <ShieldAlert className="w-5 h-5" />
+                  </div>
+                  <span className="text-[10px] font-mono font-extrabold uppercase px-2.5 py-0.5 rounded-full bg-rose-500/15 text-rose-300 border border-rose-500/30">
+                    En Desarrollo
+                  </span>
+                </div>
+                <h3 className="text-sm font-black text-slate-100">
+                  4. Auditoría Anti-Duplicidad
+                </h3>
+                <p className="text-xs text-slate-400 leading-relaxed">
+                  Detección algorítmica de duplicidad con bloqueo de registro repetido y emisión de reporte forense en PDF para resolución de asignación.
+                </p>
+              </div>
+              <div className="text-[11px] font-bold text-rose-400 flex items-center gap-1 pt-2 border-t border-slate-800/80">
+                <FileText className="w-3.5 h-3.5" /> Dictamen Oficial PDF
+              </div>
+            </div>
+          </motion.div>
+
+          {/* MAIN CALL TO ACTION BANNER */}
+          <motion.div 
+            variants={staggerItemVariants}
+            className="bg-[#030d1d] border border-cyan-500/30 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden text-white"
+          >
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="space-y-3 max-w-2xl">
+                <div className="flex items-center gap-2 text-xs font-mono font-bold text-teal-300">
+                  <Sparkles className="w-4 h-4 text-teal-400" />
+                  <span>SISTEMA DE GESTIÓN TERRITORIAL CENTRALIZADA</span>
+                </div>
+                <h2 className="text-xl sm:text-2xl font-black text-slate-100">
+                  ¿Deseas explorar la maqueta funcional interactiva?
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                  Puedes acceder a la previsualización completa del formulario de consulta CNE, asignación de líderes y tablas territoriales para validar su funcionamiento y experiencia de usuario.
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setIsExploringPreview(true)}
+                  className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white font-extrabold text-xs shadow-xl flex items-center justify-center gap-2 transition-transform cursor-pointer active:scale-95"
+                >
+                  <Eye className="w-4 h-4" />
+                  <span>Abrir Maqueta Funcional</span>
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      ) : (
+        /* ==================== VISTA PREVIA INTERACTIVA ==================== */
+        <div className="space-y-6">
+          {/* BANNER INDICATIVO DE PREVISUALIZACIÓN */}
+          <div className="bg-gradient-to-r from-amber-950/80 via-slate-900 to-amber-950/80 border border-amber-500/40 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs shadow-xl text-amber-200">
+            <div className="flex items-center gap-3">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse shrink-0" />
+              <div>
+                <strong className="font-extrabold text-amber-300">MODO PREVISUALIZACIÓN:</strong>
+                <span className="text-slate-200 ml-1">
+                  Este módulo está marcado como <strong>Próximamente a Desarrollar</strong>. Estás explorando la maqueta técnica e interactiva.
+                </span>
+              </div>
+            </div>
+
+            <button 
+              type="button"
+              onClick={() => setIsExploringPreview(false)}
+              className="px-4 py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded-xl font-bold cursor-pointer transition-all shrink-0 hover:scale-105 active:scale-95"
+            >
+              ← Volver al Panel Próximamente
+            </button>
+          </div>
+
+          {/* HEADER BANNER */}
+          <motion.div 
+            variants={staggerItemVariants}
+            initial="hidden"
+            animate="show"
+            className="registro-header-banner bg-gradient-to-r from-[#071d38] via-[#0b294d] to-[#05162a] border border-teal-500/30 p-6 rounded-3xl shadow-2xl relative overflow-hidden text-white space-y-4"
+          >
         <div className="absolute top-0 right-0 w-80 h-80 bg-teal-500/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
@@ -2448,6 +2670,9 @@ export const RegistroVotantesView: React.FC<RegistroVotantesViewProps> = ({
 
           </motion.div>
         </motion.div>
+      )}
+
+        </div>
       )}
 
     </div>
