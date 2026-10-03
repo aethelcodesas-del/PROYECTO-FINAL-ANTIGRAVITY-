@@ -252,6 +252,90 @@ export const getModuleContextLabel = (envId?: string) => {
   }
 };
 
+export interface ModuleLoginTheme {
+  id: 'estrategia' | 'territorio' | 'dia_e';
+  leftBg: string;
+  glowColor: string;
+  polygonFill1: string;
+  polygonFill2: string;
+  polygonFill3: string;
+  polygonFill4: string;
+  shieldGradient: string;
+  shieldInnerBg: string;
+  shieldGlow: string;
+  brandAccentText: string;
+  backBtn: string;
+  securityIconText: string;
+  recoveryLink: string;
+  inputFocus: string;
+  checkboxAccent: string;
+  submitButton: string;
+  ambientGlow: string;
+}
+
+export const MODULE_LOGIN_THEMES: Record<'estrategia' | 'territorio' | 'dia_e', ModuleLoginTheme> = {
+  estrategia: {
+    id: 'estrategia',
+    leftBg: 'bg-[#090616]',
+    glowColor: 'rgba(147, 51, 234, 0.25)',
+    polygonFill1: '#581c87',
+    polygonFill2: '#3b0764',
+    polygonFill3: '#6b21a8',
+    polygonFill4: '#4c1d95',
+    shieldGradient: 'from-purple-500 via-indigo-500 to-violet-400',
+    shieldInnerBg: 'bg-[#160b2e]',
+    shieldGlow: 'shadow-[0_0_30px_rgba(168,85,247,0.45)]',
+    brandAccentText: 'text-purple-400',
+    backBtn: 'text-purple-300 border-purple-500/30 hover:bg-purple-950/40 hover:border-purple-400/60',
+    securityIconText: 'text-purple-400/80',
+    recoveryLink: 'text-purple-400 hover:text-purple-300',
+    inputFocus: 'focus-within:border-purple-500 focus-within:shadow-[0_0_0_2px_rgba(168,85,247,0.25)]',
+    checkboxAccent: 'accent-purple-500 text-purple-500 focus:ring-purple-500/30',
+    submitButton: 'bg-gradient-to-r from-purple-600 via-indigo-600 to-violet-500 shadow-[0_4px_24px_rgba(147,51,234,0.45)]',
+    ambientGlow: 'bg-purple-500/15'
+  },
+  territorio: {
+    id: 'territorio',
+    leftBg: 'bg-[#041211]',
+    glowColor: 'rgba(16, 185, 129, 0.25)',
+    polygonFill1: '#064e3b',
+    polygonFill2: '#022c22',
+    polygonFill3: '#047857',
+    polygonFill4: '#0f766e',
+    shieldGradient: 'from-emerald-500 via-teal-500 to-cyan-400',
+    shieldInnerBg: 'bg-[#06241e]',
+    shieldGlow: 'shadow-[0_0_30px_rgba(16,185,129,0.45)]',
+    brandAccentText: 'text-emerald-400',
+    backBtn: 'text-emerald-300 border-emerald-500/30 hover:bg-emerald-950/40 hover:border-emerald-400/60',
+    securityIconText: 'text-emerald-400/80',
+    recoveryLink: 'text-emerald-400 hover:text-emerald-300',
+    inputFocus: 'focus-within:border-emerald-500 focus-within:shadow-[0_0_0_2px_rgba(16,185,129,0.25)]',
+    checkboxAccent: 'accent-emerald-500 text-emerald-500 focus:ring-emerald-500/30',
+    submitButton: 'bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-500 shadow-[0_4px_24px_rgba(16,185,129,0.45)]',
+    ambientGlow: 'bg-emerald-500/15'
+  },
+  dia_e: {
+    id: 'dia_e',
+    leftBg: 'bg-[#150d06]',
+    glowColor: 'rgba(245, 158, 11, 0.25)',
+    polygonFill1: '#78350f',
+    polygonFill2: '#451a03',
+    polygonFill3: '#b45309',
+    polygonFill4: '#c2410c',
+    shieldGradient: 'from-amber-500 via-orange-500 to-yellow-400',
+    shieldInnerBg: 'bg-[#291705]',
+    shieldGlow: 'shadow-[0_0_30px_rgba(245,158,11,0.45)]',
+    brandAccentText: 'text-amber-400',
+    backBtn: 'text-amber-300 border-amber-500/30 hover:bg-amber-950/40 hover:border-amber-400/60',
+    securityIconText: 'text-amber-400/80',
+    recoveryLink: 'text-amber-400 hover:text-amber-300',
+    inputFocus: 'focus-within:border-amber-500 focus-within:shadow-[0_0_0_2px_rgba(245,158,11,0.25)]',
+    checkboxAccent: 'accent-amber-500 text-amber-500 focus:ring-amber-500/30',
+    submitButton: 'bg-gradient-to-r from-amber-600 via-orange-600 to-yellow-500 shadow-[0_4px_24px_rgba(245,158,11,0.45)]',
+    ambientGlow: 'bg-amber-500/15'
+  }
+};
+
 interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -270,6 +354,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   // Step 1: 'select_environment' | Step 2: 'credentials'
   const [step, setStep] = useState<'select_environment' | 'credentials'>('select_environment');
   const [selectedEnv, setSelectedEnv] = useState<AccessEnvironment | null>(null);
+
+  // Active theme based on selected module
+  const currentTheme: ModuleLoginTheme = (selectedEnv ? MODULE_LOGIN_THEMES[selectedEnv.id] : null) || MODULE_LOGIN_THEMES.estrategia;
 
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -536,8 +623,8 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           }`}
         >
           {/* Ambient Lighting */}
-          <div className="absolute -top-24 -left-24 w-72 h-72 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none transform-gpu" />
-          <div className="absolute -bottom-24 -right-24 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl pointer-events-none transform-gpu" />
+          <div className={`absolute -top-24 -left-24 w-72 h-72 rounded-full blur-3xl pointer-events-none transform-gpu transition-colors duration-500 ${step === 'credentials' ? currentTheme.ambientGlow : 'bg-cyan-500/10'}`} />
+          <div className={`absolute -bottom-24 -right-24 w-72 h-72 rounded-full blur-3xl pointer-events-none transform-gpu transition-colors duration-500 ${step === 'credentials' ? currentTheme.ambientGlow : 'bg-blue-500/10'}`} />
 
           {/* Close button for Step 1 */}
           {step === 'select_environment' && (
@@ -672,34 +759,37 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               {/* ---------------------------------------------------- */}
               {/* COLUMNA IZQUIERDA: BRANDING & CONTEXTO DEL MÓDULO    */}
               {/* ---------------------------------------------------- */}
-              <div className="relative p-6 sm:p-8 md:p-10 flex flex-col justify-between items-center text-center overflow-hidden bg-[#070c18] border-b md:border-b-0 md:border-r border-slate-800/80">
-                {/* Textura geométrica facetada / poligonal sutil */}
+              <div className={`relative p-6 sm:p-8 md:p-10 flex flex-col justify-between items-center text-center overflow-hidden border-b md:border-b-0 md:border-r border-slate-800/80 transition-colors duration-300 ease-out ${currentTheme.leftBg}`}>
+                {/* Textura geométrica facetada / poligonal adaptativa */}
                 <svg
-                  className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none"
+                  className="absolute inset-0 w-full h-full object-cover opacity-20 pointer-events-none transition-all duration-300"
                   viewBox="0 0 400 400"
                   preserveAspectRatio="none"
                 >
-                  <polygon points="0,0 220,70 140,200 0,150" fill="#1e3a8a" opacity="0.45" />
-                  <polygon points="220,70 400,0 330,170 140,200" fill="#0369a1" opacity="0.35" />
-                  <polygon points="0,150 140,200 90,320 0,340" fill="#0f172a" opacity="0.6" />
-                  <polygon points="140,200 330,170 270,300 90,320" fill="#1d4ed8" opacity="0.4" />
-                  <polygon points="330,170 400,0 400,240 270,300" fill="#0284c7" opacity="0.45" />
-                  <polygon points="90,320 270,300 210,400 0,400" fill="#0b1329" opacity="0.75" />
-                  <polygon points="270,300 400,240 400,400 210,400" fill="#0369a1" opacity="0.5" />
+                  <polygon points="0,0 220,70 140,200 0,150" fill={currentTheme.polygonFill1} opacity="0.45" />
+                  <polygon points="220,70 400,0 330,170 140,200" fill={currentTheme.polygonFill2} opacity="0.35" />
+                  <polygon points="0,150 140,200 90,320 0,340" fill={currentTheme.polygonFill3} opacity="0.6" />
+                  <polygon points="140,200 330,170 270,300 90,320" fill={currentTheme.polygonFill4} opacity="0.4" />
+                  <polygon points="330,170 400,0 400,240 270,300" fill={currentTheme.polygonFill1} opacity="0.45" />
+                  <polygon points="90,320 270,300 210,400 0,400" fill={currentTheme.polygonFill2} opacity="0.75" />
+                  <polygon points="270,300 400,240 400,400 210,400" fill={currentTheme.polygonFill3} opacity="0.5" />
                 </svg>
 
-                {/* Resplandor radial suave detrás del imagotipo */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none" />
+                {/* Resplandor radial suave detrás del imagotipo con color temático */}
+                <div
+                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full blur-3xl pointer-events-none transition-all duration-300 ease-out"
+                  style={{ backgroundColor: currentTheme.glowColor }}
+                />
 
                 {/* Spacer top */}
                 <div className="hidden md:block w-full h-4" />
 
                 {/* Brand & Isotipo Container */}
                 <div className="relative z-10 flex flex-col items-center justify-center my-auto py-4 sm:py-6 w-full max-w-xs">
-                  {/* Isotipo: Escudo azul eléctrico con icono y sombra luminosa */}
+                  {/* Isotipo: Escudo con gradiente y resplandor dinámico */}
                   <div className="flex items-center gap-3.5 mb-6">
-                    <div className="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 via-cyan-500 to-sky-400 p-[2px] shadow-[0_0_30px_rgba(14,165,233,0.5)] shrink-0 flex items-center justify-center">
-                      <div className="w-full h-full bg-[#07132a] rounded-[14px] flex items-center justify-center">
+                    <div className={`relative w-12 h-12 rounded-2xl bg-gradient-to-br ${currentTheme.shieldGradient} p-[2px] ${currentTheme.shieldGlow} shrink-0 flex items-center justify-center transition-all duration-300 ease-out`}>
+                      <div className={`w-full h-full ${currentTheme.shieldInnerBg} rounded-[14px] flex items-center justify-center transition-colors duration-300`}>
                         <Shield className="w-6 h-6 text-white stroke-[2.2]" />
                       </div>
                     </div>
@@ -709,7 +799,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                       </span>
                       <span className="text-2xl font-black tracking-tight font-display">
                         <span className="text-white">Control</span>
-                        <span className="text-cyan-400">Electoral</span>
+                        <span className={`transition-colors duration-300 ${currentTheme.brandAccentText}`}>Electoral</span>
                       </span>
                     </div>
                   </div>
@@ -735,7 +825,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                   <button
                     type="button"
                     onClick={handleBackToSelector}
-                    className="inline-flex items-center gap-1.5 mt-5 px-3.5 py-1.5 rounded-full bg-slate-900/80 hover:bg-slate-800/90 border border-slate-800 hover:border-cyan-500/40 text-xs font-medium text-cyan-400 hover:text-cyan-300 transition-all cursor-pointer group shadow-sm"
+                    className={`inline-flex items-center gap-1.5 mt-5 px-3.5 py-1.5 rounded-full bg-slate-900/80 border text-xs font-medium transition-all duration-300 cursor-pointer group shadow-sm ${currentTheme.backBtn}`}
                   >
                     <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
                     <span>← Cambiar de módulo</span>
@@ -744,7 +834,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
                 {/* Footer de seguridad */}
                 <div className="relative z-10 w-full pt-3 flex items-center justify-center gap-1.5 text-[10px] font-mono text-slate-500">
-                  <ShieldCheck className="w-3.5 h-3.5 text-cyan-500/70" />
+                  <ShieldCheck className={`w-3.5 h-3.5 transition-colors duration-300 ${currentTheme.securityIconText}`} />
                   <span>Cifrado TLS 1.3 • Zero-Knowledge</span>
                 </div>
               </div>
@@ -817,7 +907,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                     >
                       USUARIO / CORREO ELECTRÓNICO
                     </label>
-                    <div className="relative flex items-center w-full bg-[#0d1627] border border-slate-800 rounded-xl focus-within:border-cyan-500 focus-within:shadow-[0_0_0_2px_rgba(6,182,212,0.2)] transition-all">
+                    <div className={`relative flex items-center w-full bg-[#0d1627] border border-slate-800 rounded-xl transition-all duration-300 ${currentTheme.inputFocus}`}>
                       <span className="pl-3.5 pr-2 text-slate-500 font-mono text-sm select-none">
                         @
                       </span>
@@ -848,12 +938,12 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                         type="button"
                         onClick={handlePasswordRecovery}
                         disabled={isRecovering || isLoading}
-                        className="text-xs font-medium text-cyan-400 hover:text-cyan-300 transition-colors cursor-pointer disabled:opacity-50"
+                        className={`text-xs font-medium transition-colors duration-300 cursor-pointer disabled:opacity-50 ${currentTheme.recoveryLink}`}
                       >
                         {isRecovering ? 'Enviando enlace…' : '¿Olvidaste tu contraseña?'}
                       </button>
                     </div>
-                    <div className="relative flex items-center w-full bg-[#0d1627] border border-slate-800 rounded-xl focus-within:border-cyan-500 focus-within:shadow-[0_0_0_2px_rgba(6,182,212,0.2)] transition-all">
+                    <div className={`relative flex items-center w-full bg-[#0d1627] border border-slate-800 rounded-xl transition-all duration-300 ${currentTheme.inputFocus}`}>
                       <span className="pl-3.5 pr-2 text-slate-500 font-mono text-sm select-none">
                         #
                       </span>
@@ -890,7 +980,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                         type="checkbox"
                         checked={rememberDevice}
                         onChange={(e) => setRememberDevice(e.target.checked)}
-                        className="w-4 h-4 rounded border-slate-700 bg-[#0d1627] text-cyan-500 focus:ring-cyan-500/30 accent-cyan-500 cursor-pointer"
+                        className={`w-4 h-4 rounded border-slate-700 bg-[#0d1627] cursor-pointer transition-colors duration-300 ${currentTheme.checkboxAccent}`}
                       />
                       <span>Recordar este dispositivo</span>
                     </label>
@@ -900,7 +990,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full mt-2 py-3.5 px-4 rounded-xl bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 hover:brightness-110 hover:-translate-y-0.5 active:scale-[0.98] text-white font-bold text-sm shadow-[0_4px_24px_rgba(14,165,233,0.45)] transition-all duration-150 cursor-pointer flex items-center justify-center gap-2"
+                    className={`w-full mt-2 py-3.5 px-4 rounded-xl ${currentTheme.submitButton} hover:brightness-110 hover:-translate-y-0.5 active:scale-[0.98] text-white font-bold text-sm transition-all duration-300 cursor-pointer flex items-center justify-center gap-2`}
                   >
                     {isLoading ? (
                       <>
