@@ -289,7 +289,7 @@ export const MODULE_LOGIN_THEMES: Record<'estrategia' | 'territorio' | 'dia_e', 
     backBtn: 'text-purple-300 border-purple-500/30 hover:bg-purple-950/40 hover:border-purple-400/60',
     securityIconText: 'text-purple-400/80',
     recoveryLink: 'text-purple-400 hover:text-purple-300',
-    inputFocus: 'focus-within:border-purple-500 focus-within:shadow-[0_0_0_2px_rgba(168,85,247,0.25)]',
+    inputFocus: 'focus-within:border-purple-500 focus-within:ring-2 focus-within:ring-purple-500/20',
     checkboxAccent: 'accent-purple-500 text-purple-500 focus:ring-purple-500/30',
     submitButton: 'bg-gradient-to-r from-purple-600 via-indigo-600 to-violet-500 shadow-[0_4px_24px_rgba(147,51,234,0.45)]',
     ambientGlow: 'bg-purple-500/15'
@@ -309,7 +309,7 @@ export const MODULE_LOGIN_THEMES: Record<'estrategia' | 'territorio' | 'dia_e', 
     backBtn: 'text-emerald-300 border-emerald-500/30 hover:bg-emerald-950/40 hover:border-emerald-400/60',
     securityIconText: 'text-emerald-400/80',
     recoveryLink: 'text-emerald-400 hover:text-emerald-300',
-    inputFocus: 'focus-within:border-emerald-500 focus-within:shadow-[0_0_0_2px_rgba(16,185,129,0.25)]',
+    inputFocus: 'focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/20',
     checkboxAccent: 'accent-emerald-500 text-emerald-500 focus:ring-emerald-500/30',
     submitButton: 'bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-500 shadow-[0_4px_24px_rgba(16,185,129,0.45)]',
     ambientGlow: 'bg-emerald-500/15'
@@ -329,7 +329,7 @@ export const MODULE_LOGIN_THEMES: Record<'estrategia' | 'territorio' | 'dia_e', 
     backBtn: 'text-amber-300 border-amber-500/30 hover:bg-amber-950/40 hover:border-amber-400/60',
     securityIconText: 'text-amber-400/80',
     recoveryLink: 'text-amber-400 hover:text-amber-300',
-    inputFocus: 'focus-within:border-amber-500 focus-within:shadow-[0_0_0_2px_rgba(245,158,11,0.25)]',
+    inputFocus: 'focus-within:border-amber-500 focus-within:ring-2 focus-within:ring-amber-500/20',
     checkboxAccent: 'accent-amber-500 text-amber-500 focus:ring-amber-500/30',
     submitButton: 'bg-gradient-to-r from-amber-600 via-orange-600 to-yellow-500 shadow-[0_4px_24px_rgba(245,158,11,0.45)]',
     ambientGlow: 'bg-amber-500/15'
@@ -900,15 +900,15 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                 {/* Formulario */}
                 <form onSubmit={handleCredentialsSubmit} className="space-y-4 w-full">
                   {/* Campo 1: USUARIO / CORREO ELECTRÓNICO */}
-                  <div>
+                  <div className="space-y-1.5">
                     <label
                       htmlFor="login-email"
-                      className="block text-xs font-semibold text-slate-300 tracking-wider uppercase mb-1.5"
+                      className="block text-xs font-semibold text-slate-300 tracking-wider uppercase"
                     >
                       USUARIO / CORREO ELECTRÓNICO
                     </label>
-                    <div className={`relative flex items-center w-full bg-[#0d1627] border border-slate-800 rounded-xl transition-all duration-300 ${currentTheme.inputFocus}`}>
-                      <span className="pl-3.5 pr-2 text-slate-500 font-mono text-sm select-none">
+                    <div className={`relative flex items-center w-full bg-[#0a1120] border border-slate-700/80 rounded-xl px-3.5 py-2.5 transition-all duration-200 ${currentTheme.inputFocus}`}>
+                      <span className="text-slate-500 text-sm font-mono mr-2.5 select-none shrink-0">
                         @
                       </span>
                       <input
@@ -919,15 +919,15 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                         value={identifier}
                         onChange={(e) => setIdentifier(e.target.value)}
                         placeholder="usuario@campana.com"
-                        className="w-full pr-4 py-3 bg-transparent text-white placeholder:text-slate-500 text-sm outline-none dark-autofill"
+                        className="login-decorated-input w-full bg-transparent border-none p-0 text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:ring-0 dark-autofill"
                         required
                       />
                     </div>
                   </div>
 
                   {/* Campo 2: CONTRASEÑA */}
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
                       <label
                         htmlFor="login-password"
                         className="text-xs font-semibold text-slate-300 tracking-wider uppercase"
@@ -938,13 +938,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                         type="button"
                         onClick={handlePasswordRecovery}
                         disabled={isRecovering || isLoading}
-                        className={`text-xs font-medium transition-colors duration-300 cursor-pointer disabled:opacity-50 ${currentTheme.recoveryLink}`}
+                        className={`text-xs font-medium transition-colors duration-200 cursor-pointer disabled:opacity-50 ${currentTheme.recoveryLink}`}
                       >
                         {isRecovering ? 'Enviando enlace…' : '¿Olvidaste tu contraseña?'}
                       </button>
                     </div>
-                    <div className={`relative flex items-center w-full bg-[#0d1627] border border-slate-800 rounded-xl transition-all duration-300 ${currentTheme.inputFocus}`}>
-                      <span className="pl-3.5 pr-2 text-slate-500 font-mono text-sm select-none">
+                    <div className={`relative flex items-center w-full bg-[#0a1120] border border-slate-700/80 rounded-xl px-3.5 py-2.5 transition-all duration-200 ${currentTheme.inputFocus}`}>
+                      <span className="text-slate-500 text-sm font-mono mr-2.5 select-none shrink-0">
                         #
                       </span>
                       <input
@@ -955,7 +955,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••"
-                        className="w-full pr-11 py-3 bg-transparent text-white placeholder:text-slate-500 text-sm outline-none dark-autofill"
+                        className="login-decorated-input w-full bg-transparent border-none p-0 text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:ring-0 dark-autofill"
                         required
                       />
                       <button
@@ -966,7 +966,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                         }}
                         title={showPassword ? "Ocultar contraseña" : "Ver contraseña"}
                         aria-label={showPassword ? "Ocultar contraseña" : "Ver contraseña"}
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-cyan-400 transition-colors cursor-pointer"
+                        className="ml-2 text-slate-400 hover:text-slate-200 focus:outline-none transition-colors p-1 shrink-0 cursor-pointer"
                       >
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
