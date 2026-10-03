@@ -59,7 +59,37 @@ interface CandidateProfileProps {
 
 interface ComunicacionRedesViewProps {
   candidateProfile?: CandidateProfileProps;
+  campaignId?: string;
 }
+
+const AnimatedCounter: React.FC<{ value: number; duration?: number }> = ({ value, duration = 400 }) => {
+  const [displayValue, setDisplayValue] = useState(0);
+
+  useEffect(() => {
+    let startTimestamp: number | null = null;
+    const startValue = 0;
+    const targetValue = value;
+    if (targetValue === 0) {
+      setDisplayValue(0);
+      return;
+    }
+
+    let animationFrameId: number;
+    const step = (timestamp: number) => {
+      if (!startTimestamp) startTimestamp = timestamp;
+      const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+      const easeProgress = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+      setDisplayValue(Math.round(startValue + (targetValue - startValue) * easeProgress));
+      if (progress < 1) {
+        animationFrameId = requestAnimationFrame(step);
+      }
+    };
+    animationFrameId = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [value, duration]);
+
+  return <>{displayValue}</>;
+};
 
 export interface MediaAttachment {
   id: string;
@@ -87,7 +117,7 @@ export interface PostContent {
   attachments?: MediaAttachment[];
 }
 
-export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ candidateProfile }) => {
+export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ candidateProfile, campaignId: propCampaignId }) => {
   // ── Datos de campaña desde el contexto global ─────────────────────────────
   // Reflejan la circunscripción real configurada en Global Admin.
   // El prop candidateProfile queda como fallback de compatibilidad.
@@ -135,12 +165,12 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
           profile = prof;
         }
 
-        const rememberedCampaignId = localStorage.getItem('active_campaign_id');
+        const targetCampId = propCampaignId || rememberedCampaignId;
         let campaign: any = null;
 
-        // 1. Try remembered ID
-        if (rememberedCampaignId) {
-          const { data } = await supabase.from('campaigns').select('id,descripcion,candidato_nombre,cargo_postulacion,departamento,municipio,client_id').eq('id', rememberedCampaignId).maybeSingle();
+        // 1. Try propCampaignId or remembered ID
+        if (targetCampId) {
+          const { data } = await supabase.from('campaigns').select('id,descripcion,candidato_nombre,cargo_postulacion,departamento,municipio,client_id').eq('id', targetCampId).maybeSingle();
           if (data) campaign = data;
         }
         // 2. Try profile campaign_id
@@ -189,6 +219,31 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
           if (!mounted) return;
           setPosts(hydratedPosts);
         } else {
+          try {
+            const { data: dbRows } = await supabase.from('campana_publicaciones_redes').select('*').eq('campaign_id', activeCampId).order('fecha_programada', { ascending: false });
+            if (Array.isArray(dbRows) && dbRows.length > 0) {
+              const mapped: PostContent[] = dbRows.map((r: any) => ({
+                id: String(r.id),
+                title: String(r.titulo || r.title || 'Publicación'),
+                platform: (r.red_social || r.platform || 'Instagram') as PostContent['platform'],
+                format: (r.formato || r.format || 'Reel / Video') as PostContent['format'],
+                scheduledDate: String(r.fecha_programada || r.scheduled_date || new Date().toISOString().split('T')[0]),
+                scheduledTime: String(r.hora_programada || r.scheduled_time || '12:00'),
+                status: (r.estado === 'Publicado' || r.estado === 'publicada' ? 'Publicado' : r.estado === 'En Revisión' ? 'En Revisión' : r.estado === 'Borrador' ? 'Borrador' : 'Programado') as PostContent['status'],
+                pilarEstrategico: String(r.pilar || r.pilar_estrategico || ''),
+                caption: String(r.copy || r.caption || ''),
+                hashtags: Array.isArray(r.hashtags) ? r.hashtags : [],
+                estimatedReach: String(r.alcance_estimado || r.estimated_reach || ''),
+                engagement: String(r.engagement || ''),
+                author: String(r.autor || r.author || candidateName || 'Equipo Estratégico'),
+                attachments: Array.isArray(r.attachments) ? r.attachments : []
+              }));
+              if (mounted) {
+                setPosts(mapped);
+                return;
+              }
+            }
+          } catch {}
           if (!mounted) return;
           setPosts([]);
         }
@@ -198,7 +253,7 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
     };
     void loadCommunicationWorkspace();
     return () => { mounted = false; };
-  }, []);
+  }, [propCampaignId]);
 
   // AI Content Generator Form State
   const [aiForm, setAiForm] = useState({
@@ -388,6 +443,28 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
       updated_at: new Date().toISOString(),
     }).eq('id', campaignId);
     if (error) throw error;
+
+    try {
+      const dbPayloads = nextPosts.map(p => ({
+        id: p.id,
+        campaign_id: campaignId,
+        titulo: p.title,
+        red_social: p.platform,
+        formato: p.format,
+        fecha_programada: p.scheduledDate,
+        hora_programada: p.scheduledTime,
+        estado: p.status,
+        pilar: p.pilarEstrategico,
+        copy: p.caption,
+        hashtags: p.hashtags,
+        alcance_estimado: p.estimatedReach,
+        engagement: p.engagement,
+        autor: p.author,
+        attachments: p.attachments,
+        updated_at: new Date().toISOString()
+      }));
+      await supabase.from('campana_publicaciones_redes').upsert(dbPayloads, { onConflict: 'id' });
+    } catch {}
   };
 
   const handleOpenCreateModal = () => {
@@ -467,6 +544,9 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
     const next = posts.filter(p => p.id !== id);
     try {
       await saveCommunicationPosts(next);
+      try {
+        await supabase.from('campana_publicaciones_redes').delete().eq('id', id);
+      } catch {}
       setPosts(next);
       setPostToDelete(null);
       setCommunicationMessage('Publicación eliminada del calendario.');
@@ -514,13 +594,13 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
     <div className="space-y-6 font-sans comunicacion-redes-view">
       
       {/* HEADER BANNER: SALA DE ESTRATEGIA DE COMUNICACIÓN & REDES SOCIALES */}
-      <div className="bg-gradient-to-r from-[#0a182c] via-[#0d274c] to-[#07172e] border border-purple-500/30 rounded-3xl p-6 shadow-2xl relative overflow-hidden comms-header-banner">
+      <div className="bg-gradient-to-r from-[#0a182c] via-[#0d274c] to-[#07172e] border border-purple-500/30 rounded-3xl p-6 shadow-2xl relative overflow-hidden comms-header-banner animate-comms-stagger-1">
         <div className="absolute top-0 right-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
         
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 relative z-10">
           <div className="space-y-2 max-w-2xl">
             <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight comms-header-title">
-              Estrategia de Comunicación & <span className="text-purple-400 comms-header-highlight">Redes Sociales AI</span>
+              Estrategia de Comunicación & <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent comms-header-highlight">Redes Sociales AI</span>
             </h2>
           </div>
 
@@ -528,7 +608,7 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
             <button
               type="button"
               onClick={handleOpenCreateModal}
-              className="px-4 py-2.5 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-purple-900/40 flex items-center gap-2 transition-all cursor-pointer hover:scale-102 comms-new-post-btn"
+              className="px-5 py-2.5 text-white font-extrabold text-xs rounded-xl flex items-center gap-2 cursor-pointer comms-primary-btn"
             >
               <Plus className="w-4 h-4" />
               <span>Programar Publicación</span>
@@ -537,54 +617,64 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
         </div>
 
         {/* METRICS DASHBOARD / KPIS DE CAMPAÑA DIGITAL */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mt-6 pt-5 border-t border-purple-500/20 comms-metrics-grid">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mt-6 pt-5 border-t border-purple-500/20 comms-metrics-grid animate-comms-stagger-2">
           
-          <div className="bg-[#051428]/90 border border-purple-500/20 p-3.5 rounded-2xl space-y-1 comms-metric-card comms-metric-total">
+          <div className="bg-[#051428]/90 border border-purple-500/20 p-3.5 rounded-2xl space-y-1 comms-metric-card comms-metric-total cursor-default">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1 comms-metric-label">
-              <Users className="w-3.5 h-3.5 text-purple-400" /> Piezas registradas
+              <Users className="w-3.5 h-3.5 text-cyan-400" /> Piezas registradas
             </span>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-xl font-black text-white font-mono comms-metric-value">{posts.length}</span>
+              <span className="text-xl font-black text-white font-mono comms-metric-value">
+                <AnimatedCounter value={posts.length} />
+              </span>
             </div>
             <p className="text-[10px] text-slate-400 truncate comms-metric-subtitle">Calendario de la campaña</p>
           </div>
 
-          <div className="bg-[#051428]/90 border border-purple-500/20 p-3.5 rounded-2xl space-y-1 comms-metric-card comms-metric-programmed">
+          <div className="bg-[#051428]/90 border border-purple-500/20 p-3.5 rounded-2xl space-y-1 comms-metric-card comms-metric-programmed cursor-default">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1 comms-metric-label">
               <Flame className="w-3.5 h-3.5 text-amber-400" /> Programadas
             </span>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-xl font-black text-amber-400 font-mono comms-metric-value">{programmedCount}</span>
+              <span className="text-xl font-black text-amber-400 font-mono comms-metric-value">
+                <AnimatedCounter value={programmedCount} />
+              </span>
             </div>
             <p className="text-[10px] text-slate-400 truncate comms-metric-subtitle">Pendientes de publicación</p>
           </div>
 
-          <div className="bg-[#051428]/90 border border-purple-500/20 p-3.5 rounded-2xl space-y-1 comms-metric-card comms-metric-published">
+          <div className="bg-[#051428]/90 border border-purple-500/20 p-3.5 rounded-2xl space-y-1 comms-metric-card comms-metric-published cursor-default">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1 comms-metric-label">
-              <Eye className="w-3.5 h-3.5 text-cyan-400" /> Publicadas
+              <Eye className="w-3.5 h-3.5 text-emerald-400" /> Publicadas
             </span>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-xl font-black text-cyan-300 font-mono comms-metric-value">{publishedCount}</span>
+              <span className="text-xl font-black text-cyan-300 font-mono comms-metric-value">
+                <AnimatedCounter value={publishedCount} />
+              </span>
             </div>
             <p className="text-[10px] text-slate-400 truncate comms-metric-subtitle">Marcadas por el equipo</p>
           </div>
 
-          <div className="bg-[#051428]/90 border border-purple-500/20 p-3.5 rounded-2xl space-y-1 comms-metric-card comms-metric-review">
+          <div className="bg-[#051428]/90 border border-purple-500/20 p-3.5 rounded-2xl space-y-1 comms-metric-card comms-metric-review cursor-default">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1 comms-metric-label">
-              <ThumbsUp className="w-3.5 h-3.5 text-emerald-400" /> En revisión / borrador
+              <ThumbsUp className="w-3.5 h-3.5 text-sky-400" /> En revisión / borrador
             </span>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-xl font-black text-emerald-300 font-mono comms-metric-value">{reviewCount + draftCount}</span>
+              <span className="text-xl font-black text-emerald-300 font-mono comms-metric-value">
+                <AnimatedCounter value={reviewCount + draftCount} />
+              </span>
             </div>
-            <p className="text-[10px] text-slate-400 truncate comms-metric-subtitle">{reviewCount} revisión · {draftCount} borradores</p>
+            <p className="text-[10px] text-slate-400 truncate comms-metric-subtitle">Creativos · O borradores</p>
           </div>
 
-          <div className="bg-[#051428]/90 border border-purple-500/20 p-3.5 rounded-2xl space-y-1 col-span-2 sm:col-span-1 comms-metric-card comms-metric-files">
+          <div className="bg-[#051428]/90 border border-purple-500/20 p-3.5 rounded-2xl space-y-1 col-span-2 sm:col-span-1 comms-metric-card comms-metric-files cursor-default">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1 comms-metric-label">
-              <Radio className="w-3.5 h-3.5 text-rose-400" /> Archivos privados
+              <Radio className="w-3.5 h-3.5 text-purple-400" /> Archivos privados
             </span>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-xl font-black text-rose-300 font-mono comms-metric-value">{attachmentCount}</span>
+              <span className="text-xl font-black text-rose-300 font-mono comms-metric-value">
+                <AnimatedCounter value={attachmentCount} />
+              </span>
             </div>
             <p className="text-[10px] text-slate-400 truncate comms-metric-subtitle">Imágenes y videos adjuntos</p>
           </div>
@@ -608,15 +698,15 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
       )}
 
       {/* SUB-TABS NAVIGATION BAR */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-[#05162a] p-2 rounded-2xl border border-purple-500/20 shadow-md comms-subtabs-nav">
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-[#05162a] p-2 rounded-2xl border border-purple-500/20 shadow-md comms-subtabs-nav animate-comms-stagger-3">
         <div className="flex flex-wrap items-center gap-1.5 text-xs font-bold">
           
           <button
             type="button"
             onClick={() => setActiveSubTab('calendario')}
-            className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer comms-subtab-btn subtab-calendario ${
+            className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer comms-subtab-btn subtab-calendario group ${
               activeSubTab === 'calendario'
-                ? 'active bg-gradient-to-r from-purple-500/30 to-indigo-500/30 text-purple-300 border border-purple-400/50 shadow'
+                ? 'active bg-gradient-to-r from-purple-500/30 to-indigo-500/30 text-purple-300 border border-purple-400/50 shadow-[0_0_15px_rgba(6,182,212,0.25)]'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
             }`}
           >
@@ -627,7 +717,7 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
           <button
             type="button"
             onClick={() => setActiveSubTab('ai_studio')}
-            className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer comms-subtab-btn subtab-ai ${
+            className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer comms-subtab-btn subtab-ai group ${
               activeSubTab === 'ai_studio'
                 ? 'active bg-gradient-to-r from-amber-500/30 to-orange-500/30 text-amber-300 border border-amber-400/50 shadow'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
@@ -635,13 +725,13 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
           >
             <Sparkles className="w-4 h-4 text-amber-400" />
             <span>Estudio AI de Contenidos</span>
-            <span className="bg-amber-500/30 text-amber-300 text-[9px] px-1.5 py-0.2 rounded font-mono">IA</span>
+            <span className="bg-amber-500/30 text-amber-300 text-[9px] px-1.5 py-0.2 rounded font-mono group-hover:brightness-125 transition-all">IA</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveSubTab('editor_media')}
-            className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer comms-subtab-btn subtab-media ${
+            className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer comms-subtab-btn subtab-media group ${
               activeSubTab === 'editor_media'
                 ? 'active bg-gradient-to-r from-pink-500/30 to-purple-500/30 text-pink-300 border border-pink-400/50 shadow'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
@@ -649,13 +739,13 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
           >
             <Film className="w-4 h-4 text-pink-400" />
             <span>Editor Fotos & Videos</span>
-            <span className="bg-pink-500/30 text-pink-300 text-[9px] px-1.5 py-0.2 rounded font-mono">PRO</span>
+            <span className="bg-pink-500/30 text-pink-300 text-[9px] px-1.5 py-0.2 rounded font-mono group-hover:brightness-125 transition-all">PRO</span>
           </button>
 
           <button
             type="button"
             onClick={() => setActiveSubTab('pilares')}
-            className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer comms-subtab-btn subtab-pilares ${
+            className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer comms-subtab-btn subtab-pilares group ${
               activeSubTab === 'pilares'
                 ? 'active bg-gradient-to-r from-cyan-500/30 to-blue-500/30 text-cyan-300 border border-cyan-400/50 shadow'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
@@ -668,7 +758,7 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
           <button
             type="button"
             onClick={() => setActiveSubTab('social_listening')}
-            className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer comms-subtab-btn subtab-listening ${
+            className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer comms-subtab-btn subtab-listening group ${
               activeSubTab === 'social_listening'
                 ? 'active bg-gradient-to-r from-emerald-500/30 to-teal-500/30 text-emerald-300 border border-emerald-400/50 shadow'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
@@ -681,7 +771,7 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
           <button
             type="button"
             onClick={() => setActiveSubTab('whatsapp')}
-            className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer comms-subtab-btn subtab-whatsapp ${
+            className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all cursor-pointer comms-subtab-btn subtab-whatsapp group ${
               activeSubTab === 'whatsapp'
                 ? 'active bg-gradient-to-r from-emerald-600/30 to-green-500/30 text-emerald-300 border border-emerald-400/50 shadow'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
@@ -699,9 +789,9 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
         <div className="space-y-4 comms-tab-calendario">
           
           {/* SEARCH & FILTERS BAR */}
-          <div className="bg-[#05162a] border border-purple-500/20 p-4 rounded-2xl flex flex-wrap items-center justify-between gap-3 text-xs comms-filter-bar">
+          <div className="bg-[#05162a] border border-purple-500/20 p-4 rounded-2xl flex flex-wrap items-center justify-between gap-3 text-xs comms-filter-bar animate-comms-stagger-4">
             
-            <div className="flex items-center gap-2 flex-1 min-w-[240px] bg-[#030e1c] border border-purple-500/30 rounded-xl px-3 py-2 comms-search-box">
+            <div className="flex items-center gap-2 flex-1 min-w-[240px] bg-[#030e1c] border border-purple-500/30 rounded-xl px-3 py-2 comms-search-box comms-search-box-focus">
               <Search className="w-4 h-4 text-slate-400" />
               <input
                 type="text"
@@ -711,14 +801,14 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
                 className="bg-transparent text-white w-full outline-none text-xs comms-search-input"
               />
               {searchQuery && (
-                <button type="button" onClick={() => setSearchQuery('')} className="text-slate-400 hover:text-white">
+                <button type="button" onClick={() => setSearchQuery('')} className="text-slate-400 hover:text-white cursor-pointer">
                   <X className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
-              <div className="flex items-center gap-1.5 bg-[#030e1c] px-3 py-1.5 rounded-xl border border-purple-500/30 comms-filter-box">
+              <div className="flex items-center gap-1.5 bg-[#030e1c] px-3 py-1.5 rounded-xl border border-purple-500/30 comms-filter-box comms-filter-box-focus">
                 <Filter className="w-3.5 h-3.5 text-purple-400" />
                 <span className="text-slate-400 font-bold">Red:</span>
                 <select
@@ -736,7 +826,7 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
                 </select>
               </div>
 
-              <div className="flex items-center gap-1.5 bg-[#030e1c] px-3 py-1.5 rounded-xl border border-purple-500/30 comms-filter-box">
+              <div className="flex items-center gap-1.5 bg-[#030e1c] px-3 py-1.5 rounded-xl border border-purple-500/30 comms-filter-box comms-filter-box-focus">
                 <span className="text-slate-400 font-bold">Estado:</span>
                 <select
                   value={selectedStatusFilter}
@@ -755,22 +845,22 @@ export const ComunicacionRedesView: React.FC<ComunicacionRedesViewProps> = ({ ca
           </div>
 
           {/* POSTS LISTING */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 comms-posts-grid">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 comms-posts-grid animate-comms-stagger-5">
             {filteredPosts.length === 0 ? (
               <div className="col-span-full bg-[#05162a] border border-purple-500/20 rounded-2xl p-12 text-center text-slate-400 space-y-3 comms-empty-state">
-                <Calendar className="w-10 h-10 text-purple-400/60 mx-auto" />
+                <Calendar className="w-12 h-12 text-purple-400/80 mx-auto empty-social-icon" />
                 {posts.length === 0 ? (
                   <>
-                    <p className="font-extrabold text-white text-sm">Sin publicaciones programadas en el calendario</p>
+                    <p className="font-extrabold text-white text-base">Sin publicaciones programadas en el calendario</p>
                     <p className="text-xs text-slate-400 max-w-md mx-auto">
                       Cree la primera pieza digital de su campaña o genere un guión con el Estudio AI de Contenidos.
                     </p>
                     <button
                       type="button"
                       onClick={handleOpenCreateModal}
-                      className="mt-2 px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-extrabold rounded-xl inline-flex items-center gap-1.5 cursor-pointer transition-all"
+                      className="mt-3 px-5 py-2.5 text-white text-xs font-extrabold rounded-xl inline-flex items-center gap-2 cursor-pointer comms-primary-btn"
                     >
-                      <Plus className="w-3.5 h-3.5" /> Programar Primera Publicación
+                      <Plus className="w-4 h-4" /> Programar Primera Publicación
                     </button>
                   </>
                 ) : (

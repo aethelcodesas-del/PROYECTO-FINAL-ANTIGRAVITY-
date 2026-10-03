@@ -5786,7 +5786,7 @@ export const GestionEstrategica: React.FC<GestionEstrategicaProps> = ({
 
       {/* TAB COMUNICACIÓN Y REDES SOCIALES */}
       {activeTab === 'comunicacion_redes' && (
-        <ComunicacionRedesView candidateProfile={candidateProfile} />
+        <ComunicacionRedesView candidateProfile={candidateProfile} campaignId={candidateCampaignId} />
       )}
 
       {/* TAB AGENDA Y CALENDARIO ELECTORAL */}
