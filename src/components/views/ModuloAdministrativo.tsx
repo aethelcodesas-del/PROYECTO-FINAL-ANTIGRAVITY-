@@ -2702,8 +2702,8 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                   </div>
 
                   {/* Inline user search and user adding button */}
-                  <div className="flex items-center gap-2">
-                    <div className="relative w-48 sm:w-56 group/search">
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <div className="relative flex-1 min-w-0 sm:w-56 sm:flex-initial group/search">
                       <input
                         type="text"
                         placeholder="Buscar por nombre o correo..."
@@ -2715,7 +2715,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                     </div>
                     <button
                       onClick={() => setShowAddUserSection(!showAddUserSection)}
-                      className="px-3 py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs rounded-xl shadow-[0_0_15px_rgba(6,182,212,0.25)] hover:shadow-[0_0_25px_rgba(6,182,212,0.45)] active:scale-95 transition-all duration-150 flex items-center gap-1 cursor-pointer select-none"
+                      className="px-3 py-2 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs rounded-xl shadow-[0_0_15px_rgba(6,182,212,0.25)] hover:shadow-[0_0_25px_rgba(6,182,212,0.45)] active:scale-95 transition-all duration-150 flex items-center gap-1 cursor-pointer select-none shrink-0"
                     >
                       <Plus className="w-4 h-4 text-slate-950" />
                       <span>{showAddUserSection ? 'Cancelar' : 'Registrar'}</span>
@@ -2877,7 +2877,7 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
                 {/* Users assignment list (Tabular format with status toggles and assigned permission badges) */}
                 <div 
                   style={{ animationDelay: '0.15s' }}
-                  className="animate-rbac-table space-y-2 will-change-transform"
+                  className="animate-rbac-table space-y-3 will-change-transform pb-6 sm:pb-0"
                 >
                   <div className="hidden sm:grid sm:grid-cols-12 gap-4 px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-cyan-500/10">
                     <div className="col-span-6">Datos de Usuario y Funciones Habilitadas</div>

@@ -275,7 +275,7 @@ export const ConfirmDialogProvider: React.FC<{ children: React.ReactNode }> = ({
       {/* Global Dark Glassmorphic Toast Stack */}
       {toasts.length > 0 && (
         <div
-          className="fixed bottom-5 right-5 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none px-4 sm:px-0"
+          className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom,0.75rem))] md:bottom-5 right-3 md:right-5 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none px-3 sm:px-0"
           style={{ zIndex: 10001 }}
         >
           {toasts.map((t) => {

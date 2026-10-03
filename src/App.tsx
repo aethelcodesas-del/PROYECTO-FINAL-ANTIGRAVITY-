@@ -631,9 +631,12 @@ export default function App() {
         </Suspense>
 
         {/* Main Content Area with Smooth Motion Transitions */}
-        <main ref={mainContainerRef} className="app-main min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-gradient-to-b from-[#040e21] via-[#020817] to-[#01040a] relative custom-scrollbar pb-20 md:pb-6">
+        <main ref={mainContainerRef} className="app-main min-w-0 flex-1 overflow-y-auto overflow-x-hidden bg-gradient-to-b from-[#040e21] via-[#020817] to-[#01040a] relative custom-scrollbar pb-28 sm:pb-32 md:pb-6">
           {/* Top Mobile Bar for fast drawer access on phones & tablets */}
-          <div className="lg:hidden sticky top-0 z-30 flex items-center justify-between px-4 py-2.5 bg-[#051329]/95 border-b border-cyan-500/20 backdrop-blur-md">
+          <div 
+            className="lg:hidden sticky top-0 z-30 flex items-center justify-between px-4 py-2.5 bg-[#051329]/95 border-b border-cyan-500/20 backdrop-blur-md"
+            style={{ paddingTop: 'max(0.625rem, env(safe-area-inset-top))' }}
+          >
             <button
               onClick={() => setSidebarOpen(true)}
               aria-label="Abrir menú"

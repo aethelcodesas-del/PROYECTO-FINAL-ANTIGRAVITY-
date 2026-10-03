@@ -105,6 +105,14 @@ input, select, textarea, button {
   html, body {
     min-width: 0;
     min-height: 100dvh;
+    overflow-x: hidden !important;
+  }
+
+  /* Bottom Navigation Bar clearance with iOS Safe Area support */
+  .app-main,
+  .responsive-view,
+  .global-admin-shell main {
+    padding-bottom: calc(6.5rem + env(safe-area-inset-bottom, 1.25rem)) !important;
   }
 
   .app-main,
