@@ -527,17 +527,17 @@ export const LoginModal: React.FC<LoginModalProps> = ({
         {/* Modal Container */}
         <motion.div
           layout
-          initial={{ opacity: 0, scale: 0.95, y: 16 }}
+          initial={{ opacity: 0, scale: 0.96, y: 12 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 16 }}
-          transition={{ duration: 0.22, ease: 'easeOut' }}
-          className={`relative w-full mx-auto bg-[#080d1b] border border-slate-800/80 rounded-3xl shadow-2xl shadow-cyan-950/40 z-10 text-slate-100 overflow-hidden box-border font-sans transition-all duration-300 ${
+          exit={{ opacity: 0, scale: 0.96, y: 12 }}
+          transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+          className={`relative w-full mx-auto bg-[#080d1b] border border-slate-800/80 rounded-3xl shadow-2xl shadow-cyan-950/40 z-10 text-slate-100 overflow-hidden box-border font-sans will-change-[transform,opacity] transform-gpu ${
             step === 'select_environment' ? 'max-w-5xl p-5 sm:p-7' : 'max-w-4xl p-0'
           }`}
         >
           {/* Ambient Lighting */}
-          <div className="absolute -top-24 -left-24 w-72 h-72 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-24 -right-24 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -top-24 -left-24 w-72 h-72 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none transform-gpu" />
+          <div className="absolute -bottom-24 -right-24 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl pointer-events-none transform-gpu" />
 
           {/* Close button for Step 1 */}
           {step === 'select_environment' && (
@@ -556,11 +556,11 @@ export const LoginModal: React.FC<LoginModalProps> = ({
           {step === 'select_environment' && (
             <motion.div
               key="step-selector"
-              initial={{ opacity: 0, x: -16 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 16 }}
-              transition={{ duration: 0.2 }}
-              className="relative z-10"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.14, ease: [0.16, 1, 0.3, 1] }}
+              className="relative z-10 will-change-[transform,opacity] transform-gpu"
             >
               {/* Header */}
               <div className="mb-6 pr-8">
@@ -581,20 +581,27 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                 </p>
               </div>
 
-              {/* 3 Cards Grid */}
+              {/* 3 Cards Grid with GPU Stagger Cascade under 0.25s */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5 my-4">
-                {ACCESS_ENVIRONMENTS.map((env) => {
+                {ACCESS_ENVIRONMENTS.map((env, index) => {
                   const Icon = env.icon;
                   return (
-                    <div
+                    <motion.div
                       key={env.id}
+                      initial={{ opacity: 0, y: 14, scale: 0.98 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      transition={{
+                        duration: 0.18,
+                        delay: index * 0.035,
+                        ease: [0.16, 1, 0.3, 1]
+                      }}
                       onClick={() => handleSelectEnvironment(env)}
-                      className={`group relative flex flex-col justify-between p-4.5 sm:p-5 rounded-2xl bg-gradient-to-b ${env.colorScheme.bg} border ${env.colorScheme.border} ${env.colorScheme.hoverBorder} shadow-lg ${env.colorScheme.glow} hover:-translate-y-1 active:scale-[0.98] transition-all duration-200 cursor-pointer overflow-hidden will-change-[transform,box-shadow]`}
+                      className={`group relative flex flex-col justify-between p-4.5 sm:p-5 rounded-2xl bg-gradient-to-b ${env.colorScheme.bg} border ${env.colorScheme.border} ${env.colorScheme.hoverBorder} shadow-lg ${env.colorScheme.glow} hover:-translate-y-1 active:scale-[0.98] transition-[transform,box-shadow,opacity] duration-[160ms] [transition-timing-function:cubic-bezier(0.2,0.8,0.2,1)] cursor-pointer overflow-hidden will-change-[transform,box-shadow] transform-gpu`}
                     >
                       <div>
                         {/* Top Icon & Badge */}
                         <div className="flex items-center justify-between mb-3">
-                          <div className={`w-10 h-10 rounded-xl ${env.colorScheme.iconBg} border flex items-center justify-center ${env.colorScheme.iconText} group-hover:scale-105 transition-transform shadow-inner shrink-0`}>
+                          <div className={`w-10 h-10 rounded-xl ${env.colorScheme.iconBg} border flex items-center justify-center ${env.colorScheme.iconText} group-hover:scale-105 transition-transform duration-[160ms] [transition-timing-function:cubic-bezier(0.2,0.8,0.2,1)] shadow-inner shrink-0 will-change-transform transform-gpu`}>
                             <Icon className="w-5 h-5" />
                           </div>
                           <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full ${env.colorScheme.badgeBg} ${env.colorScheme.badgeText} border ${env.colorScheme.badgeBorder}`}>
@@ -603,7 +610,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
                         </div>
 
                         {/* Title & Category */}
-                        <h3 className="text-sm font-bold text-white group-hover:text-white transition-colors font-display tracking-tight">
+                        <h3 className="text-sm font-bold text-white group-hover:text-white transition-colors duration-[160ms] font-display tracking-tight">
                           {env.title}
                         </h3>
                         <p className="text-[11px] font-medium text-slate-400 mt-0.5 font-sans">
@@ -618,14 +625,14 @@ export const LoginModal: React.FC<LoginModalProps> = ({
 
                       {/* Footer Action */}
                       <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between">
-                        <span className="text-[11px] font-semibold text-slate-400 group-hover:text-white transition-colors">
+                        <span className="text-[11px] font-semibold text-slate-400 group-hover:text-white transition-colors duration-[160ms]">
                           Ingresar aquí
                         </span>
-                        <div className={`w-7 h-7 rounded-lg ${env.colorScheme.iconBg} border flex items-center justify-center ${env.colorScheme.iconText} group-hover:translate-x-1 transition-transform`}>
+                        <div className={`w-7 h-7 rounded-lg ${env.colorScheme.iconBg} border flex items-center justify-center ${env.colorScheme.iconText} group-hover:translate-x-1 transition-transform duration-[160ms] [transition-timing-function:cubic-bezier(0.2,0.8,0.2,1)] will-change-transform transform-gpu`}>
                           <ArrowRight className="w-3.5 h-3.5" />
                         </div>
                       </div>
-                    </div>
+                    </motion.div>
                   );
                 })}
               </div>
