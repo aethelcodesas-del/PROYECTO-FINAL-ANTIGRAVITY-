@@ -1982,6 +1982,9 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
       if (!profile?.client_id && !profile?.campaign_id) throw new Error('Tu usuario no tiene una organización electoral asignada.');
 
       const isGlobalAdmin = ['SUPERADMIN', 'GLOBAL_ADMIN'].includes(String(profile?.role || '').toUpperCase());
+      if (isGlobalAdmin) {
+        throw new Error('Política de Privacidad y Confidencialidad Activa: La información de campaña es 100% privada del candidato. El Administrador Central no posee facultades de lectura ni acceso sobre datos de clientes.');
+      }
       const profileCampaignId = isUUID(profile.campaign_id) ? profile.campaign_id : null;
       const profileClientId = isUUID(profile.client_id) ? profile.client_id : null;
       const rawRemembered = localStorage.getItem('active_campaign_id');

@@ -757,29 +757,54 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
 
           {/* Name & Role */}
-          <div className={`text-left min-w-0 flex-1 ${isDesktopCollapsed ? 'lg:hidden' : ''}`}>
-            <div
-              className="font-extrabold text-xs text-white uppercase tracking-wider break-words line-clamp-1 drop-shadow-sm"
-              title={userDisplayName}
-            >
-              {userDisplayName}
-            </div>
-            <div 
-              className="text-[11px] font-semibold text-cyan-300/90 truncate mt-0.5"
-              title={userRoleDisplay}
-            >
-              {userRoleDisplay}
-            </div>
-            {campaignTerritory && (
-              <div 
-                className="mt-1.5 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[#020b18]/80 border border-cyan-500/25 group-hover/profile:border-cyan-500/40 text-[10px] font-medium text-cyan-200 max-w-full transition-colors duration-200"
-                title={campaignTerritory}
+          {isGlobalSuperAdmin ? (
+            <div className={`text-left min-w-0 flex-1 ${isDesktopCollapsed ? 'lg:hidden' : ''}`}>
+              <div
+                className="font-extrabold text-xs text-amber-300 uppercase tracking-wider break-words line-clamp-1 drop-shadow-sm flex items-center gap-1.5"
+                title="ADMINISTRADOR GLOBAL"
               >
-                <MapPin className="w-3 h-3 text-cyan-400 shrink-0" />
-                <span className="truncate">{campaignTerritory}</span>
+                <ShieldAlert className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span>ADMINISTRADOR GLOBAL</span>
               </div>
-            )}
-          </div>
+              <div 
+                className="text-[10px] font-semibold text-slate-300 truncate mt-0.5"
+                title="Gobernanza de Sistema • Cero Acceso a Datos de Campaña"
+              >
+                Gobernanza de Sistema • Cero Acceso a Datos de Campaña
+              </div>
+              <div 
+                className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/30 text-[9px] font-medium text-amber-300 max-w-full leading-tight"
+                title="Entorno Protegido: Aislamiento Criptográfico de Datos de Candidatos Activo."
+              >
+                <Lock className="w-2.5 h-2.5 text-amber-400 shrink-0" />
+                <span className="truncate">Aislamiento Criptográfico Activo</span>
+              </div>
+            </div>
+          ) : (
+            <div className={`text-left min-w-0 flex-1 ${isDesktopCollapsed ? 'lg:hidden' : ''}`}>
+              <div
+                className="font-extrabold text-xs text-white uppercase tracking-wider break-words line-clamp-1 drop-shadow-sm"
+                title={userDisplayName}
+              >
+                {userDisplayName}
+              </div>
+              <div 
+                className="text-[11px] font-semibold text-cyan-300/90 truncate mt-0.5"
+                title={userRoleDisplay}
+              >
+                {userRoleDisplay}
+              </div>
+              {campaignTerritory && (
+                <div 
+                  className="mt-1.5 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-[#020b18]/80 border border-cyan-500/25 group-hover/profile:border-cyan-500/40 text-[10px] font-medium text-cyan-200 max-w-full transition-colors duration-200"
+                  title={campaignTerritory}
+                >
+                  <MapPin className="w-3 h-3 text-cyan-400 shrink-0" />
+                  <span className="truncate">{campaignTerritory}</span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {onLogout && (

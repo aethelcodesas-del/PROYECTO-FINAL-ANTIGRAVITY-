@@ -325,6 +325,15 @@ export const PresupuestoContabilidad: React.FC<PresupuestoContabilidadProps> = (
         const token = sessionData.session?.access_token || '';
         const userMeta = sessionData.session?.user?.user_metadata || {};
         const isGlobalAdmin = ['SUPERADMIN', 'GLOBAL_ADMIN'].includes(String(profile?.role || userMeta.role || '').toUpperCase());
+
+        if (isGlobalAdmin) {
+          // Zero-knowledge multi-tenancy: Global admin has no access to campaign financials
+          setItems([]);
+          setPresupuestoTotal(0);
+          setLoading(false);
+          return;
+        }
+
         const profileCampaignId = (isUUID(profile?.campaign_id) ? profile.campaign_id : (isUUID(userMeta.campaign_id) ? userMeta.campaign_id : (isUUID(authUser?.campaignId) ? authUser.campaignId : null)));
         const profileClientId = (isUUID(profile?.client_id) ? profile.client_id : (isUUID(userMeta.client_id) ? userMeta.client_id : (isUUID(authUser?.clientId) ? authUser.clientId : null)));
         const rawRemembered = localStorage.getItem('active_campaign_id');

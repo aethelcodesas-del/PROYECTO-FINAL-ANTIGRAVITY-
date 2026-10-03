@@ -283,6 +283,19 @@ export const CampaignProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const token = sessionData.session?.access_token || '';
         const userMeta = sessionData.session?.user?.user_metadata || {};
         const isGlobalAdmin = ['SUPERADMIN', 'GLOBAL_ADMIN'].includes(String(profile?.role || userMeta.role || '').toUpperCase());
+
+        if (isGlobalAdmin) {
+          // ZERO-KNOWLEDGE MULTI-TENANCY: Global Admin has ZERO access to campaign data
+          localStorage.removeItem('active_campaign_id');
+          if (!cancelled) {
+            setCampaign(null);
+            setLive(EMPTY_LIVE);
+            setIsLoading(false);
+            setIsLiveLoading(false);
+          }
+          return;
+        }
+
         const profileClientId = (isUUID(profile?.client_id) ? profile.client_id : (isUUID(userMeta.client_id) ? userMeta.client_id : null));
         const profileCampaignId = (isUUID(profile?.campaign_id) ? profile.campaign_id : (isUUID(userMeta.campaign_id) ? userMeta.campaign_id : null));
         const rawRemembered = localStorage.getItem('active_campaign_id');
@@ -292,11 +305,10 @@ export const CampaignProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         let dbError: any = null;
 
         // 1. For clients, strictly prioritize their own campaign_id or client_id from profile
-        if (!isGlobalAdmin) {
-          if (profileCampaignId) {
-            const result = await supabase.from('campaigns').select(
-              'id, nombre, candidato_nombre, cargo_postulacion, departamento, municipio, circunscripcion, client_id, descripcion, presupuesto_total, estado'
-            ).eq('id', profileCampaignId).limit(1);
+        if (profileCampaignId) {
+          const result = await supabase.from('campaigns').select(
+            'id, nombre, candidato_nombre, cargo_postulacion, departamento, municipio, circunscripcion, client_id, descripcion, presupuesto_total, estado'
+          ).eq('id', profileCampaignId).limit(1);
             rows = result.data;
             dbError = result.error;
           }
@@ -315,7 +327,6 @@ export const CampaignProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               dbError = result.error;
             }
           }
-        }
 
         // 2. If global admin or not found, check remembered targetId
         if (!rows?.length && rememberedId) {

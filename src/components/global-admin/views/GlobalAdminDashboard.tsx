@@ -137,6 +137,34 @@ export const GlobalAdminDashboard: React.FC<GlobalAdminDashboardProps> = ({ onNa
         </div>
       </div>
 
+      {/* Zero-Knowledge Confidentiality Architecture Seal */}
+      <div className="relative overflow-hidden rounded-2xl border border-emerald-500/30 bg-gradient-to-r from-emerald-950/40 via-slate-900/80 to-cyan-950/40 p-4 sm:p-5 backdrop-blur-md shadow-xl">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="flex items-start gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0 mt-0.5">
+              <Lock className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-black text-emerald-400 uppercase tracking-wider font-mono">
+                  ARQUITECTURA MULTI-TENANT ZERO-KNOWLEDGE
+                </span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-950 border border-emerald-500/40 text-emerald-300">
+                  CONFIDENCIALIDAD ACTIVA
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 mt-1 leading-relaxed max-w-3xl">
+                <strong>Aislamiento Criptográfico Estricto:</strong> La información operativa, financiera, de censo de votantes, líderes y estrategia electoral pertenece exclusivamente a cada candidato. El Administrador Global opera únicamente sobre infraestructura, gobernanza de licencias y telemetría de cuotas con <strong>Cero Acceso a Datos de Campaña</strong>.
+              </p>
+            </div>
+          </div>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-950/80 border border-emerald-500/30 text-emerald-300 text-[11px] font-mono shrink-0 shadow-inner">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Sello Cero-Acceso Verificado</span>
+          </div>
+        </div>
+      </div>
+
       {error && (
         <div className="p-4 rounded-xl bg-rose-950/50 border border-rose-500/40 text-rose-300 text-xs font-sans flex items-center gap-2 shadow-md">
           <AlertTriangle className="w-4 h-4 shrink-0 text-rose-400" />

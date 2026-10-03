@@ -55,14 +55,19 @@ const ModuleFallback = () => (
   </div>
 );
 
-const ALWAYS_FULL_CAMPAIGN_ROLES = new Set(['GLOBAL_ADMIN', 'superadmin', 'auditor']);
+export const isGlobalAdminRole = (role?: string) =>
+  role === 'GLOBAL_ADMIN' || role === 'SUPERADMIN' || role === 'superadmin';
+
+const ALWAYS_FULL_CAMPAIGN_ROLES = new Set(['auditor']);
 const CAMPAIGN_OWNER_ROLES = new Set(['administrador', 'candidato']);
 
-const hasFullCampaignAccess = (user: AuthUser) =>
-  ALWAYS_FULL_CAMPAIGN_ROLES.has(user.role)
-  || (CAMPAIGN_OWNER_ROLES.has(user.role)
-    && Array.isArray(user.permissions)
-    && user.permissions.length === 0);
+const hasFullCampaignAccess = (user: AuthUser) => {
+  if (isGlobalAdminRole(user.role)) return false;
+  return ALWAYS_FULL_CAMPAIGN_ROLES.has(user.role)
+    || (CAMPAIGN_OWNER_ROLES.has(user.role)
+      && Array.isArray(user.permissions)
+      && user.permissions.length === 0);
+};
 
 const FUNCTION_DESTINATIONS: Record<string, {
   view: ViewMode;
@@ -99,6 +104,9 @@ const destinationForUser = (user: AuthUser) =>
   (user.permissions || []).map(code => FUNCTION_DESTINATIONS[code]).find(Boolean);
 
 const canAccessViewWithAssignedFunctions = (user: AuthUser, view: ViewMode) => {
+  if (isGlobalAdminRole(user.role)) {
+    return view === 'global_admin' || view === 'landing';
+  }
   if (hasFullCampaignAccess(user)) return view !== 'global_admin' && view !== 'saas_admin';
   if (view === 'primera_interfaz') return true;
   return (user.permissions || []).some(code => FUNCTION_DESTINATIONS[code]?.view === view);
@@ -111,6 +119,9 @@ const isAssignedLocation = (
   strategicTab: string,
   territorialSubTab: 'registro' | 'mapa'
 ) => {
+  if (isGlobalAdminRole(user.role)) {
+    return view === 'global_admin' || view === 'landing';
+  }
   if (hasFullCampaignAccess(user) || view === 'primera_interfaz') return true;
   return (user.permissions || []).some(code => {
     const destination = FUNCTION_DESTINATIONS[code];
@@ -167,6 +178,14 @@ export default function App() {
     }
     // If an explicit deep link route was requested via hash (other than landing), allow it only if user is already authenticated
     const savedUser = localStorage.getItem('bee_auth_user');
+    if (savedUser) {
+      try {
+        const parsed = JSON.parse(savedUser);
+        if (isGlobalAdminRole(parsed.role)) {
+          return initialRoute?.view === 'landing' ? 'landing' : 'global_admin';
+        }
+      } catch {}
+    }
     if (initialRoute?.view && initialRoute.view !== 'landing' && savedUser) {
       if (typeof window !== 'undefined' && window.innerWidth < 768 && initialRoute.view === 'primera_interfaz') {
         return 'gestion_estrategica';
@@ -265,6 +284,11 @@ export default function App() {
       const parsed = parseRouteFromHash(hash);
       if (parsed) {
         if (parsed.view && (authUser || ['landing', 'module_select', 'global_admin'].includes(parsed.view))) {
+          if (authUser && isGlobalAdminRole(authUser.role) && parsed.view !== 'global_admin' && parsed.view !== 'landing') {
+            showToast('Política de Privacidad y Confidencialidad Activa: La información de campaña es 100% privada del candidato. El Administrador Central no posee facultades de lectura ni acceso sobre datos de clientes.', 'error');
+            setCurrentView('global_admin');
+            return;
+          }
           const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
           const targetView = (isMobile && parsed.view === 'primera_interfaz') ? 'gestion_estrategica' : parsed.view;
           setCurrentView(targetView);
@@ -404,10 +428,26 @@ export default function App() {
     return () => window.removeEventListener('resize', handleMobileViewSync);
   }, [currentView]);
 
+  // Zero-Knowledge Multi-Tenancy: El Administrador Global tiene Cero Acceso a vistas internas de campaña
+  useEffect(() => {
+    if (authUser && isGlobalAdminRole(authUser.role) && currentView !== 'global_admin' && currentView !== 'landing') {
+      showToast('Política de Privacidad y Confidencialidad Activa: La información de campaña es 100% privada del candidato. El Administrador Central no posee facultades de lectura ni acceso sobre datos de clientes.', 'error');
+      setCurrentView('global_admin');
+    }
+  }, [authUser, currentView]);
+
   // Login handler
   const handleLoginSuccess = (user: AuthUser, redirectRoute?: ViewMode) => {
     setAuthUser(user);
     setIsLoginModalOpen(false);
+
+    if (isGlobalAdminRole(user.role)) {
+      setAdminTab('inicio');
+      setStrategicTab('diagnostico');
+      setTerritorialSubTab('registro');
+      setCurrentView('global_admin');
+      return;
+    }
 
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
     const effectiveRedirectRoute = (isMobile && redirectRoute === 'primera_interfaz')
@@ -431,7 +471,7 @@ export default function App() {
       setCurrentView('gestion_territorial');
     } else if (user.role === 'estrategico') {
       setCurrentView('gestion_estrategica');
-    } else if (user.role === 'administrador' || user.role === 'superadmin') {
+    } else if (user.role === 'administrador') {
       setCurrentView('modulo_admin');
     } else {
       setCurrentView(isMobile ? 'gestion_estrategica' : 'primera_interfaz');
@@ -460,6 +500,15 @@ export default function App() {
       setLoginTargetModule(undefined);
       setIsLoginModalOpen(true);
       return;
+    }
+
+    if (isGlobalAdminRole(authUser.role)) {
+      if (view !== 'global_admin' && view !== 'landing') {
+        showToast('Política de Privacidad y Confidencialidad Activa: La información de campaña es 100% privada del candidato. El Administrador Central no posee facultades de lectura ni acceso sobre datos de clientes.', 'error');
+        setCurrentView('global_admin');
+        setSidebarOpen(false);
+        return;
+      }
     }
 
     if (view === 'primera_interfaz') {
