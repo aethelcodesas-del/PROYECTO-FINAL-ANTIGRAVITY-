@@ -849,7 +849,7 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
         <motion.div
           variants={staggerItemVariants}
           ref={tabsContainerRef}
-          className="jurado-tabs-bar bg-white p-2 rounded-2xl border border-slate-200 flex items-center gap-2 overflow-x-auto no-scrollbar scrollbar-none shadow-sm scroll-smooth will-change-[transform,opacity]"
+          className="jurado-tabs-bar bg-[#041733]/90 backdrop-blur-md p-2 rounded-2xl border border-slate-800 flex items-center gap-2 overflow-x-auto no-scrollbar scrollbar-none shadow-xl scroll-smooth will-change-[transform,opacity]"
         >
           {[
             { id: 'instalacion', step: '1', label: 'Instalación de Mesa (07:30 AM - 08:00 AM)', icon: <Clock className="w-4 h-4" /> },
@@ -868,13 +868,13 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
                 onClick={() => setActiveTab(tab.id as any)}
                 className={`jurado-tab-btn px-4 py-2.5 rounded-xl text-xs flex items-center gap-2.5 cursor-pointer transition-all duration-150 shrink-0 whitespace-nowrap ${
                   isActive
-                    ? 'jurado-tab-active bg-blue-50 text-blue-700 border border-blue-300 font-black shadow-[0_4px_15px_-2px_rgba(37,99,235,0.25)]'
-                    : 'jurado-tab-inactive text-slate-600 hover:text-slate-900 hover:bg-slate-100 font-bold border border-transparent'
+                    ? 'jurado-tab-active bg-blue-600/20 text-blue-300 border border-blue-500/40 font-black shadow-[0_4px_15px_-2px_rgba(37,99,235,0.4)]'
+                    : 'jurado-tab-inactive text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 font-bold border border-transparent'
                 }`}
               >
                 <span
                   className={`w-5 h-5 rounded-lg flex items-center justify-center text-[10px] font-mono font-black transition-all ${
-                    isActive ? 'bg-blue-600 text-white scale-105 shadow-sm' : 'bg-slate-100 text-slate-500'
+                    isActive ? 'bg-blue-600 text-white scale-105 shadow-sm' : 'bg-slate-800 text-slate-400'
                   }`}
                 >
                   {tab.step}
@@ -889,7 +889,7 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
         {/* ── SECCIÓN 4: CONTENEDOR DEL FORMULARIO ACTIVO ──────────────────── */}
         <motion.div
           variants={staggerItemVariants}
-          className="jurado-content-card bg-white border border-slate-200/80 rounded-3xl p-5 md:p-6 shadow-sm min-h-[460px] text-slate-900 will-change-[transform,opacity]"
+          className="jurado-content-card bg-[#041733]/60 backdrop-blur-md border border-slate-800/80 rounded-3xl p-5 md:p-6 shadow-2xl min-h-[460px] text-slate-100 will-change-[transform,opacity]"
         >
           <AnimatePresence mode="wait">
             {/* PESTAÑA 1: INSTALACIÓN Y VERIFICACIÓN DE MESA */}
@@ -903,29 +903,29 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
                 className="space-y-6 max-w-4xl"
               >
                 <div>
-                  <h3 className="text-base font-black text-slate-950">
+                  <h3 className="text-base font-black text-white">
                     Instalación y Verificación de la Mesa (07:30 AM - 08:00 AM)
                   </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <p className="text-xs text-slate-400 mt-0.5">
                     {mesaAsignada.puesto} · {mesaAsignada.mesa} ({municipality})
                   </p>
                 </div>
 
                 {/* Jurados Acreditados */}
-                <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 space-y-3 shadow-xs">
-                  <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                    <UserCheck className="w-4 h-4 text-blue-600" />
+                <div className="bg-[#031326] border border-slate-800/80 rounded-2xl p-4 space-y-3 shadow-md">
+                  <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <UserCheck className="w-4 h-4 text-blue-400" />
                     Jurados de Mesa Acreditados
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     {mesaAsignada.juradosAsignados.map(j => (
-                      <div key={j.id} className="bg-white border border-slate-200 rounded-xl p-3 flex items-center justify-between shadow-xs">
+                      <div key={j.id} className="bg-[#041733] border border-slate-800 rounded-xl p-3 flex items-center justify-between shadow-xs">
                         <div>
-                          <p className="text-xs font-bold text-slate-900">{j.nombre}</p>
-                          <p className="text-[10px] text-slate-500 font-semibold">{j.cargo}</p>
+                          <p className="text-xs font-bold text-white">{j.nombre}</p>
+                          <p className="text-[10px] text-slate-400 font-semibold">{j.cargo}</p>
                         </div>
-                        <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-black rounded-md flex items-center gap-1 shadow-xs">
-                          <Check className="w-3 h-3 text-emerald-600" /> {j.estado}
+                        <span className="px-2 py-0.5 bg-emerald-950/60 text-emerald-300 border border-emerald-500/40 text-[10px] font-black rounded-md flex items-center gap-1 shadow-xs">
+                          <Check className="w-3 h-3 text-emerald-400" /> {j.estado}
                         </span>
                       </div>
                     ))}
@@ -933,9 +933,9 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
                 </div>
 
                 {/* Checklist del Kit Electoral */}
-                <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-5 space-y-4 shadow-xs">
-                  <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                    <ClipboardCheck className="w-4 h-4 text-blue-600" />
+                <div className="bg-[#031326] border border-slate-800/80 rounded-2xl p-5 space-y-4 shadow-md">
+                  <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <ClipboardCheck className="w-4 h-4 text-blue-400" />
                     Verificación del Kit Electoral
                   </h4>
                   <div className="space-y-3">
@@ -952,15 +952,15 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
                           key={item.key}
                           className={`flex items-center gap-3.5 p-3.5 rounded-xl border transition-all duration-150 cursor-pointer select-none ${
                             checked
-                              ? 'bg-emerald-50/70 border-emerald-300 shadow-sm scale-[1.01]'
-                              : 'bg-white border-slate-200 hover:bg-slate-50 hover:border-slate-300'
+                              ? 'bg-emerald-950/40 border-emerald-500/50 text-emerald-200 shadow-sm scale-[1.01]'
+                              : 'bg-[#041733] border-slate-800 hover:bg-slate-800/50 hover:border-slate-700 text-slate-300'
                           }`}
                         >
                           <div
                             className={`w-5 h-5 rounded-md flex items-center justify-center border transition-all ${
                               checked
                                 ? 'bg-emerald-600 border-emerald-600 text-white shadow-[0_0_8px_rgba(16,185,129,0.35)]'
-                                : 'border-slate-300 bg-white'
+                                : 'border-slate-600 bg-slate-900'
                             }`}
                           >
                             {checked && <Check className="w-3.5 h-3.5 stroke-[3]" />}
@@ -971,7 +971,7 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
                             onChange={e => handleToggleKitItem(item.key, e.target.checked)}
                             className="sr-only"
                           />
-                          <span className={`text-xs ${checked ? 'text-slate-900 font-bold' : 'text-slate-700 font-medium'}`}>
+                          <span className={`text-xs ${checked ? 'text-emerald-100 font-bold' : 'text-slate-300 font-medium'}`}>
                             {item.label}
                           </span>
                         </label>
@@ -982,24 +982,24 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
 
                 {/* Apertura Oficial */}
                 {instalacionCompleta ? (
-                  <div className="p-5 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center gap-4 text-emerald-900 shadow-sm">
-                    <CheckCircle2 className="w-8 h-8 shrink-0 text-emerald-600" />
+                  <div className="p-5 bg-emerald-950/40 border border-emerald-500/40 rounded-2xl flex items-center gap-4 text-emerald-200 shadow-sm">
+                    <CheckCircle2 className="w-8 h-8 shrink-0 text-emerald-400" />
                     <div>
-                      <h4 className="text-sm font-black text-emerald-950">Apertura Oficial Registrada</h4>
-                      <p className="text-xs text-emerald-800 mt-0.5">
+                      <h4 className="text-sm font-black text-white">Apertura Oficial Registrada</h4>
+                      <p className="text-xs text-emerald-300 mt-0.5">
                         La mesa quedó abierta formalmente a las {horaInstalacion}. El padrón de votantes está activo para firmas en Formulario E-11.
                       </p>
                     </div>
                   </div>
                 ) : (
-                  <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-slate-50 border border-slate-200 rounded-2xl p-4 shadow-xs">
+                  <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-[#031326] border border-slate-800 rounded-2xl p-4 shadow-md">
                     <div className="space-y-1">
-                      <p className="text-xs font-bold text-slate-700">Hora Oficial de Apertura</p>
+                      <p className="text-xs font-bold text-slate-300">Hora Oficial de Apertura</p>
                       <input
                         type="time"
                         value={horaInstalacion}
                         onChange={e => setHoraInstalacion(e.target.value)}
-                        className="bg-white border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-mono text-slate-900 focus:outline-none focus:border-blue-500 shadow-sm"
+                        className="bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs font-mono text-white focus:outline-none focus:border-blue-500 shadow-sm"
                       />
                     </div>
                     <button
@@ -1028,14 +1028,14 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
               >
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div>
-                    <h3 className="text-base font-black text-slate-950">Padrón de Votantes (Formulario E-11)</h3>
-                    <p className="text-xs text-slate-500 mt-0.5">
+                    <h3 className="text-base font-black text-white">Padrón de Votantes (Formulario E-11)</h3>
+                    <p className="text-xs text-slate-400 mt-0.5">
                       {mesaAsignada.puesto} · {mesaAsignada.mesa}
                     </p>
                   </div>
-                  <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-right">
-                    <span className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider block">Avance de Sufragantes</span>
-                    <span className="text-lg font-black text-blue-700 font-mono">
+                  <div className="bg-[#031326] border border-slate-800 rounded-xl px-4 py-2 text-right shadow-md">
+                    <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider block">Avance de Sufragantes</span>
+                    <span className="text-lg font-black text-cyan-400 font-mono">
                       {totalVotaronPadron} / {mesaAsignada.censoTotal || 0} ({mesaAsignada.censoTotal > 0 ? Math.round((totalVotaronPadron / mesaAsignada.censoTotal) * 100) : 0}%)
                     </span>
                   </div>
@@ -1049,39 +1049,39 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
                     placeholder="Buscar por cédula o nombre del sufragante..."
                     value={busquedaCedula}
                     onChange={e => setBusquedaCedula(e.target.value)}
-                    className="w-full bg-white border border-slate-300 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-blue-500 font-mono shadow-sm placeholder:text-slate-400"
+                    className="w-full bg-slate-900/90 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500 font-mono shadow-inner placeholder:text-slate-500"
                   />
                 </div>
 
                 {/* Panel de Firma Digital */}
                 {votanteSeleccionado && (
-                  <div className="bg-slate-50 border-2 border-blue-500/40 rounded-2xl p-5 space-y-4 shadow-md">
-                    <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+                  <div className="bg-[#031326] border-2 border-blue-500/40 rounded-2xl p-5 space-y-4 shadow-xl">
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                       <div>
-                        <span className="text-[10px] text-blue-700 font-bold uppercase tracking-wider">
+                        <span className="text-[10px] text-blue-400 font-bold uppercase tracking-wider">
                           Registrar Sufragio N° {votanteSeleccionado.orden}
                         </span>
-                        <h4 className="text-sm font-black text-slate-900">{votanteSeleccionado.nombre}</h4>
-                        <p className="text-xs text-slate-500 font-mono">C.C. {votanteSeleccionado.cedula}</p>
+                        <h4 className="text-sm font-black text-white">{votanteSeleccionado.nombre}</h4>
+                        <p className="text-xs text-slate-400 font-mono">C.C. {votanteSeleccionado.cedula}</p>
                       </div>
                       <button
                         onClick={() => setVotanteSeleccionado(null)}
-                        className="text-xs text-slate-600 hover:text-slate-900 px-2.5 py-1 bg-white border border-slate-200 rounded-lg cursor-pointer"
+                        className="text-xs text-slate-300 hover:text-white px-2.5 py-1 bg-slate-800 border border-slate-700 rounded-lg cursor-pointer transition-colors"
                       >
                         Cancelar
                       </button>
                     </div>
 
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between text-xs text-slate-700 font-medium">
+                      <div className="flex items-center justify-between text-xs text-slate-300 font-medium">
                         <span>Firma / Captura Digital de Huella del Elector</span>
                         {firmaDigitalVotante && (
-                          <button onClick={clearCanvasVotante} className="text-[10px] text-rose-600 hover:underline cursor-pointer">
+                          <button onClick={clearCanvasVotante} className="text-[10px] text-rose-400 hover:underline cursor-pointer">
                             Borrar Firma
                           </button>
                         )}
                       </div>
-                      <div className="relative border-2 border-dashed border-slate-300 rounded-xl bg-white shadow-inner">
+                      <div className="relative border-2 border-dashed border-slate-700 rounded-xl bg-slate-950 shadow-inner">
                         <canvas
                           ref={canvasVotanteRef}
                           width={500}
@@ -1096,7 +1096,7 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
                           className="w-full h-24 cursor-crosshair touch-none"
                         />
                         {!firmaDigitalVotante && (
-                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-slate-400 text-xs">
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-slate-500 text-xs">
                             ✍️ Firma manual en pantalla táctil o mouse
                           </div>
                         )}
@@ -1105,7 +1105,7 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
 
                     <button
                       onClick={handleRegistrarVotoE11}
-                      className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+                      className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
                     >
                       <CheckCircle2 className="w-4 h-4" />
                       Confirmar Sufragio y Entregar Tarjetón
@@ -1114,9 +1114,9 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
                 )}
 
                 {/* Tabla de Votantes E-11 */}
-                <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                <div className="bg-[#031326] border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
                   <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold uppercase tracking-wider text-[10px]">
+                    <thead className="bg-[#020b18] border-b border-slate-800 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
                       <tr>
                         <th className="p-3">N° Orden</th>
                         <th className="p-3">Cédula</th>
@@ -1125,21 +1125,21 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
                         <th className="p-3 text-right">Acción</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-slate-800/80">
                       {padronVotantes
                         .filter(v => v.cedula.includes(busquedaCedula) || v.nombre.toLowerCase().includes(busquedaCedula.toLowerCase()))
                         .map(v => (
-                          <tr key={v.orden} className="hover:bg-slate-50/80 transition-colors">
-                            <td className="p-3 font-mono font-bold text-slate-500">{v.orden}</td>
-                            <td className="p-3 font-mono text-blue-700 font-bold">CC: {v.cedula}</td>
-                            <td className="p-3 font-bold text-slate-900">{v.nombre}</td>
+                          <tr key={v.orden} className="hover:bg-slate-800/40 transition-colors">
+                            <td className="p-3 font-mono font-bold text-slate-400">{v.orden}</td>
+                            <td className="p-3 font-mono text-cyan-400 font-bold">CC: {v.cedula}</td>
+                            <td className="p-3 font-bold text-slate-100">{v.nombre}</td>
                             <td className="p-3">
                               {v.haVotado ? (
-                                <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold rounded-full inline-flex items-center gap-1 shadow-xs">
-                                  <Check className="w-3 h-3 text-emerald-600" /> Votó a las {v.horaVoto}
+                                <span className="px-2.5 py-1 bg-emerald-950/60 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold rounded-full inline-flex items-center gap-1 shadow-xs">
+                                  <Check className="w-3 h-3 text-emerald-400" /> Votó a las {v.horaVoto}
                                 </span>
                               ) : (
-                                <span className="px-2.5 py-1 bg-slate-100 text-slate-600 border border-slate-200 text-[10px] font-medium rounded-full">
+                                <span className="px-2.5 py-1 bg-slate-800 text-slate-400 border border-slate-700 text-[10px] font-medium rounded-full">
                                   Pendiente
                                 </span>
                               )}
@@ -1148,7 +1148,7 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
                               {!v.haVotado && (
                                 <button
                                   onClick={() => setVotanteSeleccionado(v)}
-                                  className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 rounded-lg font-bold text-[11px] cursor-pointer transition-all shadow-xs"
+                                  className="px-3 py-1.5 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/40 text-blue-300 rounded-lg font-bold text-[11px] cursor-pointer transition-all shadow-xs"
                                 >
                                   Registrar Voto
                                 </button>
@@ -1173,20 +1173,20 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
                 className="space-y-6"
               >
                 <div>
-                  <h3 className="text-base font-black text-slate-950">Escrutinio Mesa de Votación (Conteo Físico 04:00 PM)</h3>
-                  <p className="text-xs text-slate-500 mt-0.5">{mesaAsignada.puesto} · {mesaAsignada.mesa}</p>
+                  <h3 className="text-base font-black text-white">Escrutinio Mesa de Votación (Conteo Físico 04:00 PM)</h3>
+                  <p className="text-xs text-slate-400 mt-0.5">{mesaAsignada.puesto} · {mesaAsignada.mesa}</p>
                 </div>
 
-                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs">
+                <div className="bg-[#031326] border border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-md">
                   <div>
-                    <span className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">Total Votos Escrutados en Urna</span>
-                    <div className="text-2xl font-black text-slate-900 font-mono">
+                    <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">Total Votos Escrutados en Urna</span>
+                    <div className="text-2xl font-black text-white font-mono">
                       {totalVotosMesas} / {totalVotaronPadron || mesaAsignada.censoTotal} sufragantes
                     </div>
                   </div>
                   {totalVotosMesas > (totalVotaronPadron || mesaAsignada.censoTotal) && (
-                    <span className="px-3 py-1.5 bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-xs">
-                      <AlertTriangle className="w-4 h-4 text-rose-600" /> Alerta: Votos exceden sufragantes
+                    <span className="px-3 py-1.5 bg-rose-950/60 border border-rose-500/40 text-rose-300 text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-xs">
+                      <AlertTriangle className="w-4 h-4 text-rose-400" /> Alerta: Votos exceden sufragantes
                     </span>
                   )}
                 </div>
@@ -1195,25 +1195,25 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
                   {conteoMesas.map(item => (
                     <div
                       key={item.id}
-                      className="bg-white border border-slate-200 rounded-2xl p-4 space-y-3 shadow-xs hover:border-slate-300 transition-colors"
+                      className="bg-[#031326] border border-slate-800 rounded-2xl p-4 space-y-3 shadow-md hover:border-slate-700 transition-colors"
                     >
                       <div>
-                        <p className="text-xs font-black text-slate-900">{item.candidato}</p>
-                        <p className="text-[10px] text-slate-500 font-medium">{item.partido}</p>
+                        <p className="text-xs font-black text-white">{item.candidato}</p>
+                        <p className="text-[10px] text-slate-400 font-medium">{item.partido}</p>
                       </div>
-                      <div className="text-3xl font-black text-center font-mono text-blue-700 py-1">
+                      <div className="text-3xl font-black text-center font-mono text-cyan-400 py-1">
                         {item.votos.toString().padStart(3, '0')}
                       </div>
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => handleSumarVotoJurado(item.id, -1)}
-                          className="flex-1 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-xl font-bold text-lg transition-all cursor-pointer flex items-center justify-center shadow-xs"
+                          className="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-xl font-bold text-lg transition-all cursor-pointer flex items-center justify-center shadow-xs"
                         >
                           <Minus className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => handleSumarVotoJurado(item.id, 1)}
-                          className="flex-[2] py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm transition-all cursor-pointer flex items-center justify-center gap-1 shadow-xs"
+                          className="flex-[2] py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-sm transition-all cursor-pointer flex items-center justify-center gap-1 shadow-xs"
                         >
                           <Plus className="w-4 h-4" /> Sumar
                         </button>
@@ -1235,44 +1235,44 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
                 className="space-y-6 max-w-4xl"
               >
                 <div>
-                  <h3 className="text-base font-black text-slate-950">Diligenciamiento y Firma del Formulario E-14</h3>
-                  <p className="text-xs text-slate-500 mt-0.5">{mesaAsignada.puesto} · {mesaAsignada.mesa}</p>
+                  <h3 className="text-base font-black text-white">Diligenciamiento y Firma del Formulario E-14</h3>
+                  <p className="text-xs text-slate-400 mt-0.5">{mesaAsignada.puesto} · {mesaAsignada.mesa}</p>
                 </div>
 
                 {cierreFormalizado ? (
-                  <div className="bg-emerald-50/70 border-2 border-emerald-300 rounded-3xl p-6 space-y-5 shadow-xs relative overflow-hidden">
+                  <div className="bg-[#031326] border-2 border-emerald-500/40 rounded-3xl p-6 space-y-5 shadow-xl relative overflow-hidden">
                     <div className="flex items-center gap-4">
-                      <div className="w-14 h-14 rounded-2xl bg-emerald-100 border border-emerald-300 flex items-center justify-center text-emerald-700 shrink-0">
+                      <div className="w-14 h-14 rounded-2xl bg-emerald-950/60 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shrink-0 shadow-sm">
                         <ClipboardCheck className="w-7 h-7" />
                       </div>
                       <div>
-                        <h3 className="text-lg font-black text-emerald-950">Cierre de Mesa Formalizado</h3>
-                        <p className="text-xs text-emerald-800 mt-0.5">
+                        <h3 className="text-lg font-black text-white">Cierre de Mesa Formalizado</h3>
+                        <p className="text-xs text-emerald-300 mt-0.5">
                           {mesaAsignada.mesa} · {mesaAsignada.puesto} · Hora de cierre: <strong>{horaCierre}</strong>
                         </p>
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                      <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-xs">
-                        <p className="text-[9px] text-slate-500 uppercase tracking-wider font-semibold">Total Sufragantes</p>
-                        <p className="text-sm font-black mt-1 font-mono text-emerald-700">{totalSufragantes || totalVotaronPadron}</p>
+                      <div className="bg-[#041733] border border-slate-800 rounded-xl p-3 shadow-md">
+                        <p className="text-[9px] text-slate-400 uppercase tracking-wider font-semibold">Total Sufragantes</p>
+                        <p className="text-sm font-black mt-1 font-mono text-emerald-400">{totalSufragantes || totalVotaronPadron}</p>
                       </div>
-                      <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-xs">
-                        <p className="text-[9px] text-slate-500 uppercase tracking-wider font-semibold">Total Votos Escrutados</p>
-                        <p className="text-sm font-black mt-1 font-mono text-blue-700">{totalVotosMesas}</p>
+                      <div className="bg-[#041733] border border-slate-800 rounded-xl p-3 shadow-md">
+                        <p className="text-[9px] text-slate-400 uppercase tracking-wider font-semibold">Total Votos Escrutados</p>
+                        <p className="text-sm font-black mt-1 font-mono text-cyan-400">{totalVotosMesas}</p>
                       </div>
-                      <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-xs">
-                        <p className="text-[9px] text-slate-500 uppercase tracking-wider font-semibold">Hora de Cierre</p>
-                        <p className="text-sm font-black mt-1 font-mono text-amber-700">{horaCierre}</p>
+                      <div className="bg-[#041733] border border-slate-800 rounded-xl p-3 shadow-md">
+                        <p className="text-[9px] text-slate-400 uppercase tracking-wider font-semibold">Hora de Cierre</p>
+                        <p className="text-sm font-black mt-1 font-mono text-amber-400">{horaCierre}</p>
                       </div>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row gap-3 pb-4 border-b border-emerald-200">
+                    <div className="flex flex-col sm:flex-row gap-3 pb-4 border-b border-slate-800">
                       <button
                         type="button"
                         onClick={() => setMostrarActaCierre(true)}
-                        className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 shadow-xs"
+                        className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 shadow-md"
                       >
                         <Printer className="w-4 h-4" />
                         Ver e Imprimir Acta de Cierre
@@ -1289,30 +1289,30 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
                           });
                           if (confirmed) setCierreFormalizado(false);
                         }}
-                        className="px-5 py-3 bg-white hover:bg-slate-50 text-amber-700 border border-amber-300 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs"
+                        className="px-5 py-3 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/40 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm"
                       >
                         Reabrir Cierre
                       </button>
                     </div>
 
                     {cierreOficialTransmitido ? (
-                      <div className="flex items-center gap-3 bg-white p-4 rounded-2xl border border-emerald-200 shadow-xs">
-                        <CheckCircle2 className="w-8 h-8 text-emerald-600" />
+                      <div className="flex items-center gap-3 bg-[#041733] p-4 rounded-2xl border border-emerald-500/40 shadow-md">
+                        <CheckCircle2 className="w-8 h-8 text-emerald-400" />
                         <div>
-                          <h4 className="text-sm font-black text-slate-900">Acta E-14 Transmitida al Servidor Central</h4>
-                          <p className="text-[10px] text-slate-500">La mesa completó exitosamente todos los protocolos.</p>
+                          <h4 className="text-sm font-black text-white">Acta E-14 Transmitida al Servidor Central</h4>
+                          <p className="text-[10px] text-slate-400">La mesa completó exitosamente todos los protocolos.</p>
                         </div>
                       </div>
                     ) : (
                       <div className="space-y-4 pt-2">
-                        <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Captura Fotográfica del Formulario E-14</h4>
-                        <div className="border-2 border-dashed border-slate-300 rounded-2xl p-6 text-center space-y-3 bg-white shadow-inner">
-                          <Camera className="w-8 h-8 text-blue-600 mx-auto" />
-                          <p className="text-xs text-slate-600 font-medium">Adjunte la fotografía del formulario E-14 firmado por los jurados</p>
+                        <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider">Captura Fotográfica del Formulario E-14</h4>
+                        <div className="border-2 border-dashed border-slate-700 rounded-2xl p-6 text-center space-y-3 bg-slate-900/60 shadow-inner">
+                          <Camera className="w-8 h-8 text-blue-400 mx-auto" />
+                          <p className="text-xs text-slate-300 font-medium">Adjunte la fotografía del formulario E-14 firmado por los jurados</p>
                           <button
                             type="button"
                             onClick={() => setFotoE14Subida(true)}
-                            className="px-4 py-2 bg-slate-50 hover:bg-slate-100 text-blue-700 border border-slate-300 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-xs"
+                            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-blue-300 border border-blue-500/40 rounded-xl text-xs font-bold transition-all cursor-pointer shadow-sm"
                           >
                             {fotoE14Subida ? '✓ Imagen E-14 Adjuntada con éxito' : 'Tomar / Subir Foto E-14'}
                           </button>
@@ -1324,7 +1324,7 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
                             showToast('🚀 Acta E-14 transmitida con éxito al servidor electoral seguro.');
                           }}
                           disabled={!fotoE14Subida}
-                          className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40"
+                          className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40"
                         >
                           <Send className="w-4 h-4" />
                           Transmitir E-14 Oficial al Servidor Central
@@ -1333,43 +1333,43 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
                     )}
                   </div>
                 ) : (
-                  <form onSubmit={handleFormalizarCierre} className="bg-slate-50 border-2 border-amber-200 rounded-3xl p-6 space-y-5 shadow-xs">
+                  <form onSubmit={handleFormalizarCierre} className="bg-[#031326] border-2 border-amber-500/40 rounded-3xl p-6 space-y-5 shadow-xl">
                     <div className="flex items-center gap-3">
-                      <div className="p-2.5 bg-amber-100 border border-amber-300 rounded-xl text-amber-700">
+                      <div className="p-2.5 bg-amber-950/60 border border-amber-500/40 rounded-xl text-amber-400">
                         <Lock className="w-5 h-5" />
                       </div>
                       <div>
-                        <h3 className="text-base font-black text-slate-900">Formalizar Cierre de Mesa</h3>
-                        <p className="text-xs text-slate-500">Asiente el total de sufragantes y verifique la firma de los jurados</p>
+                        <h3 className="text-base font-black text-white">Formalizar Cierre de Mesa</h3>
+                        <p className="text-xs text-slate-400">Asiente el total de sufragantes y verifique la firma de los jurados</p>
                       </div>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-slate-700">Hora Oficial de Cierre *</label>
+                        <label className="text-xs font-bold text-slate-300">Hora Oficial de Cierre *</label>
                         <input
                           type="time"
                           value={horaCierre}
                           onChange={e => setHoraCierre(e.target.value)}
-                          className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-blue-500 font-mono shadow-xs"
+                          className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500 font-mono shadow-inner"
                           required
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-slate-700">Total Sufragantes (Padrón E-11) *</label>
+                        <label className="text-xs font-bold text-slate-300">Total Sufragantes (Padrón E-11) *</label>
                         <input
                           type="number"
                           placeholder="Ej. 230"
                           value={totalSufragantes}
                           onChange={e => setTotalSufragantes(e.target.value)}
-                          className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-blue-500 font-mono shadow-xs"
+                          className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500 font-mono shadow-inner"
                           required
                         />
                       </div>
                     </div>
 
                     <div className="space-y-2 mt-4">
-                      <label className="text-xs font-bold text-slate-700 uppercase tracking-wider pt-2 border-t border-slate-200 block">
+                      <label className="text-xs font-bold text-slate-300 uppercase tracking-wider pt-2 border-t border-slate-800 block">
                         Firma de los Jurados de Mesa en E-14 Físico
                       </label>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -1380,35 +1380,35 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
                         ].map(j => (
                           <label
                             key={j.key}
-                            className="flex items-center gap-3 p-3 bg-white rounded-xl border border-slate-200 cursor-pointer shadow-xs hover:bg-slate-50 transition-colors"
+                            className="flex items-center gap-3 p-3 bg-[#041733] rounded-xl border border-slate-800 cursor-pointer shadow-sm hover:bg-slate-800/40 transition-colors"
                           >
                             <input
                               type="checkbox"
                               checked={juradosFirmantes[j.key as keyof typeof juradosFirmantes]}
                               onChange={e => setJuradosFirmantes(prev => ({ ...prev, [j.key]: e.target.checked }))}
-                              className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
+                              className="rounded border-slate-700 bg-slate-900 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
                             />
-                            <span className="text-xs font-bold text-slate-900">{j.cargo}</span>
+                            <span className="text-xs font-bold text-slate-100">{j.cargo}</span>
                           </label>
                         ))}
                       </div>
                     </div>
 
                     <div className="space-y-1.5 pt-2">
-                      <label className="text-xs font-bold text-slate-700">Observaciones del Cierre</label>
+                      <label className="text-xs font-bold text-slate-300">Observaciones del Cierre</label>
                       <textarea
                         placeholder="Registre cualquier novedad ocurrida al momento del cierre..."
                         value={observacionesCierre}
                         onChange={e => setObservacionesCierre(e.target.value)}
                         rows={2}
-                        className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-blue-500 resize-none shadow-xs placeholder:text-slate-400"
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500 resize-none shadow-inner placeholder:text-slate-500"
                       />
                     </div>
 
                     <button
                       type="submit"
                       disabled={!juradosFirmantes.presidente || !juradosFirmantes.secretario || !juradosFirmantes.vocal}
-                      className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold transition-all cursor-pointer shadow-xs flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed mt-4"
+                      className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-bold transition-all cursor-pointer shadow-md flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed mt-4"
                     >
                       <Lock className="w-4 h-4" />
                       Formalizar Cierre Oficial de la Mesa
@@ -1429,18 +1429,18 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
                 className="space-y-6"
               >
                 <div>
-                  <h3 className="text-base font-black text-slate-950">Registro Oficial de Novedades e Incidentes de Mesa</h3>
-                  <p className="text-xs text-slate-500 mt-0.5">{mesaAsignada.puesto} · {mesaAsignada.mesa}</p>
+                  <h3 className="text-base font-black text-white">Registro Oficial de Novedades e Incidentes de Mesa</h3>
+                  <p className="text-xs text-slate-400 mt-0.5">{mesaAsignada.puesto} · {mesaAsignada.mesa}</p>
                 </div>
 
-                <form onSubmit={handleReportarNovedad} className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4 shadow-xs">
+                <form onSubmit={handleReportarNovedad} className="bg-[#031326] border border-slate-800 rounded-2xl p-5 space-y-4 shadow-xl">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700">Tipo de Incidente</label>
+                      <label className="text-xs font-bold text-slate-300">Tipo de Incidente</label>
                       <select
                         value={tipoNovedad}
                         onChange={e => setTipoNovedad(e.target.value)}
-                        className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-500 shadow-xs cursor-pointer font-medium"
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500 shadow-inner cursor-pointer font-medium"
                       >
                         <option value="Impugnación de Testigo">Impugnación Presentada por Testigo</option>
                         <option value="Cédula No Encontrada">Cédula No Encontrada en Padrón</option>
@@ -1449,11 +1449,11 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
                       </select>
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700">Nivel de Gravedad</label>
+                      <label className="text-xs font-bold text-slate-300">Nivel de Gravedad</label>
                       <select
                         value={gravedadNovedad}
                         onChange={e => setGravedadNovedad(e.target.value as any)}
-                        className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-blue-500 shadow-xs cursor-pointer font-medium"
+                        className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500 shadow-inner cursor-pointer font-medium"
                       >
                         <option value="Baja">Baja - Menor</option>
                         <option value="Media">Media - Requiere constancia en acta</option>
@@ -1463,45 +1463,45 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-700">Detalles del Incidente</label>
+                    <label className="text-xs font-bold text-slate-300">Detalles del Incidente</label>
                     <textarea
                       rows={3}
                       placeholder="Describa claramente los hechos..."
                       value={detallesNovedad}
                       onChange={e => setDetallesNovedad(e.target.value)}
-                      className="w-full bg-white border border-slate-300 rounded-xl p-3 text-xs text-slate-900 focus:outline-none focus:border-blue-500 resize-none shadow-xs placeholder:text-slate-400"
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-blue-500 resize-none shadow-inner placeholder:text-slate-500"
                     />
                   </div>
 
                   <button
                     type="submit"
-                    className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs transition-all cursor-pointer shadow-xs"
+                    className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs transition-all cursor-pointer shadow-md"
                   >
                     Registrar en Acta de Novedades
                   </button>
                 </form>
 
                 <div className="space-y-3">
-                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
                     Historial de Novedades en Mesa ({novedadesMesa.length})
                   </h4>
                   <div className="space-y-2">
                     {novedadesMesa.map(nov => (
-                      <div key={nov.id} className="bg-white border border-slate-200 rounded-xl p-4 flex items-start justify-between gap-4 shadow-xs">
+                      <div key={nov.id} className="bg-[#031326] border border-slate-800 rounded-xl p-4 flex items-start justify-between gap-4 shadow-md">
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-slate-900">{nov.tipo}</span>
+                            <span className="text-xs font-bold text-white">{nov.tipo}</span>
                             <span className="text-[10px] font-mono text-slate-400">{nov.hora}</span>
                           </div>
-                          <p className="text-xs text-slate-600 mt-1">{nov.descripcion}</p>
+                          <p className="text-xs text-slate-300 mt-1">{nov.descripcion}</p>
                         </div>
-                        <span className="px-2.5 py-1 bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-bold rounded-md shrink-0">
+                        <span className="px-2.5 py-1 bg-amber-950/60 text-amber-300 border border-amber-500/40 text-[10px] font-bold rounded-md shrink-0">
                           {nov.gravedad}
                         </span>
                       </div>
                     ))}
                     {novedadesMesa.length === 0 && (
-                      <div className="p-6 bg-slate-50 border border-dashed border-slate-200 rounded-xl text-center text-xs text-slate-400">
+                      <div className="p-6 bg-[#031326] border border-dashed border-slate-800 rounded-xl text-center text-xs text-slate-500">
                         No se han reportado novedades en esta mesa de votación.
                       </div>
                     )}
@@ -1519,7 +1519,7 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
           key="actaCierre"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-xs flex items-start justify-center overflow-y-auto p-4"
+          className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-start justify-center overflow-y-auto p-4"
         >
           <div className="w-full max-w-2xl my-8">
             <div className="flex items-center justify-between mb-4">
@@ -1530,7 +1530,7 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
               <div className="flex gap-2">
                 <button
                   onClick={() => window.print()}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-xs"
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-md"
                 >
                   <Printer className="w-3.5 h-3.5" /> Imprimir
                 </button>
@@ -1543,40 +1543,40 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
               </div>
             </div>
 
-            <div className="bg-white text-slate-900 rounded-2xl p-8 shadow-2xl space-y-5 text-[11px] leading-relaxed border border-slate-200">
-              <div className="text-center border-b-2 border-slate-900 pb-4 space-y-1">
-                <p className="text-[9px] font-bold uppercase tracking-widest text-slate-500">
+            <div className="bg-[#030d1d] text-slate-100 print:bg-white print:text-slate-900 rounded-2xl p-8 shadow-2xl space-y-5 text-[11px] leading-relaxed border border-cyan-500/30 print:border-slate-300">
+              <div className="text-center border-b-2 border-slate-700 print:border-slate-900 pb-4 space-y-1">
+                <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 print:text-slate-500">
                   República de Colombia — Registraduría Nacional del Estado Civil
                 </p>
-                <h1 className="text-xl font-black uppercase tracking-wide">Acta de Cierre de Mesa de Votación</h1>
-                <p className="text-xs text-slate-500">Documento generado digitalmente por el Sistema Jurado en Campo</p>
+                <h1 className="text-xl font-black uppercase tracking-wide text-white print:text-slate-900">Acta de Cierre de Mesa de Votación</h1>
+                <p className="text-xs text-slate-400 print:text-slate-500">Documento generado digitalmente por el Sistema Jurado en Campo</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 bg-slate-50 rounded-xl p-4 border border-slate-200">
+              <div className="grid grid-cols-2 gap-4 bg-[#041733] print:bg-slate-50 rounded-xl p-4 border border-slate-800 print:border-slate-200">
                 <div>
-                  <p className="text-[9px] font-bold text-slate-500 uppercase">Puesto de Votación</p>
-                  <p className="font-bold text-slate-900">{mesaAsignada.puesto}</p>
-                  <p className="text-slate-500">{mesaAsignada.direccion}</p>
+                  <p className="text-[9px] font-bold text-slate-400 print:text-slate-500 uppercase">Puesto de Votación</p>
+                  <p className="font-bold text-white print:text-slate-900">{mesaAsignada.puesto}</p>
+                  <p className="text-slate-400 print:text-slate-500">{mesaAsignada.direccion}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] font-bold text-slate-500 uppercase">Mesa Asignada</p>
-                  <p className="font-bold text-slate-900">{mesaAsignada.mesa}</p>
+                  <p className="text-[9px] font-bold text-slate-400 print:text-slate-500 uppercase">Mesa Asignada</p>
+                  <p className="font-bold text-white print:text-slate-900">{mesaAsignada.mesa}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] font-bold text-slate-500 uppercase">Hora de Cierre</p>
-                  <p className="font-black text-lg text-slate-900">{horaCierre}</p>
+                  <p className="text-[9px] font-bold text-slate-400 print:text-slate-500 uppercase">Hora de Cierre</p>
+                  <p className="font-black text-lg text-amber-400 print:text-slate-900">{horaCierre}</p>
                 </div>
                 <div>
-                  <p className="text-[9px] font-bold text-slate-500 uppercase">Total Sufragantes (E-11)</p>
-                  <p className="font-black text-lg text-slate-900">{totalSufragantes || totalVotaronPadron}</p>
+                  <p className="text-[9px] font-bold text-slate-400 print:text-slate-500 uppercase">Total Sufragantes (E-11)</p>
+                  <p className="font-black text-lg text-emerald-400 print:text-slate-900">{totalSufragantes || totalVotaronPadron}</p>
                 </div>
               </div>
 
               <div>
-                <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-2">Resultado del Conteo de Votos (Borrador E-14)</p>
+                <p className="text-[9px] font-bold text-slate-400 print:text-slate-500 uppercase tracking-wider mb-2">Resultado del Conteo de Votos (Borrador E-14)</p>
                 <table className="w-full border-collapse text-xs">
                   <thead>
-                    <tr className="bg-slate-100 border border-slate-300 text-slate-700">
+                    <tr className="bg-[#020b18] print:bg-slate-100 border border-slate-800 print:border-slate-300 text-slate-300 print:text-slate-700">
                       <th className="text-left px-3 py-2 font-bold">Candidato / Opción</th>
                       <th className="text-left px-3 py-2 font-bold">Partido / Aval</th>
                       <th className="text-right px-3 py-2 font-bold">Votos</th>
@@ -1585,16 +1585,16 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
                   </thead>
                   <tbody>
                     {[...conteoMesas].sort((a, b) => b.votos - a.votos).map((c, idx) => (
-                      <tr key={c.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
-                        <td className="px-3 py-1.5 border border-slate-200 font-medium text-slate-900">{c.candidato}</td>
-                        <td className="px-3 py-1.5 border border-slate-200 text-slate-500">{c.partido || '—'}</td>
-                        <td className="px-3 py-1.5 border border-slate-200 text-right font-black font-mono text-slate-900">{c.votos}</td>
-                        <td className="px-3 py-1.5 border border-slate-200 text-right text-slate-600">
+                      <tr key={c.id} className={idx % 2 === 0 ? 'bg-[#041733]/60 print:bg-white' : 'bg-[#031326]/60 print:bg-slate-50'}>
+                        <td className="px-3 py-1.5 border border-slate-800 print:border-slate-200 font-medium text-slate-100 print:text-slate-900">{c.candidato}</td>
+                        <td className="px-3 py-1.5 border border-slate-800 print:border-slate-200 text-slate-400 print:text-slate-500">{c.partido || '—'}</td>
+                        <td className="px-3 py-1.5 border border-slate-800 print:border-slate-200 text-right font-black font-mono text-cyan-400 print:text-slate-900">{c.votos}</td>
+                        <td className="px-3 py-1.5 border border-slate-800 print:border-slate-200 text-right text-slate-300 print:text-slate-600">
                           {totalVotosMesas > 0 ? ((c.votos / totalVotosMesas) * 100).toFixed(2) : '0.00'}%
                         </td>
                       </tr>
                     ))}
-                    <tr className="bg-slate-900 text-white">
+                    <tr className="bg-slate-950 print:bg-slate-900 text-white">
                       <td className="px-3 py-2 font-black" colSpan={2}>TOTAL VOTOS ESCRUTADOS EN URNA</td>
                       <td className="px-3 py-2 text-right font-black font-mono">{totalVotosMesas}</td>
                       <td className="px-3 py-2 text-right font-bold">100%</td>
@@ -1604,26 +1604,26 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
               </div>
 
               {observacionesCierre && (
-                <div className="border border-slate-300 rounded-lg p-3 mt-4">
-                  <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Observaciones del Cierre</p>
-                  <p className="text-slate-700">{observacionesCierre}</p>
+                <div className="border border-slate-800 print:border-slate-300 rounded-lg p-3 mt-4 bg-[#031326]/60 print:bg-transparent">
+                  <p className="text-[9px] font-bold text-slate-400 print:text-slate-500 uppercase tracking-wider mb-1">Observaciones del Cierre</p>
+                  <p className="text-slate-300 print:text-slate-700">{observacionesCierre}</p>
                 </div>
               )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 pt-8 mt-4 border-t border-slate-200">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 pt-8 mt-4 border-t border-slate-800 print:border-slate-200">
                 {mesaAsignada.juradosAsignados.map(jurado => (
                   <div key={jurado.id} className="flex flex-col items-center justify-end space-y-2 h-32">
                     <div className="h-16" />
-                    <div className="border-b border-slate-900 w-full" />
+                    <div className="border-b border-slate-700 print:border-slate-900 w-full" />
                     <div className="text-center w-full">
-                      <p className="font-bold text-slate-900">{jurado.nombre}</p>
-                      <p className="text-slate-500 text-[9px]">{jurado.cargo}</p>
+                      <p className="font-bold text-white print:text-slate-900">{jurado.nombre}</p>
+                      <p className="text-slate-400 print:text-slate-500 text-[9px]">{jurado.cargo}</p>
                     </div>
                   </div>
                 ))}
               </div>
 
-              <p className="text-center text-[9px] text-slate-400 pt-2 border-t border-slate-100 mt-6">
+              <p className="text-center text-[9px] text-slate-500 print:text-slate-400 pt-2 border-t border-slate-800 print:border-slate-100 mt-6">
                 Generado el {new Date().toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} a las {new Date().toLocaleTimeString('es-CO')} · {mesaAsignada.mesa} · {mesaAsignada.puesto}
               </p>
             </div>

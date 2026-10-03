@@ -2481,42 +2481,42 @@ export const TestigoCampoView: React.FC<TestigoCampoViewProps> = ({ onSelectView
                     </div>
 
                     {/* Printable document */}
-                    <div className="bg-white text-slate-900 rounded-2xl p-8 shadow-2xl space-y-5 text-[11px] leading-relaxed">
+                    <div className="bg-[#030d1d] text-slate-100 print:bg-white print:text-slate-900 rounded-2xl p-8 shadow-2xl space-y-5 text-[11px] leading-relaxed border border-cyan-500/30 print:border-slate-300">
                       {/* Header */}
-                      <div className="text-center border-b-2 border-slate-900 pb-4 space-y-1">
-                        <p className="text-[9px] font-bold uppercase tracking-widest text-slate-500">República de Colombia — Registraduría Nacional del Estado Civil</p>
-                        <h1 className="text-xl font-black uppercase tracking-wide">Acta de Cierre de Mesa de Votación</h1>
-                        <p className="text-xs text-slate-500">Documento generado digitalmente por el Sistema de Campaña Electoral</p>
+                      <div className="text-center border-b-2 border-slate-700 print:border-slate-900 pb-4 space-y-1">
+                        <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400 print:text-slate-500">República de Colombia — Registraduría Nacional del Estado Civil</p>
+                        <h1 className="text-xl font-black uppercase tracking-wide text-white print:text-slate-900">Acta de Cierre de Mesa de Votación</h1>
+                        <p className="text-xs text-slate-400 print:text-slate-500">Documento generado digitalmente por el Sistema de Campaña Electoral</p>
                       </div>
 
                       {/* Mesa info */}
-                      <div className="grid grid-cols-2 gap-4 bg-slate-50 rounded-xl p-4 border border-slate-200">
+                      <div className="grid grid-cols-2 gap-4 bg-[#041733] print:bg-slate-50 rounded-xl p-4 border border-slate-800 print:border-slate-200">
                         <div>
-                          <p className="text-[9px] font-bold text-slate-500 uppercase">Puesto de Votación</p>
-                          <p className="font-bold">{puestoAsignado.nombre}</p>
-                          <p className="text-slate-500">{puestoAsignado.direccion}</p>
+                          <p className="text-[9px] font-bold text-slate-400 print:text-slate-500 uppercase">Puesto de Votación</p>
+                          <p className="font-bold text-white print:text-slate-900">{puestoAsignado.nombre}</p>
+                          <p className="text-slate-400 print:text-slate-500">{puestoAsignado.direccion}</p>
                         </div>
                         <div>
-                          <p className="text-[9px] font-bold text-slate-500 uppercase">Mesa / Zona</p>
-                          <p className="font-bold">{puestoAsignado.mesa}</p>
-                          <p className="text-slate-500">{puestoAsignado.zona}</p>
+                          <p className="text-[9px] font-bold text-slate-400 print:text-slate-500 uppercase">Mesa / Zona</p>
+                          <p className="font-bold text-white print:text-slate-900">{puestoAsignado.mesa}</p>
+                          <p className="text-slate-400 print:text-slate-500">{puestoAsignado.zona}</p>
                         </div>
                         <div>
-                          <p className="text-[9px] font-bold text-slate-500 uppercase">Hora de Cierre</p>
-                          <p className="font-black text-lg">{horaCierre}</p>
+                          <p className="text-[9px] font-bold text-slate-400 print:text-slate-500 uppercase">Hora de Cierre</p>
+                          <p className="font-black text-lg text-amber-400 print:text-slate-900">{horaCierre}</p>
                         </div>
                         <div>
-                          <p className="text-[9px] font-bold text-slate-500 uppercase">Total Sufragantes (Padrón)</p>
-                          <p className="font-black text-lg">{totalSufragantes}</p>
+                          <p className="text-[9px] font-bold text-slate-400 print:text-slate-500 uppercase">Total Sufragantes (Padrón)</p>
+                          <p className="font-black text-lg text-emerald-400 print:text-slate-900">{totalSufragantes}</p>
                         </div>
                       </div>
 
                       {/* Vote results table */}
                       <div>
-                        <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-2">Resultado del Conteo de Votos</p>
+                        <p className="text-[9px] font-bold text-slate-400 print:text-slate-500 uppercase tracking-wider mb-2">Resultado del Conteo de Votos</p>
                         <table className="w-full border-collapse text-xs">
                           <thead>
-                            <tr className="bg-slate-100 border border-slate-300">
+                            <tr className="bg-[#020b18] print:bg-slate-100 border border-slate-800 print:border-slate-300 text-slate-300 print:text-slate-700">
                               <th className="text-left px-3 py-2 font-bold">Candidato / Opción</th>
                               <th className="text-left px-3 py-2 font-bold">Partido / Aval</th>
                               <th className="text-right px-3 py-2 font-bold">Votos</th>
@@ -2525,16 +2525,16 @@ export const TestigoCampoView: React.FC<TestigoCampoViewProps> = ({ onSelectView
                           </thead>
                           <tbody>
                             {[...candidatosCuenta].sort((a, b) => b.votos - a.votos).map((c, idx) => (
-                              <tr key={c.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
-                                <td className="px-3 py-1.5 border border-slate-200 font-medium">{c.nombre}</td>
-                                <td className="px-3 py-1.5 border border-slate-200 text-slate-500">{c.partido || '—'}</td>
-                                <td className="px-3 py-1.5 border border-slate-200 text-right font-black font-mono">{c.votos}</td>
-                                <td className="px-3 py-1.5 border border-slate-200 text-right text-slate-600">
+                              <tr key={c.id} className={idx % 2 === 0 ? 'bg-[#041733]/60 print:bg-white' : 'bg-[#031326]/60 print:bg-slate-50'}>
+                                <td className="px-3 py-1.5 border border-slate-800 print:border-slate-200 font-medium text-slate-100 print:text-slate-900">{c.nombre}</td>
+                                <td className="px-3 py-1.5 border border-slate-800 print:border-slate-200 text-slate-400 print:text-slate-500">{c.partido || '—'}</td>
+                                <td className="px-3 py-1.5 border border-slate-800 print:border-slate-200 text-right font-black font-mono text-cyan-400 print:text-slate-900">{c.votos}</td>
+                                <td className="px-3 py-1.5 border border-slate-800 print:border-slate-200 text-right text-slate-300 print:text-slate-600">
                                   {totalVotosCuenta > 0 ? ((c.votos / totalVotosCuenta) * 100).toFixed(2) : '0.00'}%
                                 </td>
                               </tr>
                             ))}
-                            <tr className="bg-slate-900 text-white">
+                            <tr className="bg-slate-950 print:bg-slate-900 text-white">
                               <td className="px-3 py-2 font-black" colSpan={2}>TOTAL VOTOS ESCRUTADOS</td>
                               <td className="px-3 py-2 text-right font-black font-mono">{totalVotosCuenta}</td>
                               <td className="px-3 py-2 text-right font-bold">100%</td>
@@ -2545,14 +2545,14 @@ export const TestigoCampoView: React.FC<TestigoCampoViewProps> = ({ onSelectView
 
                       {/* Observations */}
                       {observacionesCierre && (
-                        <div className="border border-slate-300 rounded-lg p-3">
-                          <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-1">Observaciones del Cierre</p>
-                          <p className="text-slate-700">{observacionesCierre}</p>
+                        <div className="border border-slate-800 print:border-slate-300 rounded-lg p-3 bg-[#031326]/60 print:bg-transparent">
+                          <p className="text-[9px] font-bold text-slate-400 print:text-slate-500 uppercase tracking-wider mb-1">Observaciones del Cierre</p>
+                          <p className="text-slate-300 print:text-slate-700">{observacionesCierre}</p>
                         </div>
                       )}
 
                       {/* Signatures */}
-                      <div className="grid grid-cols-2 gap-8 pt-6 border-t border-slate-200">
+                      <div className="grid grid-cols-2 gap-8 pt-6 border-t border-slate-800 print:border-slate-200">
                         {/* Testigo */}
                         <div className="flex flex-col items-center justify-end space-y-2 h-32">
                           {firmaTestigoCierre ? (
@@ -2560,24 +2560,24 @@ export const TestigoCampoView: React.FC<TestigoCampoViewProps> = ({ onSelectView
                           ) : (
                             <div className="h-16" />
                           )}
-                          <div className="border-b border-slate-900 w-full" />
+                          <div className="border-b border-slate-700 print:border-slate-900 w-full" />
                           <div className="text-center w-full">
-                            <p className="font-bold">{authUser?.name || nombrePresidenteMesa || 'Testigo Electoral'}</p>
-                            <p className="text-slate-500 text-[9px]">Testigo Acreditado de Campaña</p>
+                            <p className="font-bold text-white print:text-slate-900">{authUser?.name || nombrePresidenteMesa || 'Testigo Electoral'}</p>
+                            <p className="text-slate-400 print:text-slate-500 text-[9px]">Testigo Acreditado de Campaña</p>
                           </div>
                         </div>
                         {/* Presidente */}
                         <div className="flex flex-col items-center justify-end space-y-2 h-32">
                           <div className="h-16" />
-                          <div className="border-b border-slate-900 w-full" />
+                          <div className="border-b border-slate-700 print:border-slate-900 w-full" />
                           <div className="text-center w-full">
-                            <p className="font-bold">{nombrePresidenteMesa}</p>
-                            <p className="text-slate-500 text-[9px]">Presidente de Mesa {cedulaPresidenteMesa ? `· C.C. ${cedulaPresidenteMesa}` : ''}</p>
+                            <p className="font-bold text-white print:text-slate-900">{nombrePresidenteMesa}</p>
+                            <p className="text-slate-400 print:text-slate-500 text-[9px]">Presidente de Mesa {cedulaPresidenteMesa ? `· C.C. ${cedulaPresidenteMesa}` : ''}</p>
                           </div>
                         </div>
                       </div>
 
-                      <p className="text-center text-[9px] text-slate-400 pt-2 border-t border-slate-100">
+                      <p className="text-center text-[9px] text-slate-500 print:text-slate-400 pt-2 border-t border-slate-800 print:border-slate-100">
                         Generado el {new Date().toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })} a las {new Date().toLocaleTimeString('es-CO')} · {puestoAsignado.mesa} · {puestoAsignado.nombre}
                       </p>
                     </div>
