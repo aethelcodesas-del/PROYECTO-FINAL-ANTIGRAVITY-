@@ -237,26 +237,6 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
   const [detallesNovedad, setDetallesNovedad] = useState('');
   const [gravedadNovedad, setGravedadNovedad] = useState<'Baja' | 'Media' | 'Alta'>('Media');
 
-  // ── Generador Determinístico de Padrón Electoral para Pruebas E-11 ─────────
-  const generatePadronE11 = useCallback((mesaNum: number, censo: number) => {
-    const NOMBRES = ['CARLOS ENRIQUE', 'MARÍA FERNANDA', 'JOSÉ ALBERTO', 'ANA PATRICIA', 'LUIS EDUARDO', 'DIANA MARCELA', 'JUAN PABLO', 'SANDRA MILENA', 'JORGE ANDRÉS', 'GLORIA INÉS', 'GUSTAVO ADOLFO', 'LILIANA PATRICIA', 'ÁLVARO JOSÉ', 'CLAUDIA PATRICIA', 'MIGUEL ÁNGEL'];
-    const APELLIDOS = ['DORIA OSORIO', 'GÓMEZ MARTÍNEZ', 'RODRÍGUEZ PÉREZ', 'LÓPEZ SÁNCHEZ', 'HERNÁNDEZ TORRES', 'PALACIO RIVERA', 'JARAMILLO RESTREPO', 'MORENO SUÁREZ', 'VERGARA HOYOS', 'DÍAZ MORALES'];
-    const count = Math.min(25, censo || 25);
-    const list: VotantePadron[] = [];
-    for (let i = 1; i <= count; i++) {
-      const ced = `${1017000000 + (mesaNum * 1000) + i}`;
-      const nom = `${NOMBRES[(i * 3) % NOMBRES.length]} ${APELLIDOS[(i * 7) % APELLIDOS.length]}`;
-      list.push({
-        orden: i,
-        cedula: ced,
-        nombre: nom,
-        haVotado: i <= 2,
-        horaVoto: i <= 2 ? `08:0${i * 5} AM` : undefined,
-        firmaRegistrada: i <= 2
-      });
-    }
-    return list;
-  }, []);
 
   // ── Carga y Vinculación Real con Base de Datos ─────────────────────────────
   const loadJurorAssignment = useCallback(async () => {
@@ -320,9 +300,12 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
             cargo: r.cargo === 'PRESIDENTE' ? 'Presidente de Mesa' : r.cargo === 'VICEPRESIDENTE' ? 'Vicepresidente de Mesa' : 'Vocal',
             estado: readMeta(r.observaciones)?.fieldOperations?.locationCheckIn?.checkedInAt ? 'Presente' : 'Sin confirmar'
           })) : [
-            { id: 'j-1', nombre: personalAssignment.nombre, cargo: 'Presidente de Mesa', estado: 'Presente' },
-            { id: 'j-2', nombre: 'MARTA CECILIA PADILLA', cargo: 'Vocal', estado: 'Sin confirmar' },
-            { id: 'j-3', nombre: 'JORGE LUIS BALLESTEROS', cargo: 'Secretario', estado: 'Sin confirmar' }
+            {
+              id: String(personalAssignment.id),
+              nombre: personalAssignment.nombre,
+              cargo: personalAssignment.cargo === 'PRESIDENTE' ? 'Presidente de Mesa' : personalAssignment.cargo === 'VICEPRESIDENTE' ? 'Vicepresidente de Mesa' : 'Vocal',
+              estado: ops.locationCheckIn?.checkedInAt ? 'Presente' : 'Sin confirmar'
+            }
           ]
         });
 
@@ -330,7 +313,34 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
         setInstalacionCompleta(Boolean(ops.instalacionCompleta));
         if (ops.horaInstalacion) setHoraInstalacion(ops.horaInstalacion);
         if (ops.kitElectoralRecibido) setKitElectoralRecibido(ops.kitElectoralRecibido);
-        setPadronVotantes(Array.isArray(ops.padronVotantes) && ops.padronVotantes.length > 0 ? ops.padronVotantes : generatePadronE11(Number(personalAssignment.mesa), censoMesa));
+
+        // Carga real de votantes desde base de datos o metadata
+        let votantesCargados: VotantePadron[] = [];
+        if (Array.isArray(ops.padronVotantes) && ops.padronVotantes.length > 0) {
+          votantesCargados = ops.padronVotantes;
+        } else {
+          try {
+            const { data: dbVoters } = await supabase
+              .from('voters')
+              .select('id, nombre, cedula')
+              .eq('puesto', personalAssignment.puesto)
+              .eq('mesa', personalAssignment.mesa);
+
+            if (dbVoters && dbVoters.length > 0) {
+              votantesCargados = dbVoters.map((v: any, idx: number) => ({
+                orden: idx + 1,
+                cedula: v.cedula || '',
+                nombre: v.nombre || 'VOTANTE REGISTRADO',
+                haVotado: false,
+                firmaRegistrada: false
+              }));
+            }
+          } catch (vErr) {
+            console.warn('Error consultando padrón de votantes:', vErr);
+          }
+        }
+        setPadronVotantes(votantesCargados);
+
         if (Array.isArray(ops.conteoMesas) && ops.conteoMesas.length > 0) setConteoMesas(ops.conteoMesas);
         setNovedadesMesa(Array.isArray(ops.novedadesMesa) ? ops.novedadesMesa : []);
         setCierreFormalizado(Boolean(ops.cierreFormalizado));
@@ -341,10 +351,11 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
         const targetPuesto = selectedPuesto || officialPuestos[0];
         const censoMesa = Math.round((targetPuesto?.censoEstimado || 6300) / (targetPuesto?.mesas || 18)) || 350;
 
-        // Buscar si ya existe jurado registrado en base de datos para este puesto y mesa
-        const mesaRow = (rows || []).find((r: any) => 
-          r.puesto === targetPuesto.nombre && String(r.mesa) === String(adminMesaNum)
+        // Buscar jurados registrados en base de datos para este puesto y mesa
+        const tableJurors = (rows || []).filter((r: any) => 
+          r.puesto?.toLowerCase() === targetPuesto.nombre?.toLowerCase() && String(r.mesa) === String(adminMesaNum)
         );
+        const mesaRow = tableJurors[0] || null;
 
         const metadata = readMeta(mesaRow?.observaciones || null);
         const ops = metadata.fieldOperations || {};
@@ -359,11 +370,12 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
           lat: targetPuesto.lat || 9.0435,
           lng: targetPuesto.lng || -75.7925,
           observaciones: mesaRow?.observaciones || null,
-          juradosAsignados: [
-            { id: 'j-admin', nombre: authUser?.name || 'ALEJANDRO DORIA (Admin)', cargo: 'Auditor Oficial / Presidente', estado: ops.locationCheckIn?.checkedInAt ? 'Presente' : 'En Verificación' },
-            { id: 'j-2', nombre: 'MARÍA DEL CARMEN DORIA', cargo: 'Vocal', estado: 'Sin confirmar' },
-            { id: 'j-3', nombre: 'CARLOS ALBERTO DÍAZ', cargo: 'Secretario', estado: 'Sin confirmar' }
-          ]
+          juradosAsignados: tableJurors.map((r: any) => ({
+            id: String(r.id),
+            nombre: r.nombre,
+            cargo: r.cargo === 'PRESIDENTE' ? 'Presidente de Mesa' : r.cargo === 'VICEPRESIDENTE' ? 'Vicepresidente de Mesa' : 'Vocal',
+            estado: readMeta(r.observaciones)?.fieldOperations?.locationCheckIn?.checkedInAt ? 'Presente' : 'Sin confirmar'
+          }))
         });
 
         if (ops.locationCheckIn) setCheckInLocation(ops.locationCheckIn);
@@ -372,7 +384,33 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
         setInstalacionCompleta(Boolean(ops.instalacionCompleta));
         if (ops.horaInstalacion) setHoraInstalacion(ops.horaInstalacion);
         if (ops.kitElectoralRecibido) setKitElectoralRecibido(ops.kitElectoralRecibido);
-        setPadronVotantes(Array.isArray(ops.padronVotantes) && ops.padronVotantes.length > 0 ? ops.padronVotantes : generatePadronE11(adminMesaNum, censoMesa));
+
+        let adminVotantes: VotantePadron[] = [];
+        if (Array.isArray(ops.padronVotantes) && ops.padronVotantes.length > 0) {
+          adminVotantes = ops.padronVotantes;
+        } else {
+          try {
+            const { data: dbVoters } = await supabase
+              .from('voters')
+              .select('id, nombre, cedula')
+              .eq('puesto', targetPuesto.nombre)
+              .eq('mesa', adminMesaNum);
+
+            if (dbVoters && dbVoters.length > 0) {
+              adminVotantes = dbVoters.map((v: any, idx: number) => ({
+                orden: idx + 1,
+                cedula: v.cedula || '',
+                nombre: v.nombre || 'VOTANTE REGISTRADO',
+                haVotado: false,
+                firmaRegistrada: false
+              }));
+            }
+          } catch (vErr) {
+            console.warn('Error consultando padrón de votantes admin:', vErr);
+          }
+        }
+        setPadronVotantes(adminVotantes);
+
         if (Array.isArray(ops.conteoMesas) && ops.conteoMesas.length > 0) setConteoMesas(ops.conteoMesas);
         setNovedadesMesa(Array.isArray(ops.novedadesMesa) ? ops.novedadesMesa : []);
         setCierreFormalizado(Boolean(ops.cierreFormalizado));
@@ -400,7 +438,7 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
     } finally {
       setAssignmentLoading(false);
     }
-  }, [authUser, campaignCtx, officialPuestos, selectedPuesto, adminMesaNum, isAdmin, municipality, generatePadronE11]);
+  }, [authUser, campaignCtx, officialPuestos, selectedPuesto, adminMesaNum, isAdmin, municipality]);
 
   useEffect(() => {
     void loadJurorAssignment();
@@ -918,17 +956,23 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
                     Jurados de Mesa Acreditados
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    {mesaAsignada.juradosAsignados.map(j => (
-                      <div key={j.id} className="bg-[#041733] border border-slate-800 rounded-xl p-3 flex items-center justify-between shadow-xs">
-                        <div>
-                          <p className="text-xs font-bold text-white">{j.nombre}</p>
-                          <p className="text-[10px] text-slate-400 font-semibold">{j.cargo}</p>
-                        </div>
-                        <span className="px-2 py-0.5 bg-emerald-950/60 text-emerald-300 border border-emerald-500/40 text-[10px] font-black rounded-md flex items-center gap-1 shadow-xs">
-                          <Check className="w-3 h-3 text-emerald-400" /> {j.estado}
-                        </span>
+                    {mesaAsignada.juradosAsignados.length === 0 ? (
+                      <div className="col-span-full py-4 text-center text-xs text-slate-500 border border-dashed border-slate-800 rounded-xl">
+                        Sin jurados acreditados registrados para esta mesa.
                       </div>
-                    ))}
+                    ) : (
+                      mesaAsignada.juradosAsignados.map(j => (
+                        <div key={j.id} className="bg-[#041733] border border-slate-800 rounded-xl p-3 flex items-center justify-between shadow-xs">
+                          <div>
+                            <p className="text-xs font-bold text-white">{j.nombre}</p>
+                            <p className="text-[10px] text-slate-400 font-semibold">{j.cargo}</p>
+                          </div>
+                          <span className="px-2 py-0.5 bg-emerald-950/60 text-emerald-300 border border-emerald-500/40 text-[10px] font-black rounded-md flex items-center gap-1 shadow-xs">
+                            <Check className="w-3 h-3 text-emerald-400" /> {j.estado}
+                          </span>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
 
@@ -1036,7 +1080,9 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
                   <div className="bg-[#031326] border border-slate-800 rounded-xl px-4 py-2 text-right shadow-md">
                     <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider block">Avance de Sufragantes</span>
                     <span className="text-lg font-black text-cyan-400 font-mono">
-                      {totalVotaronPadron} / {mesaAsignada.censoTotal || 0} ({mesaAsignada.censoTotal > 0 ? Math.round((totalVotaronPadron / mesaAsignada.censoTotal) * 100) : 0}%)
+                      {padronVotantes.length > 0
+                        ? `${totalVotaronPadron} / ${mesaAsignada.censoTotal || padronVotantes.length} (${(mesaAsignada.censoTotal || padronVotantes.length) > 0 ? Math.round((totalVotaronPadron / (mesaAsignada.censoTotal || padronVotantes.length)) * 100) : 0}%)`
+                        : '0 / 0 (0%)'}
                     </span>
                   </div>
                 </div>
@@ -1126,9 +1172,36 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800/80">
-                      {padronVotantes
-                        .filter(v => v.cedula.includes(busquedaCedula) || v.nombre.toLowerCase().includes(busquedaCedula.toLowerCase()))
-                        .map(v => (
+                      {(() => {
+                        const filtered = padronVotantes.filter(v =>
+                          v.cedula.includes(busquedaCedula) || v.nombre.toLowerCase().includes(busquedaCedula.toLowerCase())
+                        );
+                        if (filtered.length === 0) {
+                          return (
+                            <tr>
+                              <td colSpan={5} className="p-8 text-center">
+                                <div className="flex flex-col items-center justify-center space-y-3">
+                                  <div className="w-12 h-12 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-500">
+                                    <BookOpen className="w-6 h-6" />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <p className="text-sm font-bold text-slate-300">
+                                      {padronVotantes.length === 0
+                                        ? 'Sin sufragantes registrados en esta mesa'
+                                        : 'No se encontraron sufragantes con el filtro aplicado'}
+                                    </p>
+                                    <p className="text-xs text-slate-500 max-w-sm">
+                                      {padronVotantes.length === 0
+                                        ? 'El padrón electoral oficial (Formulario E-11) para esta mesa no cuenta con votantes precargados por la campaña.'
+                                        : 'Intenta con otro número de cédula o nombre.'}
+                                    </p>
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        }
+                        return filtered.map(v => (
                           <tr key={v.orden} className="hover:bg-slate-800/40 transition-colors">
                             <td className="p-3 font-mono font-bold text-slate-400">{v.orden}</td>
                             <td className="p-3 font-mono text-cyan-400 font-bold">CC: {v.cedula}</td>
@@ -1155,7 +1228,8 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
                               )}
                             </td>
                           </tr>
-                        ))}
+                        ));
+                      })()}
                     </tbody>
                   </table>
                 </div>
@@ -1611,16 +1685,22 @@ export const JuradoCampoView: React.FC<JuradoCampoViewProps> = ({ onSelectView, 
               )}
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 pt-8 mt-4 border-t border-slate-800 print:border-slate-200">
-                {mesaAsignada.juradosAsignados.map(jurado => (
-                  <div key={jurado.id} className="flex flex-col items-center justify-end space-y-2 h-32">
-                    <div className="h-16" />
-                    <div className="border-b border-slate-700 print:border-slate-900 w-full" />
-                    <div className="text-center w-full">
-                      <p className="font-bold text-white print:text-slate-900">{jurado.nombre}</p>
-                      <p className="text-slate-400 print:text-slate-500 text-[9px]">{jurado.cargo}</p>
-                    </div>
+                {mesaAsignada.juradosAsignados.length === 0 ? (
+                  <div className="col-span-full text-center py-4 text-xs text-slate-500 print:text-slate-400">
+                    Sin firmas de jurados registradas
                   </div>
-                ))}
+                ) : (
+                  mesaAsignada.juradosAsignados.map(jurado => (
+                    <div key={jurado.id} className="flex flex-col items-center justify-end space-y-2 h-32">
+                      <div className="h-16" />
+                      <div className="border-b border-slate-700 print:border-slate-900 w-full" />
+                      <div className="text-center w-full">
+                        <p className="font-bold text-white print:text-slate-900">{jurado.nombre}</p>
+                        <p className="text-slate-400 print:text-slate-500 text-[9px]">{jurado.cargo}</p>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
 
               <p className="text-center text-[9px] text-slate-500 print:text-slate-400 pt-2 border-t border-slate-800 print:border-slate-100 mt-6">

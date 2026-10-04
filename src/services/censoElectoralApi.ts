@@ -82,50 +82,13 @@ export async function consultarCensoElectoralAPI(
       };
     }
   } catch (error: any) {
-    // Si la API externa no responde o requiere API key no configurada, generamos resolución oficial inteligente
-    const mun = circunscripcionCampana || 'Cotorra';
-    const esForaneo = cleanCedula.endsWith('00') || cleanCedula.endsWith('99');
-    
-    // Deterministic name generation for realistic testing
-    const NOMBRES = ['CARLOS ENRIQUE', 'MARÍA FERNANDA', 'JOSÉ ALBERTO', 'ANA PATRICIA', 'LUIS EDUARDO', 'DIANA MARCELA', 'JUAN PABLO', 'SANDRA MILENA'];
-    const APELLIDOS = ['GÓMEZ MARTÍNEZ', 'RODRÍGUEZ PÉREZ', 'LÓPEZ SÁNCHEZ', 'JARAMILLO RESTREPO', 'DORIA OSORIO', 'HERNÁNDEZ TORRES', 'PALACIO RIVERA'];
-    const num = parseInt(cleanCedula.slice(-4), 10) || 1234;
-    const nombreGen = `${NOMBRES[num % NOMBRES.length]} ${APELLIDOS[(num * 3) % APELLIDOS.length]}`;
-
-    if (esForaneo) {
-      return {
-        cedula: cleanCedula,
-        encontrado: true,
-        esCircunscripcionPermitida: false,
-        circunscripcionCiudadano: 'Bogotá D.C. - Cundinamarca',
-        circunscripcionCampana,
-        nombreCompleto: nombreGen,
-        departamento: 'Cundinamarca',
-        municipio: 'Bogotá D.C.',
-        puestoVotacion: 'Corferias - Pabellón 6',
-        comunaSector: 'Zona Centro Capital',
-        direccionPuesto: 'Cra 37 # 24-67',
-        mesa: ((num % 25) + 1),
-        estadoCedula: 'Habilitada',
-        mensajeRespuesta: `El ciudadano vota en Bogotá D.C. No pertenece al censo electoral de ${mun}. Se sugiere archivar para monitorear solicitud de traslado.`,
-      };
-    }
-
     return {
       cedula: cleanCedula,
-      encontrado: true,
-      esCircunscripcionPermitida: true,
-      circunscripcionCiudadano: mun,
+      encontrado: false,
+      esCircunscripcionPermitida: false,
+      circunscripcionCiudadano: '',
       circunscripcionCampana,
-      nombreCompleto: nombreGen,
-      departamento: 'Córdoba',
-      municipio: mun,
-      puestoVotacion: `I.E. Central de ${mun}`,
-      comunaSector: 'Zona Centro / Cabecera',
-      direccionPuesto: `Calle Principal Sector Centro, ${mun}`,
-      mesa: ((num % 18) + 1),
-      estadoCedula: 'Habilitada',
-      mensajeRespuesta: `Ciudadano habilitado y verificado en el Censo Electoral oficial de ${mun}.`,
+      mensajeRespuesta: 'Cédula no encontrada en el censo electoral oficial o servicio no disponible temporalmente.',
     };
   }
 }
