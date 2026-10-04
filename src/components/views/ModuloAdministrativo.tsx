@@ -2214,24 +2214,6 @@ export const ModuloAdministrativo: React.FC<ModuloAdministrativoProps> = ({
         {/* ---------------------------------------------------------------------- */}
         {activeTab === 'inicio' && (
           <div className="space-y-6 animate-fadeIn">
-            {/* Header del Tablero con Indicador de Estado En Vivo */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-1">
-              <div>
-                <h2 className="text-sm font-extrabold text-white tracking-wide uppercase flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_#22d3ee]"></span>
-                  Indicadores Clave del Tablero Administrativo
-                </h2>
-                <p className="text-[11px] text-slate-400 font-medium mt-0.5">
-                  Métricas consolidadas en tiempo real conectadas directamente al servidor central seguro.
-                </p>
-              </div>
-              <div className="flex items-center gap-2 self-start sm:self-auto">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 backdrop-blur-md shadow-[0_0_12px_rgba(16,185,129,0.15)]">
-                  <span className="badge-live-dot w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-                  En vivo / Sincronizado
-                </span>
-              </div>
-            </div>
 
             {dashboardError && (
               <div className="rounded-xl border p-3.5 text-xs font-bold flex items-center gap-2.5 bg-rose-950/70 border-rose-500/50 text-rose-200">
