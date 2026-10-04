@@ -20,7 +20,8 @@ import {
   Sliders,
   ChevronDown,
   Sparkles,
-  UserCheck
+  UserCheck,
+  Layers
 } from 'lucide-react';
 import { AuthUser, UserRole, ViewMode } from '../types';
 import { supabase } from '../lib/supabaseClient';
@@ -29,7 +30,7 @@ export const isGlobalAdminRole = (role?: string) =>
   ['GLOBAL_ADMIN', 'SUPERADMIN', 'superadmin', 'master'].includes(String(role || ''));
 
 export interface AccessEnvironment {
-  id: 'estrategia' | 'territorio' | 'dia_e';
+  id: 'administrativa' | 'estrategica' | 'territorial' | 'estrategia' | 'territorio' | 'dia_e';
   title: string;
   category: string;
   badge: string;
@@ -55,11 +56,39 @@ export interface AccessEnvironment {
 
 export const ACCESS_ENVIRONMENTS: AccessEnvironment[] = [
   {
-    id: 'estrategia',
-    title: 'Campaña & Estrategia Electoral',
-    category: 'Candidato / Dirección General',
+    id: 'administrativa',
+    title: 'Gestión Administrativa',
+    category: 'Administración General / Finanzas CNE',
+    badge: 'Administración & Control',
+    description: 'Presupuesto de campaña, ingresos y gastos, rendición de cuentas CNE, contratos y auditoría documental.',
+    context: 'Requiere credenciales de Administrador General, Tesorero o Auditor CNE.',
+    targetView: 'modulo_admin',
+    icon: Layers,
+    colorScheme: {
+      border: 'border-blue-500/30',
+      hoverBorder: 'hover:border-blue-400/80',
+      bg: 'from-blue-950/40 via-slate-900/90 to-slate-950/90',
+      iconBg: 'bg-blue-950/80 border-blue-500/40',
+      iconText: 'text-blue-400',
+      badgeBg: 'bg-blue-500/15',
+      badgeText: 'text-blue-300',
+      badgeBorder: 'border-blue-500/30',
+      glow: 'shadow-blue-950/50 hover:shadow-blue-900/30',
+      accentGradient: 'from-blue-600 via-indigo-600 to-cyan-600'
+    },
+    allowedRoles: [
+      'administrador', 'ADMINISTRADOR', 'ADMIN_CLIENTE', 'admin', 
+      'superadmin', 'GLOBAL_ADMIN', 'SUPERADMIN', 'AUDITOR', 'auditor', 
+      'tesorero', 'TESORERO', 'contador', 'CONTADOR', 'DIRECTOR', 'candidato'
+    ],
+    defaultModuleTitle: 'Gestión Administrativa'
+  },
+  {
+    id: 'estrategica',
+    title: 'Gestión Estratégica',
+    category: 'Candidato / Dirección de Campaña',
     badge: 'Estrategia & Dirección',
-    description: 'Diagnóstico 360°, Programa de Gobierno, DOFA, Narrativa, CV y Redes Sociales.',
+    description: 'Diagnóstico 360°, Programa de Gobierno, Matriz DOFA, Narrativa y Discurso, CV y Estrategia de Redes.',
     context: 'Requiere credenciales de Candidato, Director Político o Administrador de Campaña.',
     targetView: 'gestion_estrategica',
     icon: Target,
@@ -83,12 +112,12 @@ export const ACCESS_ENVIRONMENTS: AccessEnvironment[] = [
     defaultModuleTitle: 'Gestión Estratégica'
   },
   {
-    id: 'territorio',
-    title: 'Operación Territorial & Censo',
-    category: 'Coordinación de Campo',
-    badge: 'Territorio & Votantes',
-    description: 'Registro de Votantes, Mapa & Cobertura, Líderes y Encuestas de Opinión.',
-    context: 'Requiere credenciales de Coordinador Territorial o Líder Comunal.',
+    id: 'territorial',
+    title: 'Gestión Territorial',
+    category: 'Coordinación de Campo & Día E',
+    badge: 'Territorio & Operación',
+    description: 'Registro de Votantes, Mapa & Cobertura, Control de Líderes, Encuestas, Testigos Electorales y Jurados en Mesa.',
+    context: 'Requiere credenciales de Coordinador Territorial, Testigo o Jurado.',
     targetView: 'gestion_territorial',
     icon: MapPin,
     colorScheme: {
@@ -105,39 +134,11 @@ export const ACCESS_ENVIRONMENTS: AccessEnvironment[] = [
     },
     allowedRoles: [
       'coordinador_general_zona', 'territorial', 'lider', 'COORDINADOR', 
-      'USUARIO', 'USUARIO_LIMITADO', 'TERRITORIAL', 'superadmin', 
-      'GLOBAL_ADMIN', 'SUPERADMIN', 'administrador', 'candidato', 
-      'ADMINISTRADOR', 'DIRECTOR'
+      'USUARIO', 'USUARIO_LIMITADO', 'TERRITORIAL', 'testigo_electoral', 
+      'jurado_mesa', 'TESTIGO', 'JURADO', 'superadmin', 'GLOBAL_ADMIN', 
+      'SUPERADMIN', 'administrador', 'candidato', 'ADMINISTRADOR', 'DIRECTOR'
     ],
     defaultModuleTitle: 'Gestión Territorial'
-  },
-  {
-    id: 'dia_e',
-    title: 'Día E & Control Electoral',
-    category: 'Testigos y Jurados de Mesa',
-    badge: 'Testigos & Jurados',
-    description: 'Confirmación GPS en puesto, Apertura de Mesa, Escrutinio y Actas E-14.',
-    context: 'Requiere credenciales asignadas de Testigo o Jurado Electoral.',
-    targetView: 'testigo_campo',
-    icon: Vote,
-    colorScheme: {
-      border: 'border-amber-500/30',
-      hoverBorder: 'hover:border-amber-400/80',
-      bg: 'from-amber-950/40 via-slate-900/90 to-slate-950/90',
-      iconBg: 'bg-amber-950/80 border-amber-500/40',
-      iconText: 'text-amber-400',
-      badgeBg: 'bg-amber-500/15',
-      badgeText: 'text-amber-300',
-      badgeBorder: 'border-amber-500/30',
-      glow: 'shadow-amber-950/50 hover:shadow-amber-900/30',
-      accentGradient: 'from-amber-600 via-orange-600 to-rose-600'
-    },
-    allowedRoles: [
-      'testigo_electoral', 'jurado_mesa', 'superadmin', 'GLOBAL_ADMIN', 
-      'SUPERADMIN', 'administrador', 'candidato', 'ADMINISTRADOR', 
-      'DIRECTOR', 'COORDINADOR', 'coordinador_general_zona'
-    ],
-    defaultModuleTitle: 'Testigos en Campo Día E'
   }
 ];
 
@@ -241,19 +242,22 @@ export const PRESET_PERSONAS: Array<{
 
 export const getModuleContextLabel = (envId?: string) => {
   switch (envId) {
+    case 'administrativa':
+      return 'GESTIÓN ADMINISTRATIVA';
+    case 'estrategica':
     case 'estrategia':
-      return 'ESTRATEGIA & DIRECCIÓN DE CAMPAÑA';
+      return 'GESTIÓN ESTRATÉGICA';
+    case 'territorial':
     case 'territorio':
-      return 'GESTIÓN DE PADRÓN & TERRITORIO';
     case 'dia_e':
-      return 'DÍA E & CONTROL ELECTORAL';
+      return 'GESTIÓN TERRITORIAL';
     default:
       return 'CONTROL ELECTORAL';
   }
 };
 
 export interface ModuleLoginTheme {
-  id: 'estrategia' | 'territorio' | 'dia_e';
+  id: string;
   leftBg: string;
   glowColor: string;
   glowColorHex: string;
@@ -270,7 +274,59 @@ export interface ModuleLoginTheme {
   ambientGlow: string;
 }
 
-export const MODULE_LOGIN_THEMES: Record<'estrategia' | 'territorio' | 'dia_e', ModuleLoginTheme> = {
+export const MODULE_LOGIN_THEMES: Record<string, ModuleLoginTheme> = {
+  administrativa: {
+    id: 'administrativa',
+    leftBg: 'bg-gradient-to-b from-[#0a152e] via-[#081022] to-[#050b18]',
+    glowColor: 'rgba(37, 99, 235, 0.25)',
+    glowColorHex: '#2563eb',
+    shieldGradient: 'from-blue-500 via-indigo-500 to-cyan-400',
+    shieldInnerBg: 'bg-[#091a38]',
+    shieldGlow: 'shadow-[0_0_30px_rgba(37,99,235,0.45)]',
+    brandAccentText: 'text-blue-400',
+    backBtn: 'text-blue-300 border-blue-500/30 hover:bg-blue-950/40 hover:border-blue-400/60',
+    securityIconText: 'text-blue-400/80',
+    recoveryLink: 'text-blue-400 hover:text-blue-300',
+    inputFocus: 'focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20',
+    checkboxAccent: 'accent-blue-500 text-blue-500 focus:ring-blue-500/30',
+    submitButton: 'bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-500 shadow-[0_4px_24px_rgba(37,99,235,0.45)]',
+    ambientGlow: 'bg-blue-500/15'
+  },
+  estrategica: {
+    id: 'estrategica',
+    leftBg: 'bg-gradient-to-b from-[#0e1628] via-[#090e1a] to-[#060913]',
+    glowColor: 'rgba(147, 51, 234, 0.25)',
+    glowColorHex: '#9333ea',
+    shieldGradient: 'from-purple-500 via-indigo-500 to-violet-400',
+    shieldInnerBg: 'bg-[#160b2e]',
+    shieldGlow: 'shadow-[0_0_30px_rgba(168,85,247,0.45)]',
+    brandAccentText: 'text-purple-400',
+    backBtn: 'text-purple-300 border-purple-500/30 hover:bg-purple-950/40 hover:border-purple-400/60',
+    securityIconText: 'text-purple-400/80',
+    recoveryLink: 'text-purple-400 hover:text-purple-300',
+    inputFocus: 'focus-within:border-purple-500 focus-within:ring-2 focus-within:ring-purple-500/20',
+    checkboxAccent: 'accent-purple-500 text-purple-500 focus:ring-purple-500/30',
+    submitButton: 'bg-gradient-to-r from-purple-600 via-indigo-600 to-violet-500 shadow-[0_4px_24px_rgba(147,51,234,0.45)]',
+    ambientGlow: 'bg-purple-500/15'
+  },
+  territorial: {
+    id: 'territorial',
+    leftBg: 'bg-gradient-to-b from-[#0a1f1d] via-[#061514] to-[#040e0d]',
+    glowColor: 'rgba(16, 185, 129, 0.25)',
+    glowColorHex: '#10b981',
+    shieldGradient: 'from-emerald-500 via-teal-500 to-cyan-400',
+    shieldInnerBg: 'bg-[#06241e]',
+    shieldGlow: 'shadow-[0_0_30px_rgba(16,185,129,0.45)]',
+    brandAccentText: 'text-emerald-400',
+    backBtn: 'text-emerald-300 border-emerald-500/30 hover:bg-emerald-950/40 hover:border-emerald-400/60',
+    securityIconText: 'text-emerald-400/80',
+    recoveryLink: 'text-emerald-400 hover:text-emerald-300',
+    inputFocus: 'focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/20',
+    checkboxAccent: 'accent-emerald-500 text-emerald-500 focus:ring-emerald-500/30',
+    submitButton: 'bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-500 shadow-[0_4px_24px_rgba(16,185,129,0.45)]',
+    ambientGlow: 'bg-emerald-500/15'
+  },
+  // Backward compatibility aliases
   estrategia: {
     id: 'estrategia',
     leftBg: 'bg-gradient-to-b from-[#0e1628] via-[#090e1a] to-[#060913]',
@@ -290,7 +346,7 @@ export const MODULE_LOGIN_THEMES: Record<'estrategia' | 'territorio' | 'dia_e', 
   },
   territorio: {
     id: 'territorio',
-    leftBg: 'bg-gradient-to-b from-[#0e1628] via-[#090e1a] to-[#060913]',
+    leftBg: 'bg-gradient-to-b from-[#0a1f1d] via-[#061514] to-[#040e0d]',
     glowColor: 'rgba(16, 185, 129, 0.25)',
     glowColorHex: '#10b981',
     shieldGradient: 'from-emerald-500 via-teal-500 to-cyan-400',
@@ -307,20 +363,20 @@ export const MODULE_LOGIN_THEMES: Record<'estrategia' | 'territorio' | 'dia_e', 
   },
   dia_e: {
     id: 'dia_e',
-    leftBg: 'bg-gradient-to-b from-[#0e1628] via-[#090e1a] to-[#060913]',
-    glowColor: 'rgba(245, 158, 11, 0.25)',
-    glowColorHex: '#f59e0b',
-    shieldGradient: 'from-amber-500 via-orange-500 to-yellow-400',
-    shieldInnerBg: 'bg-[#291705]',
-    shieldGlow: 'shadow-[0_0_30px_rgba(245,158,11,0.45)]',
-    brandAccentText: 'text-amber-400',
-    backBtn: 'text-amber-300 border-amber-500/30 hover:bg-amber-950/40 hover:border-amber-400/60',
-    securityIconText: 'text-amber-400/80',
-    recoveryLink: 'text-amber-400 hover:text-amber-300',
-    inputFocus: 'focus-within:border-amber-500 focus-within:ring-2 focus-within:ring-amber-500/20',
-    checkboxAccent: 'accent-amber-500 text-amber-500 focus:ring-amber-500/30',
-    submitButton: 'bg-gradient-to-r from-amber-600 via-orange-600 to-yellow-500 shadow-[0_4px_24px_rgba(245,158,11,0.45)]',
-    ambientGlow: 'bg-amber-500/15'
+    leftBg: 'bg-gradient-to-b from-[#0a1f1d] via-[#061514] to-[#040e0d]',
+    glowColor: 'rgba(16, 185, 129, 0.25)',
+    glowColorHex: '#10b981',
+    shieldGradient: 'from-emerald-500 via-teal-500 to-cyan-400',
+    shieldInnerBg: 'bg-[#06241e]',
+    shieldGlow: 'shadow-[0_0_30px_rgba(16,185,129,0.45)]',
+    brandAccentText: 'text-emerald-400',
+    backBtn: 'text-emerald-300 border-emerald-500/30 hover:bg-emerald-950/40 hover:border-emerald-400/60',
+    securityIconText: 'text-emerald-400/80',
+    recoveryLink: 'text-emerald-400 hover:text-emerald-300',
+    inputFocus: 'focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/20',
+    checkboxAccent: 'accent-emerald-500 text-emerald-500 focus:ring-emerald-500/30',
+    submitButton: 'bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-500 shadow-[0_4px_24px_rgba(16,185,129,0.45)]',
+    ambientGlow: 'bg-emerald-500/15'
   }
 };
 
@@ -344,7 +400,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   const [selectedEnv, setSelectedEnv] = useState<AccessEnvironment | null>(null);
 
   // Active theme based on selected module
-  const currentTheme: ModuleLoginTheme = (selectedEnv ? MODULE_LOGIN_THEMES[selectedEnv.id] : null) || MODULE_LOGIN_THEMES.estrategia;
+  const currentTheme: ModuleLoginTheme = (selectedEnv ? MODULE_LOGIN_THEMES[selectedEnv.id] : null) || MODULE_LOGIN_THEMES.administrativa || MODULE_LOGIN_THEMES.estrategica;
 
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -377,9 +433,12 @@ export const LoginModal: React.FC<LoginModalProps> = ({
       if (targetView) {
         const matched = ACCESS_ENVIRONMENTS.find(e => 
           e.targetView === targetView || 
-          (targetView === 'modulo_admin' && e.id === 'estrategia') ||
-          (targetView === 'encuestas' && e.id === 'territorio') ||
-          (targetView === 'jurado_campo' && e.id === 'dia_e')
+          (targetView === 'modulo_admin' && e.id === 'administrativa') ||
+          (targetView === 'gestion_estrategica' && e.id === 'estrategica') ||
+          (targetView === 'gestion_territorial' && e.id === 'territorial') ||
+          (targetView === 'encuestas' && e.id === 'territorial') ||
+          (targetView === 'testigo_campo' && e.id === 'territorial') ||
+          (targetView === 'jurado_campo' && e.id === 'territorial')
         );
         if (matched) {
           setSelectedEnv(matched);
